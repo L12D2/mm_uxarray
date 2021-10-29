@@ -6,14 +6,15 @@
 analysis:
   start_time: '2019-08-02-12:00:00' #UTC
   end_time: '2019-08-03-12:00:00' #UTC
-  output_dir: /home/rschwantes/MONET/processed_plots/Aug_2021/0802/ #Opt if not specified plots stored in code directory.
+  output_dir: /scratch2/BMC/rcm1/rhs/wrfchem/processed/run_CONUS_fv19_BEIS_1.0xISO_RACM_v4.2.2_racm_vcp_noI/0802_w_cmaq #Opt if not specified plots stored in code directory.
+  debug: True
 model:
   cmaq_expt: # model label
     #files: /scratch2/BMC/csd-wca/rhs/FV3/RRFS-CMAQ/data/cmaq_expt/fv3-cmaq-gbbpex1/0801/aqm.20190801.t12z.aconc-pm25.ncf
-    files: /wrk/d2/rschwantes/MONET_test/CMAQ_EXPT/fv3-cmaq-gbbpex1_full/0802/aqm.t12z.conc.ncf
+    files: /scratch2/BMC/rcm1/rhs/fv3/regional/data/cmaq_expt/fv3-cmaq-gbbpex1_full/0802/aqm.t12z.conc.ncf
     #For CMAQ, if you want to calculate vertical info need to specify files_vert and files_surf like below:
-    files_vert: /wrk/d2/rschwantes/MONET_test/CMAQ_EXPT/fv3-cmaq-gbbpex1_full/0802/aqm.t12z.metcro3d.ncf #Opt
-    files_surf: /wrk/d2/rschwantes/MONET_test/CMAQ_EXPT/fv3-cmaq-gbbpex1_full/0802/aqm.t12z.metcro2d.ncf #Opt
+    files_vert: /scratch2/BMC/rcm1/rhs/fv3/regional/data/cmaq_expt/fv3-cmaq-gbbpex1_full/0802/aqm.t12z.metcro3d.ncf #Opt
+    files_surf: /scratch2/BMC/rcm1/rhs/fv3/regional/data/cmaq_expt/fv3-cmaq-gbbpex1_full/0802/aqm.t12z.metcro2d.ncf #Opt
     mod_type: 'cmaq'
     radius_of_influence: 18000 #meters: horizontal resolution * 1.5
     mapping: #model species name : obs species name
@@ -29,7 +30,7 @@ model:
       marker: 'o'
       linestyle: '--'
   rrfs_13km: # model label
-    files: /wrk/d2/rschwantes/MONET_test/RRFS_CMAQ/r131_v1/0802/dynf*.nc
+    files: /scratch2/BMC/rcm1/rhs/fv3/regional/data/rrfs-cmaq/r131_v1/0802/dynf*.nc
     mod_type: 'rrfs'
     mod_kwargs:
       mech: 'cb6r3_ae6_aq'
@@ -47,7 +48,7 @@ model:
       marker: 'x'
       linestyle: '--'
   wrfchem_v4.2: # model label
-    files: /wrk/d2/rschwantes/MONET_test/WRF-Chem/run_CONUS_fv19_BEIS_1.0xISO_RACM_v4.2.2_racm_vcp_noI/0802/*
+    files: /scratch2/BMC/rcm1/rhs/wrfchem/runs_firex/run_CONUS_fv19_BEIS_1.0xISO_RACM_v4.2.2_racm_vcp_noI/Output/0802/*
     mod_type: 'wrfchem'
     mod_kwargs: #For WRF-chem only, can add vert: False, if missing P,T variables, but not all conversions will work. Default vert: True.  
       mech: 'racm_esrl_vcp'
@@ -67,7 +68,7 @@ model:
 obs:
   airnow: # obs label
     use_airnow: True
-    filename: data/AIRNOW_20190831_20190831.nc
+    filename: /scratch2/BMC/rcm1/rhs/MONET/MELODIES-MONET/melodies_monet/data/AIRNOW_20190801_20190831.nc
     obs_type: pt_sfc
     variables: #Opt 
       PM2.5:

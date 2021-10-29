@@ -12,5 +12,5 @@
 source /scratch2/BMC/rcm1/rhs/anaconda3/bin/activate py36_monet_default
 
 # -- Update the location and name of your run script
-cd /scratch2/BMC/rcm1/rhs/MONET/MELODIES-MONET/melodies_monet
+cd /scratch2/BMC/rcm1/rhs/MONET/MELODIES-MONET/melodies_monet/examples/submit_jobs/
 python run_melodies_monet.py

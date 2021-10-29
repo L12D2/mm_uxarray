@@ -27,7 +27,7 @@ import pandas as pd
 import numpy as np
 from numpy import sqrt
 import matplotlib.pyplot as plt
-from new_models import code_to_move_to_monet as code_m_new
+from new_monetio import code_to_move_to_monet as code_m_new
 
 def produce_stat_dict(stat_list,spaces=False):
     #If spaces = True, leave spaces in string.
