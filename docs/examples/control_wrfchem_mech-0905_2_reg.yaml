@@ -15,15 +15,15 @@
 #   - If set_axis = True and the proper limits are not provided in the obs section,
 #     a warning will print, and the plot will be created using the default limits.
 analysis:
-  start_time: "2019-09-05-06:00:00" # UTC
-  end_time: "2019-09-06-06:00:00" # UTC
-  output_dir: ./output/airnow_wrfchem  # relative to the program using this control file
+  start_time: "2019-09-04-06:00:00" # UTC
+  end_time: "2019-09-06-05:00:00" # UTC
+  output_dir: ./output/airnow_wrfchem_reg  # relative to the program using this control file
   #   Currently, the directory must exist or plot saving will error and fail.
   debug: True
 
 model:
   RACM_ESRL: # model label
-    files: example:wrfchem:racm_esrl
+    files: example:wrfchem:racm_esrl_reg
     mod_type: "wrfchem"
     mod_kwargs:
       mech: "racm_esrl_vcp"
@@ -39,7 +39,7 @@ model:
       marker: "s"
       linestyle: "-"
   RACM_ESRL_VCP:
-    files: example:wrfchem:racm_esrl_vcp
+    files: example:wrfchem:racm_esrl_vcp_reg
     mod_type: "wrfchem"
     mod_kwargs:
       mech: "racm_esrl_vcp"
@@ -81,6 +81,12 @@ obs:
         #   To apply to a plot, change restrict_yaxis = True.
         nlevels_plot: 21
         # ^ optional; number of levels used in colorbar for contourf plot.
+        regulatory: True #Opt compute regulatory functions
+        ylabel_reg_plot: 'MDA8 O3 (ppbv)'
+        vmin_reg_plot: 30.0 #Opt
+        vmax_reg_plot: 70.0 #Opt
+        vdiff_reg_plot: 20.0 #Opt
+        #percentile_opt: 95 #Opt, 5, 50, 95, etc. If not specified, simply calculate mean values. Currently used for "spatial_bias".
       PM2.5:
         unit_scale: 1
         unit_scale_method: "*"
@@ -97,6 +103,12 @@ obs:
         vmax_plot: 22.0
         vdiff_plot: 15.0
         nlevels_plot: 23
+        regulatory: True #Opt compute regulatory functions
+        ylabel_reg_plot: 'PM2.5_24hr (ug/m3)'
+        vmin_reg_plot: 0.0 #Opt
+        vmax_reg_plot: 22.0 #Opt
+        vdiff_reg_plot: 15.0 #Opt
+        #percentile_opt: 95 #Opt, 5, 50, 95, etc. If not specified, simply calculate mean values. Currently used for "spatial_bias".
 
 plots:
   plot_grp1:
@@ -126,7 +138,7 @@ plots:
       ts_select_time: "time_local"  # `ts_` indicates this is time series plot-specific
       # ^ Time used for avg and plotting
       #   Options: 'time' for UTC or 'time_local'
-      ts_avg_window: "h"
+      ts_avg_window: "D"
       # ^ Options: None for no averaging, pandas resample rule (e.g., 'h', 'D')
       set_axis: True
       # ^ If true, add `vmin_plot` and `vmax_plot` for each variable in obs.
@@ -161,19 +173,20 @@ plots:
       rem_obs_nan: True
       set_axis: True
 
-  plot_grp4:
-    type: "spatial_overlay"
-    fig_kwargs:
-      states: True
-      figsize: [10, 5]
-    text_kwargs:
-      fontsize: 16.
-    domain_type: ["all", "epa_region"]
-    domain_name: ["CONUS", "R9"]
-    data: ["airnow_RACM_ESRL", "airnow_RACM_ESRL_VCP"]
-    data_proc:
-      rem_obs_nan: True
-      set_axis: True
+#Spatial overlay plots are not yet available for reg options
+#  plot_grp4:
+#    type: "spatial_overlay"
+#    fig_kwargs:
+#      states: True
+#      figsize: [10, 5]
+#    text_kwargs:
+#      fontsize: 16.
+#    domain_type: ["all", "epa_region"]
+#    domain_name: ["CONUS", "R9"]
+#    data: ["airnow_RACM_ESRL", "airnow_RACM_ESRL_VCP"]
+#    data_proc:
+#      rem_obs_nan: True
+#      set_axis: True
 
   plot_grp5:
     type: "boxplot"
@@ -188,24 +201,39 @@ plots:
       rem_obs_nan: True
       set_axis: False
 
-  plot_grp6:
-    type: "scorecard"
+  plot_grp5_5:
+    type: "spatial_bias_exceedance"
     fig_kwargs:
-      figsize: [15, 10]
+      states: True
+      figsize: [10, 5]
     text_kwargs:
-      fontsize: 20.
+      fontsize: 16.
     domain_type: ["all"]
     domain_name: ["CONUS"]
-    region_name: ['epa_region']
-    region_list: ['R1','R2','R3','R4','R5','R6','R7','R8','R9','R10']
-    urban_rural_name: ['msa_name']
-    urban_rural_differentiate_value: ''
-    better_or_worse_method: 'NME'    #support 'RMSE', 'IOA' ,' NMB', 'NME'
-    model_name_list: ['AirNow','RACM_ESRL','RACM_ESRL_VCP']
     data: ["airnow_RACM_ESRL", "airnow_RACM_ESRL_VCP"]
     data_proc:
       rem_obs_nan: True
       set_axis: False
+
+#Scorecard plots are not yet available for reg options
+#  plot_grp6:
+#    type: "scorecard"
+#    fig_kwargs:
+#      figsize: [15, 10]
+#    text_kwargs:
+#      fontsize: 20.
+#    domain_type: ["all"]
+#    domain_name: ["CONUS"]
+#    region_name: ['epa_region']
+#    region_list: ['R1','R2','R3','R4','R5','R6','R7','R8','R9','R10']
+#    urban_rural_name: ['msa_name']
+#    urban_rural_differentiate_value: ''
+#    better_or_worse_method: 'NME'    #support 'RMSE', 'IOA' ,' NMB', 'NME'
+#    model_name_list: ['AirNow','RACM_ESRL','RACM_ESRL_VCP']
+#    data: ["airnow_RACM_ESRL", "airnow_RACM_ESRL_VCP"]
+#    data_proc:
+#      rem_obs_nan: True
+#      set_axis: False
 
   plot_grp7:
     type: "multi_boxplot"
@@ -230,7 +258,7 @@ plots:
     text_kwargs:
       fontsize: 20.
     domain_type: ["all",'epa_region']
-    domain_name: ["CONUS",'R1']
+    domain_name: ["CONUS",'R9']
     threshold_list: [10,20,30,40,50,60,70,80,90,100]
     score_name: 'Critical Success Index'  #can be used 'Critical Success Index' 'False Alarm Rate' 'Hit Rate'
     model_name_list: ['RACM_ESRL','RACM_ESRL_VCP']
