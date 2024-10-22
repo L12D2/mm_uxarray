@@ -23,11 +23,11 @@ dependencies:
   #
   # Docs
   - ipykernel
-  - jupyterlab=3.*
+  - jupyterlab=4.*
   - jupytext
   - myst-nb>=0.14
   - nbclient
-  - sphinx=4.*
+  - sphinx=7.*
   - sphinx-autobuild
   - sphinx-click
   - sphinx-design
