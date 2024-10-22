@@ -128,7 +128,4 @@ environment for running and developing MELODIES MONET.
 
 .. [#ncar_jhub_kernel] Maintained by NCAR CISL and members of the MELODIES MONET development team.
 
-.. [#clone] See :ref:`the cloning notes <clone-notes>` if you have
-   trouble cloning the repositories this way.
-
 .. [#hera_no_pypi] Recent as of 12-Apr-2022. See :issue:`79`.
