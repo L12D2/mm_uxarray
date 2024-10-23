@@ -7,12 +7,16 @@ Check for consistency with the tutorial datasets and that options work.
 import subprocess
 
 import numpy as np
+import os
+import pytest
 import xarray as xr
 
 from melodies_monet.tutorial import fetch_example
 
 ds0_aeronet = xr.open_dataset(fetch_example("aeronet:2019-09"))
 ds0_airnow = xr.open_dataset(fetch_example("airnow:2019-09"))
+
+have_openaq_api_key = len(os.environ.get("OPENAQ_API_KEY", "")) > 0
 
 
 def test_get_aeronet(tmp_path):
@@ -155,3 +159,47 @@ def test_get_aqs_hourly(tmp_path):
         for v in ds.data_vars
         if ds[v].dims == ("time", "y", "x")
     } == {"OZONE", "time_local"}
+
+
+@pytest.mark.skipif(not have_openaq_api_key, reason="OPENAQ_API_KEY not set")
+def test_get_openaq(tmp_path):
+    fn = "x.nc"
+    cmd = [
+        "melodies-monet", "get-openaq",
+        "-s", "2024-09-10", "-e" "2024-09-10 00:59",
+        "--dst", tmp_path.as_posix(), "-o", fn,
+    ]
+    subprocess.run(cmd, check=True)
+
+    ds = xr.open_dataset(tmp_path / fn)
+
+    assert ds.time.size == 1
+    assert {
+        v
+        for v in ds.data_vars
+        if ds[v].dims == ("time", "y", "x")
+    } == {"o3", "pm25", "pm10", "time_local"}
+    assert (ds.sensor_type == "reference grade").all()
+
+
+@pytest.mark.skipif(not have_openaq_api_key, reason="OPENAQ_API_KEY not set")
+def test_get_openaq_lowcost(tmp_path):
+    fn = "x.nc"
+    cmd = [
+        "melodies-monet", "get-openaq",
+        "-s", "2024-09-10", "-e" "2024-09-10 00:59",
+        "-p", "pm25",
+        "--no-reference-grade", "--low-cost",
+        "--dst", tmp_path.as_posix(), "-o", fn,
+    ]
+    subprocess.run(cmd, check=True)
+
+    ds = xr.open_dataset(tmp_path / fn)
+
+    assert ds.time.size == 1
+    assert {
+        v
+        for v in ds.data_vars
+        if ds[v].dims == ("time", "y", "x")
+    } == {"pm25", "time_local"}
+    assert (ds.sensor_type == "low-cost sensor").all()
