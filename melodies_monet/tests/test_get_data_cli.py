@@ -15,6 +15,34 @@ ds0_aeronet = xr.open_dataset(fetch_example("aeronet:2019-09"))
 ds0_airnow = xr.open_dataset(fetch_example("airnow:2019-09"))
 
 
+def test_get_aeronet_no_data_err():
+    cmd = [
+        "melodies-monet",
+        "get-aeronet",
+        "-s", "2100-01-01",  # future
+        "-e", "2100-01-02",
+    ]
+    cp = subprocess.run(cmd, capture_output=True)
+    assert cp.returncode != 0
+    assert cp.stdout.decode().splitlines()[-2].startswith(
+        "Error message (type: Exception): loading from URL 'https://aeronet.gsfc.nasa.gov/"
+    )
+
+
+def test_get_aeronet_empty_date_range_err():
+    cmd = [
+        "melodies-monet",
+        "get-aeronet",
+        "-s", "2019-09-01",
+        "-e", "2019-08-31",
+    ]
+    cp = subprocess.run(cmd, capture_output=True)
+    assert cp.returncode != 0
+    assert cp.stdout.decode().splitlines()[-2] == (
+        "Error message (type: ValueError): Neither `start` nor `end` can be NaT"
+    )
+
+
 def test_get_aeronet(tmp_path):
     fn = "x.nc"
     cmd = [
