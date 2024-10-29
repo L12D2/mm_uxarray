@@ -195,8 +195,8 @@ def _interp_vert(orig, target, data):
 def interp_vertical_mod2swath(obsobj, modobj, variables="NO2_col"):
     """Interpolates model vertical layers to TEMPO vertical layers
 
-    Paramenters
-    -----------
+    Parameters
+    ----------
     modobj : xr.Dataset
         Model data (as provided by MONETIO)
     obsobj : xr.Dataset
