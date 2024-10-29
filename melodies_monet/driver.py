@@ -1888,7 +1888,7 @@ class analysis:
                             else:
                                 make_timeseries = splots.make_timeseries
                                 plot_params = {
-                                    'pairdf': pairdf, 'pairdf_reg': pairdf_reg, 'column':obsvar
+                                    'df': pairdf, 'df_reg': pairdf_reg, 'column': obsvar
                                 }
                             plot_params = {
                                 **plot_params,
