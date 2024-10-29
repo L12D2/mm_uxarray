@@ -1566,7 +1566,8 @@ def Plot_CSI(score_name_input,threshold_list_input, comb_bx_input,plot_dict,fig_
 
     #Make Plot
     for i in range(len(CSI_output)):
-        plt.plot(threshold_list,CSI_output[i],'-*',label=model_name_list[i])  #CHANGE THIS ONE, MAIN PROGRAM
+        threshold_string_array = [str(x) for x in threshold_list]
+        plt.plot(range(len(threshold_list)),CSI_output[i],'-*',label=model_name_list[i])
         ax.set_xlabel('Threshold',fontsize = text_kwargs['fontsize']*0.8)
         ax.set_ylabel(score_name_input,fontsize = text_kwargs['fontsize']*0.8)
         ax.tick_params(labelsize=text_kwargs['fontsize']*0.8)
@@ -1575,8 +1576,8 @@ def Plot_CSI(score_name_input,threshold_list_input, comb_bx_input,plot_dict,fig_
         plt.grid()
      
     #add '>' to xticks
-    labels = ['>'+item.get_text() for item in ax.get_xticklabels()]
-    ax.set_xticklabels(labels)
+    labels = ['>'+item for item in threshold_string_array]
+    ax.set_xticks(range(len(threshold_list)),labels=labels)
     if domain_type is not None and domain_name is not None:
         if domain_type == 'epa_region':
             ax.set_title('EPA Region ' + domain_name,fontweight='bold',**text_kwargs)
