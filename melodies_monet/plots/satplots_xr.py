@@ -646,7 +646,7 @@ def make_boxplot(
     plt.tight_layout()
     savefig(
         outname + ".png",
-        loc=4,
+    #    loc=4,
         logo_height=100,
         decorate=True,
         bbox_inches="tight",
@@ -802,7 +802,7 @@ def make_spatial_dist(
     # plt.tight_layout(pad=0)
     savefig(
         outname + ".png",
-        loc=4,
+    #    loc=4,
         logo_height=100,
         decorate=True,
         bbox_inches="tight",
