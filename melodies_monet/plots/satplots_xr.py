@@ -54,51 +54,11 @@ def time_average(dset, varname=None, period="1D", time_offset=None):
     return daily
 
 
-def map_projection(f):
-    """Defines map projection. This needs updating to make it more generic.
+#TODO:: Add projection support to maps, as optional arguments for the user
 
-    Parameters
-    ----------
-    f : class
-        model class
+#TODO : Add area weighting in make_timeseries and other similar functions (e.g., boxplots)
 
-    Returns
-    -------
-    cartopy projection
-        projection to be used by cartopy in plotting
-
-    """
-    import cartopy.crs as ccrs
-
-    if f.model.lower() == "cmaq":
-        proj = ccrs.LambertConformal(central_longitude=f.obj.XCENT, central_latitude=f.obj.YCENT)
-    elif f.model.lower() == "wrfchem" or f.model.lower() == "rapchem":
-        if f.obj.MAP_PROJ == 1:
-            proj = ccrs.LambertConformal(
-                central_longitude=f.obj.CEN_LON, central_latitude=f.obj.CEN_LAT
-            )
-        elif f.MAP_PROJ == 6:
-            # Plate Carree is the equirectangular or equidistant cylindrical
-            proj = ccrs.PlateCarree(central_longitude=f.obj.CEN_LON)
-        else:
-            raise NotImplementedError(
-                "WRFChem projection not supported. Please add to surfplots.py"
-            )
-    # Need to add the projections you want to use for the other models here.
-    elif f.model.lower() == "rrfs":
-        proj = ccrs.LambertConformal(
-            central_longitude=f.obj.cen_lon, central_latitude=f.obj.cen_lat
-        )
-    elif f.model.lower() in ["cesm_fv", "cesm_se", "raqms"]:
-        proj = ccrs.PlateCarree()
-    elif f.model.lower() == "random":
-        proj = ccrs.PlateCarree()
-    else:  # Let's change this tomorrow to just plot as lambert conformal if nothing provided.
-        raise NotImplementedError(
-            "Projection not defined for new model. Please add to surfplots.py"
-        )
-    return proj
-
+#TODO : Add automatic unit label, read from the pairing
 
 def make_timeseries(
     dset,
@@ -277,6 +237,7 @@ def make_timeseries(
     return ax
 
 
+# TODO : Add ax.text() for negative correlations
 def make_taylor(
     dset,
     varname_o=None,
@@ -515,6 +476,7 @@ def calculate_boxplot(
     # For all, a column to the dataframe and append the label info to the list.
     plot_kwargs["varname"] = varname
     plot_kwargs["label"] = label
+    # BUG : this shouldn't be using that mean. Flatten with var.stack(tempdim=[...]) and fix
     comb_bx[label] = dset[varname].mean(dim=("x", "y")).to_dataframe()
     label_bx.append(plot_kwargs)
 
