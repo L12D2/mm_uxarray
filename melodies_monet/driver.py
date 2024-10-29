@@ -1694,17 +1694,17 @@ class analysis:
                                     )
                                 if isinstance(pairdf_all, pd.DataFrame):
                                     pairdf_all = pairdf_all.loc[
-                                                    (pairdf_all["latitude"] > bounds[0])
-                                                    & (pairdf_all["longitude"] > bounds[1])
-                                                    & (pairdf_all["latitude"] < bounds[2])
-                                                    & (pairdf_all["longitude"] < bounds[3])
+                                                    (pairdf_all["latitude"] >= bounds[0])
+                                                    & (pairdf_all["longitude"] >= bounds[1])
+                                                    & (pairdf_all["latitude"] <= bounds[2])
+                                                    & (pairdf_all["longitude"] <= bounds[3])
                                                  ]
                                 else:
                                     pairdf_all = pairdf_all.where(
-                                                    (pairdf_all["latitude"] > bounds[0])
-                                                    & (pairdf_all["longitude"] > bounds[1])
-                                                    & (pairdf_all["latitude"] < bounds[2])
-                                                    & (pairdf_all["longitude"] < bounds[3]),
+                                                    (pairdf_all["latitude"] >= bounds[0])
+                                                    & (pairdf_all["longitude"] >= bounds[1])
+                                                    & (pairdf_all["latitude"] <= bounds[2])
+                                                    & (pairdf_all["longitude"] <= bounds[3]),
                                                     drop=True
                                                  )
                             else:
@@ -1890,21 +1890,21 @@ class analysis:
                                 plot_params = {
                                     'pairdf': pairdf, 'pairdf_reg': pairdf_reg, 'column':obsvar
                                 }
-                                plot_params = {
-                                    **plot_params,
-                                    **{
-                                        'label':p.obs,
-                                        'avg_window': a_w,
-                                        'ylabel': use_ylabel,
-                                        'vmin':vmin,
-                                        'vmax':vmax,
-                                        'domain_type': domain_type,
-                                        'domain_name': domain_name,
-                                        'plot_dict': obs_dict,
-                                        'fig_dict': fig_dict,
-                                        'text_dict': text_dict,
-                                        'debug': self.debug,
-                                    }
+                            plot_params = {
+                                **plot_params,
+                                **{
+                                    'label':p.obs,
+                                    'avg_window': a_w,
+                                    'ylabel': use_ylabel,
+                                    'vmin':vmin,
+                                    'vmax':vmax,
+                                    'domain_type': domain_type,
+                                    'domain_name': domain_name,
+                                    'plot_dict': obs_dict,
+                                    'fig_dict': fig_dict,
+                                    'text_dict': text_dict,
+                                    'debug': self.debug,
+                                }
                                 }
                             if p_index == 0:
                                 # First plot the observations.
