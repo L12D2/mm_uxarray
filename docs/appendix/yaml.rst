@@ -75,6 +75,9 @@ regarding the directory files are read from.
    * **method:** The file format to read from. Options are 'netcdf' and 'pkl'. 
    * **filenames:** The filename(s) that should be read in. For method: 'netcdf' this must be set as a dict in the form filenames: {'group1':str or iterable of filename(s) in group1, group2: str or iterable of filename(s) in group2,...}. For method: 'pkl' this must be set as either a string with the filename or as an or iterable of filenames. Wildcards will be expanded to any matching files. 
 
+**add_logo:** This is an optional argument.
+Set this to ``false`` to forgo adding the MELODIES MONET logo to the plots.
+
 Models
 ------
 All input for each instance of the model class. First level should be the model 
