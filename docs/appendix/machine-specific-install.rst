@@ -115,7 +115,7 @@ environment for running and developing MELODIES MONET.
    with conda on Hera led to stalling.
    To overcome this challenge, try installing packages individually::
   
-        $ conda create --name melodies-monet python=3.9
+        $ conda create --name melodies-monet python=3.11
         $ conda activate melodies-monet
         $ conda install -c conda-forge jupyterlab
         $ conda install -c conda-forge netcdf4

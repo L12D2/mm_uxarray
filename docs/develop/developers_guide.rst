@@ -52,7 +52,7 @@ these instructions:
 (a) Set up a conda environment with all the dependencies, including MONET and 
     MONETIO::
 
-       $ conda create --name melodies-monet python=3.9
+       $ conda create --name melodies-monet python=3.11
        $ conda activate melodies-monet
        $ conda install -y -c conda-forge pyyaml pandas=1 'matplotlib-base<3.9' monet monetio netcdf4 wrf-python typer rich pooch jupyterlab
 
