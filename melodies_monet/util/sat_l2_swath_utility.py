@@ -143,7 +143,7 @@ def trp_interp_swatogrd_ak(obsobj, modobj):
     modlat = modobj.coords['latitude']
     modlon = modobj.coords['longitude']
 
-    tmpvalue = np.zeros([ny, nx], dtype = np.float)
+    tmpvalue = np.zeros([ny, nx], dtype = np.float64)
 
     time   = [ datetime.strptime(x,'%Y-%m-%d') for x in obsobj.keys()]
     ntime  = len(list(obsobj.keys()))
