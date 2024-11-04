@@ -1457,6 +1457,9 @@ class analysis:
             from .plots import surfplots as splots, savefig
             from .plots import aircraftplots as airplots
 
+        if not self.add_logo:
+            savefig.keywords.update(decorate=False)
+
         # Disable figure count warning
         initial_max_fig = plt.rcParams["figure.max_open_warning"]
         plt.rcParams["figure.max_open_warning"] = 0
