@@ -34,6 +34,20 @@ HEADER = """
 """.strip()
 
 
+def _get_full_name(obj):
+    """Get the full name of a function or type,
+    including the module name if not builtin."""
+    import builtins
+    import inspect
+
+    mod = inspect.getmodule(obj)
+    name = obj.__qualname__
+    if mod is None or mod is builtins:
+        return name
+    else:
+        return f"{mod.__name__}.{name}"
+
+
 @contextmanager
 def _timer(desc=""):
     start = time.perf_counter()
@@ -48,7 +62,7 @@ def _timer(desc=""):
             tpl.format(status="failed", elapsed=time.perf_counter() - start),
             fg=ERROR_COLOR
         )
-        typer.secho(f"Error message: {e}", fg=ERROR_COLOR)
+        typer.secho(f"Error message (type: {_get_full_name(type(e))}): {e}", fg=ERROR_COLOR)
         if DEBUG:
             raise
         else:
@@ -303,7 +317,7 @@ def get_aeronet(
             .drop_vars(site_vns)
             .merge(ds_site)
             .set_coords(site_vns)
-            .assign(x=range(ds_site.dims["x"]))
+            .assign(x=range(ds_site.sizes["x"]))
             .expand_dims("y")
             .transpose("time", "y", "x")
         )
@@ -459,7 +473,7 @@ def get_airnow(
             .drop_vars(site_vns)
             .merge(ds_site)
             .set_coords(["latitude", "longitude"])
-            .assign(x=range(ds_site.dims["x"]))
+            .assign(x=range(ds_site.sizes["x"]))
         )
 
         # Add units
@@ -670,7 +684,7 @@ def get_ish_lite(
             .drop_vars(site_vns)
             .merge(ds_site)
             .set_coords(["latitude", "longitude"])
-            .assign(x=range(ds_site.dims["x"]))
+            .assign(x=range(ds_site.sizes["x"]))
         )
 
         # Add units
@@ -889,7 +903,7 @@ def get_ish(
             .drop_vars(site_vns)
             .merge(ds_site)
             .set_coords(["latitude", "longitude"])
-            .assign(x=range(ds_site.dims["x"]))
+            .assign(x=range(ds_site.sizes["x"]))
         )
 
         # Add units
@@ -1129,7 +1143,7 @@ def get_aqs(
             .swap_dims(siteid="x")
             .merge(ds_site)
             .set_coords(["latitude", "longitude"])
-            .assign(x=range(ds_site.dims["x"]))
+            .assign(x=range(ds_site.sizes["x"]))
         )
 
         # Add units
