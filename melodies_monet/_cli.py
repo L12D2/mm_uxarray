@@ -1180,7 +1180,7 @@ def get_openaq(
             "if using default output file name)."
         )
     ),
-    param: List[str] = typer.Option(["o3", "pm25", "pm10"], "-p", "--params", help=(
+    param: List[str] = typer.Option(["o3", "pm25", "pm10"], "-p", "--param", help=(
             "Parameters. "
             "Use '-p' more than once to get multiple parameters. "
             "Other examples: 'no', 'no2', 'nox', 'so2', 'co', 'bc'. "
@@ -1230,7 +1230,7 @@ def get_openaq(
     if method in {"openaq-fetches"}:
         dates = pd.date_range(start_date, end_date, freq="D")
     elif method in {"api-v2"}:
-        dates = pd.date_range(start_date, end_date, freq="H")
+        dates = pd.date_range(start_date, end_date, freq="h")
     else:
         raise AssertionError
     if verbose:
