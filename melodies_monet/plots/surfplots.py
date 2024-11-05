@@ -1580,6 +1580,7 @@ def Plot_CSI(score_name_input,threshold_list_input, comb_bx_input,plot_dict,fig_
     #add '>' to xticks
     if xtick_style == 'equal':
        threshold_string_array = [str(x) for x in threshold_list]
+       labels = ['>'+item for item in threshold_string_array]
        ax.set_xticks(range(len(threshold_list)),labels=labels)
     else
        labels = ['>'+item.get_text() for item in ax.get_xticklabels()]
