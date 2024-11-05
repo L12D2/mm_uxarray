@@ -306,9 +306,11 @@ def cal_amf_wrfchem(scatw, wrfpreslayer, tpreslev, troppres, wrfno2layer_molec, 
         # MEB: check added for vertical interp
         if runvertcheck and (~np.isnan(vertical_pres)).all():
             from matplotlib import pyplot as plt
-            plt.plot(np.log10(vertical_pres),label='Obs pressure')
-            plt.plot(np.log10(vertical_wrfp),label='Model pressure')
+            plt.plot(vertical_pres,label='Obs pressure')
+            plt.plot(vertical_wrfp,label='Model pressure')
             plt.legend()
+            plt.ytitle("Pressure")
+            plt.xtitle('z index')
             plt.title('Tropomi pair check: Pressure dim')
             plt.show()
             print(wrfavk)
