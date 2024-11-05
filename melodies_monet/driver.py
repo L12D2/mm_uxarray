@@ -1502,6 +1502,7 @@ class analysis:
                 threshold_list = grp_dict['threshold_list']
                 score_name = grp_dict['score_name']
                 model_name_list = grp_dict['model_name_list']
+                xtick_style = grp_dict.get('xtick_style',None)
 
             # first get the observational obs labels
             pair1 = self.paired[list(self.paired.keys())[0]]
@@ -2392,7 +2393,8 @@ class analysis:
                                                 text_dict=text_dict,
                                                 domain_type=domain_type,
                                                 domain_name=domain_name,
-                                                model_name_list=model_name_list)
+                                                model_name_list=model_name_list,
+                                                xtick_style=xtick_style)
                                 #save figure
                                 plt.tight_layout()
                                 savefig(outname +'.'+score_name+'.png', loc=1, logo_height=100) 
