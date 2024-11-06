@@ -1534,7 +1534,7 @@ def Calc_Score(score_name_input,threshold_input, model_input, obs_input):
    
     return output_score
 
-def Plot_CSI(score_name_input,threshold_list_input, comb_bx_input,plot_dict,fig_dict,text_dict,domain_type,domain_name,model_name_list,xtick_style):
+def Plot_CSI(score_name_input,threshold_list_input, comb_bx_input,plot_dict,fig_dict,text_dict,domain_type,domain_name,model_name_list,threshold_tick_style):
 
     CSI_output = []  #(2, threshold len)
     threshold_list = threshold_list_input
@@ -1566,7 +1566,7 @@ def Plot_CSI(score_name_input,threshold_list_input, comb_bx_input,plot_dict,fig_
 
     #Make Plot
     for i in range(len(CSI_output)):
-        if xtick_style == 'equal':
+        if threshold_tick_style == 'unique':
            plt.plot(range(len(threshold_list)),CSI_output[i],'-*',label=model_name_list[i])
         else:
            plt.plot(threshold_list,CSI_output[i],'-*',label=model_name_list[i])
@@ -1578,7 +1578,7 @@ def Plot_CSI(score_name_input,threshold_list_input, comb_bx_input,plot_dict,fig_
         plt.grid()
      
     #add '>' to xticks
-    if xtick_style == 'equal':
+    if threshold_tick_style == 'unique':
        threshold_string_array = [str(x) for x in threshold_list]
        labels = ['>'+item for item in threshold_string_array]
        ax.set_xticks(range(len(threshold_list)),labels=labels)

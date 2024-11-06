@@ -351,6 +351,8 @@ for csi plot, list of model names (only) user choose to set as labels.
 
 **score_name:** csi plot only. list of scores user can choose to plot. examples are "Critical Success Index' 'False Alarm Rate' 'Hit Rate'.
 
+**threshold_tick_style:** csi plot only. (optional) control for spacing of threshold (x-axis) ticks. example: use ``unique`` when a unique xtick for each threshold value is desired. Any other selection (default = None) will choose xticks that are equally spaced between min(threshold_list):max(threshold_list).  
+
 **data:** This a list of model / observation pairs to be plotted where the 
 observation label is first and the model label is second 
 (e.g., ['airnow_cmaq_expt', 'airnow_rrfs_13km', 'airnow_wrfchem_v4.2'])
