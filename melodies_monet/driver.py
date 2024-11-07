@@ -1412,7 +1412,7 @@ class analysis:
                         # paired_data_cp = paired_data.sel(time=slice(self.start_time.date(),self.end_time.date())).copy()
                         paired_data = paired_data_atgrid.sel(time=slice(self.start_time, self.end_time))
                         
-                        #Reset index. This should dissappear when moving to satplots_xr
+                        #Reset index. This should dissappear when moving to xarray_plots
                         # paired_data = paired_data.rename_dims({"y": "ll"})
                         # paired_data = paired_data.stack(y=["x", "ll"])
                         # paired_data = paired_data.reset_index("y")
@@ -1503,14 +1503,10 @@ class analysis:
         
         from .util.tools import resample_stratify, get_epa_region_bounds, get_giorgi_region_bounds
         import matplotlib.pyplot as plt
-        pair_keys = list(self.paired.keys())
-        if self.paired[pair_keys[0]].type.lower() in ['sat_grid_clm','sat_swath_clm']:
-            from .plots import satplots as splots,savefig
-            from .plots import satplots_xr as satplots
-        else: 
-            from .plots import surfplots as splots, savefig
-            from .plots import aircraftplots as airplots
-            from .plots import satplots_xr as satplots
+
+        from .plots import surfplots as splots, savefig
+        from .plots import aircraftplots as airplots
+        from .plots import xarray_plots as xrplots
 
         # Disable figure count warning
         initial_max_fig = plt.rcParams["figure.max_open_warning"]
@@ -1600,11 +1596,7 @@ class analysis:
                             if 'time' not in p.obj.dims and obs_type == 'sat_swath_clm':
                                 
                                 pairdf_all = p.obj.swap_dims({'x':'time'})
-                            # squash lat/lon dimensions into single dimension
-                            ## 2024-03 MEB rechecking necessity of this.
-                            #elif obs_type == 'sat_grid_clm':
-                            #    pairdf_all = p.obj.stack(ll=['x','y'])
-                            #    pairdf_all = pairdf_all.rename_dims({'ll':'y'})
+
                             else:
                                 pairdf_all = p.obj
                             # Select only the analysis time window.
@@ -1761,7 +1753,8 @@ class analysis:
                                                                         "sat_grid_sfc", "sat_grid_clm", 
                                                                         "sat_swath_prof"]: 
                             # xarray doesn't need nan drop because its math operations seem to ignore nans
-                            pairdf = pairdf_all
+                            # MEB (10/9/24): Add statement to ensure model and obs variables have nans at the same place
+                            pairdf = pairdf_all.where(~np.isnan(pairdf_all[obsvar]),np.nan)
 
                         else:
                             print('Warning: set rem_obs_nan = True for regulatory metrics') 
@@ -1883,7 +1876,7 @@ class analysis:
                             
                             # Now proceed wit plotting, call the make_timeseries function with the subsetted pairdf (if vmin2 and vmax2 are not nOne) otherwise whole df                                 
                             if 'tempo_l2' in pair1.obs:
-                                make_timeseries = satplots.make_timeseries
+                                make_timeseries = xrplots.make_timeseries
                                 plot_params = {'dset': pairdf, 'varname': obsvar}
                             else:
                                 make_timeseries = splots.make_timeseries
@@ -1944,9 +1937,6 @@ class analysis:
                                   ##  ax = airplots.add_yax2_altitude(ax, pairdf, altitude_variable, altitude_ticks, text_kwargs)
                                 ##savefig(outname + '.png', logo_height=150)
                                 ##del (ax, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict) #Clear axis for next plot.
-                        
-
-
 
                         elif plot_type.lower() == 'curtain':
                             # Set cmin and cmax from obs_plot_dict for colorbar limits
@@ -2473,7 +2463,7 @@ class analysis:
 
                         elif plot_type.lower() == 'taylor':
                             if "tempo_l2" in pair1.obs:
-                                make_taylor = satplots.make_taylor
+                                make_taylor = xrplots.make_taylor
                                 plot_params = {
                                     'dset': pairdf,
                                     'varname_o': obsvar,
@@ -2559,7 +2549,7 @@ class analysis:
                         elif plot_type.lower() == 'gridded_spatial_bias':
                             outname = "{}.{}".format(outname, p_label)
                             if 'tempo_l2' in pair1.obs:
-                                make_spatial_bias_gridded = satplots.make_spatial_bias_gridded
+                                make_spatial_bias_gridded = xrplots.make_spatial_bias_gridded
                                 plot_params = {
                                     'dset': pairdf, 'varname_o': obsvar, 'varname_m': modvar,
                                 }
@@ -2603,11 +2593,11 @@ class analysis:
                                 plot_params["vmax"] = float(plot_params["vmax"])
                             if isinstance(plot_params["vmin"], str):
                                 plot_params["vmin"] = float(plot_params["vmin"])
-                            satplots.make_spatial_dist(**plot_params)
+                            xrplots.make_spatial_dist(**plot_params)
                             plot_params["varname"] = modvar
                             plot_params["label"] = p.model
                             plot_params["outname"] = outname.replace(p.obs, p.model)
-                            satplots.make_spatial_dist(**plot_params)
+                            xrplots.make_spatial_dist(**plot_params)
                         elif plot_type.lower() == 'spatial_bias_exceedance':
                             if cal_reg:
                                 if set_yaxis == True:
