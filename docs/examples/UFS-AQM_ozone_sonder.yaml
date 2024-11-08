@@ -30,7 +30,7 @@ model:
 
 obs:
   ozone_sonder: # obs label
-    filename: /home/btang6/python/OBS_DATA/ozone_sonder/gml-os-all.nc 
+    filename: example:gml-100m-ozonesondes:as-of-2024-02-09
     #resample: '600s' #10 mins default for aircraft
     obs_type: ozone_sonder
     variables: #Opt 
