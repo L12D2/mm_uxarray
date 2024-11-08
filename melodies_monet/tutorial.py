@@ -72,17 +72,13 @@ _examples = {
             "example_model_data/ufsaqm_example/short_AEROMMA-Merge_20230627_L1_20240410_1459.csv",
             "sha256:81d60854f71eab73eed41b66f93ff6e2aeac4957ef955060c685ca9407845764",
         ),
-        "cmaq52_2023-06-21_16": (
-            "example_model_data/ufsaqm_example/aqm.cmaq52.pocfix.orirave1.dyn.2023062116.nc",
-            "sha256:6d851a1354989d5d17b1080887adfb1e0aa97ae58d3cab50fc35f9b699bdee30",
+        "cmaq52_2023-06-24_20-21": (
+            "example_model_data/ufsaqm_example/aqm.cmaq52.pocfix.orirave1.dyn.2023062420-21.nc",
+            "sha256:7a779c6a2095d9d40fdfd13fddaf5b941d926b725f7fcd243d80a53c76ca6da3",
         ),
-        "cmaq52_2023-06-24_20": (
-            "example_model_data/ufsaqm_example/aqm.cmaq52.pocfix.orirave1.dyn.2023062420.nc",
-            "sha256:8b31d10d343bfb5d68d810ef53e11a25597cdcfba3d9005ba0215271793bc83b",
-        ),
-        "cmaq52_2023-06-24_21": (
-            "example_model_data/ufsaqm_example/aqm.cmaq52.pocfix.orirave1.dyn.2023062421.nc",
-            "sha256:eb392d2ef8781367448dd84bed097c2827a63aff496feaa2fae8a7afe0bd6a55",
+        "cmaq54_2023-06-24_20-21": (
+            "example_model_data/ufsaqm_example/aqm.cmaq54.emisfix.orirave1.dyn.2023062420-21.nc",
+            "sha256:b78522d6bcbfbc5dc6243cfd3ca8465c7d5aaebbcb49a9c30b9cbd9b99209aff",
         ),
     },
     "aeronet": {
