@@ -1,4 +1,4 @@
-#eneral Description:  
+# General Description:
 # Any key that is specific for a plot type will begin with ts for timeseries, ty for taylor
 # Opt: Specifying the variable or variable group is optional
 # For now all plots except time series average over the analysis window. 
@@ -171,34 +171,3 @@ plots:
       #ts_select_time: 'time_local' #Time used for avg and plotting: Options: 'time' for UTC or 'time_local'
       #ts_avg_window: 'H' # Options: None for no averaging or list pandas resample rule (e.g., 'H', 'D')
       set_axis: True #If select True, add vmin_plot and vmax_plot for each variable in obs.
-
-#  plot_grp4:
-#    type: 'aggregate_plot_os' # plot type
-#    fig_kwargs: #Opt to define figure options
-#      figsize: [14,6] # figure size if multiple plots
-#    default_plot_kwargs: # Opt to define defaults for all plots. Model kwargs overwrite these.
-#      linewidth: 2.0
-#      markersize: 5.
-#    text_kwargs: #Opt
-#      fontsize: 18.
-#    domain_type: ['all'] #List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.) 
-#    domain_name: ['CONUS'] #List of domain names. If domain_type = all domain_name is used in plot title.
-
-#    threshold_list: [1,2,3,4,5,6,7,8,9,10]
-#    model_name_list: ['Ozone_Sonder','cmaq54_OriRAVE','cmaq52_POCFix_OriRAVE']
-##    altitude_range: [0,10]
-#    altitude_method: ['ground level'] #choose from 'ground level' or 'sea level'
-#    station_name: ['Boulder, Colorado']
-#    fill_color_list: ['b','orange','g']
-#    compare_date_multi: [[2023,8,9,16,3,55],[2023,8,16,13,59,47]]
-#    monet_logo_position: [1] #1 is lower left, 4 is upper left.    
-#    data: ['ozone_sonder_cmaq54_OriRAVE','ozone_sonder_cmaq52_POCFix_OriRAVE'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
-
-#    data_proc:
-#      #filter_dict: {'state_name':{'value':['CA','NY'],'oper':'isin'},'WS':{'value':1,'oper':'<'}}
-#      #filter_string: state_name in ['CA','NY'] and WS < 1 # Uses pandas query method.
-#      #rem_obs_by_nan_pct: {'group_var': 'siteid','pct_cutoff': 25,'times':'hourly'} # Groups by group_var, then removes all instances of groupvar where obs variable is > pct_cutoff % nan values
-#      rem_obs_nan: True # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
-#      #ts_select_time: 'time_local' #Time used for avg and plotting: Options: 'time' for UTC or 'time_local'
-#      #ts_avg_window: 'H' # Options: None for no averaging or list pandas resample rule (e.g., 'H', 'D')
-#      set_axis: False #If select True, add vmin_plot and vmax_plot for each variable in obs.
