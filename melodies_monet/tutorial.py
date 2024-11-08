@@ -102,6 +102,12 @@ _examples = {
             "888fb70f7f6cd9af8b49398b56240fcb70ebe886152c143e6a6016074d4f0bfe",
         )
     },
+    "gml-100m-ozonesondes": {
+        "as-of-2024-02-09": (
+            "example_observation_data/profile/gml-100m-ozonesondes-as-of-2024-02-09.nc",
+            "sha256:cb078e01937d1fd7e1aea542cdcd3ffa5a78223d2aa339c3179b1834bbd45b0f",
+        ),
+    },
 }
 """Files to fetch for a certain example, paths relative to the FTP site."""
 
