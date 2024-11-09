@@ -2216,7 +2216,7 @@ class analysis:
                             sonderplots.density_scatter_plot_os(pairdf,altitude_range,vmin,vmax,station_name,altitude_method,cmap_method,modvar,obsvar)
                             plt.title('Scatter plot for '+model_name_list[0]+' vs. '+model_name_list[p_index+1]+'\nat '+str(station_name[0])+' on '+str(release_time)+' UTC',fontsize=15)
                             plt.tight_layout()
-                            savefig(outname+'_'+model_name_list[p_index+1]+' '+altitude_method[0]+".png", loc=monet_logo_position[0], logo_height=100, dpi=300)
+                            savefig(outname+"."+p_label+"."+"-".join(altitude_method[0].split())+".png", loc=monet_logo_position[0], logo_height=100, dpi=300)
                             del (pairdf)
                             
                         elif plot_type.lower() == 'violin':

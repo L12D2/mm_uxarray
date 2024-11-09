@@ -54,7 +54,7 @@ def make_vertical_single_date(df,comb_bx,altitude_range,altitude_method,vmin, vm
     for i in range(len(O3_MODEL_ALL)):
         plot_dict = label_bx[i+1]
         ax.plot(O3_MODEL_ALL[i],alt_p,**plot_dict)
-    plt.title('Comparison at '+str(station_name[0])+' on '+str(release_time)+' UTC',**text_kwargs)
+    plt.title('Comparison at '+str(station_name[0])+'\non '+str(release_time)+' UTC',**text_kwargs)
     plt.legend()
     plt.ylim(altitude_range[0],altitude_range[1])
     plt.xlim(vmin,vmax)
@@ -135,7 +135,7 @@ def make_vertical_boxplot_os(df,comb_bx,label_bx,altitude_range,altitude_method,
         plot_dict = label_bx[i+1]
         ax.plot(O3_MODEL_ALL[i],alt_p,**plot_dict)
 
-    plt.title('Comparison at '+str(station_name[0])+' on '+str(release_time)+' UTC',**text_kwargs)
+    plt.title('Comparison at '+str(station_name[0])+'\non '+str(release_time)+' UTC',**text_kwargs)
     plt.legend()
     plt.ylim(altitude_range[0],altitude_range[1])
     plt.xlim(vmin,vmax)
