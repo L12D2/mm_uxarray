@@ -556,8 +556,6 @@ def regrid_and_apply_weights(
             output = xr.merge([output, obsobj[sat_species_name]])
         if "lat" in output.variables:
             output = output.rename({"lat": "latitude", "lon": "longitude"})
-        if pair:
-            output = xr.merge([output, obsobj[sat_species_name]])
         return output
     if isinstance(obsobj, dict):
         output_multiple = {}
