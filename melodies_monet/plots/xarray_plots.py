@@ -54,9 +54,10 @@ def time_average(dset, varname=None, period="1D", time_offset=None):
     return daily
 
 
-#TODO:: Add projection support to maps, as optional arguments for the user
+# TODO:: Add projection support to maps, as optional arguments for the user
 
-#TODO : Add area weighting in make_timeseries and other similar functions (e.g., boxplots)
+# TODO : Add area weighting in make_timeseries and other similar functions (e.g., boxplots)
+
 
 def make_timeseries(
     dset,
@@ -339,8 +340,10 @@ def make_taylor(
             f = plt.figure(figsize=(12, 10))
         sns.set_style("ticks")
         # plot the line
-        cc = xr.corr(dset_forplot[varname_o].stack(tempdim=[...]).dropna(dim='tempdim'),
-            dset_forplot[varname_m].stack(tempdim=[...]).dropna(dim='tempdim'))
+        cc = xr.corr(
+            dset_forplot[varname_o].stack(tempdim=[...]).dropna(dim="tempdim"),
+            dset_forplot[varname_m].stack(tempdim=[...]).dropna(dim="tempdim"),
+        )
         if normalize:
             print(f"Base standard deviation: {refstd: 1.3g}")
             scale_factor = refstd
@@ -371,8 +374,10 @@ def make_taylor(
     # If plot has been created add to the current axes.
     else:
         # this means that an axis handle already exists and use it to plot another model
-        cc = xr.corr(dset_forplot[varname_o].stack(tempdim=[...]).dropna(dim='tempdim'),
-            dset_forplot[varname_m].stack(tempdim=[...]).dropna(dim='tempdim'))
+        cc = xr.corr(
+            dset_forplot[varname_o].stack(tempdim=[...]).dropna(dim="tempdim"),
+            dset_forplot[varname_m].stack(tempdim=[...]).dropna(dim="tempdim"),
+        )
         if normalize:
             scale_factor = refstd
             dia.add_sample(
@@ -601,7 +606,7 @@ def make_boxplot(
     plt.tight_layout()
     savefig(
         outname + ".png",
-    #    loc=4,
+        #    loc=4,
         logo_height=100,
         decorate=True,
         bbox_inches="tight",
@@ -759,7 +764,7 @@ def make_spatial_dist(
     # plt.tight_layout(pad=0)
     savefig(
         outname + ".png",
-    #    loc=4,
+        #    loc=4,
         logo_height=100,
         decorate=True,
         bbox_inches="tight",
@@ -786,35 +791,35 @@ def make_spatial_bias_gridded(
     debug=False,
 ):
     """Creates difference plot for satellite and model data.
-        For data in swath format, overplots all differences
-        For data on regular grid, mean difference.
+    For data in swath format, overplots all differences
+    For data on regular grid, mean difference.
 
-        Parameters
-        ----------
-        dset : xr.Dataset
-            model/obs paired data to plot
-        varname_o : str
-            Name of observation variable to plot
-        label_o : str
-            Name of observation variable to use in plot title 
-        varname_m : str
-            Name of model variable to plot
-        label_m : str
-            Name of model variable to use in plot title
-        cblabel : str
-            Title of colorbar axis
-        vdiff : float
-            Min and max value to use on colorbar axis
-        nlevels : float
-            number of levels to break colorbar map into
-        proj : cartopy projection
-            cartopy projection to use in plot
+    Parameters
+    ----------
+    dset : xr.Dataset
+        model/obs paired data to plot
+    varname_o : str
+        Name of observation variable to plot
+    label_o : str
+        Name of observation variable to use in plot title
+    varname_m : str
+        Name of model variable to plot
+    label_m : str
+        Name of model variable to use in plot title
+    cblabel : str
+        Title of colorbar axis
+    vdiff : float
+        Min and max value to use on colorbar axis
+    nlevels : float
+        number of levels to break colorbar map into
+    proj : cartopy projection
+        cartopy projection to use in plot
 
-        Returns
-        -------
-        plot
-            satellite spatial bias plot
-        
+    Returns
+    -------
+    plot
+        satellite spatial bias plot
+
     """
     if not debug:
         plt.ioff()
@@ -1085,6 +1090,17 @@ def make_multi_boxplot(
 
     plt.tight_layout()
     savefig(outname + ".png", loc=4, logo_height=100)
+
+
+def make_diurnal_cycle(dset, time_offset, **kwargs):
+    """Calculates diurnal cycle for region.
+
+    Parameters
+    ----------
+    """
+
+    dset_diurnal = dset.groupby("time.dt.hour").mean(numeric_only=True)
+    return make_timeseries(dset_diurnal, **kwargs)
 
 
 def sel_region(domain_type=None, domain_name=None, domain_box=None):
