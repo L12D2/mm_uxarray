@@ -73,6 +73,7 @@ def make_timeseries(
     plot_dict=None,
     fig_dict=None,
     text_dict=None,
+    diurnal_cycle=False,
     debug=False,
 ):
     """Creates timeseries plot.
@@ -1092,15 +1093,33 @@ def make_multi_boxplot(
     savefig(outname + ".png", loc=4, logo_height=100)
 
 
-def make_diurnal_cycle(dset, time_offset, **kwargs):
-    """Calculates diurnal cycle for region.
+def make_diurnal_cycle(dset, time_offset=0, **kwargs):
+    """Calculates diurnal cycle for region and does the timeseries
 
     Parameters
     ----------
-    """
+    dset: xr.Dataset
+        Dataset with paired data
+    time_offset: int | float
+        Offset (in hours) to apply to the diurnal cycle
+    kwargs: dict
+        Arguments to pass to make_timeseries
 
-    dset_diurnal = dset.groupby("time.dt.hour").mean(numeric_only=True)
-    return make_timeseries(dset_diurnal, **kwargs)
+    Returns
+    -------
+    ax
+        matplotlib ax such that driver.py can iterate to overlay multiple models on the
+        same plot
+    """
+    dset_copy = dset.copy()
+    dset_copy["time"] = dset_copy["time"] + np.timedelta64(time_offset, 'h')
+
+    dset_diurnal = dset_copy.groupby("time.hour").mean(skipna=True)
+    dset_diurnal = dset_diurnal.rename({'hour': 'time'})
+    ax = make_timeseries(dset_diurnal, **kwargs)
+    print(kwargs)
+    ax.set_xlabel("Hour of the day")
+    return ax
 
 
 def sel_region(domain_type=None, domain_name=None, domain_box=None):
