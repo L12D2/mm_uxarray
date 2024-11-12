@@ -323,15 +323,6 @@ def vert_interp(ds_model,df_obs,var_name_list):
     df_model.drop(labels=['x','y','z','pressure_obs','time_obs'], axis=1, inplace=True)
     df_model.rename(columns={'pressure_model':'pressure_obs'}, inplace=True)
 
-    #Confirm that extra digits will not break the pairing at the merge_asof step by rounding to the 8th digit
-    df_model.latitude = df_model.latitude.round(8)
-    df_model.longitude = df_model.longitude.round(8)
-    df_model.pressure_obs = df_model.pressure_obs.round(8)
-
-    df_obs.latitude = df_obs.latitude.round(8)
-    df_obs.longitude = df_obs.longitude.round(8)
-    df_obs.pressure_obs = df_obs.pressure_obs.round(8)
-    
     final_df_model = merge_asof(df_obs, df_model, 
                             by=['latitude', 'longitude', 'pressure_obs'], 
                             on='time', direction='nearest')
