@@ -313,7 +313,13 @@ def vert_interp(ds_model,df_obs,var_name_list):
         var_out_list.append(out)
 
     df_model = xr.merge(var_out_list).to_dataframe().reset_index()
-    df_model.fillna({'pressure_model':df_model.pressure_obs},inplace=True)
+    for time in df_model.time.unique():
+        if df_model[df_model.time == time].pressure_obs.unique() > df_model[df_model.time == time].pressure_model.max():
+            df_model.fillna({'pressure_model':df_model[df_model.time == time].pressure_obs},inplace=True)
+        elif df_model[df_model.time == time].pressure_obs.unique() < df_model[df_model.time == time].pressure_model.min():
+            df_model.fillna({'pressure_model':df_model[df_model.time == time].pressure_obs},inplace=True)
+            print('Warning: You are pairing obs data above the model top. This is not recommended.')
+            print(time)
     df_model.drop(labels=['x','y','z','pressure_obs','time_obs'], axis=1, inplace=True)
     df_model.rename(columns={'pressure_model':'pressure_obs'}, inplace=True)
 
