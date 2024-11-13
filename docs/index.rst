@@ -86,7 +86,8 @@ MONETIO please refer to:
    examples/read_paired_data
    examples/aircraft_pairing
    examples/AEROMMA_UFS-AQM_Plots
-   
+   examples/ufs-aqm-gml-ozonesonde
+
 .. toctree::
    :hidden:
    :maxdepth: 4
