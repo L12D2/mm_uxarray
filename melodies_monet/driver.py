@@ -1517,7 +1517,7 @@ class analysis:
                 model_name_list = grp_dict['model_name_list']     
 
             #read-in special settings for ozone sonder related plots
-            if plot_type == 'vertical_single_date' or 'vertical_boxplot_os' or 'density_scatter_plot_os':
+            if plot_type in {'vertical_single_date', 'vertical_boxplot_os', 'density_scatter_plot_os'}:
                 altitude_range = grp_dict['altitude_range']
                 altitude_method = grp_dict['altitude_method']
                 station_name = grp_dict['station_name']
