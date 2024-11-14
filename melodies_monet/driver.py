@@ -739,7 +739,7 @@ class analysis:
         self.obs_gridded_count = {}
         self.obs_gridded_dataset = None
         self.add_logo = True
-        """bool, default=True : Add the MELODIES MONET logo to the output plots."""
+        """bool, default=True : Add the MELODIES MONET logo to the plots."""
 
     def __repr__(self):
         return (
