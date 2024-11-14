@@ -738,6 +738,8 @@ class analysis:
         self.obs_gridded_data = {}
         self.obs_gridded_count = {}
         self.obs_gridded_dataset = None
+        self.add_logo = True
+        """bool, default=True : Add the MELODIES MONET logo to the plots."""
 
     def __repr__(self):
         return (
@@ -809,6 +811,8 @@ class analysis:
             self.save = self.control_dict['analysis']['save']
         if 'read' in self.control_dict['analysis'].keys():
             self.read = self.control_dict['analysis']['read']
+        if 'add_logo' in self.control_dict['analysis'].keys():
+            self.add_logo = self.control_dict['analysis']['add_logo']
 
         # set time_chunking_with_gridded_data option, regrid option, and target_grid
         if 'time_chunking_with_gridded_data' in self.control_dict['analysis'].keys():
@@ -1497,6 +1501,9 @@ class analysis:
             from .plots import surfplots as splots, savefig
             from .plots import aircraftplots as airplots
             from .plots import ozone_sonder_plots as sonderplots
+
+        if not self.add_logo:
+            savefig.keywords.update(decorate=False)
 
         # Disable figure count warning
         initial_max_fig = plt.rcParams["figure.max_open_warning"]
