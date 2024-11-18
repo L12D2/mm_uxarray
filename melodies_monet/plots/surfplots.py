@@ -1566,7 +1566,7 @@ def Plot_CSI(score_name_input,threshold_list_input, comb_bx_input,plot_dict,fig_
 
     #Make Plot
     for i in range(len(CSI_output)):
-        if threshold_tick_style == 'unique':
+        if threshold_tick_style == 'nonlinear':
            plt.plot(range(len(threshold_list)),CSI_output[i],'-*',label=model_name_list[i])
         else:
            plt.plot(threshold_list,CSI_output[i],'-*',label=model_name_list[i])
@@ -1578,7 +1578,7 @@ def Plot_CSI(score_name_input,threshold_list_input, comb_bx_input,plot_dict,fig_
         plt.grid()
      
     #add '>' to xticks
-    if threshold_tick_style == 'unique':
+    if threshold_tick_style == 'nonlinear':
        threshold_string_array = [str(x) for x in threshold_list]
        labels = ['>'+item for item in threshold_string_array]
        ax.set_xticks(range(len(threshold_list)),labels=labels)
