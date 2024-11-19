@@ -748,8 +748,8 @@ def back_to_modgrid_multiscan(
                 out_regridded = xr.merge([out_regridded, regridded_scan])
                 scan_num = paireddict[k].attrs["scan_num"]
                 keys_in_scan = [k]
-        regridded_scan = back_to_modgrid(paireddict, modobj, keys_in_scan, add_time=True)
-        out_regridded = xr.merge([out_regridded, regridded_scan])
+    regridded_scan = back_to_modgrid(paireddict, modobj, keys_in_scan, add_time=True)
+    out_regridded = xr.merge([out_regridded, regridded_scan])
 
     if to_netcdf:
         if "XYZ" in path:
