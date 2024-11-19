@@ -1,4 +1,4 @@
-# Copyright (C) 2024 National Center for Atmospheric Research and National Oceanic and Atmospheric Administration
+# Copyright (C) 2022 National Center for Atmospheric Research and National Oceanic and Atmospheric Administration
 # SPDX-License-Identifier: Apache-2.0
 #
 
