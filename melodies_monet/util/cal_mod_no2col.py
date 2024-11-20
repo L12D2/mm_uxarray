@@ -12,6 +12,52 @@ import xarray as xr
 import pandas as pd
 from datetime import datetime
 
+def mod_to_overpasstime(modobj,opass_tms):
+    '''
+    Interpolate model to satellite overpass time.
+
+    Parameters
+    ----------
+    modobj : xarray, model data
+    opass_tms : datetime64, satellite overpass local time
+
+    Output
+    ------
+    outmod : revised model data at local overpass time
+    '''
+    nst, = opass_tms.shape
+    nmt, = modobj.time.shape
+    ny,nx = modobj.longitude.shape
+    
+    # Determine local time offset
+    local_utc_offset = np.zeros([ny,nx],dtype='timedelta64[ns]')
+    # pandas timedelta calculation doesn't work on ndarrays
+    for xi in np.arange(nx):
+        local_utc_offset[:,xi] = pd.to_timedelta((modobj['longitude'].isel(x=xi)/15).astype(np.int64),unit='h')
+    
+    # initialize local time as variable
+    modobj['localtime'] = (['time','y','x'],np.zeros([nt,ny,nx],dtype='datetime64[ns]'))
+    # fill
+    for ti in np.arange(nt):
+        modobj['localtime'][ti] = modobj['time'][ti].data + local_utc_offset
+
+    # initalize new model object with satellite datetimes
+    outmod = []
+
+    for ti in np.arange(nst):
+        # Apply filter to select model data within +/- 1 output time step of the overpass time
+        tempmod = modobj.where(np.abs(modobj['localtime'] - opass_tms[ti].to_datetime64()) < (modobj.time[1] - modobj.time[0]))
+        
+        # determine factors for linear interpolation in time
+        tfac = 1 - (np.abs(tempmod['localtime'] - opass_tms[ti].to_datetime64())/(modobj.time[1] - modobj.time[0]))
+        tempmod = tempmod.drop_vars('localtime')
+        # Carry out time interpolation
+        ## Note regarding current behavior: will only carry out time interpolation if at least 2 model timesteps
+        outmod.append((tfac*tempmod).sum(dim='time', min_count=2,keep_attrs=True))
+    outmod = xr.merge(outmod)
+    outmod['time'] = (['time'],opass_tms)
+    return outmod
+
 def cal_model_no2columns(modobj):
 
     """
