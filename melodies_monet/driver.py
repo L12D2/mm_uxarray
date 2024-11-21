@@ -259,7 +259,7 @@ class observation:
         None
         """
         from .util import time_interval_subset as tsub
-        
+        from glob import glob
         try:
             if self.sat_type == 'omps_l3':
                 print('Reading OMPS L3')
@@ -287,6 +287,13 @@ class observation:
                 else: flst = self.file
                 self.obj = mio.sat._mopitt_l3_mm.open_dataset(flst, ['column','pressure_surf','apriori_col',
                                                                           'apriori_surf','apriori_prof','ak_col'])
+
+                # Determine if monthly or daily product and set as attribute
+                if 'MOP03JM' in glob(self.file)[0]:
+                    self.obj.attrs['monthly'] = True
+                else:
+                    self.obj.attrs['monthly'] = False
+                            
             elif self.sat_type == 'modis_l2':
                 # from monetio import modis_l2
                 print('Reading MODIS L2')
@@ -1395,11 +1402,19 @@ class analysis:
 
                     elif obs.sat_type == 'mopitt_l3':
                         from .util import satellite_utilities as sutil
+                        from .util import cal_mod_no2col as mutil
+                        
                         if mod.apply_ak: 
                             model_obj = mod.obj[keys+['pres_pa_mid']]
                             # trim to only data within analysis window, as averaging kernels can't be applied outside it
                             obs_dat = obs.obj.sel(time=slice(self.start_time.date(),self.end_time.date()))#.copy()
                             model_obj = model_obj.sel(time=slice(self.start_time.date(),self.end_time.date()))#.copy()
+                            
+                            # Sample model to observation overpass time
+                            overpass_datetime = pd.date_range(self.start_time.replace(hour=10,minute=30),
+                                                             self.end_time.replace(hour=10,minute=30),freq='D')
+                            model_obj = mutil.mod_to_overpasstime(model_obj,overpass_datetime)
+                            
                             # interpolate model to observation, calculate column with averaging kernels applied
                             paired = sutil.mopitt_l3_pairing(model_obj,obs_dat,keys[0])
                             p = pair()

@@ -36,9 +36,9 @@ def mod_to_overpasstime(modobj,opass_tms):
         local_utc_offset[:,xi] = pd.to_timedelta((modobj['longitude'].isel(x=xi)/15).astype(np.int64),unit='h')
     
     # initialize local time as variable
-    modobj['localtime'] = (['time','y','x'],np.zeros([nt,ny,nx],dtype='datetime64[ns]'))
+    modobj['localtime'] = (['time','y','x'],np.zeros([nmt,ny,nx],dtype='datetime64[ns]'))
     # fill
-    for ti in np.arange(nt):
+    for ti in np.arange(nmt):
         modobj['localtime'][ti] = modobj['time'][ti].data + local_utc_offset
 
     # initalize new model object with satellite datetimes

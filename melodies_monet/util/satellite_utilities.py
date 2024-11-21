@@ -68,14 +68,19 @@ def mopitt_l3_pairing(model_data,obs_data,co_ppbv_varname):
     ## Check if same number of timesteps:
     if obs_data.time.size == model_data.time.size:
         model_obstime = model_data
-    elif obs_data.time.size < model_data.time.size and obs_data.time.size >2:
-        model_obstime = check_timestep(model_data,obs_data)
-    elif obs_data.time.size < model_data.time.size and obs_data.time.size < 3:
-        print('Model data and obs data timesteps do not match, and there are not enough observation timesteps to infer the spacing from.')
-        raise
     elif obs_data.time.size > mod_data.time.size:
         print('Observation data appears to be a finer time resolution than model data')
         raise
+    elif obs_data.attrs['monthly']:
+        # if obs_data is monthly, take montly mean of model data
+        model_obstime = model_data.resample(time='MS').mean()
+    else: 
+        # if get here, not sure. 
+        print('Mopitt data and model data time resolutions are incompatible')
+        print('')
+        raise
+        
+        
     # initialize regridder for horizontal interpolation 
     # from model grid to MOPITT grid
     grid_adjust = xe.Regridder(model_obstime[['latitude','longitude']],obs_data[['lat','lon']],'bilinear',periodic=True)
