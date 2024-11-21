@@ -54,7 +54,8 @@ def mod_to_overpasstime(modobj,opass_tms):
         # Carry out time interpolation
         ## Note regarding current behavior: will only carry out time interpolation if at least 2 model timesteps
         outmod.append((tfac*tempmod).sum(dim='time', min_count=2,keep_attrs=True))
-    outmod = xr.merge(outmod)
+    #print(outmod)
+    outmod = xr.concat(outmod,dim='time')
     outmod['time'] = (['time'],opass_tms)
     return outmod
 

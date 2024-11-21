@@ -447,6 +447,7 @@ class model:
         """Initialize a :class:`model` object."""
         self.model = None
         self.apply_ak = False
+        self.mod_to_overpass = False
         self.radius_of_influence = None
         self.mod_kwargs = {}
         self.file_str = None
@@ -943,6 +944,8 @@ class analysis:
                 # set the model label in the dictionary and model class instance
                 if "apply_ak" in self.control_dict['model'][mod].keys():
                     m.apply_ak = self.control_dict['model'][mod]['apply_ak']
+                if "mod_to_overpass" in self.control_dict['model'][mod].keys():
+                    m.mod_to_overpass = self.control_dict['model'][mod]['mod_to_overpass']
                 if 'radius_of_influence' in self.control_dict['model'][mod].keys():
                     m.radius_of_influence = self.control_dict['model'][mod]['radius_of_influence']
                 else:
@@ -1411,9 +1414,11 @@ class analysis:
                             model_obj = model_obj.sel(time=slice(self.start_time.date(),self.end_time.date()))#.copy()
                             
                             # Sample model to observation overpass time
-                            overpass_datetime = pd.date_range(self.start_time.replace(hour=10,minute=30),
-                                                             self.end_time.replace(hour=10,minute=30),freq='D')
-                            model_obj = mutil.mod_to_overpasstime(model_obj,overpass_datetime)
+                            if mod.mod_to_overpass:
+                                print('sampling model to 10:30 local overpass time')
+                                overpass_datetime = pd.date_range(self.start_time.replace(hour=10,minute=30),
+                                                                  self.end_time.replace(hour=10,minute=30),freq='D')
+                                model_obj = mutil.mod_to_overpasstime(model_obj,overpass_datetime)
                             
                             # interpolate model to observation, calculate column with averaging kernels applied
                             paired = sutil.mopitt_l3_pairing(model_obj,obs_dat,keys[0])
