@@ -1405,7 +1405,6 @@ class analysis:
 
                     elif obs.sat_type == 'mopitt_l3':
                         from .util import satellite_utilities as sutil
-                        from .util import cal_mod_no2col as mutil
                         
                         if mod.apply_ak: 
                             model_obj = mod.obj[keys+['pres_pa_mid']]
@@ -1418,7 +1417,7 @@ class analysis:
                                 print('sampling model to 10:30 local overpass time')
                                 overpass_datetime = pd.date_range(self.start_time.replace(hour=10,minute=30),
                                                                   self.end_time.replace(hour=10,minute=30),freq='D')
-                                model_obj = mutil.mod_to_overpasstime(model_obj,overpass_datetime)
+                                model_obj = sutil.mod_to_overpasstime(model_obj,overpass_datetime)
                             
                             # interpolate model to observation, calculate column with averaging kernels applied
                             paired = sutil.mopitt_l3_pairing(model_obj,obs_dat,keys[0])
