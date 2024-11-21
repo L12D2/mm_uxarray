@@ -68,20 +68,24 @@ def mopitt_l3_pairing(model_data,obs_data,co_ppbv_varname):
     ## Check if same number of timesteps:
     if obs_data.time.size == model_data.time.size:
         model_obstime = model_data
+        filtstr = '%Y-%m'
     elif obs_data.time.size > model_data.time.size:
         print('Observation data appears to be a finer time resolution than model data')
         raise
     elif obs_data.attrs['monthly']:
         # if obs_data is monthly, take montly mean of model data
         model_obstime = model_data.resample(time='MS').mean()
+        filtstr = '%Y-%m'
     elif obs_data.attrs['monthly'] == False:
         # obs_data is daily, so model and obs seem to be on same time step
         model_obstime = model_data
+        filtstr = '%Y-%m-%d'
     else:
         # check frequency of model data 
         tstep = xr.infer_freq(model_data.time.dt.round('D'))
         if tstep == 'MS' or tstep == 'M':
             model_obstime = model_data
+            filtstr = '%Y-%m'
         else:
             print('Time resolution of model data and MOPITT data is incompatible')
             raise
@@ -100,7 +104,7 @@ def mopitt_l3_pairing(model_data,obs_data,co_ppbv_varname):
     co_regrid = xr.full_like(obs_data['pressure'], np.nan)
     # MEB: loop over time outside of regrid lowers memory usage
     for t in range(obs_data.time.size):
-        obs_day = obs_data.time[t].dt.strftime('%Y-%m-%d')
+        obs_day = obs_data.time[t].dt.strftime(filtstr)
         co_regrid[t] = vertical_regrid(pressure_model_regrid.sel(time=obs_day).values.squeeze(), co_model_regrid.sel(time=obs_day).values.squeeze(), obs_data['pressure'][t].values)
     
     # apply AK
