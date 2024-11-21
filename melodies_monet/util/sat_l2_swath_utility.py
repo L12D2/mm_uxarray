@@ -291,8 +291,6 @@ def cal_amf_wrfchem(scatw, wrfpreslayer, tpreslev, troppres, wrfno2layer_molec, 
     vertical_pres = []
     vertical_scatw = []
     vertical_wrfp = []
-
-    runvertcheck = True
     
     for llb in range(len(lb[0])):
         yy = lb[0][llb]
@@ -302,19 +300,6 @@ def cal_amf_wrfchem(scatw, wrfpreslayer, tpreslev, troppres, wrfno2layer_molec, 
         vertical_wrfp = wrfpreslayer[yy,xx,:]
         f = interpolate.interp1d(np.log10(vertical_pres[:]),vertical_scatw[:], fill_value="extrapolate")# relationship between pressure to avk
         wrfavk[yy,xx,:] = f(np.log10(vertical_wrfp[:])) #wrf-chem averaging kernel
-
-        # MEB: check added for vertical interp
-        if runvertcheck and (~np.isnan(vertical_pres)).all():
-            from matplotlib import pyplot as plt
-            plt.plot(vertical_pres,label='Obs pressure')
-            plt.plot(vertical_wrfp,label='Model pressure')
-            plt.legend()
-            plt.ytitle("Pressure")
-            plt.xtitle('z index')
-            plt.title('Tropomi pair check: Pressure dim')
-            plt.show()
-            print(wrfavk)
-            runvercheck = False
 
     for l in range(nz-1):
         # check if it's within tropopause
