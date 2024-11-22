@@ -102,6 +102,5 @@ def create_shapefile_mask(data, mask_path=None, mask_url=None, **kwargs):
         file = "zip://" + file
     regions = regionmask.from_geopandas(gp.read_file(file), **kwargs)
 
-    # region_mask = regionmask.mask_geopandas(regions, data["lon"].values, data["lat"].values)
     region_mask = regions.mask(data)
     return region_mask
