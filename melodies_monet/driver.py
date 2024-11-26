@@ -1754,7 +1754,7 @@ class analysis:
                                                                         "sat_swath_prof"]: 
                             # xarray doesn't need nan drop because its math operations seem to ignore nans
                             # MEB (10/9/24): Add statement to ensure model and obs variables have nans at the same place
-                            pairdf = pairdf_all.where(~np.isnan(pairdf_all[obsvar]),np.nan)
+                            pairdf = pairdf_all.where(pairdf_all[obsvar].notnull())
 
                         else:
                             print('Warning: set rem_obs_nan = True for regulatory metrics') 
@@ -1812,7 +1812,7 @@ class analysis:
                             outname = self.output_dir + '/' + outname  # Extra / just in case.
 
                         # Types of plots
-                        if plot_type.lower() == 'timeseries':
+                        if plot_type.lower() == 'timeseries' or plot_type.lower() == 'diurnal':
                             if set_yaxis == True:
                                 if all(k in obs_plot_dict for k in ('vmin_plot', 'vmax_plot')):
                                     vmin = obs_plot_dict['vmin_plot']
@@ -1876,10 +1876,16 @@ class analysis:
                             
                             # Now proceed wit plotting, call the make_timeseries function with the subsetted pairdf (if vmin2 and vmax2 are not nOne) otherwise whole df                                 
                             if 'tempo_l2' in pair1.obs:
-                                make_timeseries = xrplots.make_timeseries
+                                if plot_type.lower() == 'timeseries':
+                                    make_timeseries = xrplots.make_timeseries
+                                else:
+                                    make_timeseries = xrplots.make_diurnal_cycle
                                 plot_params = {'dset': pairdf, 'varname': obsvar}
                             else:
-                                make_timeseries = splots.make_timeseries
+                                if plot_type.lower() == "timeseries":
+                                    make_timeseries = splots.make_timeseries
+                                else:
+                                    make_timeseries = splots.make_diurnal_cycle
                                 plot_params = {
                                     'df': pairdf, 'df_reg': pairdf_reg, 'column': obsvar
                                 }
