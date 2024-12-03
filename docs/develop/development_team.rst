@@ -3,16 +3,16 @@ Development Team
 
 MELODIES MONET development is a collaboration between NOAA Chemical Sciences 
 Laboratory (CSL), NOAA Air Resources Laboratory (ARL), NOAA Global Systems 
-Laboratory (GSL), and NCAR Atmospheric Chemistry Observations and Modeling 
+Laboratory (GSL), and NSF NCAR Atmospheric Chemistry Observations and Modeling 
 (ACOM) Laboratory. The representative leads for each organization are below.
 
-===============  =============================  
-Organization     Representative(s)     
-===============  ============================= 
-NOAA CSL         Rebecca Schwantes  
+===============  =============================
+Organization     Representative(s)
+===============  =============================
+NOAA CSL         Rebecca Schwantes
 NOAA ARL         Barry Baker
-NOAA GSL         Jordan Schnell        
-NCAR ACOM        Louisa Emmons, David Fillmore        
+NOAA GSL         Jordan Schnell
+NSF NCAR/ACOM    Louisa Emmons, David Fillmore
 ===============  =============================
 
 Code Reviewers
@@ -26,6 +26,9 @@ David Fillmore    dwfncar         Satellite obs, Plots, Stats, Connection to MET
 Colin Harkins     colin-harkins   Docs, Aircraft obs, Plots, Stats
 Louisa Emmons     lkemmons        Docs, Aircraft obs, Plots, Stats
 Rebecca Schwantes rschwant        Docs, Surface and aircraft obs, Plots, Stats
+Margaret Bruckner mbruckner-work  Docs, Satellite obs, Plots
+Rebecca Buchholz  rrbuchholz      Docs, Satellite obs, Plots
+Pablo Lichtig     blychs          Docs, Satellite obs, Surface obs, Plots
 ================= =============== ========================================================
 
 Development Team Members
@@ -53,13 +56,13 @@ primarily focus on adding capabilities for comparison of satellite observations 
 output and expanding data processing options. 
 
 **Rebecca Buchholz:**
-I am a Project Scientist at NCAR/ACOM helping with the development of MELODIES MONET.
+I am a Project Scientist at NSF NCAR/ACOM helping with the development of MELODIES MONET.
 My development plans include incorporating satellite datasets such as MOPITT CO and
 ground-based remote sensing observations such as from NDACC or TCCON; incorporating
 model output from CESM2; and expanding the analysis of model comparisons with remote
 sensing data.
 
-**Patrick C. Campbell**
+**Patrick C. Campbell:**
 I am a research assistant professor at George Mason University and a NOAA-Air
 Resources Laboratory affiliate.  I have contributed to the base Community Multiscale
 Air Quality (CMAQ) model analysis scripts used in MONET, used in support of development
@@ -69,20 +72,20 @@ development of model evaluation and statistical analysis techniques, adding more
 observational datasets, and adding the capability of pairing to 3D aircraft observations
 (e.g., CMAQ-ICARTT) to MELODIES MONET.
 
-**Louisa Emmons**
-I am a Scientist at NCAR/ACOM and PI of the NSF Earthcube MELODIES grant.  I have been
+**Louisa Emmons:**
+I am a Scientist at NSF NCAR/ACOM and PI of the NSF Earthcube MELODIES grant.  I have been
 working on comparisons of model results and observations for over 20 years and hope to
 contribute to many aspects of the development. 
 
-**David Fillmore**
-I am a software developer at NCAR ACOM and work on MELODIES MONET and the NASA CERES project.
+**David Fillmore:**
+I am a software developer at NSF NCAR/ACOM and work on MELODIES MONET and the NASA CERES project.
 My primary focus is adding functionality for satellite dataset analysis within MELODIES MONET,
 in particular ungridded satellite observations on an orbital swath or geostationary disc view.
 I will also be adding and maintaining a tests suite for unit/regression tests and tutorial
 examples.
 
-**Duseong Jo**
-I am a postdoc at NCAR ACOM. My development plans include expanding MELODIES-MONET to deal
+**Duseong Jo:**
+I am a postdoc at NSF NCAR/ACOM. My development plans include expanding MELODIES-MONET to deal
 with unstructured grids and related plotting tools, adding custom options for more flexibility,
 and bringing in new regridding capabilities.
 
@@ -99,13 +102,12 @@ additional surface observational datasets, adding the capability of pairing
 to aircraft observations, and expanding plotting and statistics for analysis 
 of aircraft data.
 
-**Jun Zhang**
-I am a postdoc at ACOM NCAR. My research interests are at the UTLS region.
+**Jun Zhang:**
+I am a postdoc at NSF NCAR/ACOM. My research interests are at the UTLS region.
 I am hoping to add cross-section plots (lat vs height) and also to incorporate MLS data
 for comparison.
 
-
-
-
-
-
+**Pablo Lichtig:**
+I am a postdoc at NSF NCAR/ACOM. My development plans include adding TEMPO support,
+working with remote sensing instruments from the surface and adding support for BoulderAir
+and other surface networks.
