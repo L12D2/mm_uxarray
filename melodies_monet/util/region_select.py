@@ -143,6 +143,8 @@ def control_custom_mask(data, domain_type, domain_name, domain_info=None, **kwar
         "custom"
     domain_name : str
         It is used as the region name, or to read the info.
+    domain_info : dict
+        Dictionary containing relevant information on domain, like url, name, etc.
     **kwargs:
         Extra kwargs to pass to regionmask
 
@@ -181,13 +183,13 @@ def create_autoregion(data, domain_type, domain_name, domain_info=None):
         data to be masked
     domain_type : str
         type of data. Used to decide which function to apply.
-        If domain_type == auto-region:custom, domain_info is required.
+        If domain_type == 'auto-region:custom_box', domain_info is required.
     domain_name : str
         This is used as the region name, or to read the info.
     domain_info: None | dict[str, tuple[float, float, float, float]]
         if not None, dict containing the domain name and a tuple with
         latmin, lonmin, latmax, lonmax. Only required if domain_type
-        starts with auto-region:custom
+        is auto-region:custom_box
     Returns
     -------
     xr.Dataset | pd.DataFrame
@@ -236,6 +238,9 @@ def select_region(data, domain_type, domain_name, domain_info=None, **kwargs):
         type of data. Used to decide which function to apply.
     domain_name : str
         This is used as the region name, or to read the info.
+    domain_info : dict
+        Dict containing the domain_name and other relevant information, e. g.,
+        lonlat box, mask_url, mask_file, etc.
     **kwargs:
         extra kwargs to pass to the selector, depending on the type of
         data or region.
@@ -246,20 +251,19 @@ def select_region(data, domain_type, domain_name, domain_info=None, **kwargs):
         Region selected. The type will be the same as the input data.
     """
 
-    if domain_type != "all":
-        if domain_type.startswith("auto-region"):
-            data_masked = create_autoregion(data, domain_type, domain_name, **kwargs)
-        elif domain_type.startswith("custom"):
-            if regionmask is None:
-                raise ImportError(
-                    "regionmask is not installed, cannot create 'custom:' type domain."
-                    + " If your domain is a simple box, try using auto-region:custom-domain_name."
-                )
-            if domain_info is None:
-                raise KeyError("If regionmask is used, domain_info is needed.")
-            data_masked = control_custom_mask(data, domain_name, domain_type, **kwargs)
-
-        else:
-            data_masked = data.query(domain_type + " == " + '"' + domain_name + '"', inplace=True)
-        return data_masked
-    return data
+    if domain_type == "all":
+        return data
+    if domain_type.startswith("auto-region"):
+        data_masked = create_autoregion(data, domain_type, domain_name, domain_info)
+    elif domain_type == "custom":
+        if regionmask is None:
+            raise ImportError(
+                "regionmask is not installed, cannot create 'custom' type domain."
+                + " If your domain is a simple box, try using auto-region:custom_box."
+            )
+        if domain_info is None:
+            raise KeyError("If regionmask is used, domain_info must exist.")
+        data_masked = control_custom_mask(data, domain_type, domain_name, domain_info, **kwargs)
+    else:
+        data_masked = data.query(domain_type + " == " + '"' + domain_name + '"', inplace=True)
+    return data_masked
