@@ -184,3 +184,21 @@ project on GitHub to learn about current and future development.
       $ conda env create -f docs/environment-docs.yml
 
    to create a new conda environment (``melodies-monet-docs``).
+
+Code workflow
+-------------
+
+The way the code is constructed (see :doc:`../getting_started/software_architecture`)
+is based largely on code contained within a driver (``dirver.py``).
+The main class, contained in ``driver.py``, is ``analysis``.
+``analysis`` is in charge of creating and managing all other classes.
+This driver contains the ``observation``, ``model`` and ``pair`` classes,
+using the tools that can be found in ``util``.
+Even though, right now, the driver.py is quite large,
+we are working on reducing its complexity and,
+as far as possible, managing most with specific utilities.
+
+.. figure:: ../_static/melodies_monet_code_workflow.png
+   :alt: generalized workflow of the code.
+   
+   Generalized structure of the code and its workflow.
