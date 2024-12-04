@@ -172,7 +172,7 @@ def control_custom_mask(data, domain_type, domain_name, domain_info=None, **kwar
     return masked_data
 
 
-def create_autoregion(data, domain_type, domain_name, **kwargs):
+def create_autoregion(data, domain_type, domain_name, domain_info=None):
     """Selects a region using predefined boundaries.
 
     Parameters
@@ -181,13 +181,13 @@ def create_autoregion(data, domain_type, domain_name, **kwargs):
         data to be masked
     domain_type : str
         type of data. Used to decide which function to apply.
+        If domain_type == auto-region:custom, domain_info is required.
     domain_name : str
         This is used as the region name, or to read the info.
-    kwargs
-        if domain_type is auto-region:custom-name_of_domain,
-        this is used to read in the information on the custom
-        box
-
+    domain_info: None | dict[str, tuple[float, float, float, float]]
+        if not None, dict containing the domain name and a tuple with
+        latmin, lonmin, latmax, lonmax. Only required if domain_type
+        starts with auto-region:custom
     Returns
     -------
     xr.Dataset | pd.DataFrame
@@ -199,7 +199,7 @@ def create_autoregion(data, domain_type, domain_name, **kwargs):
     elif auto_region_id == "giorgi":
         bounds = get_giorgi_region_bounds(acronym=domain_name)
     elif auto_region_id == "custom":
-        bounds = kwargs["domain_box"][auto_region_id.split("-")[1]]
+        bounds = domain_info[domain_name]
     else:
         raise ValueError(
             "Currently, region selections whithout a domain query have only "
@@ -225,7 +225,7 @@ def create_autoregion(data, domain_type, domain_name, **kwargs):
     return data_all
 
 
-def select_region(data, domain_type, domain_name, **kwargs):
+def select_region(data, domain_type, domain_name, domain_info=None, **kwargs):
     """Selects a region in whichever format it was provided
 
     Parameters
@@ -255,6 +255,8 @@ def select_region(data, domain_type, domain_name, **kwargs):
                     "regionmask is not installed, cannot create 'custom:' type domain."
                     + " If your domain is a simple box, try using auto-region:custom-domain_name."
                 )
+            if domain_info is None:
+                raise KeyError("If regionmask is used, domain_info is needed.")
             data_masked = control_custom_mask(data, domain_name, domain_type, **kwargs)
 
         else:
