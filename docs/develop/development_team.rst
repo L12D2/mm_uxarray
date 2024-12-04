@@ -18,18 +18,19 @@ NSF NCAR/ACOM    Louisa Emmons, David Fillmore
 Code Reviewers
 --------------
 
-================= =============== ========================================================
-Reviewer          GitHub Username Expertise
-================= =============== ========================================================
-Zachary Moon      zmoon           Docs, Connections to MONET and MONETIO, CI tests
-David Fillmore    dwfncar         Satellite obs, Plots, Stats, Connection to METplus
-Colin Harkins     colin-harkins   Docs, Aircraft obs, Plots, Stats
-Louisa Emmons     lkemmons        Docs, Aircraft obs, Plots, Stats
-Rebecca Schwantes rschwant        Docs, Surface and aircraft obs, Plots, Stats
-Margaret Bruckner mbruckner-work  Docs, Satellite obs, Plots
-Rebecca Buchholz  rrbuchholz      Docs, Satellite obs, Plots
-Pablo Lichtig     blychs          Docs, Satellite obs, Surface obs, Plots
-================= =============== ========================================================
+================== =============== ========================================================
+Reviewer           GitHub Username Expertise
+================== =============== ========================================================
+Zachary Moon       zmoon           Docs, Connections to MONET and MONETIO, CI tests
+David Fillmore     dwfncar         Satellite obs, Plots, Stats, Connection to METplus
+Colin Harkins      colin-harkins   Docs, Aircraft obs, Plots, Stats
+Louisa Emmons      lkemmons        Docs, Aircraft obs, Plots, Stats
+Rebecca Schwantes  rschwant        Docs, Surface and aircraft obs, Plots, Stats
+Margaret Bruckner  mbruckner-work  Docs, Satellite obs, Plots, Stats
+Rebecca Buchholz   rrbuchholz      Docs, Satellite obs, Plots, Stats
+Pablo Lichtig      blychs          Docs, Satellite and surface obs, Plots,Stats
+Quazi Ziaur Rasool quaz115         Docs, Aircraft obs, Plots, Stats
+================== =============== ========================================================
 
 Development Team Members
 ------------------------
@@ -110,4 +111,14 @@ for comparison.
 **Pablo Lichtig:**
 I am a postdoc at NSF NCAR/ACOM. My development plans include adding TEMPO support,
 working with remote sensing instruments from the surface and adding support for BoulderAir
-and other surface networks.
+and other surface networks, and expanding MELODIES-MONET to other regional and global
+models.
+
+**Quazi Ziaur Rasool**
+I am a research scientist at CIRES/NOAA CSL helping with MELODIES-MONET development.
+My development plans include incorporating new comparisons (already tested) for aircraft
+observation datasets such as FIREX, ASIA-AQ, and AEROMMA with model output from WRF-Chem
+(regional), UFS-AQM (global); and expanding the analysis of model-aircraft comparisons
+with new visualizations (for e.g., curtain plots, spatial plots along aircraft tracks,
+vertical profiles, time series with altitude) and new observations or model data pairing of
+interest.
