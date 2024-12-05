@@ -3,7 +3,6 @@ Masking arbitrary regions with regionmask
 """
 
 import warnings
-from ast import literal_eval
 
 import pandas as pd
 
@@ -73,8 +72,16 @@ def create_predefined_mask(data, name_regiontype, region_name):
     xr.Dataset
         mask for input data
     """
-    regions = literal_eval(f"regionmask.defined_regions.{name_regiontype}")
-    region_mask = regions.mask(data)
+    #region = literal_eval(f"regionmask.defined_regions.{name_regiontype}")
+    name_regiontype_split = name_regiontype.split('.')
+    regions = regionmask.defined_regions
+    for r in name_regiontype_split:
+        regions = getattr(regions, r)
+    import pdb; pdb.set_trace()
+    if isinstance(data, pd.DataFrame):
+        region_mask = regions.mask(data.to_xarray().rename({'latitude': 'lat', 'longitude': 'lon'}))# .to_dataframe()
+    else:
+        region_mask = regions.mask(data.rename({'latitude':'lat', 'longitude':'lon'}))
     try:
         selected_region = data.where(region_mask == int(region_name))
     except TypeError:
@@ -156,15 +163,15 @@ def control_custom_mask(data, domain_type, domain_name, domain_info=None, **kwar
     if "custom" not in domain_type:
         raise ValueError("If regionmask is used, the domain_type should be starting with 'custom'")
     if "auto_polygon" in domain_type:
-        masked_data = create_custom_mask(data, domain_info[domain_name])
+        masked_data = create_custom_mask(data, domain_info)
     elif "defined_region" in domain_type:
-        name_regiontype = domain_info[domain_name]["name_regiontype"]
-        region_name = domain_info[domain_name]["region_name"]
+        name_regiontype = domain_info["name_regiontype"]
+        region_name = domain_info["region_name"]
         masked_data = create_predefined_mask(data, name_regiontype, region_name)
     elif "custom_file" in domain_type:
-        mask_path = domain_info[domain_name].get("mask_path", None)
-        mask_url = domain_info[domain_name].get("mask_url", None)
-        region_name = domain_info[domain_name].get("region_name", None)
+        mask_path = domain_info.get("mask_path", None)
+        mask_url = domain_info.get("mask_url", None)
+        region_name = domain_info.get("region_name", None)
         masked_data = create_shapefile_mask(data, mask_path, mask_url, region_name, **kwargs)
     else:
         raise ValueError(
@@ -255,7 +262,7 @@ def select_region(data, domain_type, domain_name, domain_info=None, **kwargs):
         return data
     if domain_type.startswith("auto-region"):
         data_masked = create_autoregion(data, domain_type, domain_name, domain_info)
-    elif domain_type == "custom":
+    elif domain_type.startswith("custom"):
         if regionmask is None:
             raise ImportError(
                 "regionmask is not installed, cannot create 'custom' type domain."
@@ -265,5 +272,5 @@ def select_region(data, domain_type, domain_name, domain_info=None, **kwargs):
             raise KeyError("If regionmask is used, domain_info must exist.")
         data_masked = control_custom_mask(data, domain_type, domain_name, domain_info, **kwargs)
     else:
-        data_masked = data.query(domain_type + " == " + '"' + domain_name + '"', inplace=True)
+        data_masked = data.query(domain_type + " == " + '"' + domain_name + '"')
     return data_masked

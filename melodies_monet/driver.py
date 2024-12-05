@@ -1444,7 +1444,8 @@ class analysis:
         None
         """
         
-        from .util.tools import resample_stratify, get_epa_region_bounds, get_giorgi_region_bounds
+        from .util.tools import resample_stratify
+        from .util.region_select import select_region
         import matplotlib.pyplot as plt
         pair_keys = list(self.paired.keys())
         if self.paired[pair_keys[0]].type.lower() in ['sat_grid_clm','sat_swath_clm']:
@@ -1512,9 +1513,11 @@ class analysis:
                 # Loop also over the domain types. So can easily create several overview and zoomed in plots.
                 domain_types = grp_dict['domain_type']
                 domain_names = grp_dict['domain_name']
+                domain_infos = grp_dict.get('domain_info', {})
                 for domain in range(len(domain_types)):
                     domain_type = domain_types[domain]
                     domain_name = domain_names[domain]
+                    domain_info = domain_infos.get(domain_name, None)
 
                     # Then loop through each of the pairs to add to the plot.
                     for p_index, p_label in enumerate(pair_labels):
@@ -1533,9 +1536,8 @@ class analysis:
                             modvar = modvar + 'trpcol'
                             
                         # for pt_sfc data, convert to pandas dataframe, format, and trim
-                        if obs_type in ["sat_swath_sfc", "sat_swath_clm", 
-                                                                        "sat_grid_sfc", "sat_grid_clm", 
-                                                                        "sat_swath_prof"]:
+                        if obs_type in ["sat_swath_sfc", "sat_swath_clm", "sat_grid_sfc",
+                                        "sat_grid_clm", "sat_swath_prof"]:
                              # convert index to time; setup for sat_swath_clm
                             
                             if 'time' not in p.obj.dims and obs_type == 'sat_swath_clm':
@@ -1618,27 +1620,8 @@ class analysis:
 
                         # Query selected points if applicable
                         if domain_type != 'all':
-                            if domain_type.startswith("auto-region"):
-                                _, auto_region_id = domain_type.split(":")
-                                if auto_region_id == 'epa':
-                                    bounds = get_epa_region_bounds(acronym=domain_name)
-                                elif auto_region_id == 'giorgi':
-                                    bounds = get_giorgi_region_bounds(acronym=domain_name)
-                                else:
-                                    raise ValueError(
-                                        "Currently, region selections whithout a domain query have only "
-                                        "been implemented for Giorgi and EPA regions. You asked for "
-                                        f"{domain_type!r}. Soon, arbitrary rectangular boxes, US states and "
-                                        "others will be included."
-                                    )
-                                pairdf_all = pairdf_all.loc[
-                                                (pairdf_all["latitude"] > bounds[0])
-                                                & (pairdf_all["longitude"] > bounds[1])
-                                                & (pairdf_all["latitude"] < bounds[2])
-                                                & (pairdf_all["longitude"] < bounds[3])
-                                             ]
-                            else:
-                                pairdf_all.query(domain_type + ' == ' + '"' + domain_name + '"', inplace=True)
+                            pairdf_all = select_region(pairdf_all, domain_type, domain_name, domain_info)
+
                         
                         # Query with filter options
                         if 'filter_dict' in grp_dict['data_proc'] and 'filter_string' in grp_dict['data_proc']:
