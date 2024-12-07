@@ -49,7 +49,11 @@ def create_custom_mask(data, mask_info):
             abbrevs.append(rname)
             all_regions.append(rpolygon)
         regions = regionmask.Regions(all_regions, abbrevs=abbrevs, name="custom_regions")
-    region_mask = regions.mask(data)
+    # Regionmask requires "lat" and "lon"
+    region_mask = regions.mask(data.rename({'latitude':'lat', 'longitude':'lon'}))
+    # But MM requires "latitude" and "longitude"
+    if "lat" in region_mask.coords:
+        region_mask = region_mask.rename({"lat": "latitude", "lon": "longitude"})
     masked_data = data.where(region_mask.notnull())
     return masked_data
 
@@ -72,19 +76,18 @@ def create_predefined_mask(data, name_regiontype, region_name):
     xr.Dataset
         mask for input data
     """
-    #region = literal_eval(f"regionmask.defined_regions.{name_regiontype}")
     name_regiontype_split = name_regiontype.split('.')
     regions = regionmask.defined_regions
     for r in name_regiontype_split:
         regions = getattr(regions, r)
-    import pdb; pdb.set_trace()
-    if isinstance(data, pd.DataFrame):
-        region_mask = regions.mask(data.to_xarray().rename({'latitude': 'lat', 'longitude': 'lon'}))# .to_dataframe()
-    else:
-        region_mask = regions.mask(data.rename({'latitude':'lat', 'longitude':'lon'}))
+    # Regionmask requires "lat" and "lon"
+    region_mask = regions.mask(data.rename({'latitude':'lat', 'longitude':'lon'}))
+    # But MM requires "latitude" and "longitude"
+    if "lat" in region_mask.coords:
+        region_mask = region_mask.rename({"lat": "latitude", "lon": "longitude"})
     try:
         selected_region = data.where(region_mask == int(region_name))
-    except TypeError:
+    except ValueError:
         selected_region = data.where(region_mask.cf == region_name)
     return selected_region
 
@@ -130,7 +133,12 @@ def create_shapefile_mask(data, mask_path=None, mask_url=None, region_name=None,
         file = "zip://" + file
     regions = regionmask.from_geopandas(gp.read_file(file), **kwargs)
 
-    region_mask = regions.mask(data)
+    # Regionmask requires "lat" and "lon"
+    region_mask = regions.mask(data.rename({'latitude':'lat', 'longitude':'lon'}))
+    # But MM requires "latitude" and "longitude"
+    if "lat" in region_mask.coords:
+        region_mask = region_mask.rename({"lat": "latitude", "lon": "longitude"})
+
     try:
         selected_region = data.where(region_mask == int(region_name))
     except ValueError:
