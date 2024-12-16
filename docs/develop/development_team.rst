@@ -30,6 +30,7 @@ Margaret Bruckner  mbruckner-work  Docs, Satellite obs, Plots, Stats
 Rebecca Buchholz   rrbuchholz      Docs, Satellite obs, Plots, Stats
 Pablo Lichtig      blychs          Docs, Satellite and surface obs, Plots,Stats
 Quazi Ziaur Rasool quaz115         Docs, Aircraft obs, Plots, Stats
+Beiming Tang       btang1
 ================== =============== ========================================================
 
 Development Team Members
@@ -122,3 +123,7 @@ observation datasets such as FIREX, ASIA-AQ, and AEROMMA with model output from 
 with new visualizations (for e.g., curtain plots, spatial plots along aircraft tracks,
 vertical profiles, time series with altitude) and new observations or model data pairing of
 interest.
+
+**Beiming Tang**
+Dr. Beiming Tang is a postdoc at NOAA Air Resources Laboratory. His research focus on develop NOAA’s Atmospheric Composition forecast model by advance AI techniques; Melodies-Monet development; and support UFS-AQM evaluations.
+For the development of Melodies-Monet, Beiming created surface multi-box plot, scorecard, and CSI plots, and ozone-sonder plots and TolNet plots.
