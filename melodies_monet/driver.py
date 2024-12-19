@@ -446,6 +446,7 @@ class model:
     def __init__(self):
         """Initialize a :class:`model` object."""
         self.model = None
+        self.isglobal = False
         self.apply_ak = False
         self.mod_to_overpass = False
         self.radius_of_influence = None
@@ -942,6 +943,8 @@ class analysis:
                 # this is the model type (ie cmaq, rapchem, gsdchem etc)
                 m.model = self.control_dict['model'][mod]['mod_type']
                 # set the model label in the dictionary and model class instance
+                if "isglobal" in self.control_dict['model'][mod].keys():
+                    m.isglobal = self.control_dict['model'][mod]['isglobal']
                 if "apply_ak" in self.control_dict['model'][mod].keys():
                     m.apply_ak = self.control_dict['model'][mod]['apply_ak']
                 if "mod_to_overpass" in self.control_dict['model'][mod].keys():
@@ -1409,8 +1412,8 @@ class analysis:
                         if mod.apply_ak: 
                             model_obj = mod.obj[keys+['pres_pa_mid']]
                             # trim to only data within analysis window, as averaging kernels can't be applied outside it
-                            obs_dat = obs.obj.sel(time=slice(self.start_time.date(),self.end_time.date()))#.copy()
-                            model_obj = model_obj.sel(time=slice(self.start_time.date(),self.end_time.date()))#.copy()
+                            obs_dat = obs.obj.sel(time=slice(self.start_time.date(),self.end_time.date()))
+                            model_obj = model_obj.sel(time=slice(self.start_time.date(),self.end_time.date()))
                             
                             # Sample model to observation overpass time
                             if mod.mod_to_overpass:
@@ -1420,7 +1423,7 @@ class analysis:
                                 model_obj = sutil.mod_to_overpasstime(model_obj,overpass_datetime)
                             
                             # interpolate model to observation, calculate column with averaging kernels applied
-                            paired = sutil.mopitt_l3_pairing(model_obj,obs_dat,keys[0])
+                            paired = sutil.mopitt_l3_pairing(model_obj,obs_dat,keys[0],global_m=mod.isglobal)
                             p = pair()
                             p.type = obs.obs_type
                             p.obs = obs.label

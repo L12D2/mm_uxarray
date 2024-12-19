@@ -104,7 +104,7 @@ def check_timestep(model_data,obs_data):
         print('Timestep check and model resample failed')
         raise
 
-def mopitt_l3_pairing(model_data,obs_data,co_ppbv_varname):
+def mopitt_l3_pairing(model_data,obs_data,co_ppbv_varname,global_m=True):
     ''' Calculate model CO column, with MOPITT averaging kernel applied.
     '''
     import xarray as xr
@@ -142,7 +142,8 @@ def mopitt_l3_pairing(model_data,obs_data,co_ppbv_varname):
         
     # initialize regridder for horizontal interpolation 
     # from model grid to MOPITT grid
-    grid_adjust = xe.Regridder(model_obstime[['latitude','longitude']],obs_data[['lat','lon']],'bilinear',periodic=True)
+    grid_adjust = xe.Regridder(model_obstime[['latitude','longitude']],obs_data[['lat','lon']],
+                               'bilinear',periodic=global_m,unmapped_to_nan=True)
     co_model_regrid = grid_adjust(model_obstime[co_ppbv_varname])
     pressure_model_regrid = grid_adjust(model_obstime['pres_pa_mid']/100.)
     
@@ -155,7 +156,9 @@ def mopitt_l3_pairing(model_data,obs_data,co_ppbv_varname):
     # MEB: loop over time outside of regrid lowers memory usage
     for t in range(obs_data.time.size):
         obs_day = obs_data.time[t].dt.strftime(filtstr)
-        co_regrid[t] = vertical_regrid(pressure_model_regrid.sel(time=obs_day).values.squeeze(), co_model_regrid.sel(time=obs_day).values.squeeze(), obs_data['pressure'][t].values)
+        co_regrid[t] = vertical_regrid(pressure_model_regrid.sel(time=obs_day).values.squeeze(), 
+                                       co_model_regrid.sel(time=obs_day).values.squeeze(), 
+                                       obs_data['pressure'][t].values)
     
     # apply AK
     ## log apriori and model data
@@ -163,7 +166,7 @@ def mopitt_l3_pairing(model_data,obs_data,co_ppbv_varname):
     log_mod = np.log10(co_regrid)
     diff_arr = log_mod-log_ap
     ## smooth/apply ak
-    smoothed = obs_data['apriori_col'] + (obs_data['ak_col']*diff_arr).sum(dim='alt')
+    smoothed = obs_data['apriori_col'] + (obs_data['ak_col']*diff_arr).sum(dim='alt', skipna=False)
     
     # Add variable name to smoothed model dataarray, combine with obs_data
     smoothed = smoothed.rename(co_ppbv_varname+'_column_model')
