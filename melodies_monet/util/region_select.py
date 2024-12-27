@@ -2,9 +2,11 @@
 Masking arbitrary regions with regionmask
 """
 
+import re
 import warnings
 
 import pandas as pd
+import requests
 
 from melodies_monet.util.tools import get_epa_region_bounds, get_giorgi_region_bounds
 
@@ -17,10 +19,27 @@ try:
 except ImportError:
     regionmask = None
 
-try:
-    import pooch
-except ImportError:
-    pooch = None
+
+def _download_with_name(url):
+    """Automates download while reading content disposition if needed.
+
+    Parameters:
+    -----------
+    url : str
+        URL of file to download
+
+    Returns
+    -------
+    str
+       Path to downloaded file
+    """
+    r = requests.get(url, allow_redirects=True, timeout=10)
+    fname = re.findall("filename=(.+)", r.headers.get("content-disposition"))
+    if len(fname) == 0:
+        fname = url.rsplit("/", 1)[1]
+    with open(fname, "wb") as f:
+        f.write(r.content)
+    return fname
 
 
 def create_custom_mask(data, mask_info):
@@ -50,7 +69,7 @@ def create_custom_mask(data, mask_info):
             all_regions.append(rpolygon)
         regions = regionmask.Regions(all_regions, abbrevs=abbrevs, name="custom_regions")
     # Regionmask requires "lat" and "lon"
-    region_mask = regions.mask(data.rename({'latitude':'lat', 'longitude':'lon'}))
+    region_mask = regions.mask(data.rename({"latitude": "lat", "longitude": "lon"}))
     # But MM requires "latitude" and "longitude"
     if "lat" in region_mask.coords:
         region_mask = region_mask.rename({"lat": "latitude", "lon": "longitude"})
@@ -76,12 +95,12 @@ def create_predefined_mask(data, name_regiontype, region_name):
     xr.Dataset
         mask for input data
     """
-    name_regiontype_split = name_regiontype.split('.')
+    name_regiontype_split = name_regiontype.split(".")
     regions = regionmask.defined_regions
     for r in name_regiontype_split:
         regions = getattr(regions, r)
     # Regionmask requires "lat" and "lon"
-    region_mask = regions.mask(data.rename({'latitude':'lat', 'longitude':'lon'}))
+    region_mask = regions.mask(data.rename({"latitude": "lat", "longitude": "lon"}))
     # But MM requires "latitude" and "longitude"
     if "lat" in region_mask.coords:
         region_mask = region_mask.rename({"lat": "latitude", "lon": "longitude"})
@@ -118,14 +137,15 @@ def create_shapefile_mask(data, mask_path=None, mask_url=None, region_name=None,
     """
 
     if mask_url is not None and mask_path is not None:
-        warnings.warn("mask_url and mask_path provided. Only one can be used. Selecting mask_path")
+        warnings.warn(
+            "mask_url and mask_path provided. Only one can be used."
+            + "Selecting mask_path and discarding URL."
+        )
 
     if mask_path is not None:
         file = mask_path
     elif mask_url is not None:
-        if pooch is None:
-            raise ImportError("pooch is not installed, cannot download URL.")
-        file = pooch.retrieve(mask_url, None)
+        file = _download_with_name(mask_url)
     else:
         raise ValueError("Either mask_path or mask_url have to be provided")
 
@@ -134,7 +154,7 @@ def create_shapefile_mask(data, mask_path=None, mask_url=None, region_name=None,
     regions = regionmask.from_geopandas(gp.read_file(file), **kwargs)
 
     # Regionmask requires "lat" and "lon"
-    region_mask = regions.mask(data.rename({'latitude':'lat', 'longitude':'lon'}))
+    region_mask = regions.mask(data.rename({"latitude": "lat", "longitude": "lon"}))
     # But MM requires "latitude" and "longitude"
     if "lat" in region_mask.coords:
         region_mask = region_mask.rename({"lat": "latitude", "lon": "longitude"})
