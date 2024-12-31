@@ -248,7 +248,7 @@ def create_autoregion(data, domain_type, domain_name, domain_info=None):
         bounds = get_epa_region_bounds(acronym=domain_name)
     elif auto_region_id == "giorgi":
         bounds = get_giorgi_region_bounds(acronym=domain_name)
-    elif auto_region_id == "custom":
+    elif auto_region_id == "custom_box":
         bounds = domain_info["bounds"]
     else:
         raise ValueError(
@@ -316,5 +316,5 @@ def select_region(data, domain_type, domain_name, domain_info=None, **kwargs):
         if isinstance(data, pd.DataFrame):
             data_masked = data.query(domain_type + " == " + '"' + domain_name + '"')
         else:
-            data_masked = data.where(data[domain_type].cf == domain_name)
+            data_masked = data.where(data[domain_type] == domain_name)
     return data_masked
