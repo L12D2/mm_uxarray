@@ -2600,7 +2600,7 @@ class analysis:
         """
         from .stats import proc_stats as proc_stats
         from .plots import surfplots as splots
-        from .util.region_selct import select_region
+        from .util.region_select import select_region
 
         # first get the stats dictionary from the yaml file
         stat_dict = self.control_dict['stats']
