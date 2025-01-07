@@ -1,0 +1,34 @@
+analysis:
+  start_time: '2023-06-27'
+  end_time:   '2023-06-28'
+  output_dir: /ships19/aqda/mbruckner/monet_plots
+  debug: True
+  pairing_kwargs:
+    sat_grid_clm:
+      apply_ak: True
+      mod_to_overpass: False
+
+model:
+  ufsaqm:
+    files: /wrk/da12/mbruckner/mm_tutorial/aqm.t12z.dyn.f001.nc
+    isglobal: False
+    mod_type: 'rrfs'
+    variables: #Opt
+      co: # specifying to switch units to ppbv
+        need: True
+    mapping: #model species name : obs species name
+      mopitt_l3: 
+        co: column #The mapping tables need to contain the same species for all models.
+    plot_kwargs: #Opt 
+      color: 'purple'
+      marker: '^'
+      linestyle: 'dotted'
+#-------------------------------------------------------------------
+obs:    
+  mopitt_l3: # obs label
+    filename: /wrk/da12/mbruckner/mm_tutorial/MOP03J-20230627-L3V5.10.3.he5
+    obs_type: sat_grid_clm
+    sat_type: mopitt_l3
+    variables: 
+      column:
+        ylabel_plot: '$10^{18} molec/cm^{2}$'    

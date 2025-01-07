@@ -447,8 +447,6 @@ class model:
         """Initialize a :class:`model` object."""
         self.model = None
         self.isglobal = False
-        self.apply_ak = False
-        self.mod_to_overpass = False
         self.radius_of_influence = None
         self.mod_kwargs = {}
         self.file_str = None
@@ -747,6 +745,7 @@ class analysis:
         self.obs_gridded_data = {}
         self.obs_gridded_count = {}
         self.obs_gridded_dataset = None
+        self.pairing_kwargs = {}
 
     def __repr__(self):
         return (
@@ -841,6 +840,10 @@ class analysis:
                 = [[time_stamps[n], time_stamps[n+1]]
                     for n in range(len(time_stamps)-1)]
         
+        # specific arguments for pairing options
+        if 'pairing_kwargs' in self.control_dict['analysis'].keys():
+            self.pairing_kwargs = self.control_dict['analysis']['pairing_kwargs']
+            
         # Enable Dask progress bars? (default: false)
         enable_dask_progress_bars = self.control_dict["analysis"].get(
             "enable_dask_progress_bars", False)
@@ -945,10 +948,6 @@ class analysis:
                 # set the model label in the dictionary and model class instance
                 if "isglobal" in self.control_dict['model'][mod].keys():
                     m.isglobal = self.control_dict['model'][mod]['isglobal']
-                if "apply_ak" in self.control_dict['model'][mod].keys():
-                    m.apply_ak = self.control_dict['model'][mod]['apply_ak']
-                if "mod_to_overpass" in self.control_dict['model'][mod].keys():
-                    m.mod_to_overpass = self.control_dict['model'][mod]['mod_to_overpass']
                 if 'radius_of_influence' in self.control_dict['model'][mod].keys():
                     m.radius_of_influence = self.control_dict['model'][mod]['radius_of_influence']
                 else:
@@ -1322,6 +1321,11 @@ class analysis:
                 # TODO: add other network types / data types where (ie flight, satellite etc)
                 # if sat_swath_clm (satellite l2 column products)
                 elif obs.obs_type.lower() == 'sat_swath_clm':
+                    # grab kwargs for pairing. Use default if not specified
+                    if obs.obs_type.lower() in list(self.pairing_kwargs.keys()):
+                        pairing_kws = self.pairing_kwargs[obs.obs_type.lower()]
+                    else: 
+                        pairing_kws = {'apply_ak': True, 'mod_to_overpass': False}
                     
                     if obs.sat_type == 'omps_nm':
                         
@@ -1332,7 +1336,7 @@ class analysis:
                         if 'time' in obs.obj.dims:
                             obs.obj = obs.obj.sel(time=slice(self.start_time,self.end_time))
                             obs.obj = obs.obj.swap_dims({'time':'x'})
-                        if mod.apply_ak == True:
+                        if pairing_kws['apply_ak'] == True:
                             model_obj = mod.obj[keys+['pres_pa_mid','surfpres_pa']]
                             
                             paired_data = sutil.omps_nm_pairing_apriori(model_obj,obs.obj,keys)
@@ -1362,7 +1366,7 @@ class analysis:
                         model_obj = mutil.cal_model_no2columns(model_obj)
                         #obs_dat = obs.obj.sel(time=slice(self.start_time.date(),self.end_time.date())).copy()
 
-                        if mod.apply_ak == True:
+                        if pairing_kws['apply_ak'] == True:
                             paired_data = sutil.trp_interp_swatogrd_ak(obs.obj, model_obj)
                         else:
                             paired_data = sutil.trp_interp_swatogrd(obs.obj, model_obj)
@@ -1386,6 +1390,11 @@ class analysis:
                         
                 # if sat_grid_clm (satellite l3 column products)
                 elif obs.obs_type.lower() == 'sat_grid_clm':
+                    # grab kwargs for pairing. Use default if not specified
+                    if obs.obs_type.lower() in list(self.pairing_kwargs.keys()):
+                        pairing_kws = self.pairing_kwargs[obs.obs_type.lower()]
+                    else: 
+                        pairing_kws = {'apply_ak': True, 'mod_to_overpass': False}
                     if len(keys) > 1: 
                         print('Caution: More than 1 variable is included in mapping keys.')
                         print('Pairing code is calculating a column for {}'.format(keys[0])) 
@@ -1409,14 +1418,14 @@ class analysis:
                     elif obs.sat_type == 'mopitt_l3':
                         from .util import satellite_utilities as sutil
                         
-                        if mod.apply_ak: 
+                        if pairing_kws['apply_ak']: 
                             model_obj = mod.obj[keys+['pres_pa_mid']]
                             # trim to only data within analysis window, as averaging kernels can't be applied outside it
                             obs_dat = obs.obj.sel(time=slice(self.start_time.date(),self.end_time.date()))
                             model_obj = model_obj.sel(time=slice(self.start_time.date(),self.end_time.date()))
                             
                             # Sample model to observation overpass time
-                            if mod.mod_to_overpass:
+                            if pairing_kws['mod_to_overpass']:
                                 print('sampling model to 10:30 local overpass time')
                                 overpass_datetime = pd.date_range(self.start_time.replace(hour=10,minute=30),
                                                                   self.end_time.replace(hour=10,minute=30),freq='D')
