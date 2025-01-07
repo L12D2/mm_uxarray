@@ -31,23 +31,23 @@ obs:
                                 vmax_plot: 16
                                 vdiff_plot: 15.0
 plots:
-        plot_ts: 
-                type: 'timeseries'
-                fig_kwargs:
-                        figsize: [12,6]
-                default_plot_kwargs: # Opt to define defaults for all plots. Model kwargs overwrite these.
-                        linewidth: 2.0
-                        markersize: 10.
-                text_kwargs: #Opt
-                        fontsize: 18.
-                domain_type: ['all']
-                domain_name: ['CONUS']
-                data: ['mopitt_ufsaqm']
-                data_proc:
-                        rem_obs_nan: True # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
-                        ts_select_time: 'time' #Time used for avg and plotting: Options: 'time' for UTC or 'time_local'
-                        ts_avg_window: 'h' # Options: None for no averaging or list pandas resample rule (e.g., 'h', 'D')
-                        set_axis: False #If select True, add vmin_plot and vmax_plot for each variable in obs.
+        #plot_ts: 
+        #        type: 'timeseries'
+        #        fig_kwargs:
+        #                figsize: [12,6]
+        #        default_plot_kwargs: # Opt to define defaults for all plots. Model kwargs overwrite these.
+        #                linewidth: 2.0
+        #                markersize: 10.
+        #        text_kwargs: #Opt
+        #                fontsize: 18.
+        #        domain_type: ['all']
+        #        domain_name: ['CONUS']
+        #        data: ['mopitt_ufsaqm']
+        #        data_proc:
+        #                rem_obs_nan: True # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
+        #                ts_select_time: 'time' #Time used for avg and plotting: Options: 'time' for UTC or 'time_local'
+        #                ts_avg_window: 'h' # Options: None for no averaging or list pandas resample rule (e.g., 'h', 'D')
+        #                set_axis: False #If select True, add vmin_plot and vmax_plot for each variable in obs.
         plot_grp1:
                 type: 'gridded_spatial_bias'
                 fig_kwargs:
@@ -56,24 +56,24 @@ plots:
                 text_kwargs:
                         fontsize: 16.
                 domain_type: ['all']
-                domain_name: ['CONUS']
+                domain_name: ['UFS-AQM']
                 data: ['mopitt_ufsaqm']
                 data_proc:
                         rem_obs_nan: True
                         set_axis: True
-        plot_grp2:
-                type: 'taylor'
-                fig_kwargs:
-                        figsize: [8.8]
-                default_plot_kwargs:
-                        linewidth: 2.0
-                        markersize: 10.
-                text_kwargs:
-                        fontsize: 16.
-                domain_type: ['all'] #List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.)
-                domain_name: ['Global'] # of domain names. If domain_type = all domain_name is used in plot title.
-                data: ['mopitt_ufsaqm'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
-                data_proc:
-                        rem_obs_nan: True # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
-                        set_axis: True #If select True, add ty_scale for each variable in obs.
+      #plot_grp2:
+      #          type: 'taylor'
+      #          fig_kwargs:
+      #                  figsize: [8.8]
+      #          default_plot_kwargs:
+      #                  linewidth: 2.0
+      #                  markersize: 10.
+      #          text_kwargs:
+      #                  fontsize: 16.
+      #          domain_type: ['all'] #List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.)
+      #          domain_name: ['Global'] # of domain names. If domain_type = all domain_name is used in plot title.
+      #          data: ['mopitt_ufsaqm'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
+      #          data_proc:
+      #                  rem_obs_nan: True # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
+      #                 set_axis: True #If select True, add ty_scale for each variable in obs.
 
