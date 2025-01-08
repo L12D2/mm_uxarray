@@ -1889,6 +1889,7 @@ class analysis:
                                 plot_params = {
                                     'df': pairdf, 'df_reg': pairdf_reg, 'column': obsvar
                                 }
+                            settings = grp_dict.get('settings', {})
                             plot_params = {
                                 **plot_params,
                                 **{
@@ -1903,7 +1904,8 @@ class analysis:
                                     'fig_dict': fig_dict,
                                     'text_dict': text_dict,
                                     'debug': self.debug,
-                                }
+                                },
+                                **settings
                                 }
                             if p_index == 0:
                                 # First plot the observations.
