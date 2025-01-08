@@ -439,7 +439,9 @@ def is_nonpairable(obsobj, k, modobj):
     return False
 
 
-def _regrid_and_apply_weights(obsobj, modobj, method="conservative", weights=None, species=["NO2"], tempo_sp="NO2"):
+def _regrid_and_apply_weights(
+    obsobj, modobj, method="conservative", weights=None, species=["NO2"], tempo_sp="NO2"
+):
     """Does the complete process of regridding and
     applying scattering weights. Assumes that obsobj is a Dataset
 
@@ -498,7 +500,7 @@ def regrid_and_apply_weights(
     method="conservative",
     weights=None,
     species=["NO2"],
-    tempo_sp = "NO2"
+    tempo_sp="NO2",
 ):
     """Does the complete process of regridding
     and applying scattering weights.
@@ -540,7 +542,7 @@ def regrid_and_apply_weights(
     if tempo_sp == "NO2":
         sat_species_name = "vertical_column_troposphere"
     else:
-        assert tempo_sp=="HCHO", "TEMPO species must be HCHO or NO2."
+        assert tempo_sp == "HCHO", "TEMPO species must be HCHO or NO2."
         sat_species_name = "vertical_column"
 
     if isinstance(obsobj, xr.Dataset):
@@ -604,6 +606,7 @@ def back_to_modgrid(
     to_netcdf=False,
     path="Regridded_object_XYZ.nc",
     method="bilinear",
+    grid_path=None,
 ):
     """Grids object in sat-space to modgrid. Designed to grid back to modgrid after applying
     the scattering weights and air mass factors. It is designed for a single scan.
@@ -628,6 +631,9 @@ def back_to_modgrid(
         be ignored.
     method : str
         Method of regridding used by xESMF
+    grid_path : str
+        If None, defaults to the model grid. Otherwise, the grid in path is used.
+        If the method is conservative, lat_b and lon_b are required.
 
     Returns
     -------
@@ -661,7 +667,11 @@ def back_to_modgrid(
         paireddict[ordered_keys[-1]].attrs["final_time_string"], dtype="datetime64[ns]"
     )
     # concatenated = concatenated.rename({"longitude" : "lon", "latitude": "lat"})
-    regridder = xe.Regridder(concatenated, modobj, method=method, unmapped_to_nan=True)
+    if grid_path is not None:
+        grid = xr.open_dataset(grid_path)
+        regridder = xe.Regridder(concatenated, grid, method=method, unmapped_to_nan=True)
+    else:
+        regridder = xe.Regridder(concatenated, modobj, method=method, unmapped_to_nan=True)
     out_regridded = regridder(concatenated)
     # out_regridded = out_regridded.rename({"longitude": "lon", "latitude": "lat"})
     for v in out_regridded.variables:
@@ -709,6 +719,7 @@ def back_to_modgrid_multiscan(
     to_netcdf=False,
     path="Regridded_object_XYZ.nc",
     method="bilinear",
+    grid_path=None,
 ):
     """Grids object in sat-space to modgrid. Designed to grid back to modgrid after applying
     the scattering weights and air mass factors. It is designed for multiple scans, and uses
@@ -744,11 +755,15 @@ def back_to_modgrid_multiscan(
             if paireddict[k].attrs["scan_num"] == scan_num:
                 keys_in_scan.append(k)
             else:
-                regridded_scan = back_to_modgrid(paireddict, modobj, keys_in_scan, method=method)
+                regridded_scan = back_to_modgrid(
+                    paireddict, modobj, keys_in_scan, method=method, grid_path=grid_path
+                )
                 out_regridded = xr.merge([out_regridded, regridded_scan])
                 scan_num = paireddict[k].attrs["scan_num"]
                 keys_in_scan = [k]
-    regridded_scan = back_to_modgrid(paireddict, modobj, keys_in_scan, add_time=True)
+    regridded_scan = back_to_modgrid(
+        paireddict, modobj, keys_in_scan, add_time=True, method=method, grid_path=grid_path
+    )
     out_regridded = xr.merge([out_regridded, regridded_scan])
 
     if to_netcdf:
