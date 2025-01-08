@@ -219,7 +219,7 @@ def make_timeseries(
     # Set parameters for all plots
     ax.set_ylabel(ylabel, fontweight="bold", **text_kwargs)
     ax.set_xlabel("time", fontweight="bold", **text_kwargs)
-    ax.legend(frameon=False, fontsize=text_kwargs["fontsize"] * 0.8)
+    # ax.legend(frameon=False, fontsize=text_kwargs["fontsize"] * 0.8)
     ax.tick_params(axis="both", length=10.0, direction="inout")
     ax.tick_params(axis="both", which="minor", length=5.0, direction="out")
     ax.legend(
@@ -720,7 +720,8 @@ def make_spatial_dist(
         crs=map_kwargs["crs"], extent=map_kwargs["extent"], states=states, counties=counties
     )
     # draw scatter plot of model and satellite differences
-    c = ax.axes.scatter(dset.longitude, dset.latitude, c=var2plot, cmap=cmap, s=2, norm=norm)
+    # c = ax.axes.scatter(dset.longitude, dset.latitude, c=var2plot, cmap=cmap, s=2, norm=norm)
+    c = ax.axes.pcolormesh(dset.longitude, dset.latitude, var2plot, cmap=cmap, norm=norm)
     plt.gcf().canvas.draw()
     plt.tight_layout(pad=0)
     timestamps = (
@@ -905,9 +906,10 @@ def make_spatial_bias_gridded(
         crs=map_kwargs["crs"], extent=map_kwargs["extent"], states=states, counties=counties
     )
     # draw scatter plot of model and satellite differences
-    c = ax.axes.scatter(
-        dset.longitude, dset.latitude, c=diff_mod_min_obs, cmap=cmap, s=2, norm=norm
-    )
+    # c = ax.axes.scatter(
+    #     dset.longitude, dset.latitude, c=diff_mod_min_obs, cmap=cmap, s=2, norm=norm
+    # )
+    c = ax.axes.pcolormesh(dset.longitude, dset.latitude, diff_mod_min_obs, cmap=cmap, norm=norm)
     plt.gcf().canvas.draw()
     plt.tight_layout(pad=0)
     timestamps = (
@@ -1150,11 +1152,12 @@ def make_diurnal_cycle(dset, varname, ax=None, **kwargs):
     time_offset = kwargs.get("time_offset", 0)
     dset_copy["time"] = dset_copy["time"] + np.timedelta64(time_offset, 'h')
 
+    dset_copy = dset_copy.mean(dim=['x', 'y'])
     dset_diurnal_group = dset_copy.groupby("time.hour")
-    dset_diurnal = dset_diurnal_group.mean()
+    dset_diurnal = dset_diurnal_group.median()
 
     # Set some defaults
-    text_defaults = {'fontsize': 14}
+    text_kwargs = {'fontsize': 14}
     style_dict = {"linestyle":"-", "marker":"*", "linewidth":"1.2", "markersize":"6.0"}
     if ax is None:
         style_dict["color"] = "k"
@@ -1162,7 +1165,7 @@ def make_diurnal_cycle(dset, varname, ax=None, **kwargs):
         f, ax = plt.subplots(**fig_dict)
 
     if 'text_dict' in kwargs:
-        text_kwargs = {**text_defaults, **kwargs['text_dict']}
+        text_kwargs = {**text_kwargs, **kwargs['text_dict']}
 
     ylabel = kwargs.get('ylabel', varname)
     if 'units' in kwargs:
@@ -1170,35 +1173,46 @@ def make_diurnal_cycle(dset, varname, ax=None, **kwargs):
     elif 'units' in dset[varname].attrs:
         ylabel = f"{ylabel} ({dset[varname].attrs['units']})"
 
-    p = ax.plot(dset_diurnal['hour'], dset_diurnal[varname])
-    ax.set_xlabel(kwargs.get(kwargs["plot_dict"]["xlabel"], "hour"), **text_kwargs)
+    label = kwargs.get('label', None)
+    p = ax.plot(dset_diurnal['hour'], dset_diurnal[varname], label=label, **{**style_dict, **kwargs['plot_dict']})
+    ax.set_xlabel(kwargs.get("xlabel", "hour"), **text_kwargs)
     ax.set_ylabel(ylabel, **text_kwargs)
+    ax.legend(fontsize = text_kwargs['fontsize'] * 0.8)
 
     if 'range_shading' in kwargs:
         range_shading = kwargs['range_shading']
         if range_shading == 'no':
             pass
-        elif (range_shading not in ['total', 'std']) or ('pct:' not in range_shading):
+        elif (range_shading not in ['total', 'std', 'IQR']) and ('pct:' not in range_shading):
             warnings.warn(
-                f"range_shading is {range_shading}, not in ['no', 'total', 'std'] nor 'pct:'."
+                f"range_shading is {range_shading}, not in ['no', 'total', 'std', 'IQR'] nor 'pct:'."
                 + " Ignoring."
             )
         else:
             if range_shading == 'total':
-                range_max = dset_diurnal_group.max()
-                range_min = dset_diurnal_group.min()
+                range_max = dset_diurnal_group.max()[varname]
+                range_min = dset_diurnal_group.min()[varname]
             elif range_shading == 'std':
-                std = dset_diurnal_group.std()
-                range_max = dset_diurnal + std
-                range_min = dset_diurnal  - std
+                std = dset_diurnal_group.std()[varname]
+                range_max = dset_diurnal[varname] + std
+                range_min = dset_diurnal[varname]  - std
+            elif range_shading == 'IQR':
+                range_max = dset_diurnal_group.quantile(q=0.75)[varname]
+                range_min = dset_diurnal_group.quantile(q=0.25)[varname]
             elif 'pct:' in range_shading:
                 quantile = float(range_shading[4:])/100
                 upper_range = quantile + (1 - quantile) / 2
                 lower_range = (1 - quantile) / 2
-                range_max = dset_diurnal_group.quantile(upper_range)
-                range_min = dset_diurnal_group.quantile(lower_range)
-            color = p.get_color()[-1]
-            ax.fill_between(dset_diurnal['hour'], range_min, range_max, alpha=0.5, color=p)
+                range_max = dset_diurnal_group.quantile(upper_range)[varname]
+                range_min = dset_diurnal_group.quantile(lower_range)[varname]
+            color = p[-1].get_color()
+            ax.fill_between(dset_diurnal['hour'], range_min, range_max, alpha=0.2, color=color)
+    vmax = kwargs.get('vmax', None)
+    vmin = kwargs.get('vmin', None)
+    vmax = float(vmax) if vmax is not None else None
+    vmin = float(vmin) if vmin is not None else None
+    ax.set_ylim(top=vmax, bottom=vmin)
+    ax.set_title(f"{kwargs.get('domain_name', None)}", fontsize=text_kwargs['fontsize'])
     return ax
 
 
