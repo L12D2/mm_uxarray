@@ -202,13 +202,13 @@ def control_custom_mask(data, domain_type, domain_info=None, **kwargs):
     """
     if "custom" not in domain_type:
         raise ValueError("If regionmask is used, the domain_type should be starting with 'custom'")
-    if "auto_polygon" in domain_type:
+    if "polygon" in domain_type:
         masked_data = create_custom_mask(data, domain_info["mask_info"])
-    elif "defined_region" in domain_type:
+    elif "defined-region" in domain_type:
         name_regiontype = domain_info["name_regiontype"]
         region = domain_info["region"]
         masked_data = create_predefined_mask(data, name_regiontype, region)
-    elif "custom_file" in domain_type:
+    elif "file" in domain_type:
         params = domain_info
         params["mask_path"] = domain_info.get("mask_path", None)
         params["mask_url"] = domain_info.get("mask_url", None)
@@ -217,8 +217,8 @@ def control_custom_mask(data, domain_type, domain_info=None, **kwargs):
         masked_data = create_shapefile_mask(data, **params, **kwargs)
     else:
         raise ValueError(
-            "Could not identify the type of domain. Should be 'auto_polygon',"
-            + " 'defined_region' or 'custom_file'"
+            "Could not identify the type of domain. Should be 'polygon',"
+            + " 'defined-region' or 'file'"
         )
     return masked_data
 
@@ -232,13 +232,13 @@ def create_autoregion(data, domain_type, domain_name, domain_info=None):
         data to be masked
     domain_type : str
         type of data. Used to decide which function to apply.
-        If domain_type == 'auto-region:custom_box', domain_info is required.
+        If domain_type == 'auto-region:', domain_info is required.
     domain_name : str
         This is used as the region name, or to read the info.
     domain_info: None | dict[str, tuple[float, float, float, float]]
         if not None, dict containing the domain name and a tuple with
         latmin, lonmin, latmax, lonmax. Only required if domain_type
-        is auto-region:custom_box
+        is auto-region:
     Returns
     -------
     xr.Dataset | pd.DataFrame
@@ -249,7 +249,7 @@ def create_autoregion(data, domain_type, domain_name, domain_info=None):
         bounds = get_epa_region_bounds(acronym=domain_name)
     elif auto_region_id == "giorgi":
         bounds = get_giorgi_region_bounds(acronym=domain_name)
-    elif auto_region_id == "custom_box":
+    elif auto_region_id == "box":
         bounds = domain_info["bounds"]
     else:
         raise ValueError(
@@ -308,7 +308,7 @@ def select_region(data, domain_type, domain_name, domain_info=None, **kwargs):
         if regionmask is None:
             raise ImportError(
                 "regionmask is not installed, cannot create 'custom' type domain."
-                + " If your domain is a simple box, try using auto-region:custom_box."
+                + " If your domain is a simple box, try using auto-region:box."
             )
         if domain_info is None:
             raise KeyError("If regionmask is used, domain_info must exist.")

@@ -8,28 +8,28 @@ In this case, the variable/column that defines the region of interest should be 
 `domain_type` in the YAML file, and the name of the region to select should be provided as `domain_name`.
 
 If that data are not available in the observations, another option is to provide a lonlat box, which is
-defined by setting `domain_type: auto-region:xxxxx`, where `xxxxx` can be `epa`, `giorgi` or `custom_box`.
+defined by setting `domain_type: auto-region:xxxxx`, where `xxxxx` can be `epa`, `giorgi` or `box`.
 `Giorgi` regions and a rough, rectangular approximation to `EPA` regions have already been hardcoded into
 MELODIES-MONET.
 In the case of `EPA` regions, be aware that the approximation is quite rough to force it into a rectangular lonlat box, and although it is probably sufficient for plotting maps, it can lead to errors if used for anything else.
-If `auto-region:custom_box` is selected a lonlat box in the form of `bounds: [minlat, minlon, maxlat, maxlon]` needs to be provided in `domain_info` (see example below).
-`auto-region:custom_box` has, however, some limitations: `minlon` and `maxlon` need to be in the range of `[-180, 180]`, and the box cannot cross the antimeridian.
+If `auto-region:box` is selected a lonlat box in the form of `bounds: [minlat, minlon, maxlat, maxlon]` needs to be provided in `domain_info` (see example below).
+`auto-region:box` has, however, some limitations: `minlon` and `maxlon` need to be in the range of `[-180, 180]`, and the box cannot cross the antimeridian.
 
 A third, and more sofisticated option, consists in utilizing the optional dependency `regionmask <https://regionmask.readthedocs.io/en/stable/>`__.
-This is selected by defining `domain_type: custom:xxxxx`, where `xxxxx` can be `auto_polygon`, `defined_region` or `custom_file`. 
+This is selected by defining `domain_type: custom:xxxxx`, where `xxxxx` can be `polygon`, `region` or `file`. 
 All of these options require extra data provided in a `domain_info` keyword in the YAML file.
 This option includes a multiplicity of capabilities:
-* If `auto_polygon` is selected, the vertices of one or more arbitrary polygons need to be provided (anti clockwise).
+* If `polygon` is selected, the vertices of one or more arbitrary polygons need to be provided (anti clockwise).
 Currently no holes inside the polygon are supported.
-* If `defined_region` is selected, any defined region supported by `regionmask` can be provided in `domain_info`.
-* If `custom_file` is provided, the path to a shapefile/geojson file has to be provided. There is no need to decompress `.zip` shapefiles. Alternatively, the download URL can be provided, and the code will download the file automatically. Be aware that if a file with the same name is already in the working directory, it will be silently overwritten.
+* If `region` is selected, any defined region supported by `regionmask` can be provided in `domain_info`.
+* If `file` is provided, the path to a shapefile/geojson file has to be provided. There is no need to decompress `.zip` shapefiles. Alternatively, the download URL can be provided, and the code will download the file automatically. Be aware that if a file with the same name is already in the working directory, it will be silently overwritten.
 
 
 An example of the plotting part of an arbitrary plot for eact type of region is shown below:
 
 .. code-block:: yaml
 
-  domain_type: ["all", "all", "state_name", "epa_region", "auto-region:giorgi", "auto-region:custom_box", "custom:auto_polygon", "custom:auto_polygon", "custom:defined_region", "custom:custom_file", "custom:custom_file"]
+  domain_type: ["all", "all", "state_name", "epa_region", "auto-region:giorgi", "auto-region:box", "custom:polygon", "custom:polygon", "custom:region", "custom:file", "custom:file"]
   domain_name: ["CONUS", "model", "CO", "R8", "CNA", "R8box", "onepoly", "twopolys", "colorado", "denverfile", "denverurl"]
   domain_info:
     R8box: 
