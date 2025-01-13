@@ -6,6 +6,7 @@ from __future__ import division
 from builtins import range
 
 import numpy as np
+import xarray as xr
 
 __author__ = 'barry'
 
@@ -277,7 +278,6 @@ def get_epa_region_df(df):
 
 def resample_stratify(da, levels, vertical, axis=1,interpolation='linear',extrapolation='nan'):
     import stratify
-    import xarray as xr
 
     result = stratify.interpolate(levels, vertical.chunk().data, da.chunk().data, axis=axis,
                                  interpolation = interpolation,extrapolation = extrapolation)
@@ -294,7 +294,6 @@ def resample_stratify(da, levels, vertical, axis=1,interpolation='linear',extrap
     return out
 
 def vert_interp(ds_model,df_obs,var_name_list):
-    import xarray as xr
     from pandas import merge_asof, Series
 
     var_out_list = []
@@ -313,13 +312,7 @@ def vert_interp(ds_model,df_obs,var_name_list):
         var_out_list.append(out)
 
     df_model = xr.merge(var_out_list).to_dataframe().reset_index()
-    for time in df_model.time.unique():
-        if df_model[df_model.time == time].pressure_obs.unique() > df_model[df_model.time == time].pressure_model.max():
-            df_model.fillna({'pressure_model':df_model[df_model.time == time].pressure_obs},inplace=True)
-        elif df_model[df_model.time == time].pressure_obs.unique() < df_model[df_model.time == time].pressure_model.min():
-            df_model.fillna({'pressure_model':df_model[df_model.time == time].pressure_obs},inplace=True)
-            print('Warning: You are pairing obs data above the model top. This is not recommended.')
-            print(time)
+    df_model.fillna({'pressure_model':df_model.pressure_obs},inplace=True)
     df_model.drop(labels=['x','y','z','pressure_obs','time_obs'], axis=1, inplace=True)
     df_model.rename(columns={'pressure_model':'pressure_obs'}, inplace=True)
 
@@ -330,7 +323,6 @@ def vert_interp(ds_model,df_obs,var_name_list):
     return final_df_model
 
 def mobile_and_ground_pair(ds_model,df_obs, var_name_list):
-    import xarray as xr
     from pandas import merge_asof, Series
     
     var_out_list = []
@@ -353,7 +345,7 @@ def mobile_and_ground_pair(ds_model,df_obs, var_name_list):
 
     final_df_model = merge_asof(df_obs, df_model, 
                             by=['latitude', 'longitude'], 
-                            on='time', direction='nearest', suffixes=('', '_new'))
+                            on='time', direction='nearest')
 
     return final_df_model
 
@@ -376,7 +368,6 @@ def find_obs_time_bounds(files=[],time_var=None):
     """
     import os 
     import monetio as mio
-    import xarray as xr
     
     if isinstance(files,str):
         files = [files]
@@ -508,3 +499,76 @@ def convert_std_to_amb_bc(ds,convert_vars=[],temp_var=None,pres_var=None):
     for var in convert_vars:
         ds[var] = ds[var]*convert_std_to_amb_bc
 
+
+def calc_partialcolumn(modobj, var="NO2"):
+    """Calculates the partial column of a species from its concentration.
+
+    Parameters
+    ----------
+    modobj : xr.Dataset
+        Model data
+    var : str
+        variable to calculate the partial column from
+
+    Returns
+    -------
+    xr.DataArray
+        DataArray containing the partial column of the species.
+    """
+    R = 8.314  # m3 * Pa / K / mol
+    NA = 6.022e23
+    ppbv2molmol = 1e-9
+    m2_to_cm2 = 1e4
+    fac_units = ppbv2molmol * NA / m2_to_cm2
+    partial_col = (
+        modobj[var]
+        * modobj["pres_pa_mid"]
+        * modobj["dz_m"]
+        * fac_units
+        / (R * modobj["temperature_k"])
+    )
+    partial_col.attrs = {"units": "molecules/cm2", "description": f"{var} partial column"}
+    return partial_col
+
+
+def calc_totalcolumn(modobj, var="NO2"):
+    """Calculates the total column of a species from its concentration.
+
+    Parameters
+    ----------
+    modobj : xr.Dataset
+        Model data
+    var : str
+        variable to calculate the total column from
+
+    Returns
+    -------
+    xr.DataArray
+        DataArray containing the total column of the species.
+    """
+    data = calc_partialcolumn(modobj, var)
+    return data.sum(dim='z', keep_attrs=True)
+
+
+def calc_localgeotime(modobj):
+    """Calculates the local (geographic) time based on the longitude.
+
+    Parameters
+    ----------
+    modobj : xr.Dataset
+        Model data
+
+    Returns
+    -------
+    xr.DataArray
+        DataArray containing the local time based on longitude.
+    """
+    # Make sure that lon is in the range [-180, 180]
+    # This should be guaranteed by the reader, and it isn't needed,
+    # but it is very cheap to redo and should make us be safer.
+    lon = (modobj['longitude'] + 180) % 360 - 180
+
+    timedelta = lon * 24/360
+    localtime = modobj["time"] + np.datetime64(timedelta, 'h')
+    localtime.attrs['description'] = 'Geographic local time, based on longitude'
+    return localtime
