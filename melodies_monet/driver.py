@@ -676,10 +676,7 @@ class model:
                             self.obj[v].data += scale
                         elif d['unit_scale_method'] == '-':
                             self.obj[v].data += -1 * scale
-                    if self.obj[v].units == 'ppv':
-                        print('changing units for {}'.format(v))
-                        self.obj[v].values *= 1e9
-                        self.obj[v].attrs['units'] = 'ppbv'        
+    
     def sum_variables(self):
         """Sum any variables noted that should be summed to create new variables.
         This occurs after any unit scaling.
