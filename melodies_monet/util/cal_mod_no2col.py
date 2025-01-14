@@ -12,6 +12,30 @@ import xarray as xr
 import pandas as pd
 from datetime import datetime
 
+def cal_model_no2partialcol(modobj):
+    
+    """
+    Calcuate model (WRF-Chem) NO2 partial columns, to pair with satellite data
+    
+    Parameters
+    ------
+    modobj         : model data
+  
+    Output
+    ------
+    modobj        : revised model data with 'no2col' and 'localtime' added
+
+    """
+    # convert to ppm
+    no2 = modobj['no2'] / 1000.0
+    #for vl in range(nz):
+    ad = modobj['pres_pa_mid'] * (28.97e-3)/(8.314*modobj['temperature_k'])
+        #zh = ((ph[:,vl+1,:,:] + phb[:,vl+1,:,:]) - (ph[:,vl,:,:]+phb[:,vl,:,:]))/9.81
+    no2col = no2*modobj['dz_m']*6.022e23/(28.97e-3)*1e-10*ad # timex y x x
+    #no2col[:,vl,:,:] = value[:,:,:]
+    no2col.attrs['units'] = 'molec cm$^{-2}$'
+    return no2col 
+
 def cal_model_no2columns(modobj):
 
     """

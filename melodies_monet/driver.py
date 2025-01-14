@@ -1353,26 +1353,29 @@ class analysis:
                         self.paired[label] = p
 
                     if obs.sat_type == 'tropomi_l2_no2':
-                        from .util import sat_l2_swath_utility as sutil
-                        from .util import cal_mod_no2col as mutil
+                        from .util import sat_l2_swath_utility as no2util
+                        from .util import satellite_utilites as sutil
 
                         # calculate model no2 trop. columns. M.Li
                         # to fix the "time" duplicate error
                         model_obj = mod.obj
-                        model_obj = model_obj.rename_dims({'time':'t'})
-                        model_obj = mutil.cal_model_no2columns(model_obj)
-                        #obs_dat = obs.obj.sel(time=slice(self.start_time.date(),self.end_time.date())).copy()
-
+   
+                        if pairing_kws['mod_to_overpass']:
+                            print('sampling model to 13:30 local overpass time')
+                            overpass_datetime = pd.date_range(self.start_time.replace(hour=13,minute=30),
+                                                              self.end_time.replace(hour=13,minute=30),freq='D')
+                            model_obj = sutil.mod_to_overpasstime(model_obj,overpass_datetime,partial_col='no2')
+                            # enforce dimension order is time, z, y, x
+                            model_obj = model_obj.transpose('time','z','y','x',...)
+                        
                         if pairing_kws['apply_ak'] == True:
-                            paired_data = sutil.trp_interp_swatogrd_ak(obs.obj, model_obj)
+                            paired_data = no2util.trp_interp_swatogrd_ak(obs.obj, model_obj)
                         else:
-                            paired_data = sutil.trp_interp_swatogrd(obs.obj, model_obj)
+                            paired_data = no2util.trp_interp_swatogrd(obs.obj, model_obj)
 
-                        self.models[model_label].obj = model_obj
 
                         p = pair()
 
-                        paired_data = paired_data.reset_index("y") # for saving
                         paired_data_cp = paired_data.sel(time=slice(self.start_time.date(),self.end_time.date())).copy()
 
                         p.type = obs.obs_type
@@ -1417,9 +1420,6 @@ class analysis:
                         
                         if pairing_kws['apply_ak']: 
                             model_obj = mod.obj[keys+['pres_pa_mid']]
-                            # trim to only data within analysis window, as averaging kernels can't be applied outside it
-                            obs_dat = obs.obj.sel(time=slice(self.start_time.date(),self.end_time.date()))
-                            model_obj = model_obj.sel(time=slice(self.start_time.date(),self.end_time.date()))
                             
                             # Sample model to observation overpass time
                             if pairing_kws['mod_to_overpass']:
@@ -1427,7 +1427,9 @@ class analysis:
                                 overpass_datetime = pd.date_range(self.start_time.replace(hour=10,minute=30),
                                                                   self.end_time.replace(hour=10,minute=30),freq='D')
                                 model_obj = sutil.mod_to_overpasstime(model_obj,overpass_datetime)
-                            
+                            # trim to only data within analysis window, as averaging kernels can't be applied outside it
+                            obs_dat = obs.obj.sel(time=slice(self.start_time.date(),self.end_time.date()))
+                            model_obj = model_obj.sel(time=slice(self.start_time.date(),self.end_time.date()))
                             # interpolate model to observation, calculate column with averaging kernels applied
                             paired = sutil.mopitt_l3_pairing(model_obj,obs_dat,keys[0],global_m=mod.isglobal)
                             p = pair()
