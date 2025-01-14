@@ -566,9 +566,9 @@ def calc_localgeotime(modobj):
     # Make sure that lon is in the range [-180, 180]
     # This should be guaranteed by the reader, and it isn't needed,
     # but it is very cheap to redo and should make us be safer.
-    lon = (modobj['longitude'] + 180) % 360 - 180
 
-    timedelta = lon * 24/360
-    localtime = modobj["time"] + np.datetime64(timedelta, 'h')
+    hrs2ms = 3600000
+    timedelta = (modobj["longtidue"].values * hrs2ms / 15).astype('timedelta64[ms]')
+    localtime = modobj["time"] + timedelta
     localtime.attrs['description'] = 'Geographic local time, based on longitude'
     return localtime
