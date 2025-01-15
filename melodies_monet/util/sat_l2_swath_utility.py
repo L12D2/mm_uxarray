@@ -41,14 +41,14 @@ def trp_interp_swatogrd(obsobj, modobj):
     no2_modgrid_avg=xr.Dataset(data_vars = dict(
             nitrogendioxide_tropospheric_column=(["time", "x", "y"],
                                                 np.full([nobstime, ny, nx], np.nan, dtype=np.float32)),
-            no2trpcol=(["time", "x", "y"],no2_mod),
+            no2trpcol=(["time", "x", "y"], np.full([nobstime, ny, nx], np.nan, dtype=np.float32)),
             latitude=(["x", "y"],modobj.coords['latitude'].values),
             longitude=(["x", "y"],modobj.coords['longitude'].values)
             ),
         coords = dict(
             time=time,
-            lon=(["x", "y"], modlon.values),
-            lat=(["x", "y"], modlat.values)),
+            lon=(["x", "y"], modobj.coords['longitude'].values),
+            lat=(["x", "y"], modobj.coords['latitude'].values)),
         attrs=dict(description="daily tropomi data at model grids"),)
 
     for nd in range(nobstime):
@@ -62,11 +62,11 @@ def trp_interp_swatogrd(obsobj, modobj):
         
         # sum up tropopause
         if 'pres_pa_trop' in list(modobj.keys()):
-            no2_modgrid_avg['no2trpcol'][nd, :,:] = modobj_tm['no2col'].where(modobj_tm['pres_pa_mid'] <= modobj_tm['pres_pa_trop']).sum(dim='z')
+            no2_modgrid_avg['no2trpcol'][nd, :,:] = modobj_tm['no2col'].where(modobj_tm['pres_pa_mid'] <= modobj_tm['pres_pa_trop']).sum(dim='z').values.squeeze()
 
         else:
             print('Caution: model tropospheric NO2 column was calculated assuming the model top is the tropopause')
-            no2_modgrid_avg['no2trpcol'][nd, :,:] = modobj_tm['no2col'].sum(dim='z')
+            no2_modgrid_avg['no2trpcol'][nd, :,:] = modobj_tm['no2col'].sum(dim='z').values.squeeze()
             
         # --- TROPOMI
         # number of swath
@@ -83,7 +83,7 @@ def trp_interp_swatogrd(obsobj, modobj):
             # regridding from swath grid to model grids
             grid_in = {'lon':satlon.values, 'lat':satlat.values}
 
-            regridder = xe.Regridder(grid_in, no2_mod_grid_avg[['lat','lon']],'bilinear',ignore_degenerate=True,reuse_weights=False)
+            regridder = xe.Regridder(grid_in, no2_modgrid_avg[['lat','lon']],'bilinear',ignore_degenerate=True,reuse_weights=False)
             
             # regridded no2 trop. columns
             no2_modgrid = regridder(satno2) # , keep_attrs=True
@@ -97,7 +97,7 @@ def trp_interp_swatogrd(obsobj, modobj):
             print(' no2 satellite:', np.nanmin(no2_modgrid), np.nanmax(no2_modgrid))
 
         # daily averaged no2 trop. columns at model grids
-        no2_modgrid_avg['nitrogendioxide_tropspheric_column'][nd,:,:] = np.nanmean(np.where(no2_modgrid_all > 0.0, no2_modgrid_all, np.nan), axis=2)
+        no2_modgrid_avg['nitrogendioxide_tropospheric_column'][nd,:,:] = np.nanmean(np.where(no2_modgrid_all > 0.0, no2_modgrid_all, np.nan), axis=2)
 
     del(modobj)
     del(obsobj)
@@ -131,20 +131,20 @@ def trp_interp_swatogrd_ak(obsobj, modobj):
     no2_modgrid_avg=xr.Dataset(data_vars = dict(
             nitrogendioxide_tropospheric_column=(["time", "x", "y"],
                                                 np.full([nobstime, ny, nx], np.nan, dtype=np.float32)),
-            no2trpcol=(["time", "x", "y"],no2_mod),
+            no2trpcol=(["time", "x", "y"],np.full([nobstime, ny, nx], np.nan, dtype=np.float32)),
             latitude=(["x", "y"],modobj.coords['latitude'].values),
             longitude=(["x", "y"],modobj.coords['longitude'].values)
             ),
         coords = dict(
             time=time,
-            lon=(["x", "y"], modlon.values),
-            lat=(["x", "y"], modlat.values)),
+            lon=(["x", "y"], modobj.coords['longitude'].values),
+            lat=(["x", "y"], modobj.coords['latitude'].values)),
         attrs=dict(description="daily tropomi data at model grids"),)
 
     tmpvalue = np.zeros([ny, nx], dtype = np.float64)
     
     # loop over all days
-    for nd in range(ntime):
+    for nd in range(nobstime):
 
         days = list(obsobj.keys())[nd]
 
@@ -155,11 +155,11 @@ def trp_interp_swatogrd_ak(obsobj, modobj):
               
         # sum up tropopause, needs to be revised to tropopause
         if 'pres_pa_trop' in list(modobj.keys()):
-            no2_modgrid_avg['no2trpcol'][nd, :,:] = modobj_tm['no2col'].where(modobj_tm['pres_pa_mid'] <= modobj_tm['pres_pa_trop']).sum(dim='z')
+            no2_modgrid_avg['no2trpcol'][nd, :,:] = modobj_tm['no2col'].where(modobj_tm['pres_pa_mid'] <= modobj_tm['pres_pa_trop']).sum(dim='z').values.squeeze()
 
         else:
             print('Caution: model tropospheric NO2 column was calculated assuming the model top is the tropopause')
-            no2_modgrid_avg['no2trpcol'][nd, :,:] = modobj_tm['no2col'].sum(dim='z')
+            no2_modgrid_avg['no2trpcol'][nd, :,:] = modobj_tm['no2col'].sum(dim='z').values.squeeze()
         # --- tropomi ---
         # number of swath
         nswath = len(obsobj[days])
@@ -171,7 +171,7 @@ def trp_interp_swatogrd_ak(obsobj, modobj):
             working_swath = obsobj[days][ns]     
 
             grid_sat = {'lon':working_swath['lon'].values, 'lat':working_swath['lat'].values}
-            grid_mod= {'lon':modlon.values, 'lat':modlat.values}
+            grid_mod= {'lon':modobj.coords['longitude'].values, 'lat':modobj.coords['latitude'].values}
 
 
             nysat, nxsat, nzsat = working_swath['averaging_kernel'].shape
@@ -189,7 +189,7 @@ def trp_interp_swatogrd_ak(obsobj, modobj):
             working_swath['averaging_kernel'] = working_swath['averaging_kernel'] * working_swath['air_mass_factor_total'] / working_swath['air_mass_factor_troposphere']
             # calculate the revised tamf_mod, and ratio = tamf_mod / tamf_org
             ratio = cal_amf_wrfchem(working_swath['averaging_kernel'], mod_rgd_sat['pres_pa_mid'].values, working_swath['preslev'], working_swath['troppres'], mod_rgd_sat['no2col'].values,
-                                    working_swath['air_mass_factor_troposphere'], grid_sat['lon'], grid_sat['lat'], modlon, modlat)
+                                    working_swath['air_mass_factor_troposphere'], grid_sat['lon'], grid_sat['lat'], grid_mod['lon'], grid_mod['lat'])
 
             # averaing kernel applied done
             satno2 = working_swath['nitrogendioxide_tropospheric_column'] * ratio 

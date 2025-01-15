@@ -613,6 +613,7 @@ class model:
                 self.mod_kwargs.update({"fname_met_3D": control_dict['model'][self.label].get('files_vert', None)})
                 self.mod_kwargs.update({"fname_met_2D": control_dict['model'][self.label].get('files_met_surf', None)})
                 self.obj = mio.models._camx_mm.open_mfdataset(self.files, **self.mod_kwargs)
+
             elif 'raqms' in self.model.lower():
                 if time_interval is not None:
                     # fill filelist with subset
@@ -624,7 +625,7 @@ class model:
                     self.obj = mio.models.raqms.open_mfdataset(file_list,**self.mod_kwargs)
                 else:
                     self.obj = mio.models.raqms.open_dataset(file_list)
-
+                self.obj = self.obj.rename({'ptrop':'pres_pa_trop'})
             else:
                 print('**** Reading Unspecified model output. Take Caution...')
                 if len(self.files) > 1:
@@ -1354,7 +1355,7 @@ class analysis:
 
                     if obs.sat_type == 'tropomi_l2_no2':
                         from .util import sat_l2_swath_utility as no2util
-                        from .util import satellite_utilites as sutil
+                        from .util import satellite_utilities as sutil
 
                         # calculate model no2 trop. columns. M.Li
                         # to fix the "time" duplicate error
