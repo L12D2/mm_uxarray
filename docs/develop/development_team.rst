@@ -28,9 +28,9 @@ Louisa Emmons      lkemmons        Docs, Aircraft obs, Plots, Stats
 Rebecca Schwantes  rschwant        Docs, Surface and aircraft obs, Plots, Stats
 Margaret Bruckner  mbruckner-work  Docs, Satellite obs, Plots, Stats
 Rebecca Buchholz   rrbuchholz      Docs, Satellite obs, Plots, Stats
-Pablo Lichtig      blychs          Docs, Satellite and surface obs, Plots,Stats
+Pablo Lichtig      blychs          Docs, Satellite and surface obs, Plots, Stats
 Quazi Ziaur Rasool quaz115         Docs, Aircraft obs, Plots, Stats
-Beiming Tang       btang1
+Beiming Tang       btang1          Docs, Surface and ozone sonder obs, Plots, Stats
 ================== =============== ========================================================
 
 Development Team Members
