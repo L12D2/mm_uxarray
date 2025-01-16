@@ -125,5 +125,6 @@ vertical profiles, time series with altitude) and new observations or model data
 interest.
 
 **Beiming Tang**
-Dr. Beiming Tang is a postdoc at NOAA Air Resources Laboratory. His research focus on develop NOAA’s Atmospheric Composition forecast model by advance AI techniques; Melodies-Monet development; and support UFS-AQM evaluations.
-For the development of Melodies-Monet, Beiming created surface multi-box plot, scorecard, and CSI plots, and ozone-sonder plots and TolNet plots.
+Dr. Beiming Tang is a postdoc at NOAA Air Resources Laboratory.
+His research focuses on developing NOAA's Atmospheric Composition forecast model by advancing AI techniques, MELODIES MONET development, and supporting UFS-AQM evaluations.
+For the development of MELODIES MONET, Beiming created surface multi-box plot, scorecard, and CSI plots, and ozonesonde plots and TOLNet plots.
