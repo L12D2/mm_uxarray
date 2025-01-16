@@ -62,7 +62,7 @@ def trp_interp_swatogrd(obsobj, modobj):
         
         # sum up tropopause
         if 'pres_pa_trop' in list(modobj.keys()):
-            no2_modgrid_avg['no2trpcol'][nd, :,:] = modobj_tm['no2col'].where(modobj_tm['pres_pa_mid'] <= modobj_tm['pres_pa_trop']).sum(dim='z').values.squeeze()
+            no2_modgrid_avg['no2trpcol'][nd, :,:] = modobj_tm['no2col'].where(modobj_tm['pres_pa_mid'] >= modobj_tm['pres_pa_trop']).sum(dim='z').values.squeeze()
 
         else:
             print('Caution: model tropospheric NO2 column was calculated assuming the model top is the tropopause')
@@ -155,7 +155,7 @@ def trp_interp_swatogrd_ak(obsobj, modobj):
               
         # sum up tropopause, needs to be revised to tropopause
         if 'pres_pa_trop' in list(modobj.keys()):
-            no2_modgrid_avg['no2trpcol'][nd, :,:] = modobj_tm['no2col'].where(modobj_tm['pres_pa_mid'] <= modobj_tm['pres_pa_trop']).sum(dim='z').values.squeeze()
+            no2_modgrid_avg['no2trpcol'][nd, :,:] = modobj_tm['no2col'].where(modobj_tm['pres_pa_mid'] >= modobj_tm['pres_pa_trop']).sum(dim='z').values.squeeze()
 
         else:
             print('Caution: model tropospheric NO2 column was calculated assuming the model top is the tropopause')
