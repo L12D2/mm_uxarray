@@ -1390,7 +1390,7 @@ class analysis:
                             raise KeyError(f" You asked for {obs.sat_type}. "
                                            + "Only NO2 and HCHO L2 data have been implemented")
                         mod_sp = [
-                            k_sp for k_sp, v in mod.mapping[key].items() if v==sp
+                            k_sp for k_sp, v in mod.mapping[key].items() if v == sp
                         ]
                         # Try catch following EAFP stategy
                         try:
@@ -1408,14 +1408,7 @@ class analysis:
 
                         p = pair()
 
-                        # paired_data = paired_data_atgrid.reset_index("y") # for saving
-                        # paired_data_cp = paired_data.sel(time=slice(self.start_time.date(),self.end_time.date())).copy()
                         paired_data = paired_data_atgrid.sel(time=slice(self.start_time, self.end_time))
-                        
-                        #Reset index. This should dissappear when moving to xarray_plots
-                        # paired_data = paired_data.rename_dims({"y": "ll"})
-                        # paired_data = paired_data.stack(y=["x", "ll"])
-                        # paired_data = paired_data.reset_index("y")
 
                         p.type = obs.obs_type
                         p.obs = obs.label
