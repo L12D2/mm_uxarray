@@ -310,7 +310,7 @@ def apply_weights_mod2tempo_no2_hydrostatic(obsobj, modobj, species="NO2"):
     return modno2col_trfmd.where(np.isfinite(modno2col_trfmd))
 
 
-def apply_weights_mod2tempo_no2(obsobj, modobj, species="NO2"):
+def apply_weights_mod2tempo_no2(obsobj, modobj, species="NO2", column_type='tropospheric'):
     """Apply the scattering weights and air mass factors according to
     Cooper et. al, 2020, doi: https://doi.org/10.5194/acp-20-7231-2020
 
@@ -320,6 +320,8 @@ def apply_weights_mod2tempo_no2(obsobj, modobj, species="NO2"):
         TEMPO data, including pressure and scattering weights
     modobj : xr.Dataset
         Model data, already interpolated to TEMPO grid
+    column_type : str
+        Whether the "tropospheric" or "total" column should be used for the calculation
 
     Returns
     -------
@@ -329,11 +331,12 @@ def apply_weights_mod2tempo_no2(obsobj, modobj, species="NO2"):
     """
     partial_col = modobj[f"{species}_col"]
 
-    tropopause_pressure = obsobj["tropopause_pressure"] * 100
     scattering_weights = obsobj["scattering_weights"].transpose("swt_level", "x", "y")
     scattering_weights = scattering_weights.rename({"swt_level": "z"})
-    scattering_weights = scattering_weights.where(modobj["p_mid_tempo"] >= tropopause_pressure)
-    amf_troposphere = obsobj["amf_troposphere"]
+    if column_type == "tropospheric":
+        tropopause_pressure = obsobj["tropopause_pressure"] * 100
+        scattering_weights = scattering_weights.where(modobj["p_mid_tempo"] >= tropopause_pressure)
+        amf_troposphere = obsobj["amf_troposphere"]
     modno2col_trfmd = (scattering_weights * partial_col).sum(dim="z") / amf_troposphere
     modno2col_trfmd = modno2col_trfmd.where(modobj[f"{species}_col"].isel(z=0).notnull())
     modno2col_trfmd.attrs = {
@@ -895,5 +898,3 @@ def select_by_keys(data_names, period="per_scan"):
 
     # This only should happen if period == "all"
     return [date_names_sorted]
-
-
