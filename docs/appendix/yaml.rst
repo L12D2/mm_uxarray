@@ -322,7 +322,7 @@ with the columns in the observation file), choose ``auto-region:epa`` or
 ``auto-region:giorgi``. Take into account that ``auto-region:epa`` is only a rough
 approximation, since it assumes perfect, rectangular lonlat boxes.
 If you only need a rectangular, lonlat box which does not cross the antimeridian, you can use
-``auto-region:box``, which needs to be combined with the ``domain_info`` parameter and
+``custom:box``, which needs to be combined with the ``domain_info`` parameter and
 a box of ``bounds: [minlat, minlon, maxlat, maxlon]``. See :doc:`/users_guide/region_selection` for examples.
 
 If you have ``regionmask`` installed, you can also use it for advanced region support.
