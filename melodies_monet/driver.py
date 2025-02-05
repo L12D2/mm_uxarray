@@ -1547,9 +1547,9 @@ class analysis:
                                         "sat_grid_clm", "sat_swath_prof"]:
                              # convert index to time; setup for sat_swath_clm
                             
-                            if 'time' not in p.obj.dims and obs_type == 'sat_swath_clm':
+                            if 'time' not in p_region.dims and obs_type == 'sat_swath_clm':
                                 
-                                pairdf_all = p.obj.swap_dims({'x':'time'})
+                                pairdf_all = p_region.swap_dims({'x':'time'})
                             # squash lat/lon dimensions into single dimension
                             ## 2024-03 MEB rechecking necessity of this.
                             #elif obs_type == 'sat_grid_clm':
