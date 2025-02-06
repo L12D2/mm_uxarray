@@ -528,11 +528,7 @@ def calc_partialcolumn(modobj, var="NO2"):
         * fac_units
         / (R * modobj["temperature_k"])
     )
-    partial_col.attrs = {
-        "units": "molecules/cm2",
-        "description": f"{var} partial column",
-        "long_name": f"partial column of {var}",
-    }
+    partial_col.attrs = {"units": "molecules/cm2", "long_name": f"{var} partial column"}
     return partial_col
 
 
@@ -553,11 +549,7 @@ def calc_totalcolumn(modobj, var="NO2"):
     """
     data = calc_partialcolumn(modobj, var)
     total_col = data.sum(dim='z', keep_attrs=True)
-    total_col.attrs = {
-        "units": "molecules/cm2",
-        "description": f"{var} total column",
-        "long_name": f"total column of {var}",
-    }
+    total_col.attrs = {"units": "molecules/cm2", "long_name": f"{var} total column"}
     return total_col
 
 def calc_geolocaltime(modobj):
