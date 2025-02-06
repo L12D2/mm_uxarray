@@ -344,8 +344,8 @@ def mobile_and_ground_pair(ds_model,df_obs, var_name_list):
     df_model.drop(labels=['x','y','time_obs'], axis=1, inplace=True)
 
     final_df_model = merge_asof(df_obs, df_model, 
-                            by=['latitude', 'longitude'], 
-                            on='time', direction='nearest')
+                            by=['latitude', 'longitude'],
+                            on='time', direction='nearest', suffixes=('', '_new'))
 
     return final_df_model
 
