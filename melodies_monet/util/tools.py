@@ -527,7 +527,11 @@ def calc_partialcolumn(modobj, var="NO2"):
         * fac_units
         / (R * modobj["temperature_k"])
     )
-    partial_col.attrs = {"units": "molecules/cm2", "description": f"{var} partial column"}
+    partial_col.attrs = {
+        "units": "molecules/cm2",
+        "description": f"{var} partial column",
+        "long_name": f"partial column of {var}",
+    }
     return partial_col
 
 
@@ -547,8 +551,13 @@ def calc_totalcolumn(modobj, var="NO2"):
         DataArray containing the total column of the species.
     """
     data = calc_partialcolumn(modobj, var)
-    return data.sum(dim='z', keep_attrs=True)
-
+    total_col = data.sum(dim='z', keep_attrs=True)
+    total_col.attrs = {
+        "units": "molecules/cm2",
+        "description": f"{var} total column",
+        "long_name": f"total column of {var}",
+    }
+    return total_col
 
 def calc_geolocaltime(modobj):
     """Calculates the geographic local time based on the longitude.
