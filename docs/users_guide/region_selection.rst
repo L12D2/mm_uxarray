@@ -8,7 +8,7 @@ In this case, the variable/column that defines the region of interest should be 
 `domain_type` in the YAML file, and the name of the region to select should be provided as `domain_name`.
 
 If the regional metadata are not available in the observations, another option is to provide a lonlat box, which
-can be defined by setting `domain_type: auto-region:xxxxx`, where `xxxxx` can be `epa`, `giorgi` or 
+can be defined by setting `domain_type: auto-region:xxxxx`, where `xxxxx` can be `epa` or `giorgi`, or setting
 as `custom:box`.
 `Giorgi` regions and a rough, rectangular approximation to `EPA` regions have already been hardcoded into
 MELODIES-MONET.
