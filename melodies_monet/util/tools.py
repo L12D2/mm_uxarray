@@ -11,6 +11,9 @@ import xarray as xr
 __author__ = 'barry'
 
 
+R = 8.31446261815324  # m3 * Pa / K / mol
+N_A = 6.02214076e23
+
 def search_listinlist(array1, array2):
     # find intersections
 
@@ -469,9 +472,9 @@ def convert_std_to_amb_ams(ds,convert_vars=[],temp_var=None,pres_var=None):
     Losch = 2.69e25 # loschmidt's number
     #I checked the more detailed icart files
     #273 K, 1 ATM (101325 Pa)
-    std_ams = 101325.*6.02214e23/(8.314472*273.)
+    std_ams = 101325.*N_A/(R*273.)
     #use pressure_obs now, which is in pa
-    Airnum = ds[pres_var]*6.02214e23/(8.314472*ds[temp_var])
+    Airnum = ds[pres_var]*N_A/(R*ds[temp_var])
     
     # amb to std = Losch / Airnum
     convert_std_to_amb_ams = Airnum/std_ams
@@ -489,9 +492,9 @@ def convert_std_to_amb_bc(ds,convert_vars=[],temp_var=None,pres_var=None):
     #So I just need to convert the obs from std to amb.
     Losch = 2.69e25 # loschmidt's number
     #1013 mb, 273 K (101300 Pa)
-    std_bc = 101300.*6.02214e23/(8.314472*273.)
+    std_bc = 101300.*N_A/(R*273.)
     #use pressure_obs now, which is in pa
-    Airnum = ds[pres_var]*6.02214e23/(8.314472*ds[temp_var])
+    Airnum = ds[pres_var]*N_A/(R*ds[temp_var])
     
     # amb to std = Losch / Airnum
     convert_std_to_amb_bc = Airnum/std_bc
@@ -515,11 +518,9 @@ def calc_partialcolumn(modobj, var="NO2"):
     xr.DataArray
         DataArray containing the partial column of the species.
     """
-    R = 8.314  # m3 * Pa / K / mol
-    NA = 6.022e23
     ppbv2molmol = 1e-9
     m2_to_cm2 = 1e4
-    fac_units = ppbv2molmol * NA / m2_to_cm2
+    fac_units = ppbv2molmol * N_A / m2_to_cm2
     partial_col = (
         modobj[var]
         * modobj["pres_pa_mid"]
