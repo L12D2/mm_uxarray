@@ -550,8 +550,8 @@ def calc_totalcolumn(modobj, var="NO2"):
     return data.sum(dim='z', keep_attrs=True)
 
 
-def calc_localgeotime(modobj):
-    """Calculates the local (geographic) time based on the longitude.
+def calc_geolocaltime(modobj):
+    """Calculates the geographic local time based on the longitude.
 
     Parameters
     ----------
