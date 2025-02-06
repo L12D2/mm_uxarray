@@ -302,7 +302,7 @@ def select_region(data, domain_type, domain_name, domain_info=None, **kwargs):
 
     if domain_type == "all":
         return data
-    if domain_type.startswith("auto-region") or (domain_type == "custom-box"):
+    if domain_type.startswith("auto-region") or (domain_type == "custom:box"):
         data_masked = create_autoregion(data, domain_type, domain_name, domain_info)
     elif domain_type.startswith("custom"):
         if regionmask is None:
