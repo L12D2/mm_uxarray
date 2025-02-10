@@ -37,6 +37,7 @@ def _download_with_name(url, verbose=False):
        Path to downloaded file
     """
     r = requests.get(url, allow_redirects=True, timeout=10)
+    r.raise_for_status()
     fname = re.findall("filename=(.+)", r.headers.get("content-disposition"))[0]
     if len(fname) == 0:
         fname = url.rsplit("/", 1)[1]
