@@ -59,6 +59,7 @@ MONETIO please refer to:
    getting_started/software_architecture
    getting_started/downloading_obs
    getting_started/how_to_run
+   getting_started/new_to_python
 
 .. toctree::
    :maxdepth: 1

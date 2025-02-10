@@ -43,5 +43,5 @@ Conda
 
 We have created a conda-forge release of MELODIES MONET to make installation very simple.
 Conda is a package manager and environment management system. Please refer to 
-`Installing and Managing Python with Conda <https://foundations.projectpythia.org/foundations/conda.html>`__
+`Installing and Managing Python with Conda on Project Pythia <https://foundations.projectpythia.org/foundations/conda.html>`__
 to learn more about Conda.
