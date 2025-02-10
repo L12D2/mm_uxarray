@@ -35,7 +35,7 @@ We use GitHub to manage our MELODIES MONET code. Please refer to
 to learn more about GitHub.
 
 If you are planning to contribute code back to our MELODIES MONET code repository,
-you will need to add an ssh key to your Github account. Please follow these instructions from
+we recommend for you to add an ssh key to your Github account. Please follow these instructions from
 `Github <https://docs.github.com/en/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account>`__.
 
 Conda
