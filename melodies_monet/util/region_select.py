@@ -255,7 +255,7 @@ def create_autoregion(data, domain_type, domain_name, domain_info=None):
         raise ValueError(
             "Currently, auto-region selections whithout a domain query have only "
             "been implemented for Giorgi and EPA regions. You asked for "
-            f"{domain_type!r}. If you need more capabilities, checkout the custom:"
+            f"{domain_type!r}. If you need more capabilities, check out the custom: "
             "regions capabilities. Be aware that they require regionmask."
         )
     if isinstance(data, pd.DataFrame):
