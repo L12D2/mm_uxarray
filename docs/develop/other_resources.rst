@@ -6,16 +6,36 @@ Check out our upcoming and past tutorials, workshops, surveys, etc. below.
 Upcoming 
 --------
 
-
-**MELODIES MONET tutorial during the MUSICA Tutorial Series**
-
-    March 11, 2022 - During the `MUSICA tutorial <https://www2.acom.ucar.edu/event/workshop/musica-tutorial-2021>`__,
-    we will demonstrate how to use MELODIES MONET to evaluate against surface 
-    observations, discuss current and future development goals, and encourage 
-    more collaboration with others in the community. 
+No upcoming tutorials are currently planned. Please email us at melodies@ucar.edu
+if you have suggestions for us providing tutorials at upcoming events.
 
 Past
 ----
+
+2024
+^^^^
+
+**Oct 2024 MELODIES MONET 2-Day Tutorial**
+
+October 15-16, 2024 - A hybrid `MELODIES MONET Tutorial <https://www2.acom.ucar.edu/events/melodies-tutorial-2024>`__
+was hosted at the NCAR Foothills laboratory in Boulder, CO and online. This tutorial 
+provided lectures on MELODIES MONET capabilities, hands on exercises for users to 
+learn the tool, and break out sessions with the MELODIES MONET development team 
+to learn how to add new features into the tool. The slides and recordings are all 
+on the public
+`Tutorial Agenda Website <https://www2.acom.ucar.edu/events/414344/agenda>`__,
+so that any new user who could not attend the tutorial can still get full and 
+easy access to this information.
+
+2022
+^^^^
+
+**MELODIES MONET tutorial during the MUSICA Tutorial Series**
+
+March 11, 2022 - During the `MUSICA tutorial <https://www2.acom.ucar.edu/event/workshop/musica-tutorial-2021>`__,
+we will demonstrate how to use MELODIES MONET to evaluate against surface 
+observations, discuss current and future development goals, and encourage 
+more collaboration with others in the community. 
 
 2020
 ^^^^
