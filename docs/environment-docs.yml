@@ -4,7 +4,7 @@ channels:
   - conda-forge
   - nodefaults
 dependencies:
-  - python=3.9
+  - python=3.11
   #
   # melodies_monet deps
   - matplotlib-base<3.9  # for pandas v1 compat
@@ -16,6 +16,7 @@ dependencies:
   - pillow<10
   #
   # Extras
+  - numba
   - pooch
   - timezonefinder
   - typer
@@ -23,11 +24,11 @@ dependencies:
   #
   # Docs
   - ipykernel
-  - jupyterlab=3.*
+  - jupyterlab=4.*
   - jupytext
   - myst-nb>=0.14
   - nbclient
-  - sphinx=4.*
+  - sphinx=7.*
   - sphinx-autobuild
   - sphinx-click
   - sphinx-design

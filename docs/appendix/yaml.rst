@@ -75,13 +75,15 @@ regarding the directory files are read from.
    * **method:** The file format to read from. Options are 'netcdf' and 'pkl'. 
    * **filenames:** The filename(s) that should be read in. For method: 'netcdf' this must be set as a dict in the form filenames: {'group1':str or iterable of filename(s) in group1, group2: str or iterable of filename(s) in group2,...}. For method: 'pkl' this must be set as either a string with the filename or as an or iterable of filenames. Wildcards will be expanded to any matching files. 
 
+**add_logo:** This is an optional argument.
+Set this to ``false`` to forgo adding the MELODIES MONET logo to the plots.
+
 **pairing_kwargs:** This is an optional argument. This dictionary allows for specifying keyword arguments for pairing methods.
 First level should be the observation type (e.g. "sat_grid_clm", "sat_swath_clm"). Then under the observation type label provide the specific pairing options for your application.
    
    * **apply_ak:** This is an optional argument used for pairing of satellite data. When no pairing keyword arguments are specified it will default to True. This should be set to True when application of satellite averaging kernels or apriori data to model observations is desired.
    * **mod_to_overpass:** This is an optional argument used for pairing of satellite data. When set to True the model data will be pre-processed to the published local overpass time for the satellite. As of now, local overpass times are hard-wired.
 
- 
 Models
 ------
 All input for each instance of the model class. First level should be the model 
@@ -357,6 +359,8 @@ for csi plot, list of model names (only) user choose to set as labels.
 **threshold_list:** csi plot only. list of values used as x variables. example: [10,20,30,40,50,60,70,80,90,100] 
 
 **score_name:** csi plot only. list of scores user can choose to plot. examples are "Critical Success Index' 'False Alarm Rate' 'Hit Rate'.
+
+**threshold_tick_style:** csi plot only. (optional) control for spacing of threshold (x-axis) ticks. example: use ``nonlinear`` when nonlinear xticks including all thresholds are desired. Any other selection (default = None) will choose xticks that are equally spaced between min(threshold_list):max(threshold_list) and likely won't include all thresholds. 
 
 **data:** This a list of model / observation pairs to be plotted where the 
 observation label is first and the model label is second 
