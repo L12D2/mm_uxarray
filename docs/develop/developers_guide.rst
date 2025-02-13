@@ -166,7 +166,7 @@ project on GitHub to learn about current and future development.
    `added an SSH key <https://docs.github.com/en/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account>`__
    to your GitHub account for your current machine.
    If you are new to GitHub, check out
-   `this GitHub tutorial <https://jlord.computer/git-it/>`__.
+   `Getting Started with GitHub on Project Pythia <https://foundations.projectpythia.org/foundations/getting-started-github.html>`__.
    We recommend the SSH method, but if you don't add an SSH key
    you can still clone the repositories via HTTPS, e.g. ::
 
