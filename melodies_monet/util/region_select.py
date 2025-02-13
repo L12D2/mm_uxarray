@@ -26,7 +26,7 @@ def _download_with_name(url, verbose=False):
     -----------
     url : str
         URL of file to download
-    verbose : boolean
+    verbose : bool
         Whether to add verbosity
     Returns
     -------
