@@ -14,9 +14,6 @@ from melodies_monet.util.tools import get_epa_region_bounds, get_giorgi_region_b
 try:
     import geopandas as gp
     from shapely.geometry import MultiPolygon, Polygon
-except ImportError:
-    gp = None
-try:
     import regionmask
 except ImportError:
     regionmask = None
@@ -50,7 +47,7 @@ def _download_with_name(url, verbose=False):
     return fname
 
 
-def create_custom_mask(data, mask_info):
+def _create_custom_mask(data, mask_info):
     """Creates mask using regionmask.
 
     Parameters
@@ -92,7 +89,7 @@ def create_custom_mask(data, mask_info):
     return masked_data
 
 
-def create_predefined_mask(data, name_regiontype, region=None):
+def _create_predefined_mask(data, name_regiontype, region=None):
     """Creates mask using regionmask.
 
     Parameters
@@ -126,7 +123,7 @@ def create_predefined_mask(data, name_regiontype, region=None):
     return selected_region
 
 
-def create_shapefile_mask(data, mask_path=None, mask_url=None, region_name=None, **kwargs):
+def _create_shapefile_mask(data, mask_path=None, mask_url=None, region_name=None, **kwargs):
     """Creates mask from shapefile using regionmask and geopandas.
 
     Parameters
@@ -181,7 +178,7 @@ def create_shapefile_mask(data, mask_path=None, mask_url=None, region_name=None,
     return selected_region
 
 
-def control_custom_mask(data, domain_type, domain_info=None, **kwargs):
+def _control_custom_mask(data, domain_type, domain_info=None, **kwargs):
     """Parses region information to return the right type of data.
 
     Parameters
@@ -204,18 +201,18 @@ def control_custom_mask(data, domain_type, domain_info=None, **kwargs):
     if "custom" not in domain_type:
         raise ValueError("If regionmask is used, the domain_type should be starting with 'custom'")
     if "polygon" in domain_type:
-        masked_data = create_custom_mask(data, domain_info["mask_info"])
+        masked_data = _create_custom_mask(data, domain_info["mask_info"])
     elif "defined-region" in domain_type:
         name_regiontype = domain_info["name_regiontype"]
         region = domain_info["region"]
-        masked_data = create_predefined_mask(data, name_regiontype, region)
+        masked_data = _create_predefined_mask(data, name_regiontype, region)
     elif "file" in domain_type:
         params = domain_info
         params["mask_path"] = domain_info.get("mask_path", None)
         params["mask_url"] = domain_info.get("mask_url", None)
         params["region_name"] = domain_info.get("region_name", None)
         params["abbrevs"] = domain_info.get("abbrevs", "_from_name")
-        masked_data = create_shapefile_mask(data, **params, **kwargs)
+        masked_data = _create_shapefile_mask(data, **params, **kwargs)
     else:
         raise ValueError(
             "Could not identify the type of domain. Should be 'polygon',"
@@ -312,7 +309,7 @@ def select_region(data, domain_type, domain_name, domain_info=None, **kwargs):
             )
         if domain_info is None:
             raise KeyError("If regionmask is used, domain_info must exist.")
-        data_masked = control_custom_mask(data, domain_type, domain_info, **kwargs)
+        data_masked = _control_custom_mask(data, domain_type, domain_info, **kwargs)
     else:
         if isinstance(data, pd.DataFrame):
             data_masked = data.query(domain_type + " == " + '"' + domain_name + '"')
