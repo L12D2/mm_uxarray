@@ -181,7 +181,7 @@ def _create_shapefile_mask(data, mask_path=None, mask_url=None, region_name=None
     return selected_region
 
 
-def _control_custom_mask(data, domain_type, domain_info=None, **kwargs):
+def control_custom_mask(data, domain_type, domain_info=None, **kwargs):
     """Parses region information to return the right type of data.
 
     Parameters
@@ -201,6 +201,13 @@ def _control_custom_mask(data, domain_type, domain_info=None, **kwargs):
     xr.Dataset
         masked Dataset
     """
+    if regionmask is None:
+        raise ImportError(
+            "regionmask is not installed, try alternative functions."
+                + " create_autoregion can probably do the trick."
+        )
+    if domain_info is None:
+        raise KeyError("If regionmask is used, domain_info must exist.")
     if "custom" not in domain_type:
         raise ValueError("If regionmask is used, the domain_type should be starting with 'custom'")
     if "polygon" in domain_type:
@@ -306,13 +313,7 @@ def select_region(data, domain_type, domain_name, domain_info=None, **kwargs):
     if domain_type.startswith("auto-region") or (domain_type == "custom:box"):
         data_masked = create_autoregion(data, domain_type, domain_name, domain_info)
     elif domain_type.startswith("custom"):
-        if regionmask is None:
-            raise ImportError(
-                "regionmask is not installed, try either auto-region: options or custom:box."
-            )
-        if domain_info is None:
-            raise KeyError("If regionmask is used, domain_info must exist.")
-        data_masked = _control_custom_mask(data, domain_type, domain_info, **kwargs)
+        data_masked = control_custom_mask(data, domain_type, domain_info, **kwargs)
     else:
         if isinstance(data, pd.DataFrame):
             data_masked = data.query(domain_type + " == " + '"' + domain_name + '"')
