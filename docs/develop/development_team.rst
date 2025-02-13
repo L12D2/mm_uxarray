@@ -47,8 +47,8 @@ in regional coupled chemistry-meteorology models. My plans include testing and
 expanding the capability of MELODIES MONET for evaluating simulations with
 research and operational models of fire impacts on air quality and weather.
 
-**Margaret Bruckner:**
-I am a graduate student at the University of Wisconsin-Madison. My development plans
+**Maggie Bruckner:**
+I am an NRC postdoc associated with NOAA CSL. My development plans
 primarily focus on adding capabilities for comparison of satellite observations to model
 output and expanding data processing options. 
 
