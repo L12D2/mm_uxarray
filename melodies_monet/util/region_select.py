@@ -153,8 +153,8 @@ def _create_shapefile_mask(data, mask_path=None, mask_url=None, region_name=None
 
     if mask_url is not None and mask_path is not None:
         warnings.warn(
-            "mask_url and mask_path provided. Only one can be used."
-            + "Selecting mask_path and discarding URL."
+            "mask_url and mask_path provided. Only one can be used. "
+            "Selecting mask_path and discarding URL."
         )
 
     if mask_path is not None:
