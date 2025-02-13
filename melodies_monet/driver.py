@@ -273,7 +273,7 @@ class observation:
                                                                           'apriori_surf','apriori_prof','ak_col'])
 
                 # Determine if monthly or daily product and set as attribute
-                if 'MOP03JM' in glob(self.file)[0]:
+                if any(mtype in glob(self.file)[0] for mtype in ('MOP03JM','MOP03NM','MOP03TM')):
                     self.obj.attrs['monthly'] = True
                 else:
                     self.obj.attrs['monthly'] = False
@@ -1343,6 +1343,7 @@ class analysis:
                     if obs.obs_type.lower() in list(self.pairing_kwargs.keys()):
                         pairing_kws = self.pairing_kwargs[obs.obs_type.lower()]
                     else: 
+                        print('WARNING: The satellite pairing option apply_ak is being set to True. Pairing will fail if there is no AK available.')
                         pairing_kws = {'apply_ak': True, 'mod_to_overpass': False}
                     
                     if obs.sat_type == 'omps_nm':
@@ -1411,7 +1412,8 @@ class analysis:
                     # grab kwargs for pairing. Use default if not specified
                     if obs.obs_type.lower() in list(self.pairing_kwargs.keys()):
                         pairing_kws = self.pairing_kwargs[obs.obs_type.lower()]
-                    else: 
+                    else:
+                        print('WARNING: The satellite pairing option apply_ak is being set to True. Pairing will fail if there is no AK available.')
                         pairing_kws = {'apply_ak': True, 'mod_to_overpass': False}
                     if len(keys) > 1: 
                         print('Caution: More than 1 variable is included in mapping keys.')
