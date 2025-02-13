@@ -35,11 +35,14 @@ def _download_with_name(url, verbose=False):
     """
     r = requests.get(url, allow_redirects=True, timeout=10)
     r.raise_for_status()
-    fname = re.findall("filename=(.+)", r.headers.get("content-disposition"))[0]
-    if len(fname) == 0:
-        fname = url.rsplit("/", 1)[1]
-    if fname[0] == '"':
-        fname = fname[1:-1]
+    fname = None
+    content_disposition = r.headers.get("Content-Disposition")
+    if content_disposition:
+        m = re.search(r"filename=(.+?)(?:;|$)", content_disposition)
+        if m is not None:
+            fname = m.group(1).strip('"')
+    if fname is None:
+        fname = url.rsplit("/", 1)[-1]
     with open(fname, "wb") as f:
         f.write(r.content)
     if verbose:
