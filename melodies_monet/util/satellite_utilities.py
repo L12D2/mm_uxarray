@@ -1,4 +1,3 @@
-# Copyright (C) 2022 National Center for Atmospheric Research and National Oceanic and Atmospheric Administration
 # SPDX-License-Identifier: Apache-2.0
 #
 # File started by Maggie Bruckner. 
@@ -78,7 +77,7 @@ def mopitt_l3_pairing(model_data,obs_data,co_ppbv_varname):
         raise
     # initialize regridder for horizontal interpolation 
     # from model grid to MOPITT grid
-    grid_adjust = xe.Regridder(model_obstime[['latitude','longitude']],obs_data[['lat','lon']],'bilinear')
+    grid_adjust = xe.Regridder(model_obstime[['latitude','longitude']],obs_data[['lat','lon']],'bilinear',periodic=True)
     co_model_regrid = grid_adjust(model_obstime[co_ppbv_varname])
     pressure_model_regrid = grid_adjust(model_obstime['pres_pa_mid']/100.)
     
@@ -137,7 +136,7 @@ def omps_l3_daily_o3_pairing(model_data,obs_data,ozone_ppbv_varname):
     column = (du_fac*(model_data['dp_pa']/100.)*model_data[ozone_ppbv_varname]).sum('z')
     
     # initialize regrid and apply to column data
-    grid_adjust = xe.Regridder(model_data[['latitude','longitude']],obs_data[['latitude','longitude']],'bilinear')
+    grid_adjust = xe.Regridder(model_data[['latitude','longitude']],obs_data[['latitude','longitude']],'bilinear',periodic=True)
     mod_col_obsgrid = grid_adjust(column)
     # Aggregate time-step to daily means
     daily_mean = mod_col_obsgrid.resample(time='1D').mean()

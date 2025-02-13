@@ -1,4 +1,3 @@
-# Copyright (C) 2022 National Center for Atmospheric Research and National Oceanic and Atmospheric Administration
 # SPDX-License-Identifier: Apache-2.0
 #
 
@@ -6,7 +5,6 @@
 # developed for TROPOMI Level2 NO2
 #
 
-import xesmf as xe
 import numpy as np
 import xarray as xr
 from datetime import datetime
@@ -30,6 +28,7 @@ def trp_interp_swatogrd(obsobj, modobj):
     no2_modgrid_avg: Regridded satellite data at model grids for all datetime
 
     """
+    import xesmf as xe
     
     # daily averaged sate data at model grids
     no2_modgrid_avg=xr.Dataset()
@@ -134,7 +133,8 @@ def trp_interp_swatogrd_ak(obsobj, modobj):
     no2_modgrid_avg: Regridded satellite data at model grids for all datetime
 
     """
-    
+    import xesmf as xe
+
     # daily averaged sate data at model grids
     no2_modgrid_avg=xr.Dataset()
 
@@ -143,7 +143,7 @@ def trp_interp_swatogrd_ak(obsobj, modobj):
     modlat = modobj.coords['latitude']
     modlon = modobj.coords['longitude']
 
-    tmpvalue = np.zeros([ny, nx], dtype = np.float)
+    tmpvalue = np.zeros([ny, nx], dtype = np.float64)
 
     time   = [ datetime.strptime(x,'%Y-%m-%d') for x in obsobj.keys()]
     ntime  = len(list(obsobj.keys()))
