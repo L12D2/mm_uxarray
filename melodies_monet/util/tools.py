@@ -554,9 +554,14 @@ def calc_totalcolumn(modobj, var="NO2"):
         DataArray containing the total column of the species.
     """
     data = calc_partialcolumn(modobj, var)
+    try:
+        data = data.where(modobj['pres_pa_mid'] > modobj['surfpres_pa'])
+    except KeyError:
+        pass
     total_col = data.sum(dim='z', keep_attrs=True)
     total_col.attrs = {"units": "molecules/cm2", "long_name": f"{var} total column"}
     return total_col
+
 
 def calc_geolocaltime(modobj):
     """Calculates the geographic local time based on the longitude.
