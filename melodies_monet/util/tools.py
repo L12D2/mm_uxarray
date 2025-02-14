@@ -555,7 +555,7 @@ def calc_totalcolumn(modobj, var="NO2"):
     """
     data = calc_partialcolumn(modobj, var)
     try:
-        data = data.where(modobj['pres_pa_mid'] > modobj['surfpres_pa'])
+        data = data.where(modobj['pres_pa_mid'] >= modobj['surfpres_pa'])
     except KeyError:
         pass
     total_col = data.sum(dim='z', keep_attrs=True)
