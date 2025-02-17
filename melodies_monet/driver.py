@@ -1873,18 +1873,18 @@ class analysis:
                                     make_timeseries = xrplots.make_timeseries
                                 else:
                                     make_timeseries = xrplots.make_diurnal_cycle
-                                plot_params = {'dset': pairdf, 'varname': obsvar}
+                                plot_kwargs = {'dset': pairdf, 'varname': obsvar}
                             else:
                                 if plot_type.lower() == "timeseries":
                                     make_timeseries = splots.make_timeseries
                                 else:
                                     make_timeseries = splots.make_diurnal_cycle
-                                plot_params = {
+                                plot_kwargs = {
                                     'df': pairdf, 'df_reg': pairdf_reg, 'column': obsvar
                                 }
                             settings = grp_dict.get('settings', {})
-                            plot_params = {
-                                **plot_params,
+                            plot_kwargs = {
+                                **plot_kwargs,
                                 **{
                                     'label':p.obs,
                                     'avg_window': a_w,
@@ -1902,15 +1902,15 @@ class analysis:
                                 }
                             if p_index == 0:
                                 # First plot the observations.
-                                ax = make_timeseries(**plot_params)
+                                ax = make_timeseries(**plot_kwargs)
                             # For all p_index plot the model.
                             if "tempo_l2" in pair1.obs:
-                                plot_params['varname']=modvar
+                                plot_kwargs['varname']=modvar
                             else:
-                                plot_params['column']=modvar
-                            plot_params['label'] = p.model
-                            plot_params['ax'] = ax
-                            ax = make_timeseries(**plot_params)
+                                plot_kwargs['column']=modvar
+                            plot_kwargs['label'] = p.model
+                            plot_kwargs['ax'] = ax
+                            ax = make_timeseries(**plot_kwargs)
 
                             # Extract text_kwargs from the appropriate plot group
                             text_kwargs = grp_dict.get('text_kwargs', {'fontsize': 20})  # Default to fontsize 20 if not defined                            
@@ -2465,7 +2465,7 @@ class analysis:
                         elif plot_type.lower() == 'taylor':
                             if "tempo_l2" in pair1.obs:
                                 make_taylor = xrplots.make_taylor
-                                plot_params = {
+                                plot_kwargs = {
                                     'dset': pairdf,
                                     'varname_o': obsvar,
                                     'varname_m': modvar,
@@ -2473,13 +2473,13 @@ class analysis:
                                 }
                             else:
                                 make_taylor = splots.make_taylor
-                                plot_params = {
+                                plot_kwargs = {
                                     'df': pairdf,
                                     'column_o': obsvar,
                                     'column_m': modvar,
                                 }
-                            plot_params = {
-                                **plot_params,
+                            plot_kwargs = {
+                                **plot_kwargs,
                                 **{
                                     'label_o': p.obs,
                                     'label_m': p.model,
@@ -2495,22 +2495,22 @@ class analysis:
 
                             if set_yaxis == True:
                                 if 'ty_scale' in obs_plot_dict.keys():
-                                    plot_params["ty_scale"] = obs_plot_dict['ty_scale']
+                                    plot_kwargs["ty_scale"] = obs_plot_dict['ty_scale']
                                 else:
                                     print('Warning: ty_scale not specified for ' + obsvar + ', so default used.')
-                                    plot_params["ty_scale"] = 1.5  # Use default
+                                    plot_kwargs["ty_scale"] = 1.5  # Use default
                             else:
-                                plot_params["ty_scale"] = 1.5  # Use default
+                                plot_kwargs["ty_scale"] = 1.5  # Use default
                             try: 
-                                plot_params["ty_scale"] = grp_dict["data_proc"].get("ty_scale", 1.5)
+                                plot_kwargs["ty_scale"] = grp_dict["data_proc"].get("ty_scale", 1.5)
                             except KeyError:
-                                plot_params["ty_scale"]=2
+                                plot_kwargs["ty_scale"]=2
                             if p_index == 0:
                                 # Plot initial obs/model
-                                dia = make_taylor(**plot_params)
+                                dia = make_taylor(**plot_kwargs)
                             else:
                                 # For the rest, plot on top of dia
-                                dia = make_taylor(dia=dia, **plot_params)
+                                dia = make_taylor(dia=dia, **plot_kwargs)
                             # At the end save the plot.
                             if p_index == len(pair_labels) - 1:
                                 savefig(outname + '.png', logo_height=70)
@@ -2551,15 +2551,15 @@ class analysis:
                             outname = "{}.{}".format(outname, p_label)
                             if 'tempo_l2' in pair1.obs:
                                 make_spatial_bias_gridded = xrplots.make_spatial_bias_gridded
-                                plot_params = {
+                                plot_kwargs = {
                                     'dset': pairdf, 'varname_o': obsvar, 'varname_m': modvar,
                                 }
                             else:
                                 make_spatial_bias_gridded = splots.make_spatial_bias_gridded
-                                plot_params = {'df': pairdf, 'column_o': obsvar, 'column_m': modvar}
+                                plot_kwargs = {'df': pairdf, 'column_o': obsvar, 'column_m': modvar}
 
-                            plot_params = {
-                                **plot_params,
+                            plot_kwargs = {
+                                **plot_kwargs,
                                 **{
                                     "label_o": p.obs,
                                     "label_m": p.model,
@@ -2572,11 +2572,11 @@ class analysis:
                                     "debug": self.debug
                                 }
                             }
-                            make_spatial_bias_gridded(**plot_params)
+                            make_spatial_bias_gridded(**plot_kwargs)
                             del (fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict) #Clear info for next plot.
                         elif plot_type.lower() == 'spatial_dist':
                             outname = "{}.{}".format(outname, p.obs)
-                            plot_params = {
+                            plot_kwargs = {
                                 "dset": p.obj,
                                 "varname": obsvar,
                                 "outname": outname,
@@ -2590,15 +2590,15 @@ class analysis:
                                 "text_dict": text_dict,
                                 "debug": self.debug,
                             }
-                            if isinstance(plot_params["vmax"], str):
-                                plot_params["vmax"] = float(plot_params["vmax"])
-                            if isinstance(plot_params["vmin"], str):
-                                plot_params["vmin"] = float(plot_params["vmin"])
-                            xrplots.make_spatial_dist(**plot_params)
-                            plot_params["varname"] = modvar
-                            plot_params["label"] = p.model
-                            plot_params["outname"] = outname.replace(p.obs, p.model)
-                            xrplots.make_spatial_dist(**plot_params)
+                            if isinstance(plot_kwargs["vmax"], str):
+                                plot_kwargs["vmax"] = float(plot_kwargs["vmax"])
+                            if isinstance(plot_kwargs["vmin"], str):
+                                plot_kwargs["vmin"] = float(plot_kwargs["vmin"])
+                            xrplots.make_spatial_dist(**plot_kwargs)
+                            plot_kwargs["varname"] = modvar
+                            plot_kwargs["label"] = p.model
+                            plot_kwargs["outname"] = outname.replace(p.obs, p.model)
+                            xrplots.make_spatial_dist(**plot_kwargs)
                         elif plot_type.lower() == 'spatial_bias_exceedance':
                             if cal_reg:
                                 if set_yaxis == True:
