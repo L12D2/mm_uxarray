@@ -85,6 +85,7 @@ Table of Contents
    getting_started/software_architecture
    getting_started/downloading_obs
    getting_started/how_to_run
+   getting_started/tutorials
    getting_started/new_to_python
 
 .. toctree::
@@ -92,7 +93,6 @@ Table of Contents
    :caption: Contribute
    
    develop/contribute
-   develop/other_resources
    develop/development_team
    develop/developers_guide
    develop/datasets

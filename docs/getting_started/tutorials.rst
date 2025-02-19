@@ -1,5 +1,5 @@
-Other Resources
-===============
+Tutorials & Workshops
+=====================
 
 Check out our upcoming and past tutorials, workshops, surveys, etc. below.
 
@@ -33,8 +33,8 @@ easy access to this information.
 **MELODIES MONET tutorial during the MUSICA Tutorial Series**
 
 March 11, 2022 - During the `MUSICA tutorial <https://www2.acom.ucar.edu/event/workshop/musica-tutorial-2021>`__,
-we will demonstrate how to use MELODIES MONET to evaluate against surface 
-observations, discuss current and future development goals, and encourage 
+we demonstrated how to use MELODIES MONET to evaluate against surface 
+observations, discussed current and future development goals, and encouraged 
 more collaboration with others in the community. 
 
 2020
