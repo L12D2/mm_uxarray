@@ -26,7 +26,7 @@ under milestone "Connect MELODIES MONET to METplus" to learn more about this act
 EViz
 ----
 
-The NASA `EVis tool <https://astg.pages.smce.nasa.gov/visualization/eviz/>`__
+The NASA `EViz tool <https://astg.pages.smce.nasa.gov/visualization/eviz/>`__
 has capabilities to process model output and create diagnostic plots.
-Discussions have started to explore how MELODIES MONET and EVis can collaborate more
+Discussions have started to explore how MELODIES MONET and EViz can collaborate more
 together.
