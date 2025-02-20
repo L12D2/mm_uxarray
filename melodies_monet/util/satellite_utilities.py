@@ -122,7 +122,7 @@ def mopitt_l3_pairing(model_data,obs_data,co_ppbv_varname,global_m=True):
         print('Observation data appears to be a finer time resolution than model data')
         raise
     elif obs_data.attrs['monthly']:
-        # if obs_data is monthly, take montly mean of model data
+        # if obs_data is monthly, take monthly mean of model data
         model_obstime = model_data.resample(time='MS').mean()
         filtstr = '%Y-%m'
     elif obs_data.attrs['monthly'] == False:
