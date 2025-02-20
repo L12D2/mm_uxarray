@@ -36,9 +36,7 @@ Submitted or In Review
   Lamplugh, A., Lyu, C., Moon, Z., Pierce, B. R., Schwantes, R. H., Stockwell, C. E., 
   Warneke, C., Yang, K., Nowlan, C. R., Abad, G. G., McDonald, B. C.: COVID-19 
   perturbation on US air quality and human health impact assessment, PNAS Nexus, 
-  Volume 3, Issue 1, pgad483, 
-  `https://doi.org/10.1093/pnasnexus/pgad483 <https://academic.oup.com/pnasnexus/article/3/1/pgad483/7504809>`__, 
-  2024.
+  Volume 3, Issue 1, pgad483, https://doi.org/10.1093/pnasnexus/pgad483, 2024.
 
 * Zhu, Q., Schwantes, R. H., Coggon, M., Harkins, C., Schnell, J., He, J., 
   Pye, H. O. T., Li, M., Baker, B., Moon, Z., Ahmadov, R., Pfannerstill, E. Y., 
