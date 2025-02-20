@@ -26,9 +26,7 @@ Submitted or In Review
   Huang, J., Wang, K., Stajner, I., Montuoro, R., and Gilliam, R. C.: 
   Updates and evaluation of NOAA’s online-coupled air quality model version 7 
   (AQMv7) within the Unified Forecast System, Geosci. Model Dev. Discuss. 
-  [preprint],
-  https://doi.org/10.5194/gmd-2024-107, 
-  in review, 2024.
+  [preprint], https://doi.org/10.5194/gmd-2024-107, in review, 2024.
 
 2024
 ^^^^
@@ -39,7 +37,7 @@ Submitted or In Review
   Warneke, C., Yang, K., Nowlan, C. R., Abad, G. G., McDonald, B. C.: COVID-19 
   perturbation on US air quality and human health impact assessment, PNAS Nexus, 
   Volume 3, Issue 1, pgad483, 
-  `https://doi.org/10.1093/pnasnexus/pgad483 <https://doi.org/10.1093/pnasnexus/pgad483>`__, 
+  `https://doi.org/10.1093/pnasnexus/pgad483 <https://academic.oup.com/pnasnexus/article/3/1/pgad483/7504809>`__, 
   2024.
 
 * Zhu, Q., Schwantes, R. H., Coggon, M., Harkins, C., Schnell, J., He, J., 
@@ -49,6 +47,4 @@ Submitted or In Review
   J. A., Veres, P. R., Peischl, J., Brown, S. S., Goldstein, A. H., Cohen, R. C., 
   and McDonald, B. C.: A better representation of volatile organic compound 
   chemistry in WRF-Chem and its impact on ozone over Los Angeles, Atmos. Chem. 
-  Phys., 24, 5265–5286,
-  `https://doi.org/10.5194/acp-24-5265-2024 <https://doi.org/10.5194/acp-24-5265-2024>`__, 
-  2024.
+  Phys., 24, 5265–5286, https://doi.org/10.5194/acp-24-5265-2024, 2024.
