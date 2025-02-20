@@ -27,7 +27,7 @@ Submitted or In Review
   Updates and evaluation of NOAA’s online-coupled air quality model version 7 
   (AQMv7) within the Unified Forecast System, Geosci. Model Dev. Discuss. 
   [preprint],
-  `https://doi.org/10.5194/gmd-2024-107 <https://doi.org/10.5194/gmd-2024-107>`__, 
+  https://doi.org/10.5194/gmd-2024-107, 
   in review, 2024.
 
 2024
