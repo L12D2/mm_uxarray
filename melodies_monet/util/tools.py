@@ -510,7 +510,8 @@ def convert_std_to_amb_bc(ds,convert_vars=[],temp_var=None,pres_var=None):
 
 
 def calc_partialcolumn(modobj, var="NO2"):
-    """Calculates the partial column of a species from its concentration.
+    """Calculates the partial column of a species from its concentration
+    within a gridcell.
 
     Parameters
     ----------
