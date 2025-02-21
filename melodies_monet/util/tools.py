@@ -580,7 +580,7 @@ def calc_geolocaltime(modobj):
     # This should be guaranteed by the reader, and it isn't needed,
     # but it is very cheap to redo and should make us be safer.
 
-    hrs2ms = 3600000
+    hrs2ms = 3600_000
     timedelta = (modobj["longitude"].values * hrs2ms / 15).astype('timedelta64[ms]')
     localtime = modobj["time"] + timedelta
     localtime.attrs['description'] = 'Geographic local time, based on longitude'
