@@ -5,6 +5,7 @@
 Masking arbitrary regions with regionmask
 """
 
+from functools import lru_cache
 import re
 import warnings
 
@@ -14,42 +15,16 @@ import requests
 from melodies_monet.util.tools import get_epa_region_bounds, get_giorgi_region_bounds
 
 try:
-    import geopandas as gp
+    import geopandas as gpd
     from shapely.geometry import MultiPolygon, Polygon
     import regionmask
 except ImportError:
     regionmask = None
 
 
-def _download_with_name(url, verbose=False):
-    """Automates download while reading content disposition if needed.
-
-    Parameters:
-    -----------
-    url : str
-        URL of file to download
-    verbose : bool
-        Whether to add verbosity
-    Returns
-    -------
-    str
-       Path to downloaded file
-    """
-    r = requests.get(url, allow_redirects=True, timeout=10)
-    r.raise_for_status()
-    fname = None
-    content_disposition = r.headers.get("Content-Disposition")
-    if content_disposition:
-        m = re.search(r"filename=(.+?)(?:;|$)", content_disposition)
-        if m is not None:
-            fname = m.group(1).strip('"')
-    if fname is None:
-        fname = url.rsplit("/", 1)[-1]
-    with open(fname, "wb") as f:
-        f.write(r.content)
-    if verbose:
-        print(f"Downloaded {url} as {fname}.")
-    return fname
+@lru_cache(None)
+def get_regions(url_or_path, **kwargs):
+    return regionmask.from_geopandas(gpd.read_file(url_or_path), **kwargs)
 
 
 def _create_custom_mask(data, mask_info):
@@ -160,15 +135,13 @@ def _create_shapefile_mask(data, mask_path=None, mask_url=None, region_name=None
         )
 
     if mask_path is not None:
-        file = mask_path
+        url_or_path = mask_path
     elif mask_url is not None:
-        file = _download_with_name(mask_url, verbose=True)
+        url_or_path = mask_url
     else:
         raise ValueError("Either mask_path or mask_url have to be provided")
 
-    if file[-4:] == ".zip":
-        file = "zip://" + file
-    regions = regionmask.from_geopandas(gp.read_file(file), **kwargs)
+    regions = get_regions(url_or_path)
 
     # Regionmask requires "lat" and "lon"
     region_mask = regions.mask(data.rename({"latitude": "lat", "longitude": "lon"}))
