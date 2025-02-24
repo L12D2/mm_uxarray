@@ -82,7 +82,8 @@ Set this to ``false`` to forgo adding the MELODIES MONET logo to the plots.
 Set this to ``true`` to enable Dask progress bars for a
 `Dask local task scheduler <https://docs.dask.org/en/stable/diagnostics-local.html>`__
 (i.e. not ``dask.distributed``).
-By default, this is disabled to keep batch job logs cleaner.
+By default, this is disabled to keep logs cleaner
+(e.g. using :doc:`the CLI </cli>` to run a control file in a batch job).
 However, you may wish to enable this for interactive use in a Jupyter notebook
 or other interactive Python session,
 as it gives you a visual indication of the progress of multi-file data loading
