@@ -38,12 +38,15 @@ def mod_to_overpasstime(modobj,opass_tms):
 
     Parameters
     ----------
-    modobj : xarray, model data
-    opass_tms : datetime64, satellite overpass local time
+    modobj : xarray.Dataset
+        model data
+    opass_tms : pandas.DatetimeIndex
+        satellite overpass local time
 
     Output
     ------
-    outmod : revised model data at local overpass time
+    outmod : xarray.Dataset 
+        revised model data at local overpass time
     '''
     import pandas as pd
     import xarray as xr
@@ -103,7 +106,7 @@ def check_timestep(model_data,obs_data):
         print('Timestep check and model resample failed')
         raise
 
-def mopitt_l3_pairing(model_data,obs_data,co_ppbv_varname,global_m=True):
+def mopitt_l3_pairing(model_data,obs_data,co_ppbv_varname,global_model=True):
     ''' Calculate model CO column, with MOPITT averaging kernel applied.
     '''
     import xarray as xr
@@ -142,7 +145,7 @@ def mopitt_l3_pairing(model_data,obs_data,co_ppbv_varname,global_m=True):
     # initialize regridder for horizontal interpolation 
     # from model grid to MOPITT grid
     grid_adjust = xe.Regridder(model_obstime[['latitude','longitude']],obs_data[['lat','lon']],
-                               'bilinear',periodic=global_m,unmapped_to_nan=True)
+                               'bilinear',periodic=global_model,unmapped_to_nan=True)
     co_model_regrid = grid_adjust(model_obstime[co_ppbv_varname])
     pressure_model_regrid = grid_adjust(model_obstime['pres_pa_mid']/100.)
     
