@@ -52,7 +52,7 @@ these instructions:
 (a) Set up a conda environment with all the dependencies, including MONET and 
     MONETIO::
 
-       $ conda create --name melodies-monet python=3.9
+       $ conda create --name melodies-monet python=3.11
        $ conda activate melodies-monet
        $ conda install -y -c conda-forge pyyaml pandas=1 'matplotlib-base<3.9' monet monetio netcdf4 wrf-python typer rich pooch jupyterlab
 
@@ -166,7 +166,7 @@ project on GitHub to learn about current and future development.
    `added an SSH key <https://docs.github.com/en/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account>`__
    to your GitHub account for your current machine.
    If you are new to GitHub, check out
-   `this GitHub tutorial <https://jlord.us/git-it/>`__.
+   `this GitHub tutorial <https://jlord.computer/git-it/>`__.
    We recommend the SSH method, but if you don't add an SSH key
    you can still clone the repositories via HTTPS, e.g. ::
 
