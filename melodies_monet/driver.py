@@ -430,7 +430,7 @@ class model:
     def __init__(self):
         """Initialize a :class:`model` object."""
         self.model = None
-        self.isglobal = False
+        self.is_global = False
         self.radius_of_influence = None
         self.mod_kwargs = {}
         self.file_str = None
@@ -920,8 +920,8 @@ class analysis:
                 # this is the model type (ie cmaq, rapchem, gsdchem etc)
                 m.model = self.control_dict['model'][mod]['mod_type']
                 # set the model label in the dictionary and model class instance
-                if "isglobal" in self.control_dict['model'][mod].keys():
-                    m.isglobal = self.control_dict['model'][mod]['isglobal']
+                if "is_global" in self.control_dict['model'][mod].keys():
+                    m.is_global = self.control_dict['model'][mod]['is_global']
                 if 'radius_of_influence' in self.control_dict['model'][mod].keys():
                     m.radius_of_influence = self.control_dict['model'][mod]['radius_of_influence']
                 else:
@@ -1452,7 +1452,7 @@ class analysis:
                                 model_obj = sutil.mod_to_overpasstime(model_obj,overpass_datetime)
                             
                             # interpolate model to observation, calculate column with averaging kernels applied
-                            paired = sutil.mopitt_l3_pairing(model_obj,obs_dat,keys[0],global_m=mod.isglobal)
+                            paired = sutil.mopitt_l3_pairing(model_obj,obs_dat,keys[0],global_m=mod.is_global)
                             p = pair()
                             p.type = obs.obs_type
                             p.obs = obs.label
