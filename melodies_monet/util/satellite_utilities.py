@@ -125,7 +125,7 @@ def mopitt_l3_pairing(model_data,obs_data,co_ppbv_varname,global_m=True):
         # if obs_data is monthly, take monthly mean of model data
         model_obstime = model_data.resample(time='MS').mean()
         filtstr = '%Y-%m'
-    elif obs_data.attrs['monthly'] == False:
+    elif not obs_data.attrs['monthly']:
         # obs_data is daily, so model and obs seem to be on same time step
         model_obstime = model_data
         filtstr = '%Y-%m-%d'
