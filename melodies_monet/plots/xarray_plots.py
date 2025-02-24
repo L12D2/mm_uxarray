@@ -1100,7 +1100,7 @@ def make_diurnal_cycle(dset, varname, ax=None, **kwargs):
     ax : ax
         matplotlib ax from previous occurrence so can overlay obs and
         model results on the same plot
-    kwargs:
+    **kwargs : dict
         Other arguments to pass to the diurnal cycle plot.
         Optional arguments are:
         time_offset : int | float
