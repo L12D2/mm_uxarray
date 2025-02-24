@@ -1,9 +1,5 @@
-# Copyright (C) 2022 National Center for Atmospheric Research and National Oceanic and Atmospheric Administration
 # SPDX-License-Identifier: Apache-2.0
 #
-# Code to create plots for satellite observations
-# Copied from surfplots and altered to use xarray syntax instead of pandas
-
 
 import logging
 
