@@ -86,7 +86,7 @@ By default, this is disabled to keep logs cleaner
 (e.g. using :doc:`the CLI </cli>` to run a control file in a batch job).
 However, you may wish to enable this for interactive use in a Jupyter notebook
 or other interactive Python session,
-as it gives you a visual indication of the progress of multi-file data loading
+as it gives you some visual indication of the progress of multi-file data loading
 and some parts of the processing.
 
 Models
