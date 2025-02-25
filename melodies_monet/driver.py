@@ -218,6 +218,10 @@ class observation:
         None
         """
         data_vars = self.obj.data_vars
+        # For xarray datasets using data_vars does not grab names of coordinates
+        if isinstance(self.obj,xr.Dataset):
+            data_vars = list(self.obj.data_vars) + list(self.obj.coords)
+        
         if self.variable_dict is not None:
             for v in data_vars:
                 if v in self.variable_dict:
