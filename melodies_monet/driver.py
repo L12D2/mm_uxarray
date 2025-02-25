@@ -1452,7 +1452,7 @@ class analysis:
                                 model_obj = sutil.mod_to_overpasstime(model_obj,overpass_datetime)
                             
                             # interpolate model to observation, calculate column with averaging kernels applied
-                            paired = sutil.mopitt_l3_pairing(model_obj,obs_dat,keys[0],global_m=mod.is_global)
+                            paired = sutil.mopitt_l3_pairing(model_obj,obs_dat,keys[0],global_model=mod.is_global)
                             p = pair()
                             p.type = obs.obs_type
                             p.obs = obs.label
