@@ -1340,11 +1340,11 @@ class analysis:
                 # if sat_swath_clm (satellite l2 column products)
                 elif obs.obs_type.lower() == 'sat_swath_clm':
                     # grab kwargs for pairing. Use default if not specified
-                    if obs.obs_type.lower() in list(self.pairing_kwargs.keys()):
-                        pairing_kws = self.pairing_kwargs[obs.obs_type.lower()]
-                    else: 
-                        print('WARNING: The satellite pairing option apply_ak is being set to True. Pairing will fail if there is no AK available.')
-                        pairing_kws = {'apply_ak': True, 'mod_to_overpass': False}
+                    pairing_kws = {'apply_ak':True,'mod_to_overpass':False}
+                    for key in self.pairing_kwargs[obs.obs_type.lower()]:
+                        pairing_kws[key] = self.pairing_kwargs[obs.obs_type.lower()][key]
+                    if 'apply_ak' not in self.pairing_kwargs[obs.obs_type.lower()]:
+                        print('WARNING: The satellite pairing option apply_ak is being set to True because it was not specified in the YAML. Pairing will fail if there is no AK available.')
                     
                     if obs.sat_type == 'omps_nm':
                         
@@ -1410,11 +1410,11 @@ class analysis:
                 # if sat_grid_clm (satellite l3 column products)
                 elif obs.obs_type.lower() == 'sat_grid_clm':
                     # grab kwargs for pairing. Use default if not specified
-                    if obs.obs_type.lower() in list(self.pairing_kwargs.keys()):
-                        pairing_kws = self.pairing_kwargs[obs.obs_type.lower()]
-                    else:
-                        print('WARNING: The satellite pairing option apply_ak is being set to True. Pairing will fail if there is no AK available.')
-                        pairing_kws = {'apply_ak': True, 'mod_to_overpass': False}
+                    pairing_kws = {'apply_ak':True,'mod_to_overpass':False}
+                    for key in self.pairing_kwargs[obs.obs_type.lower()]:
+                        pairing_kws[key] = self.pairing_kwargs[obs.obs_type.lower()][key]
+                    if 'apply_ak' not in self.pairing_kwargs[obs.obs_type.lower()]:
+                        print('WARNING: The satellite pairing option apply_ak is being set to True because it was not specified in the YAML. Pairing will fail if there is no AK available.')
                     if len(keys) > 1: 
                         print('Caution: More than 1 variable is included in mapping keys.')
                         print('Pairing code is calculating a column for {}'.format(keys[0])) 
