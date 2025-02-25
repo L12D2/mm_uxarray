@@ -1421,8 +1421,6 @@ class analysis:
                             paired_data_atswath, model_obj, method=regrid_method
                         )
 
-                        self.models[model_label].obj = model_obj
-
                         p = pair()
 
                         paired_data = paired_data_atgrid.sel(time=slice(self.start_time, self.end_time))
