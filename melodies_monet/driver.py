@@ -1588,20 +1588,20 @@ class analysis:
                 threshold_tick_style = grp_dict.get('threshold_tick_style',None)
 
             # first get the observational obs labels
-            pair1 = self.paired[list(self.paired.keys())[0]]
-            obs_vars = pair1.obs_vars
-            obs_type = pair1.type
-            # loop through obs variables
-            for obsvar in obs_vars:
-                # Loop also over the domain types. So can easily create several overview and zoomed in plots.
-                domain_types = grp_dict.get('domain_type', [None])
-                domain_names = grp_dict.get('domain_name', [None])
-                for domain in range(len(domain_types)):
-                    domain_type = domain_types[domain]
-                    domain_name = domain_names[domain]
+            for p_index, p_label in enumerate(pair_labels):
+                pair1 = self.paired[p_label]
+                obs_vars = pair1.obs_vars
+                obs_type = pair1.type
+                # loop through obs variables
+                for obsvar in obs_vars:
+                    # Loop also over the domain types. So can easily create several overview and zoomed in plots.
+                    domain_types = grp_dict.get('domain_type', [None])
+                    domain_names = grp_dict.get('domain_name', [None])
+                    for domain in range(len(domain_types)):
+                        domain_type = domain_types[domain]
+                        domain_name = domain_names[domain]
 
                     # Then loop through each of the pairs to add to the plot.
-                    for p_index, p_label in enumerate(pair_labels):
                         p = self.paired[p_label]
                         
                         # find the pair model label that matches the obs var
@@ -1661,7 +1661,7 @@ class analysis:
                             text_dict = None
 
                         # Read in some plotting specifications stored with observations.
-                        if self.obs[p.obs].variable_dict is not None:
+                        if p.obs in self.obs and self.obs[p.obs].variable_dict is not None:
                             if obsvar in self.obs[p.obs].variable_dict.keys():
                                 obs_plot_dict = self.obs[p.obs].variable_dict[obsvar].copy()
                             else:
