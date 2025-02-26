@@ -1103,29 +1103,30 @@ def make_diurnal_cycle(dset, varname, ax=None, **kwargs):
     **kwargs : dict
         Other arguments to pass to the diurnal cycle plot.
         Optional arguments are:
-        time_offset : int | float
+
+        time_offset : int | float, optional
             Time offset in hours. E. g., if you are at UTC-7, and wish
             to have the plot at local time, do time_offset=-7.
             Default = 0.
-        ylabel : str
+        ylabel : str, optional
             Title of y-axis
             Default = varname
-        vmin : real number
+        vmin : real number, optional
             Min value to use on y-axis
-        vmax : real number
+        vmax : real number, optional
             Max value to use on y-axis
-        domain_type : str
+        domain_type : str, optional
             Domain type specified in input yaml file
-        domain_name : str
+        domain_name : str, optional
             Domain name specified in input yaml file
-        plot_dict : dictionary
+        plot_dict : dict, optional
             Dictionary containing information about plotting for
             each pair (e.g., color, linestyle, markerstyle)
-        fig_dict : dictionary
+        fig_dict : dict, optional
             Dictionary containing information about figure
-        text_dict : dictionary
+        text_dict : dict, optional
             Dictionary containing information about text
-        range_shading : str
+        range_shading : str, optional
             Whether to shade the range obtained for each hour.
             options: "no", "total", "std", "pct:number".
             If "no", no range shading if performed.
@@ -1133,7 +1134,7 @@ def make_diurnal_cycle(dset, varname, ax=None, **kwargs):
             If "std", the standard deviation is shaded.
             if "pct:number", then the percentile chosen is shaded
             (e. g., "pct:98")
-        debug : boolean
+        debug : bool, optional
             Whether to plot interactively (True) or not (False). Flag
             for submitting jobs to supercomputer turn off interactive
             mode.
