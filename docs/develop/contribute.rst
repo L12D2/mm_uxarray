@@ -11,8 +11,8 @@ the contributions and support from you.
 - Please check out 
   `GitHub Projects <https://github.com/NOAA-CSL/MELODIES-MONET/projects>`__ 
   to learn about current development plans.
-- Join an :ref:`Upcoming Workshop <develop/other_resources:Upcoming>`
-  or check out :ref:`Past Workshops <develop/other_resources:Past>`.
+- Join an :ref:`Upcoming Workshop <getting_started/tutorials:Upcoming>`
+  or check out :ref:`Past Workshops <getting_started/tutorials:Past>`.
 - See our developers guide, to learn 
   :ref:`develop/developers_guide:How to incorporate updates to MELODIES MONET`.
 - Email melodies@ucar.edu with questions.

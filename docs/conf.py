@@ -203,6 +203,8 @@ linkcheck_ignore = [
     "https://docs.github.com/en/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account",
     # NCEI sites having problems
     "https://www.ncdc.noaa.gov/crn/",
+    #PNAS sites having problems:
+    "https://doi.org/10.1093/pnasnexus/pgad483"
 ]
 user_agent = "Mozilla/5.0 (X11; Linux x86_64; rv:25.0) Gecko/20100101 Firefox/25.0"
 

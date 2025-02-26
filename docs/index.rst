@@ -36,8 +36,35 @@ MONETIO please refer to:
 
    - MELODIES - TBD
 
+Funding
+-------
+
+Funding for MELODIES MONET has been provided by NSF NCAR, NOAA ARL, NOAA CSL, 
+NOAA GSL, and the following:
+
+* This material is also based upon work supported by the NSF National Center
+  for Atmospheric Research, which is a major facility sponsored by the U.S.
+  National Science Foundation under Cooperative Agreement No. 1852977
+
+* This work has been partly supported by the NOAA Cooperative Agreement with
+  CIRES (grant nos. NA17OAR4320101 and NA22OAR4320151)
+
+* NSF Earthcube Award Number 2026924 (2020-2024)
+
+* Public Law 117-43 Disaster Relief Supplemental Appropriations Act 
+  signed 30 September 2021 including $55M (ORF) related to the consequences 
+  of hurricanes and wildfires in calendar years 2020 and 2021
+
+* Funding for this project was partially provided by the Bi-Partisan
+  Infrastructure Law (BIL)
+
+* Colorado Air Quality Enterprise (AQE) grant #FEDA 2025*0171
+
+
+Table of Contents
+=================
+
 .. toctree::
-   :hidden:
    :maxdepth: 4
    :caption: User's Guide
 
@@ -51,7 +78,6 @@ MONETIO please refer to:
    users_guide/gridded_datasets
 
 .. toctree::
-   :hidden:
    :maxdepth: 4
    :caption: Getting Started
 
@@ -59,19 +85,19 @@ MONETIO please refer to:
    getting_started/software_architecture
    getting_started/downloading_obs
    getting_started/how_to_run
+   getting_started/tutorials
+   getting_started/new_to_python
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 4
    :caption: Contribute
    
    develop/contribute
-   develop/other_resources
    develop/development_team
    develop/developers_guide
    develop/datasets
 
 .. toctree::
-   :hidden:
    :maxdepth: 4
    :caption: Examples
 
@@ -89,16 +115,15 @@ MONETIO please refer to:
    examples/ufs-aqm-gml-ozonesonde
 
 .. toctree::
-   :hidden:
    :maxdepth: 4
    :caption: Current Applications
 
    applications/publications
    applications/forecasts
+   applications/other_tools
 
 .. toctree::
-   :hidden:
-   :maxdepth: 1
+   :maxdepth: 4
    :caption: Help and Reference
 
    api
