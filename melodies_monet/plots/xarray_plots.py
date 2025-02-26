@@ -1100,33 +1100,33 @@ def make_diurnal_cycle(dset, varname, ax=None, **kwargs):
     ax : ax
         matplotlib ax from previous occurrence so can overlay obs and
         model results on the same plot
-    **kwargs : dict
-        Other arguments to pass to the diurnal cycle plot.
+    **kwargs
+        Other plotting arguments.
         Optional arguments are:
 
-        time_offset : int | float, optional
+        * time_offset : int | float, optional
             Time offset in hours. E. g., if you are at UTC-7, and wish
             to have the plot at local time, do time_offset=-7.
             Default = 0.
-        ylabel : str, optional
+        * ylabel : str, optional
             Title of y-axis
             Default = varname
-        vmin : real number, optional
+        * vmin : real number, optional
             Min value to use on y-axis
-        vmax : real number, optional
+        * vmax : real number, optional
             Max value to use on y-axis
-        domain_type : str, optional
+        * domain_type : str, optional
             Domain type specified in input yaml file
-        domain_name : str, optional
+        * domain_name : str, optional
             Domain name specified in input yaml file
-        plot_dict : dict, optional
+        * plot_dict : dict, optional
             Dictionary containing information about plotting for
             each pair (e.g., color, linestyle, markerstyle)
-        fig_dict : dict, optional
+        * fig_dict : dict, optional
             Dictionary containing information about figure
-        text_dict : dict, optional
+        * text_dict : dict, optional
             Dictionary containing information about text
-        range_shading : str, optional
+        * range_shading : str, optional
             Whether to shade the range obtained for each hour.
             options: "no", "total", "std", "pct:number".
             If "no", no range shading if performed.
@@ -1134,7 +1134,7 @@ def make_diurnal_cycle(dset, varname, ax=None, **kwargs):
             If "std", the standard deviation is shaded.
             if "pct:number", then the percentile chosen is shaded
             (e. g., "pct:98")
-        debug : bool, optional
+        * debug : bool, optional
             Whether to plot interactively (True) or not (False). Flag
             for submitting jobs to supercomputer turn off interactive
             mode.
