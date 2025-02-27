@@ -201,7 +201,7 @@ def control_custom_mask(data, domain_type, domain_info=None, **kwargs):
     else:
         raise ValueError(
             "Could not identify the type of domain. Should be 'polygon',"
-            + f" 'defined-region' or 'file'. You asked for {domain_type}"
+            + f" 'defined-region' or 'file'. You asked for {domain_type!r}"
         )
     return masked_data
 
