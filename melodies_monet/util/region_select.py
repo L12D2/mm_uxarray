@@ -141,7 +141,7 @@ def _create_shapefile_mask(data, mask_path=None, mask_url=None, region_name=None
     else:
         raise ValueError("Either mask_path or mask_url have to be provided")
 
-    regions = get_regions(url_or_path)
+    regions = get_regions(url_or_path, **kwargs)
 
     # Regionmask requires "lat" and "lon"
     region_mask = regions.mask(data.rename({"latitude": "lat", "longitude": "lon"}))
@@ -201,7 +201,7 @@ def control_custom_mask(data, domain_type, domain_info=None, **kwargs):
     else:
         raise ValueError(
             "Could not identify the type of domain. Should be 'polygon',"
-            + " 'defined-region' or 'file'"
+            + f" 'defined-region' or 'file'. You asked for {domain_type}"
         )
     return masked_data
 
