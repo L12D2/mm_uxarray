@@ -78,6 +78,17 @@ regarding the directory files are read from.
 **add_logo:** This is an optional argument.
 Set this to ``false`` to forgo adding the MELODIES MONET logo to the plots.
 
+**enable_dask_progress_bars:** This is an optional argument.
+Set this to ``true`` to enable Dask progress bars for a
+`Dask local task scheduler <https://docs.dask.org/en/stable/diagnostics-local.html>`__
+(i.e. not ``dask.distributed``).
+By default, this is disabled to keep logs cleaner
+(e.g. using :doc:`the CLI </cli>` to run a control file in a batch job).
+However, you may wish to enable this for interactive use in a Jupyter notebook
+or other interactive Python session,
+as it gives you some visual indication of the progress of multi-file data loading
+and some parts of the processing.
+
 Models
 ------
 All input for each instance of the model class. First level should be the model 
