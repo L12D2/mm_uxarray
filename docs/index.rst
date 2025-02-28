@@ -76,6 +76,7 @@ Table of Contents
    users_guide/supported_stats
    users_guide/time_chunking
    users_guide/gridded_datasets
+   users_guide/region_selection
 
 .. toctree::
    :maxdepth: 4
