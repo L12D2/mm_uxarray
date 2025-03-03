@@ -211,6 +211,8 @@ def test_get_openaq(tmp_path):
     cmd = [
         "melodies-monet", "get-openaq",
         "-s", "2024-09-10", "-e" "2024-09-10 00:59",
+        "--sensor-limit", "50",
+        "-n", "2",
         "--dst", tmp_path.as_posix(), "-o", fn,
     ]
     subprocess.run(cmd, check=True)
@@ -223,7 +225,7 @@ def test_get_openaq(tmp_path):
         for v in ds.data_vars
         if ds[v].dims == ("time", "y", "x")
     } == {"o3", "pm25", "pm10", "time_local"}
-    assert (ds.sensor_type == "reference grade").all()
+    assert ds.is_monitor.all()
 
 
 @pytest.mark.skipif(not have_openaq_api_key, reason="OPENAQ_API_KEY not set")
@@ -233,6 +235,7 @@ def test_get_openaq_lowcost(tmp_path):
         "melodies-monet", "get-openaq",
         "-s", "2024-09-10", "-e" "2024-09-10 00:59",
         "-p", "pm25",
+        "--sensor-limit", "10",
         "--no-reference-grade", "--low-cost",
         "--dst", tmp_path.as_posix(), "-o", fn,
     ]
@@ -246,4 +249,4 @@ def test_get_openaq_lowcost(tmp_path):
         for v in ds.data_vars
         if ds[v].dims == ("time", "y", "x")
     } == {"pm25", "time_local"}
-    assert (ds.sensor_type == "low-cost sensor").all()
+    assert (~ds.is_monitor).all()

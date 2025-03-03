@@ -1254,6 +1254,13 @@ def get_openaq(
             "Options: 'api-v3', 'api-v2', 'openaq-fetches'."
         )
     ),
+    sensor_limit: int = typer.Option(None,
+        help=(
+            "Limit the number of sensors to fetch data for. "
+            "This is useful for testing or debugging. "
+            "Only applicable to the 'api-v3' method."
+        )
+    ),
     compress: bool = typer.Option(True, help=(
             "If true, pack float to int and apply compression using zlib with complevel 7. "
             "This can take time if the dataset is large, but can lead to "
@@ -1304,6 +1311,8 @@ def get_openaq(
         print("Params:", param)
     if verbose and method == "api-v3" and country is not None:
         print("Country:", country)
+    if verbose and method == "api-v3":
+        print("Sensor limit:", sensor_limit)
 
     # Set destination and file name
     fmt = r"%Y%m%d"
@@ -1366,7 +1375,11 @@ def get_openaq(
                 threads=num_workers if num_workers > 1 else None,
             )
             if method == "api-v3":
-                kws.update(hourly=True, country=country)
+                kws.update(
+                    hourly=True,
+                    country=country,
+                    sensor_limit=sensor_limit,
+                )
                 func = mio.obs.openaq_v3.add_data
             elif method == "api-v2":
                 func = mio.obs.openaq_v2.add_data
@@ -1391,10 +1404,11 @@ def get_openaq(
         if df.empty:
             raise RuntimeError("No data found")
 
-        # Drop times not on the hour
-        good = df.time == df.time.dt.floor("H")
-        typer.echo(f"Dropping {(~good).sum()}/{len(good)} rows that aren't on the hour.")
-        df = df[good]
+        if method == "api-v2":
+            # Drop times not on the hour
+            good = df.time == df.time.dt.floor("H")
+            typer.echo(f"Dropping {(~good).sum()}/{len(good)} rows that aren't on the hour.")
+            df = df[good]
 
     with _timer("Forming xarray Dataset"):
         df = df.drop(columns=["index"], errors="ignore")
