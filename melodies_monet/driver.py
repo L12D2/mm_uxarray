@@ -1940,7 +1940,7 @@ class analysis:
                                     'debug': self.debug,
                                 },
                                 **settings
-                                }
+                            }
                             if p_index == 0:
                                 # First plot the observations.
                                 ax = make_timeseries(**plot_kwargs)
