@@ -1787,7 +1787,7 @@ class analysis:
                                                                         "sat_swath_prof"]: 
                             # xarray doesn't need nan drop because its math operations seem to ignore nans
                             # MEB (10/9/24): Add statement to ensure model and obs variables have nans at the same place
-                            pairdf = pairdf_all.where(pairdf_all[obsvar].notnull())
+                            pairdf = pairdf_all.where(pairdf_all[obsvar].notnull() & pairdf_all[modvar].notnull())
 
                         else:
                             print('Warning: set rem_obs_nan = True for regulatory metrics') 
