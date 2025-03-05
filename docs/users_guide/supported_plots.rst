@@ -5,8 +5,9 @@ Model to Model Comparisons
 --------------------------
 Under development. 
 
-See the `Spatial Verification in MELODIES-MONET <https://github.com/orgs/NOAA-CSL/projects/6>`_ 
-project on GitHub to learn about current and future development.
+Please refer to the
+`MELODIES MONET project board <https://github.com/orgs/NOAA-CSL/projects/6>`__ 
+to learn more about current and future development plans.
 
 Model to Observation Comparisons
 ---------------------------------
@@ -66,19 +67,22 @@ Surface Evaluation
 
    **Critical Success Index** Plot of the Critical Success Index, as commonly used in Forecast evaluation.
 
-See the `Expand Surface Observations in MELODIES-MONET <https://github.com/orgs/NOAA-CSL/projects/6>`_ 
-project on GitHub to learn about current and future development.
+Please refer to the
+`MELODIES MONET project board <https://github.com/orgs/NOAA-CSL/projects/6>`__ 
+under milestone "Surface and Aircraft Evaluation Version 2" to learn more about our current and future development plans.
 
 Aircraft Evaluation 
 ^^^^^^^^^^^^^^^^^^^
 Under development. 
 
-See the `Incorporate Aircraft Evaluation in MELODIES-MONET <https://github.com/orgs/NOAA-CSL/projects/6>`_ 
-project on GitHub to learn about current and future development.
+Please refer to the
+`MELODIES MONET project board <https://github.com/orgs/NOAA-CSL/projects/6>`__ 
+under milestone "Surface and Aircraft Evaluation Version 2" to learn more about our current and future development plans.
 
 Satellite Evaluation 
 ^^^^^^^^^^^^^^^^^^^^
 Under development.
 
-See the `Incorporate Satellite Evaluation in MELODIES-MONET <https://github.com/orgs/NOAA-CSL/projects/6>`_ 
-project on GitHub to learn about current and future development.
+Please refer to the
+`MELODIES MONET project board <https://github.com/orgs/NOAA-CSL/projects/6>`__ 
+under milestone "Satellite Evaluation Version 2" to learn more about our current and future development plans.

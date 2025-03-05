@@ -59,46 +59,79 @@ MELODIES MONET are available. If input datasets are in netCDF format and
 define latitude, longitude, altitude, and a datetime object, MELODIES MONET may be able 
 to directly read the input files.
 
-See the `Expand models in MELODIES-MONET <https://github.com/orgs/NOAA-CSL/projects/6>`_ 
-project on GitHub to learn about current and future development.
+Please refer to the
+`MELODIES MONET project board <https://github.com/orgs/NOAA-CSL/projects/6>`__ 
+to learn more about our current and future development plans.
 
 Supported Observations
 ----------------------
 
 Surface
 ^^^^^^^
+To use these surface datasets in MELODIES MONET specify "obs_type" equal to "pt_sfc" in your YAML file.
 
-   * `AirNow <https://www.airnow.gov/>`_ 
+Available now:
+   * `AirNow <https://www.airnow.gov/>`_
    * `AERONET <https://aeronet.gsfc.nasa.gov/>`_
-   * `IMPROVE <http://vista.cira.colostate.edu/Improve/>`_ (under development)
-   * `AQS <https://www.epa.gov/aqs/>`_ (in MONET, coming soon to MELODIES MONET)
-   * `CRN <https://www.ncdc.noaa.gov/crn/>`_ (in MONET, coming soon to MELODIES MONET)
-   * `TOLNet <https://www-air.larc.nasa.gov/missions/TOLNet/>`_ 
-     (in MONET, coming soon to MELODIES MONET)
-   * `CEMS <https://www.epa.gov/emc/emc-continuous-emission-monitoring-systems/>`_ 
-     (in MONET, coming soon to MELODIES MONET)
-   * `ISD <https://www.ncei.noaa.gov/products/land-based-station/integrated-surface-database>`_
-     (in MONET, coming soon to MELODIES MONET)
+   * `AQS <https://www.epa.gov/aqs/>`_
+   * `ISH and ISH-Lite <https://www.ncei.noaa.gov/products/land-based-station/integrated-surface-database>`_
+   * `OpenAQ <https://openaq.org/>`_
 
-See the `Expand Surface Observations in MELODIES-MONET <https://github.com/orgs/NOAA-CSL/projects/6>`_ 
-project on GitHub to learn about current and future development.
+Under Development:
+   * `IMPROVE <http://vista.cira.colostate.edu/Improve/>`_
+   * `CRN <https://www.ncdc.noaa.gov/crn/>`_
+   * `TOLNet <https://www-air.larc.nasa.gov/missions/TOLNet/>`_
+   * `CEMS <https://www.epa.gov/emc/emc-continuous-emission-monitoring-systems/>`_
+
+Please refer to the
+`MELODIES MONET project board <https://github.com/orgs/NOAA-CSL/projects/6>`__ 
+under milestone "Surface and Aircraft Evaluation Version 2" to learn more about our current and future development plans.
 
 .. note::
 
    The :doc:`/cli` can be used to download and create MELODIES MONET-ready datasets for:
-   AirNow, AERONET, AQS, and ISD.
+   AirNow, AERONET, AQS, ISH, ISH-Lite, and OpenAQ.
 
-Aircraft (under development)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Aircraft, Sonde, Mobile, and Ground Campaign Data
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Pairing capabilities include time, horizontal, and vertical interpolation. Users can evaluate aircraft data, 
+ozonesonde data, mobile or walking data, and single ground site data. To use these options in MELODIES MONET 
+specify "obs_type" equal to "aircraft", "ozone_sonder", "mobile", or "ground" in your YAML file. The table 
+below describes these options in more detail. Available datafile formats include NetCDF, ICARTT, and CSV.
 
-   * `FIREX-AQ <https://csl.noaa.gov/projects/firex-aq/>`_ (under development)
-   * `ATom <https://espo.nasa.gov/atom/content/ATom>`_ (under development)
-   
-See the `Incorporate Aircraft Evaluation in MELODIES-MONET <https://github.com/orgs/NOAA-CSL/projects/6>`_ 
-project on GitHub to learn about current and future development.
+.. list-table:: Description of YAML File Options for "obs_type" For Campaign Data
+   :widths: 70 30
+   :header-rows: 1
+
+   * - "obs_type"
+     - Description
+   * - "aircraft"
+     - Aircraft - time, horizontal, and vertical interpolation
+   * - "ozone_sonder"
+     - Ozonesonde - time and vertical interpolation at a fixed horizontal location
+   * - "mobile"
+     - Mobile - time and horizontal interpolation at the surface
+   * - "ground"
+     - Ground - time interpolation at a fixed horizontal location at the surface
+
+Tested datasets include the following: 
+   * `FIREX-AQ <https://csl.noaa.gov/projects/firex-aq/>`_
+   * `ATom <https://espo.nasa.gov/atom/content/ATom>`_
+   * `SUNVEx <https://csl.noaa.gov/projects/sunvex/>`_
+   * `AEROMMA <https://csl.noaa.gov/projects/aeromma/>`_
+   * `ASIA-AQ <https://espo.nasa.gov/asia-aq>`_
+   * `GML ozonesondes <https://gml.noaa.gov/ozwv/ozsondes/>`_
+
+MELODIES MONET is written generally enough that other field campaign datasets should work well in the tool with 
+minimal adjustments.
+
+Please refer to the
+`MELODIES MONET project board <https://github.com/orgs/NOAA-CSL/projects/6>`__ 
+under milestone "Surface and Aircraft Evaluation Version 2" to learn more about our current and future development plans.
 
 Satellite (under development)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-See the `Incorporate Satellite Evaluation in MELODIES-MONET <https://github.com/orgs/NOAA-CSL/projects/6>`_ 
-project on GitHub to learn about current and future development.
+Please refer to the
+`MELODIES MONET project board <https://github.com/orgs/NOAA-CSL/projects/6>`__ 
+under milestone "Satellite Evaluation Version 2" to learn more about our current and future development plans.
