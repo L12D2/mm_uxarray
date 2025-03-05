@@ -73,7 +73,35 @@ under milestone "Surface and Aircraft Evaluation Version 2" to learn more about 
 
 Aircraft Evaluation 
 ^^^^^^^^^^^^^^^^^^^
-Under development. 
+Timeseries, Taylor, and BOX-plots described above in Surface Evaluation can also be created for aircraft evaluation. 
+Aircraft specific plots are described below:
+
+.. figure:: /_static/figures/plot_grp1.timeseries.CO_LGR.2023-06-27_00.2023-06-28_23.all.LosAngeles.png
+
+   **Timeseries with Altitude** - Identical to the Timeseries plot described above for surface evaluation. For aircraft evaluation,
+   users can optionally plot altitude on the secondary right y-axis.
+
+.. figure:: /_static/figures/plot_grp2.vertprofile.NO2_LIF.2023-06-27_00.2023-06-28_23.all.LosAngeles.png
+
+   **Vertical Profile** - Plot comparing one or more model results with altitude (y-axis)
+   versus  one observation (x-axis) over the analysis window.
+
+.. figure:: /_static/figures/plot_grp3.violin.O3_CL.2023-06-27_00.2023-06-28_23.all.LosAngeles.png
+   :scale: 25 %
+
+   **Violin** - Violin plot comparing one or more model results with one
+   observation over the analysis window.
+
+.. figure:: /_static/figures/plot_grp4.scatter_density.O3_CL.2023-06-27_00.2023-06-28_23.all.LosAngeles_aeromma_vs_ufsaqm.png
+   :scale: 25 %
+
+   **Scatter Density** - Scatter density plot comparing one model results with one
+   observation over the analysis window.
+
+.. figure:: /_static/figures/curtainNEW_O3.png
+
+   **Curtain** - Curtain plot comparing one model results with one
+   observation over the analysis window.
 
 Please refer to the
 `MELODIES MONET project board <https://github.com/orgs/NOAA-CSL/projects/6>`__ 
