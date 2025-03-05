@@ -12,8 +12,7 @@ analysis:
   read:
     paired:
       method: 'netcdf'
-      filenames:
-        {tempo_l2_no2_wrfchem_v4.2: ['tempo_l2_no2_wrfchem_v4.2.nc4']}
+      filenames: {tempo_l2_no2_wrfchem_v4.2: ['tempo_l2_no2_wrfchem_v4.2.nc4']}
 
 
 obs:
