@@ -476,9 +476,9 @@ def _regrid_and_apply_weights(
         apply_weights_hydrostatic = apply_weights_mod2tempo_hcho_hydrostatic
     if method == "conservative":
         if "lat_b" not in modobj:
-            modobj["lat_b"], modobj["lon_b"] = calc_grid_corners(modobj)
+            calc_grid_corners(modobj)
         if "lat_b" not in obsobj:
-            obsobj["lat_b"], obsobj["lon_b"] = calc_grid_corners(obsobj, lat="lat", lon="lon")
+            calc_grid_corners(obsobj, lat="lat", lon="lon")
     modobj_hs = tempo_interp_mod2swath(obsobj, modobj, method=method, weights=weights)
     if ("layer_height_agl" in modobj.keys()) or ("dz_m" in modobj.keys()):
         modobj_hs[f"{species[0]}_col"] = calc_partialcolumn(modobj_hs, var=species[0])
