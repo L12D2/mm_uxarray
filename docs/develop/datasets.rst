@@ -23,14 +23,16 @@ please see the notes below.
 
 * The dataset should have these coordinate variables:
 
-  - ``time`` (UTC time, as timezone-naive ``datetime64`` format in xarray: ``time`` dim)
+  - ``time`` (UTC time, as timezone-naive ``datetime64`` format in xarray; ``time`` dim)
   - ``siteid`` (unique site identifier, as string; ``x`` dim)
   - ``latitude`` (site latitude, in degrees; ``x`` dim)
   - ``longitude`` (site longitude, in degrees; ``x`` dim)
 
 * This variable is required for regulatory metrics:
 
-  - ``time_local`` (local time, as timezone-naive ``datetime64`` format in xarray;
+  - ``time_local`` (local time,
+    usually local standard time, not including daylight savings,
+    as timezone-naive ``datetime64`` format in xarray;
     note that this varies in both the ``time`` and ``x`` dimensions)
 
 * It's good practice to include ``units`` attributes for your data variables,
@@ -49,9 +51,9 @@ demonstrating these qualities:
 .. code-block:: text
 
    <xarray.Dataset>
-   Dimensions:     (time: 867, y: 1, x: 2231)
+   Dimensions:     (time: 289, y: 1, x: 2231)
    Coordinates:
-     * time        (time) datetime64[ns] 2023-04-04 ... 2023-04-16T00:30:00
+     * time        (time) datetime64[ns] 2023-04-04 ... 2023-04-16
        siteid      (x) <U12 ...
        latitude    (x) float64 ...
        longitude   (x) float64 ...
