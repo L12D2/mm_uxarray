@@ -28,7 +28,7 @@ please see the notes below.
   - ``latitude`` (site latitude, in degrees; ``x`` dim)
   - ``longitude`` (site longitude, in degrees; ``x`` dim)
 
-* The dataset should have at least these data variables:
+* This variable is required for regulatory metrics:
 
   - ``time_local`` (local time, as timezone-naive ``datetime64`` format in xarray;
     note that this varies in both the ``time`` and ``x`` dimensions)
