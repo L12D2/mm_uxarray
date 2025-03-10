@@ -1,44 +1,58 @@
 Downloading Observations
 ========================
 
-MONET can automatically download observational data. Some HPC platforms including 
-the NOAA Hera machine have download restrictions that prevent us from using the 
-automatic download feature. So for now, MELODIES MONET has separate scripts to 
-preprocess the observational datasets. These preprocess scripts are also useful
-so that users do not have to re-download observational data over and over again 
-for the same analysis period. We will work on automating this process further 
-in the future. 
-
-
-Note: for users using MELODIES MONET on the NOAA Hera machine (or other machines 
-with download restrictions), you will need to run these jupyter notebooks on a 
-machine without download restrictions and manually copy the netCDF files produced 
-onto the NOAA Hera machine.
-
-Examples of preprocessed surface observational data for MELODIES MONET are here:
-`MELODIES MONET Example Datasets <https://csl.noaa.gov/groups/csl4/modeldata/melodies-monet/>`_. 
+As described below, some observations can be directly used in the MELODIES MONET tool as is 
+and some need a preprocessing step to convert them into a consistent data format.
 
 Surface
 -------
 
-In order to preprocess the observational data for additional time periods 
-follow the instructions in the jupyter notebooks in the 
-``examples/process_obs`` folder of the code on GitHub. Examples for 
-the following observational datasets are provided.
+Surface datasets commonly used for air quality and atmospheric composition applications are all in different 
+formats and occasionally some HPC platforms including the NOAA Hera machine have download restrictions 
+that prevent us from using the automatic download features available in MONET. So for now, 
+MELODIES MONET has separate scripts to preprocess the surface observational datasets and save the output to an 
+intermediate NetCDF file. These preprocess scripts are also useful so that users do not have to re-download 
+observational data over and over again for the same analysis period. We will work on automating this process further 
+in the future.
 
-   * Aeronet
-   * AirNow
-   * Improve
+The MELODIES MONET tool has a Command Line Interface (CLI) that can be used to download and create 
+MELODIES MONET-ready datasets for: AirNow, AERONET, AQS, ISH, ISH-Lite, and OpenAQ.
 
-Adapting these scripts for other observational datasets should be straight 
-forward.
+The Command Line Interface allows users to very easily download datasets with a single command line argument. 
+Generally, users only need to select which subcommand to use (i.e., which observational data set you want to download) 
+and then specify the start date and end date like that below to download all US EPA AQS observations in August 2023::
 
-Aircraft
---------
+    $ melodies-monet get-aqs -s 2023-08-01 -e 2023-09-01
 
-Under development. Some functionality is alrady available, and can be looked at in the official `Github repo routine <https://github.com/NOAA-CSL/MELODIES-MONET/blob/develop/melodies_monet/plots/aircraftplots.py/>`__.
+The other datasets can be downloaded in the same way::
+
+    $ melodies-monet get-aeronet -s 2023-08-01 -e 2023-09-01
+    $ melodies-monet get-airnow -s 2023-08-01 -e 2023-09-01
+    $ melodies-monet get-ish -s 2023-08-01 -e 2023-09-01
+    $ melodies-monet get-ish-lite -s 2023-08-01 -e 2023-09-01
+    $ melodies-monet get-openaq -s 2023-08-01 -e 2023-09-01
+
+The Command Line Interface will default to compressing the dataset, which can significantly save space. However, this
+compression step also takes time and some users have run into problems. Users can easily turn this compression off 
+by adding ``--no-compress`` like that below::
+
+    $ melodies-monet get-aqs -s 2023-08-01 -e 2023-09-01 --no-compress
+
+There are many other optional features available that are fully described in the Appendix :doc:`/cli`.
+
+.. note::
+   For users using MELODIES MONET on the NOAA Hera machine (or other machines 
+   with download restrictions), you will need to use the MELODIES MONET Command Line Interface on a 
+   machine without download restrictions and manually copy the netCDF files produced 
+   onto the NOAA Hera machine.
+
+Aircraft, Sonde, Mobile, and Ground Campaign Data
+-------------------------------------------------
+
+Aircraft, sonde, mobile, and ground campaign data can be used directly in the tool as long 
+as the data format is NetCDF, ICARTT, or CSV. No pre-processing is required for these datasets.
 
 Satellite
 ---------
 
-Under development. Some functionality is already available, and can be looked at  in the official `Github repo routine <https://github.com/NOAA-CSL/MELODIES-MONET/blob/develop/melodies_monet/plots/satplots.py/>`__.
+Under development.

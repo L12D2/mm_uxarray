@@ -4,12 +4,12 @@ Adding New Datasets
 Observations
 ------------
 
-Examples for how to read in data from Aeronet, AirNow, and Improve are in the
-``examples/process_obs`` folder in the MELODIES MONET repository
-`on GitHub <https://github.com/NOAA-CSL/MELODIES-MONET>`__.
-Use these examples as reference in order to add new surface observational datasets.
+The MELODIES MONET tool has a :doc:`/cli` that can be used to download and create 
+MELODIES MONET-ready datasets for: AirNow, AERONET, AQS, ISH, ISH-Lite, and OpenAQ. New surface 
+observational datasets should be added to this Command Line Interface.
 
-Instructions for reading in aircraft and satellite observations are under development. 
+New aircraft, sonde, mobile, and ground campaign datasets should work in the tool with no changes as long 
+as the data format is NetCDF, ICARTT, or CSV.
 
 Models
 ------
