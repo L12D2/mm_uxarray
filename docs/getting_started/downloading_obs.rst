@@ -55,4 +55,5 @@ as the data format is NetCDF, ICARTT, or CSV. No pre-processing is required for 
 Satellite
 ---------
 
-Under development.
+For satellite data, users download their own observational data. No pre-processing is required 
+for these datasets.
