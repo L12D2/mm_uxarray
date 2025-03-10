@@ -42,9 +42,9 @@ def calc_grid_corners(ds, lat="latitude", lon="longitude"):
     None
     """
     corners = ds[[lat, lon]].cf.add_bounds([lat, lon])
-    lat_b = cfxr.bounds_to_vertices(corners[f"{lat}_bounds"], "bounds", order=None)
-    lon_b = cfxr.bounds_to_vertices(corners[f"{lon}_bounds"], "bounds", order=None)
-    return lat_b, lon_b
+    ds['lat_b'] = cfxr.bounds_to_vertices(corners[f"{lat}_bounds"], "bounds", order=None)
+    ds['lon_b'] = cfxr.bounds_to_vertices(corners[f"{lon}_bounds"], "bounds", order=None)
+    return 
 
 
 def speedup_regridding(dset, variables="all"):
