@@ -2503,7 +2503,8 @@ class analysis:
                             print(p_index,np.shape(comb_bx))
                             if p_index == len(pair_labels) - 1:
                                 print('final',p_index, len(pair_labels) - 1)
-                                splots.Plot_CSI(score_name_input=score_name,
+                                splots.Plot_CSI(column=obsvar,
+                                                score_name_input=score_name,
                                                 threshold_list_input=threshold_list, 
                                                 comb_bx_input=comb_bx,
                                                 plot_dict=plot_dict,
