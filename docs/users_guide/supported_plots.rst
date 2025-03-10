@@ -104,7 +104,7 @@ Aircraft specific plots are described below:
    **Scatter Density** - Scatter density plot comparing one model results with one
    observation over the analysis window.
 
-.. figure:: /_static/figures/curtainNEW_O3.png
+.. figure:: /_static/figures/curtain_O3.png
 
    **Curtain** - Curtain plot comparing one model results with one
    observation over the analysis window.
