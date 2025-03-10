@@ -68,7 +68,10 @@ Supported Observations
 
 Surface
 ^^^^^^^
-To use these surface datasets in MELODIES MONET specify "obs_type" equal to "pt_sfc" in your YAML file.
+To use these surface datasets in MELODIES MONET specify "obs_type" equal to "pt_sfc" in your YAML file. Currently, 
+surface data in MELODIES MONET is paired horizontally to the site location and temporally with exact time matching 
+(e.g., if model data is provided hourly and observational data is provided hourly, these will pair together.) 
+More time interpolation options will be added in the future.
 
 Available now:
    * `AirNow <https://www.airnow.gov/>`_
@@ -82,6 +85,7 @@ Under Development:
    * `CRN <https://www.ncdc.noaa.gov/crn/>`_
    * `TOLNet <https://www-air.larc.nasa.gov/missions/TOLNet/>`_
    * `CEMS <https://www.epa.gov/emc/emc-continuous-emission-monitoring-systems/>`_
+   * `Pandora <https://pandora.gsfc.nasa.gov/>`_
 
 Please refer to the
 `MELODIES MONET project board <https://github.com/orgs/NOAA-CSL/projects/6>`__ 
@@ -129,9 +133,9 @@ Please refer to the
 `MELODIES MONET project board <https://github.com/orgs/NOAA-CSL/projects/6>`__ 
 under milestone "Surface and Aircraft Evaluation Version 2" to learn more about our current and future development plans.
 
-Satellite (under development)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Satellite
+^^^^^^^^^
 
 Please refer to the
 `MELODIES MONET project board <https://github.com/orgs/NOAA-CSL/projects/6>`__ 
-under milestone "Satellite Evaluation Version 2" to learn more about our current and future development plans.
+under milestone "Remote Sensing Evaluation Version 2" to learn more about our current and future development plans.
