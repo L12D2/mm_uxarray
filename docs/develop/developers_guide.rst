@@ -166,7 +166,9 @@ project on GitHub to learn about current and future development.
    `added an SSH key <https://docs.github.com/en/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account>`__
    to your GitHub account for your current machine.
    If you are new to GitHub, check out
-   `this GitHub tutorial <https://jlord.computer/git-it/>`__.
+
+   `Getting Started with GitHub on Project Pythia <https://foundations.projectpythia.org/foundations/getting-started-github.html>`__.
+
    We recommend the SSH method, but if you don't add an SSH key
    you can still clone the repositories via HTTPS, e.g. ::
 
@@ -184,3 +186,21 @@ project on GitHub to learn about current and future development.
       $ conda env create -f docs/environment-docs.yml
 
    to create a new conda environment (``melodies-monet-docs``).
+
+Code workflow
+-------------
+
+The way the code is constructed (see :doc:`../getting_started/software_architecture`)
+is based largely on code contained within a driver (``dirver.py``).
+The main class, contained in ``driver.py``, is ``analysis``.
+``analysis`` is in charge of creating and managing all other classes.
+This driver contains the ``observation``, ``model`` and ``pair`` classes,
+using the tools that can be found in ``util``.
+Even though, right now, the driver.py is quite large,
+we are working on reducing its complexity and,
+as far as possible, managing most with specific utilities.
+
+.. figure:: ../_static/melodies_monet_code_workflow.png
+   :alt: generalized workflow of the code.
+   
+   Generalized structure of the code and its workflow.
