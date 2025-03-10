@@ -586,8 +586,9 @@ def make_diurnal_cycle(df, column=None, label=None, ax=None, avg_window=None, yl
     shading_range = kwargs.get("shading_range", None)
     if shading_range is not None:
         if shading_range not in ["IQR", "std", "total_range"]:
-            warnings.warn(f"shading_range = {shading_range}. IQR, std or total_range"
-                          +"expected. Skipping.")
+            raise ValueError (
+                f"shading_range = {shading_range}. IQR, std or total_range expected."
+            )
         if "IQR" == shading_range:
             df_max = df_plot_group.quantile(q=0.75, numeric_only=True)
             df_min = df_plot_group.quantile(q=0.25, numeric_only=True)
