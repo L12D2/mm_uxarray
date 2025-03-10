@@ -89,6 +89,12 @@ or other interactive Python session,
 as it gives you some visual indication of the progress of multi-file data loading
 and some parts of the processing.
 
+**pairing_kwargs:** This is an optional argument. This dictionary allows for specifying keyword arguments for pairing methods.
+First level should be the observation type (e.g. "sat_grid_clm", "sat_swath_clm"). Then under the observation type label provide the specific pairing options for your application.
+   
+   * **apply_ak:** This is an optional argument used for pairing of satellite data. When no pairing keyword arguments are specified it will default to True. This should be set to True when application of satellite averaging kernels or apriori data to model observations is desired.
+   * **mod_to_overpass:** This is an optional argument used for pairing of satellite data. When set to True the model data will be pre-processed to the published local overpass time for the satellite. As of now, local overpass times are hard-wired.
+
 Models
 ------
 All input for each instance of the model class. First level should be the model 
@@ -120,9 +126,12 @@ data (e.g., surf_only: True).
 Typically this is set at the horizontal resolution of your model * 1.5. Setting 
 this to a smaller value will speed up the pairing process. 
 
-**apply_ak:** This is an optional argument used for pairing of satellite data. This
-should be set to True when application of satellite averaging kernels or apriori data 
-to model observations is desired. 
+**apply_ak:** Removed. Instead, specify ``pairing_kwargs`` in the analysis section.
+
+**is_global:** Optional boolean argument to specify if the model dataset is global or
+regional. Used in some satellite pairing methods to indicate if a longitude wrap should 
+be applied. Defaults to False when unspecified and xesmf-based satellite pairing methods
+will assume the model datset is regional.
 
 **mapping:** This is the mapping dictionary for all variables to be plotted. 
 For each observational dataset, add a mapping dictionary where the model 
@@ -203,6 +212,8 @@ See :doc:`../getting_started/downloading_obs` for more details.
 
 **obs_type:** The observation type. Options are: "pt_sfc" or point surface. Adding 
 options for Aircraft and Satellite observations are under development.
+
+**sat_type:** The satellite observation type. Options include: "mopitt_l3", "omps_l3", "omps_nm", "modis_l2", and "tropomi_l2_no2". Additional options are under development. 
 
 **data_proc:** This section stores all of the data processing information.
    

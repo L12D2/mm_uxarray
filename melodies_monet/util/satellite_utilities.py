@@ -32,6 +32,52 @@ def vertical_regrid(input_press, input_values, output_press):
             out_array[y,x,:] = f(xnew)
     return out_array
 
+def mod_to_overpasstime(modobj,opass_tms):
+    '''
+    Interpolate model to satellite overpass time.
+
+    Parameters
+    ----------
+    modobj : xarray.Dataset
+        model data
+    opass_tms : pandas.DatetimeIndex
+        satellite overpass local time
+
+    Output
+    ------
+    outmod : xarray.Dataset 
+        revised model data at local overpass time
+    '''
+    import pandas as pd
+    import xarray as xr
+    
+    nst, = opass_tms.shape
+    nmt, = modobj.time.shape
+    ny,nx = modobj.longitude.shape
+    
+    # Determine local time offset
+    local_utc_offset = (modobj['longitude']/15).round().astype('timedelta64[h]')
+    # initialize local time as variable
+    modobj['localtime'] = modobj['time'] + local_utc_offset
+
+    # initalize new model object with satellite datetimes
+    outmod = []
+
+    for ti in np.arange(nst):
+        # Apply filter to select model data within +/- 1 output time step of the overpass time
+        tempmod = modobj.where(np.abs(modobj['localtime'] - opass_tms[ti].to_datetime64()) < (modobj.time[1] - modobj.time[0]))
+        
+        # determine factors for linear interpolation in time
+        tfac = 1 - (np.abs(tempmod['localtime'] - opass_tms[ti].to_datetime64())/(modobj.time[1] - modobj.time[0]))
+        tempmod = tempmod.drop_vars('localtime')
+        # Carry out time interpolation
+        ## Note regarding current behavior: will only carry out time interpolation if at least 2 model timesteps
+        outmod.append((tfac*tempmod).sum(dim='time', min_count=2,keep_attrs=True))
+    #print(outmod)
+    outmod = xr.concat(outmod,dim='time')
+    outmod['time'] = (['time'],opass_tms)
+    return outmod
+
 def check_timestep(model_data,obs_data):
     ''' When pairing to level 3 data, model data may need to be aggregated to observation timestep.
         This function checks if the model data and observation data have the same timestep. Model data 
@@ -53,7 +99,7 @@ def check_timestep(model_data,obs_data):
         print('Timestep check and model resample failed')
         raise
 
-def mopitt_l3_pairing(model_data,obs_data,co_ppbv_varname):
+def mopitt_l3_pairing(model_data,obs_data,co_ppbv_varname,global_model=True):
     ''' Calculate model CO column, with MOPITT averaging kernel applied.
     '''
     import xarray as xr
@@ -67,17 +113,32 @@ def mopitt_l3_pairing(model_data,obs_data,co_ppbv_varname):
     ## Check if same number of timesteps:
     if obs_data.time.size == model_data.time.size:
         model_obstime = model_data
-    elif obs_data.time.size < model_data.time.size and obs_data.time.size >2:
-        model_obstime = check_timestep(model_data,obs_data)
-    elif obs_data.time.size < model_data.time.size and obs_data.time.size < 3:
-        print('Model data and obs data timesteps do not match, and there are not enough observation timesteps to infer the spacing from.')
-        raise
-    elif obs_data.time.size > mod_data.time.size:
+        filtstr = '%Y-%m'
+    elif obs_data.time.size > model_data.time.size:
         print('Observation data appears to be a finer time resolution than model data')
         raise
+    elif obs_data.attrs['monthly']:
+        # if obs_data is monthly, take monthly mean of model data
+        model_obstime = model_data.resample(time='MS').mean()
+        filtstr = '%Y-%m'
+    elif not obs_data.attrs['monthly']:
+        # obs_data is daily, so model and obs seem to be on same time step
+        model_obstime = model_data
+        filtstr = '%Y-%m-%d'
+    else:
+        # check frequency of model data 
+        tstep = xr.infer_freq(model_data.time.dt.round('D'))
+        if tstep == 'MS' or tstep == 'M':
+            model_obstime = model_data
+            filtstr = '%Y-%m'
+        else:
+            print('Time resolution of model data and MOPITT data is incompatible')
+            raise
+        
     # initialize regridder for horizontal interpolation 
     # from model grid to MOPITT grid
-    grid_adjust = xe.Regridder(model_obstime[['latitude','longitude']],obs_data[['lat','lon']],'bilinear',periodic=True)
+    grid_adjust = xe.Regridder(model_obstime[['latitude','longitude']],obs_data[['lat','lon']],
+                               'bilinear',periodic=global_model,unmapped_to_nan=True)
     co_model_regrid = grid_adjust(model_obstime[co_ppbv_varname])
     pressure_model_regrid = grid_adjust(model_obstime['pres_pa_mid']/100.)
     
@@ -89,7 +150,10 @@ def mopitt_l3_pairing(model_data,obs_data,co_ppbv_varname):
     co_regrid = xr.full_like(obs_data['pressure'], np.nan)
     # MEB: loop over time outside of regrid lowers memory usage
     for t in range(obs_data.time.size):
-        co_regrid[t] = vertical_regrid(pressure_model_regrid[t].values, co_model_regrid[t].values, obs_data['pressure'][t].values)
+        obs_day = obs_data.time[t].dt.strftime(filtstr)
+        co_regrid[t] = vertical_regrid(pressure_model_regrid.sel(time=obs_day).values.squeeze(), 
+                                       co_model_regrid.sel(time=obs_day).values.squeeze(), 
+                                       obs_data['pressure'][t].values)
     
     # apply AK
     ## log apriori and model data
@@ -97,7 +161,7 @@ def mopitt_l3_pairing(model_data,obs_data,co_ppbv_varname):
     log_mod = np.log10(co_regrid)
     diff_arr = log_mod-log_ap
     ## smooth/apply ak
-    smoothed = obs_data['apriori_col'] + (obs_data['ak_col']*diff_arr).sum(dim='alt')
+    smoothed = obs_data['apriori_col'] + (obs_data['ak_col']*diff_arr).sum(dim='alt', skipna=False)
     
     # Add variable name to smoothed model dataarray, combine with obs_data
     smoothed = smoothed.rename(co_ppbv_varname+'_column_model')
