@@ -11,6 +11,60 @@ Use these examples as reference in order to add new surface observational datase
 
 Instructions for reading in aircraft and satellite observations are under development. 
 
+If you are interested in converting a new observational dataset to our netCDF format,
+please see the notes below.
+
+* The dataset should have these dimensions (in this order):
+
+  - ``time``
+  - ``y`` (an optional singleton dimension, included for consistency with
+    model surface datasets)
+  - ``x`` (the site dimension)
+
+* The dataset should have these coordinate variables:
+
+  - ``time`` (UTC time, as timezone-naive ``datetime64`` format in xarray: ``time`` dim)
+  - ``siteid`` (unique site identifier, as string; ``x`` dim)
+  - ``latitude`` (site latitude, in degrees; ``x`` dim)
+  - ``longitude`` (site longitude, in degrees; ``x`` dim)
+
+* The dataset should have at least these data variables:
+
+  - ``time_local`` (local time, as timezone-naive ``datetime64`` format in xarray;
+    note that this varies in both the ``time`` and ``x`` dimensions)
+
+* It's good practice to include ``units`` attributes for your data variables,
+  though this is not strictly required.
+  Similarly, you may wish to include ``long_name``\ s.
+
+* Site metadata variables (e.g. site name, site elevation, EPA region, etc.)
+  should ideally be stored as varying only in the ``x`` dimension, to save space.
+
+* If you have sub-hourly data, you may want to aggregate it to hourly,
+  especially if different sites have different time resolutions.
+
+Example abbreviated xarray representation for AirNow
+demonstrating these qualities:
+
+.. code-block:: text
+
+   <xarray.Dataset>
+   Dimensions:     (time: 867, y: 1, x: 2231)
+   Coordinates:
+     * time        (time) datetime64[ns] 2023-04-04 ... 2023-04-16T00:30:00
+       siteid      (x) <U12 ...
+       latitude    (x) float64 ...
+       longitude   (x) float64 ...
+   Dimensions without coordinates: y, x
+   Data variables:
+       NO2         (time, y, x) float64 ...
+       time_local  (time, y, x) datetime64[ns] ...
+       epa_region  (y, x) <U5 ...
+
+You can examine the ``get_*`` functions in the :doc:`/cli`
+(``melodies_monet/_cli.py``) for examples of converting observational datasets
+in pandas DataFrame format to xarray Dataset format.
+
 Models
 ------
 Examples for reading model datasets can be
