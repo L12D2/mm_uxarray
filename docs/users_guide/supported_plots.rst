@@ -46,6 +46,12 @@ Surface Evaluation
    results overlaid in markers averaged over the analysis window with
    options to specify the domain.  
   
+.. note::
+   For “spatial_bias”, “spatial_overlay”, and “spatial_bias_exceedance” plots, if domain_type == 'all' 
+   and domain_name == 'CONUS' the following extent will be used for visual effect only: 
+   extent = [-130.0,-60.0,25.0,50.0]. This extent will not impact any calculations like spatial 
+   averages or statistics.
+
 .. figure:: /_static/figures/plot_grp5.boxplot.OZONE.2019-08-01_12.2019-08-11_12.all.CONUS.png
    :scale: 25 %
 
