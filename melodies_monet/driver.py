@@ -662,6 +662,8 @@ class model:
                         print('The variable name, {}, already exists and cannot be created with variable_summing.'.format(var_new))
                         raise ValueError
                     var_new_info = self.variable_summing[var_new]
+                    if self.variable_dict is None:
+                        self.variable_dict = {}
                     self.variable_dict[var_new] = var_new_info
                     for i,var in enumerate(var_new_info['vars']):
                         if i ==0:
