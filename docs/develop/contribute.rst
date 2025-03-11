@@ -6,7 +6,7 @@ the contributions and support from you.
 
 - Ask questions, suggest features, or view source code 
   `on GitHub <https://github.com/NOAA-CSL/MELODIES-MONET>`__.
-- If an issue arrises, please post 
+- If an issue arises, please post 
   `on GitHub Issues <https://github.com/NOAA-CSL/MELODIES-MONET/issues>`__.
 - Please check out 
   `GitHub Projects <https://github.com/NOAA-CSL/MELODIES-MONET/projects>`__ 
