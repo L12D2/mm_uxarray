@@ -12,7 +12,6 @@ import glob
 import logging
 import warnings
 
-import cf_xarray as cfxr
 import monetio as mio
 import numba
 import numpy as np
@@ -38,6 +37,10 @@ def calc_grid_corners(ds, lat="latitude", lon="longitude"):
     -------
     None
     """
+    try:
+        import cf_xarray as cfxr
+    except ImportError:
+        raise ImportError("Calculating gridcell bounds requires cf_xarray. Pleas install")
     corners = ds[[lat, lon]].cf.add_bounds([lat, lon])
     ds['lat_b'] = cfxr.bounds_to_vertices(corners[f"{lat}_bounds"], "bounds", order=None)
     ds['lon_b'] = cfxr.bounds_to_vertices(corners[f"{lon}_bounds"], "bounds", order=None)
