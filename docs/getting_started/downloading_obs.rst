@@ -50,7 +50,8 @@ Aircraft, Sonde, Mobile, and Ground Campaign Data
 -------------------------------------------------
 
 Aircraft, sonde, mobile, and ground campaign data can be used directly in the tool as long 
-as the data format is NetCDF, ICARTT, or CSV. No pre-processing is required for these datasets.
+as the data format is NetCDF, ICARTT, or CSV. Users download their own observational data. 
+No pre-processing is required for these datasets.
 
 Satellite
 ---------
