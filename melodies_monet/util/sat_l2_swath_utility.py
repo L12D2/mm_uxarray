@@ -291,17 +291,15 @@ def cal_amf_wrfchem(scatw, wrfpreslayer, tpreslev, troppres, wrfno2layer_molec, 
     vertical_pres = []
     vertical_scatw = []
     vertical_wrfp = []
-
+    
     for llb in range(len(lb[0])):
         yy = lb[0][llb]
         xx = lb[1][llb]
         vertical_pres = tpreslev[:,yy,xx] # mli, update to new dimension
         vertical_scatw = scatw[yy,xx,:]
         vertical_wrfp = wrfpreslayer[yy,xx,:]
-
         f = interpolate.interp1d(np.log10(vertical_pres[:]),vertical_scatw[:], fill_value="extrapolate")# relationship between pressure to avk
         wrfavk[yy,xx,:] = f(np.log10(vertical_wrfp[:])) #wrf-chem averaging kernel
-
 
     for l in range(nz-1):
         # check if it's within tropopause
