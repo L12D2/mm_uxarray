@@ -2105,7 +2105,7 @@ class analysis:
                             
                             # At the end save the plot.
                             if p_index == len(pair_labels) - 1:
-                                savefig(outname + '.png', logo_height=150)
+                                savefig(outname + '.png', logo_height=250)
                                 del (ax, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict) # Clear axis for next plot.
 
                         elif plot_type.lower() == 'vertical_single_date':

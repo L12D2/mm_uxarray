@@ -1015,7 +1015,7 @@ def make_violin_plot(comb_violin, label_violin, outname='plot',
 
     # Finalize and save plot
     plt.tight_layout()
-    savefig(f"{outname}.png", loc=4, logo_height=100, dpi=300)
+    savefig(f"{outname}.png", loc=3, logo_height=200, dpi=300)
     
     # Close the plot if not in debug mode
     if not debug:

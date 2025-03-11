@@ -93,7 +93,7 @@ Aircraft specific plots are described below:
    versus  one observation (x-axis) over the analysis window.
 
 .. figure:: /_static/figures/plot_grp3.violin.O3_CL.2023-06-27_00.2023-06-28_23.all.LosAngeles.png
-   :scale: 25 %
+   :scale: 15 %
 
    **Violin** - Violin plot comparing one or more model results with one
    observation over the analysis window.
