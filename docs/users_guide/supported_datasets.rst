@@ -1,7 +1,7 @@
 Supported Datasets
 ==================
 
-Supported Models and Observations are below. Please see
+Supported models and observations are below. Please see
 :ref:`Adding New Datasets <develop/datasets:Adding New Datasets>`
 for advice on how to add new model and observational datasets to MELODIES MONET.
 
@@ -69,9 +69,9 @@ Supported Observations
 Surface
 ^^^^^^^
 To use these surface datasets in MELODIES MONET specify "obs_type" equal to "pt_sfc" in your YAML file. Currently, 
-surface data in MELODIES MONET is paired horizontally to the site location and temporally with exact time matching 
-(e.g., if model data is provided hourly and observational data is provided hourly, these will pair together.) 
-More time interpolation options will be added in the future.
+surface data in MELODIES MONET is paired horizontally using the nearest neighbor approach and temporally with 
+exact time matching (e.g., if model data is provided hourly and observational data is provided 
+hourly, these will pair together). More time interpolation options will be added in the future.
 
 Available now:
    * `AirNow <https://www.airnow.gov/>`_
@@ -98,7 +98,9 @@ under milestone "Surface and Aircraft Evaluation Version 2" to learn more about 
 
 Aircraft, Sonde, Mobile, and Ground Campaign Data
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Pairing capabilities include time, horizontal, and vertical interpolation. Users can evaluate aircraft data, 
+Pairing capabilities include time, horizontal, and vertical interpolation. Horizontal interpolation uses the 
+nearest neighbor approach. Vertical interpolation uses linear interpolation and nearest neighbor for extrapolation 
+with a warning if users are pairing points above the model top, which is not recommended. Users can evaluate aircraft data, 
 ozonesonde data, mobile or walking data, and single ground site data. To use these options in MELODIES MONET 
 specify "obs_type" equal to "aircraft", "ozone_sonder", "mobile", or "ground" in your YAML file. The table 
 below describes these options in more detail. Available datafile formats include NetCDF, ICARTT, and CSV.
@@ -108,15 +110,17 @@ below describes these options in more detail. Available datafile formats include
    :header-rows: 1
 
    * - "obs_type"
-     - Description
+     - Description of Pairing
    * - "aircraft"
-     - Aircraft - time, horizontal, and vertical interpolation
+     - Aircraft - Time, horizontal, and vertical interpolation across the entire dataset.
    * - "ozone_sonder"
-     - Ozonesonde - time and vertical interpolation at a fixed horizontal location
+     - | Ozonesonde - Vertical interpolation across the entire dataset. Time and 
+       | horizontal interpolation at a fixed release time and location.
    * - "mobile"
-     - Mobile - time and horizontal interpolation at the surface
+     - Mobile - Time and horizontal interpolation across the entire dataset at the surface.
    * - "ground"
-     - Ground - time interpolation at a fixed horizontal location at the surface
+     - | Ground - Time interpolation across the entire dataset. Horizontal interpolation 
+       | at a fixed location at the surface.
 
 Tested datasets include the following: 
    * `FIREX-AQ <https://csl.noaa.gov/projects/firex-aq/>`_
