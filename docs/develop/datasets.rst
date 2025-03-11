@@ -28,9 +28,9 @@ please see the notes below.
   - ``latitude`` (site latitude, in degrees; ``x`` dim)
   - ``longitude`` (site longitude, in degrees; ``x`` dim)
 
-* This variable is required for regulatory metrics, ,
-  and can be optionally used for general timeseries.
-  If you don't care about those, you might omit it:
+* This variable is required for regulatory metrics,
+  and can be optionally used for time series plots.
+  Otherwise, you might omit it:
 
   - ``time_local`` (local time,
     usually local standard time, not including daylight savings,
