@@ -542,6 +542,7 @@ class model:
                 and control_dict['analysis']['time_chunking_with_gridded_data']
 
         self.glob_files()
+        print(self.files)
         # Calculate species to input into MONET, so works for all mechanisms in wrfchem
         # I want to expand this for the other models too when add aircraft data.
         # First make a list of variables not in mapping but from variable_summing, if provided
@@ -585,6 +586,10 @@ class model:
                     self.mod_kwargs.update({'fname_pm25' : self.files_pm25})
                 self.mod_kwargs.update({'var_list' : list_input_var})
                 self.obj = mio.models._rrfs_cmaq_mm.open_mfdataset(self.files,**self.mod_kwargs)
+            elif "ufsaqm_phy" in self.model.lower():
+                self.obj = mio.models._ufsaqm_phy_mm.open_mfdataset(self.files)
+            elif "ufschem" in self.model.lower():
+                self.obj = mio.models._ufschem_v1.open_mfdataset(self.files)
             elif 'gsdchem' in self.model.lower():
                 print('**** Reading GSD-Chem model output...')
                 if len(self.files) > 1:
@@ -1342,7 +1347,7 @@ class analysis:
                             model_obj = mod.obj[keys+['dp_pa']]
                             paired_data = sutil.omps_nm_pairing(model_obj,obs.obj,keys)
 
-                        paired_data = paired_data.where((paired_data.o3vmr > 0))
+                        paired_data = paired_data.where((paired_data.ozone_column > 0))
                         p = pair()
                         p.type = obs.obs_type
                         p.obs = obs.label
