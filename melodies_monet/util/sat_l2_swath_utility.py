@@ -55,7 +55,8 @@ def trp_interp_swatogrd(obsobj, modobj):
         days = list(obsobj.keys())[nd]
         # --- model
         # get model no2 trop. columns at 13:00 - 14:00 localtime
-        modobj_tm = modobj.sel(time=days)
+        print(days)
+        modobj_tm = modobj.sel(time=days.strfime('%Y-%d-%m'))
         
         # intermediate need: model NO2 partial columns for day
         no2col_satm = np.nanmean(modobj_tm['no2col'].values, axis = 0)
@@ -142,15 +143,21 @@ def trp_interp_swatogrd_ak(obsobj, modobj):
         attrs=dict(description="daily tropomi data at model grids"),)
 
     tmpvalue = np.zeros([ny, nx], dtype = np.float64)
-    
+    print(modobj.time)
     # loop over all days
     for nd in range(nobstime):
 
-        days = list(obsobj.keys())[nd]
-
+        days = time[nd].strftime('%Y-%m-%d')
         # --- model ---
+        print(days)
         # get model no2 trop. columns at 13:00 - 14:00 localtime
-        modobj_tm = modobj.sel(time=days)
+        try:
+            modobj_tm = modobj.sel(time=days)
+        except KeyError:
+            print(days)
+            print('Satellite data was outside available model times')
+            continue
+        #modobj_tm = modobj.sel(time=days)
         no2col_satm = modobj_tm['no2col'].mean(dim='time')
               
         # sum up tropopause, needs to be revised to tropopause

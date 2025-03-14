@@ -83,7 +83,7 @@ def mod_to_overpasstime(modobj,opass_tms,partial_col=None):
     outmod = xr.concat(outmod,dim='time')
     outmod['time'] = (['time'],opass_tms)
     
-    if partial_col == 'no2':
+    if partial_col == 'no2' or partial_col == 'no2_ave':
         from .cal_mod_no2col import cal_model_no2partialcol
         
         outmod['no2col'] = cal_model_no2partialcol(outmod)
