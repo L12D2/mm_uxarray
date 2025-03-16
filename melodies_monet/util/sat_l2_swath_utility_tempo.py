@@ -18,6 +18,9 @@ import numpy as np
 import xarray as xr
 import xesmf as xe
 
+numba_logger = logging.getLogger("numba")
+numba_logger.setLevel(logging.WARNING)
+
 
 def calc_grid_corners(ds, lat="latitude", lon="longitude"):
     """Adds latitude and longitude bounds inplace.
