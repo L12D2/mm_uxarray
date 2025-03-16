@@ -247,7 +247,7 @@ class observation:
         None
         """
         from .util import time_interval_subset as tsub
-        
+        from glob import glob
         try:
             if self.sat_type == 'omps_l3':
                 print('Reading OMPS L3')
@@ -275,6 +275,13 @@ class observation:
                 else: flst = self.file
                 self.obj = mio.sat._mopitt_l3_mm.open_dataset(flst, ['column','pressure_surf','apriori_col',
                                                                           'apriori_surf','apriori_prof','ak_col'])
+
+                # Determine if monthly or daily product and set as attribute
+                if any(mtype in glob(self.file)[0] for mtype in ('MOP03JM','MOP03NM','MOP03TM')):
+                    self.obj.attrs['monthly'] = True
+                else:
+                    self.obj.attrs['monthly'] = False
+                            
             elif self.sat_type == 'modis_l2':
                 # from monetio import modis_l2
                 print('Reading MODIS L2')
@@ -431,7 +438,7 @@ class model:
     def __init__(self):
         """Initialize a :class:`model` object."""
         self.model = None
-        self.apply_ak = False
+        self.is_global = False
         self.radius_of_influence = None
         self.mod_kwargs = {}
         self.file_str = None
@@ -720,6 +727,8 @@ class analysis:
         self.obs_gridded_dataset = None
         self.add_logo = True
         """bool, default=True : Add the MELODIES MONET logo to the plots."""
+        self.pairing_kwargs = {}
+
 
     def __repr__(self):
         return (
@@ -813,6 +822,10 @@ class analysis:
                 = [[time_stamps[n], time_stamps[n+1]]
                     for n in range(len(time_stamps)-1)]
         
+        # specific arguments for pairing options
+        if 'pairing_kwargs' in self.control_dict['analysis'].keys():
+            self.pairing_kwargs = self.control_dict['analysis']['pairing_kwargs']
+            
         # Enable Dask progress bars? (default: false)
         enable_dask_progress_bars = self.control_dict["analysis"].get(
             "enable_dask_progress_bars", False)
@@ -915,8 +928,8 @@ class analysis:
                 # this is the model type (ie cmaq, rapchem, gsdchem etc)
                 m.model = self.control_dict['model'][mod]['mod_type']
                 # set the model label in the dictionary and model class instance
-                if "apply_ak" in self.control_dict['model'][mod].keys():
-                    m.apply_ak = self.control_dict['model'][mod]['apply_ak']
+                if "is_global" in self.control_dict['model'][mod].keys():
+                    m.is_global = self.control_dict['model'][mod]['is_global']
                 if 'radius_of_influence' in self.control_dict['model'][mod].keys():
                     m.radius_of_influence = self.control_dict['model'][mod]['radius_of_influence']
                 else:
@@ -1334,6 +1347,12 @@ class analysis:
                 # TODO: add other network types / data types where (ie flight, satellite etc)
                 # if sat_swath_clm (satellite l2 column products)
                 elif obs.obs_type.lower() == 'sat_swath_clm':
+                    # grab kwargs for pairing. Use default if not specified
+                    pairing_kws = {'apply_ak':True,'mod_to_overpass':False}
+                    for key in self.pairing_kwargs[obs.obs_type.lower()]:
+                        pairing_kws[key] = self.pairing_kwargs[obs.obs_type.lower()][key]
+                    if 'apply_ak' not in self.pairing_kwargs[obs.obs_type.lower()]:
+                        print('WARNING: The satellite pairing option apply_ak is being set to True because it was not specified in the YAML. Pairing will fail if there is no AK available.')
                     
                     if obs.sat_type == 'omps_nm':
                         
@@ -1344,7 +1363,7 @@ class analysis:
                         if 'time' in obs.obj.dims:
                             obs.obj = obs.obj.sel(time=slice(self.start_time,self.end_time))
                             obs.obj = obs.obj.swap_dims({'time':'x'})
-                        if mod.apply_ak == True:
+                        if pairing_kws['apply_ak'] == True:
                             model_obj = mod.obj[keys+['pres_pa_mid','surfpres_pa']]
                             
                             paired_data = sutil.omps_nm_pairing_apriori(model_obj,obs.obj,keys)
@@ -1374,7 +1393,7 @@ class analysis:
                         model_obj = mutil.cal_model_no2columns(model_obj)
                         #obs_dat = obs.obj.sel(time=slice(self.start_time.date(),self.end_time.date())).copy()
 
-                        if mod.apply_ak == True:
+                        if pairing_kws['apply_ak'] == True:
                             paired_data = sutil.trp_interp_swatogrd_ak(obs.obj, model_obj)
                         else:
                             paired_data = sutil.trp_interp_swatogrd(obs.obj, model_obj)
@@ -1442,6 +1461,12 @@ class analysis:
                         
                 # if sat_grid_clm (satellite l3 column products)
                 elif obs.obs_type.lower() == 'sat_grid_clm':
+                    # grab kwargs for pairing. Use default if not specified
+                    pairing_kws = {'apply_ak':True,'mod_to_overpass':False}
+                    for key in self.pairing_kwargs[obs.obs_type.lower()]:
+                        pairing_kws[key] = self.pairing_kwargs[obs.obs_type.lower()][key]
+                    if 'apply_ak' not in self.pairing_kwargs[obs.obs_type.lower()]:
+                        print('WARNING: The satellite pairing option apply_ak is being set to True because it was not specified in the YAML. Pairing will fail if there is no AK available.')
                     if len(keys) > 1: 
                         print('Caution: More than 1 variable is included in mapping keys.')
                         print('Pairing code is calculating a column for {}'.format(keys[0])) 
@@ -1464,13 +1489,22 @@ class analysis:
 
                     elif obs.sat_type == 'mopitt_l3':
                         from .util import satellite_utilities as sutil
-                        if mod.apply_ak: 
+                        
+                        if pairing_kws['apply_ak']: 
                             model_obj = mod.obj[keys+['pres_pa_mid']]
                             # trim to only data within analysis window, as averaging kernels can't be applied outside it
-                            obs_dat = obs.obj.sel(time=slice(self.start_time.date(),self.end_time.date()))#.copy()
-                            model_obj = model_obj.sel(time=slice(self.start_time.date(),self.end_time.date()))#.copy()
+                            obs_dat = obs.obj.sel(time=slice(self.start_time.date(),self.end_time.date()))
+                            model_obj = model_obj.sel(time=slice(self.start_time.date(),self.end_time.date()))
+                            
+                            # Sample model to observation overpass time
+                            if pairing_kws['mod_to_overpass']:
+                                print('sampling model to 10:30 local overpass time')
+                                overpass_datetime = pd.date_range(self.start_time.replace(hour=10,minute=30),
+                                                                  self.end_time.replace(hour=10,minute=30),freq='D')
+                                model_obj = sutil.mod_to_overpasstime(model_obj,overpass_datetime)
+                            
                             # interpolate model to observation, calculate column with averaging kernels applied
-                            paired = sutil.mopitt_l3_pairing(model_obj,obs_dat,keys[0])
+                            paired = sutil.mopitt_l3_pairing(model_obj,obs_dat,keys[0],global_model=mod.is_global)
                             p = pair()
                             p.type = obs.obs_type
                             p.obs = obs.label
@@ -1513,7 +1547,8 @@ class analysis:
         None
         """
         
-        from .util.tools import resample_stratify, get_epa_region_bounds, get_giorgi_region_bounds
+        from .util.tools import resample_stratify
+        from .util.region_select import select_region
         import matplotlib.pyplot as plt
         pair_keys = list(self.paired.keys())
         if self.paired[pair_keys[0]].type.lower() in ['sat_grid_clm','sat_swath_clm']:
@@ -1592,6 +1627,7 @@ class analysis:
                 threshold_tick_style = grp_dict.get('threshold_tick_style',None)
 
             # first get the observational obs labels
+
             for p_index, p_label in enumerate(pair_labels):
                 p = self.paired[p_label]
                 obs_vars = p.obs_vars
@@ -1604,6 +1640,7 @@ class analysis:
                     for domain in range(len(domain_types)):
                         domain_type = domain_types[domain]
                         domain_name = domain_names[domain]
+
 
                         
                         # find the pair model label that matches the obs var
@@ -1619,22 +1656,27 @@ class analysis:
                             modvar = modvar + 'trpcol'
                             
                         # for pt_sfc data, convert to pandas dataframe, format, and trim
-                        if obs_type in ["sat_swath_sfc", "sat_swath_clm", 
-                                                                        "sat_grid_sfc", "sat_grid_clm", 
-                                                                        "sat_swath_prof"]:
+                        # Query selected points if applicable
+                        if domain_type != 'all':
+                            p_region = select_region(p.obj, domain_type, domain_name, domain_info)
+                        else:
+                            p_region = p.obj
+
+                        
+                        if obs_type in ["sat_swath_sfc", "sat_swath_clm", "sat_grid_sfc",
+                                        "sat_grid_clm", "sat_swath_prof"]:
                              # convert index to time; setup for sat_swath_clm
                             
-                            if 'time' not in p.obj.dims and obs_type == 'sat_swath_clm':
-                                
-                                pairdf_all = p.obj.swap_dims({'x':'time'})
+                            if 'time' not in p_region.dims and obs_type == 'sat_swath_clm':
+                                pairdf_all = p_region.swap_dims({'x':'time'})
 
                             else:
-                                pairdf_all = p.obj
+                                pairdf_all = p_region
                             # Select only the analysis time window.
                             pairdf_all = pairdf_all.sel(time=slice(self.start_time,self.end_time))
                         else:
                             # convert to dataframe
-                            pairdf_all = p.obj.to_dataframe(dim_order=["time", "x"])
+                            pairdf_all = p_region.to_dataframe(dim_order=["time", "x"])
                             # Select only the analysis time window.
                             pairdf_all = pairdf_all.loc[self.start_time : self.end_time]
                             
@@ -1698,41 +1740,6 @@ class analysis:
                         # Determine outname
                         outname = "{}.{}.{}.{}.{}.{}.{}".format(grp, plot_type, obsvar, startdatename, enddatename, domain_type, domain_name)
 
-                        # Query selected points if applicable
-                        if domain_type != 'all':
-                            if domain_type.startswith("auto-region"):
-                                _, auto_region_id = domain_type.split(":")
-                                if auto_region_id == 'epa':
-                                    bounds = get_epa_region_bounds(acronym=domain_name)
-                                elif auto_region_id == 'giorgi':
-                                    bounds = get_giorgi_region_bounds(acronym=domain_name)
-                                elif auto_region_id == 'custom':
-                                    bounds = grp_dict["domain_box"]
-                                else:
-                                    raise ValueError(
-                                        "Currently, region selections whithout a domain query have only "
-                                        "been implemented for Giorgi and EPA regions. You asked for "
-                                        f"{domain_type!r}. Soon, arbitrary rectangular boxes, US states and "
-                                        "others will be included."
-                                    )
-                                if isinstance(pairdf_all, pd.DataFrame):
-                                    pairdf_all = pairdf_all.loc[
-                                                    (pairdf_all["latitude"] >= bounds[0])
-                                                    & (pairdf_all["longitude"] >= bounds[1])
-                                                    & (pairdf_all["latitude"] <= bounds[2])
-                                                    & (pairdf_all["longitude"] <= bounds[3])
-                                                 ]
-                                else:
-                                    pairdf_all = pairdf_all.where(
-                                                    (pairdf_all["latitude"] >= bounds[0])
-                                                    & (pairdf_all["longitude"] >= bounds[1])
-                                                    & (pairdf_all["latitude"] <= bounds[2])
-                                                    & (pairdf_all["longitude"] <= bounds[3]),
-                                                    drop=True
-                                                 )
-                            else:
-                                pairdf_all.query(domain_type + ' == ' + '"' + domain_name + '"', inplace=True)
-                        
                         # Query with filter options
                         if 'filter_dict' in grp_dict['data_proc'] and 'filter_string' in grp_dict['data_proc']:
                             raise Exception("""For plot group: {}, only one of filter_dict and filter_string can be specified.""".format(grp))
@@ -2793,6 +2800,8 @@ class analysis:
                                     vmodel = self.models[p.model].obj.loc[dict(time=slice(self.start_time, self.end_time))]
                             except KeyError as e:
                                 raise Exception("MONET requires an altitude dimension named 'z'") from e
+                            if grp_dict.get('data_proc', {}).get('crop_model', False) and domain_name != all:
+                                vmodel = select_region(vmodel, domain_type, domain_name, domain_info)
 
                             # Determine proj to use for spatial plots
                             proj = splots.map_projection(self.models[p.model])
@@ -2844,6 +2853,7 @@ class analysis:
         """
         from .stats import proc_stats as proc_stats
         from .plots import surfplots as splots
+        from .util.region_select import select_region
 
         # first get the stats dictionary from the yaml file
         stat_dict = self.control_dict['stats']
@@ -2883,9 +2893,11 @@ class analysis:
             # Loop also over the domain types.
             domain_types = stat_dict['domain_type']
             domain_names = stat_dict['domain_name']
+            domain_infos = stat_dict.get('domain_info', {})
             for domain in range(len(domain_types)):
                 domain_type = domain_types[domain]
                 domain_name = domain_names[domain]
+                domain_info = domain_infos.get(domain_name, None)
 
                 # The tables and text files will be output at this step in loop.
                 # Create an empty pandas dataarray.
@@ -2940,26 +2952,29 @@ class analysis:
                         
                         # TODO: Cleanup TEMPO code for stats
 
+                        # Query selected points if applicable
+                        if domain_type != 'all':
+                            p_region = select_region(p.obj, domain_type, domain_name, domain_info)
+                        else:
+                            p_region = p.obj
+
                         # convert to dataframe
                         # handle different dimensios, M.Li
+
                         if 'tempo_l2' in p.obs:
-                            stacked = p.obj.rename({"y": "ll"}).stack(y=("x", "ll")).drop("x")
+                            stacked = p_region.obj.rename({"y": "ll"}).stack(y=("x", "ll")).drop("x")
                             pairdf_all = stacked.to_dataframe(dim_order=["time", "y"])
                             del stacked
-                        elif ('y' in p.obj.dims) and ('x' in p.obj.dims):
-                            pairdf_all = p.obj.to_dataframe(dim_order=["x", "y"])
-                        elif ('y' in p.obj.dims) and ('time' in p.obj.dims):
-                            pairdf_all = p.obj.to_dataframe(dim_order=["time", "y"])
+                        if ('y' in p_region.dims) and ('x' in p_region.dims):
+                            pairdf_all = p_region.to_dataframe(dim_order=["x", "y"])
+                        elif ('y' in p_region.dims) and ('time' in p_region.dims):
+                            pairdf_all = p_region.to_dataframe(dim_order=["time", "y"])
                         else:
-                            pairdf_all = p.obj.to_dataframe(dim_order=["time", "x"])
+                            pairdf_all = p_region.to_dataframe(dim_order=["time", "x"])
 
                         # Select only the analysis time window.
                         pairdf_all = pairdf_all.loc[self.start_time : self.end_time]
 
-                        # Query selected points if applicable
-                        if domain_type != 'all':
-                            pairdf_all.query(domain_type + ' == ' + '"' + domain_name + '"', inplace=True)
-                        
                         # Query with filter options
                         if 'data_proc' in stat_dict:
                             if 'filter_dict' in stat_dict['data_proc'] and 'filter_string' in stat_dict['data_proc']:
