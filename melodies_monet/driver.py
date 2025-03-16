@@ -1593,9 +1593,9 @@ class analysis:
 
             # first get the observational obs labels
             for p_index, p_label in enumerate(pair_labels):
-                pair1 = self.paired[p_label]
-                obs_vars = pair1.obs_vars
-                obs_type = pair1.type
+                p = self.paired[p_label]
+                obs_vars = p.obs_vars
+                obs_type = p.type
                 # loop through obs variables
                 for obsvar in obs_vars:
                     # Loop also over the domain types. So can easily create several overview and zoomed in plots.
@@ -1605,8 +1605,6 @@ class analysis:
                         domain_type = domain_types[domain]
                         domain_name = domain_names[domain]
 
-                    # Then loop through each of the pairs to add to the plot.
-                        p = self.paired[p_label]
                         
                         # find the pair model label that matches the obs var
                         index = p.obs_vars.index(obsvar)
