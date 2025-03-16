@@ -1349,9 +1349,9 @@ class analysis:
                 elif obs.obs_type.lower() == 'sat_swath_clm':
                     # grab kwargs for pairing. Use default if not specified
                     pairing_kws = {'apply_ak':True,'mod_to_overpass':False}
-                    for key in self.pairing_kwargs[obs.obs_type.lower()]:
+                    for key in self.pairing_kwargs.get(obs.obs_type.lower(), {}):
                         pairing_kws[key] = self.pairing_kwargs[obs.obs_type.lower()][key]
-                    if 'apply_ak' not in self.pairing_kwargs[obs.obs_type.lower()]:
+                    if 'apply_ak' not in self.pairing_kwargs.get(obs.obs_type.lower(), {}):
                         print('WARNING: The satellite pairing option apply_ak is being set to True because it was not specified in the YAML. Pairing will fail if there is no AK available.')
                     
                     if obs.sat_type == 'omps_nm':
@@ -1463,7 +1463,7 @@ class analysis:
                 elif obs.obs_type.lower() == 'sat_grid_clm':
                     # grab kwargs for pairing. Use default if not specified
                     pairing_kws = {'apply_ak':True,'mod_to_overpass':False}
-                    for key in self.pairing_kwargs[obs.obs_type.lower()]:
+                    for key in self.pairing_kwargs.get(obs.obs_type.lower(), {}):
                         pairing_kws[key] = self.pairing_kwargs[obs.obs_type.lower()][key]
                     if 'apply_ak' not in self.pairing_kwargs[obs.obs_type.lower()]:
                         print('WARNING: The satellite pairing option apply_ak is being set to True because it was not specified in the YAML. Pairing will fail if there is no AK available.')
