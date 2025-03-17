@@ -1914,7 +1914,7 @@ class analysis:
                                         pairdf = pairdf[pairdf[column].between(vmin_y2, vmax_y2)]
                             
                             # Now proceed wit plotting, call the make_timeseries function with the subsetted pairdf (if vmin2 and vmax2 are not nOne) otherwise whole df                                 
-                            if 'tempo_l2' in str(self.obs[p.obs].sat_type):
+                            self.obs[p.obs].sat_type is not None and self.obs[p.obs].sat_type.startswith("tempo_l2"):
                                 if plot_type.lower() == 'timeseries':
                                     make_timeseries = xrplots.make_timeseries
                                 else:
@@ -1950,7 +1950,7 @@ class analysis:
                                 # First plot the observations.
                                 ax = make_timeseries(**plot_kwargs)
                             # For all p_index plot the model.
-                            if 'tempo_l2' in str(self.obs[p.obs].sat_type):
+                            self.obs[p.obs].sat_type is not None and self.obs[p.obs].sat_type.startswith("tempo_l2"):
                                 plot_kwargs['varname']=modvar
                             else:
                                 plot_kwargs['column']=modvar
@@ -2601,7 +2601,7 @@ class analysis:
 
 
                         elif plot_type.lower() == 'taylor':
-                            if 'tempo_l2' in str(self.obs[p.obs].sat_type):
+                            self.obs[p.obs].sat_type is not None and self.obs[p.obs].sat_type.startswith("tempo_l2"):
                                 make_taylor = xrplots.make_taylor
                                 plot_kwargs = {
                                     'dset': pairdf,
@@ -2687,7 +2687,7 @@ class analysis:
                             )
                         elif plot_type.lower() == 'gridded_spatial_bias':
                             outname = "{}.{}".format(outname, p_label)
-                            if 'tempo_l2' in str(self.obs[p.obs].sat_type):
+                            self.obs[p.obs].sat_type is not None and self.obs[p.obs].sat_type.startswith("tempo_l2"):
                                 make_spatial_bias_gridded = xrplots.make_spatial_bias_gridded
                                 plot_kwargs = {
                                     'dset': pairdf, 'varname_o': obsvar, 'varname_m': modvar,
