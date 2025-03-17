@@ -123,6 +123,7 @@ class observation:
         self.variable_summing = None
         self.resample = None
         self.time_var = None
+        self.regrid_method = None
 
     def __repr__(self):
         return (
@@ -1432,11 +1433,8 @@ class analysis:
                         mod_sp = [
                             k_sp for k_sp, v in mod.mapping[key].items() if v == sp
                         ]
-                        # Try catch following EAFP stategy
-                        try:
-                            regrid_method = obs.regridding
-                        except AttributeError:
-                            regrid_method = "bilinear"
+
+                        regrid_method = obs.regrid_method if obs.regrid_method is not None else "bilinear"
                         paired_data_atswath = sutil.regrid_and_apply_weights(
                             obs.obj, mod.obj, species=mod_sp, method=regrid_method, tempo_sp=sat_sp
                         )
