@@ -81,7 +81,7 @@ Available now:
    * `OpenAQ <https://openaq.org/>`_
 
 Under Development:
-   * `IMPROVE <http://vista.cira.colostate.edu/Improve/>`_ - Interagency Monitoring of Protected Visual Environments
+   * `IMPROVE <http://vista.cira.colostate.edu/Improve/>`_
    * `CRN <https://www.ncdc.noaa.gov/crn/>`_
    * `TOLNet <https://www-air.larc.nasa.gov/missions/TOLNet/>`_
    * `CEMS <https://www.epa.gov/emc/emc-continuous-emission-monitoring-systems/>`_
