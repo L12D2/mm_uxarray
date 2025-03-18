@@ -32,12 +32,13 @@ def vertical_regrid(input_press, input_values, output_press):
             out_array[y,x,:] = f(xnew)
     return out_array
 
-def mod_to_overpasstime(modobj,opass_tms):
+def mod_to_overpasstime(modobj,opass_tms,partial_col=None):
     '''
     Interpolate model to satellite overpass time.
 
     Parameters
     ----------
+
     modobj : xarray.Dataset
         model data
     opass_tms : pandas.DatetimeIndex
@@ -76,6 +77,12 @@ def mod_to_overpasstime(modobj,opass_tms):
     #print(outmod)
     outmod = xr.concat(outmod,dim='time')
     outmod['time'] = (['time'],opass_tms)
+    
+    if partial_col == 'no2' or partial_col == 'no2_ave':
+        from .cal_mod_no2col import cal_model_no2partialcol
+        
+        outmod['no2col'] = cal_model_no2partialcol(outmod)
+        
     return outmod
 
 def check_timestep(model_data,obs_data):

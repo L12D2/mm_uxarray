@@ -526,6 +526,7 @@ class model:
         print(self.model.lower())
 
         self.glob_files()
+        print(self.files)
         # Calculate species to input into MONET, so works for all mechanisms in wrfchem
         # I want to expand this for the other models too when add aircraft data.
         # First make a list of variables not in mapping but from variable_summing, if provided
@@ -561,6 +562,10 @@ class model:
                 self.mod_kwargs.update({'fname_pm25' : self.files_pm25})
             self.mod_kwargs.update({'var_list' : list_input_var})
             self.obj = mio.models._rrfs_cmaq_mm.open_mfdataset(self.files,**self.mod_kwargs)
+        elif "ufsaqm_phy" in self.model.lower():
+            self.obj = mio.models._ufsaqm_phy_mm.open_mfdataset(self.files)
+        elif "ufschem" in self.model.lower():
+            self.obj = mio.models._ufschem_v1.open_mfdataset(self.files)
         elif 'gsdchem' in self.model.lower():
             print('**** Reading GSD-Chem model output...')
             if len(self.files) > 1:
@@ -600,14 +605,12 @@ class model:
                 self.obj = mio.models.raqms.open_mfdataset(file_list,**self.mod_kwargs)
             else:
                 self.obj = mio.models.raqms.open_dataset(file_list)
+            self.obj = self.obj.rename({'ptrop':'pres_pa_trop'})
 
         else:
             print('**** Reading Unspecified model output. Take Caution...')
             if len(self.files) > 1:
                 self.obj = xr.open_mfdataset(self.files,**self.mod_kwargs)
-            else:
-                self.obj = xr.open_dataset(self.files[0],**self.mod_kwargs)
-
         self.mask_and_scale()
         self.rename_vars() # rename any variables as necessary 
         self.sum_variables()
@@ -653,10 +656,7 @@ class model:
                             self.obj[v].data += scale
                         elif d['unit_scale_method'] == '-':
                             self.obj[v].data += -1 * scale
-                    if self.obj[v].units == 'ppv':
-                        print('changing units for {}'.format(v))
-                        self.obj[v].values *= 1e9
-                        self.obj[v].attrs['units'] = 'ppbv'        
+    
     def sum_variables(self):
         """Sum any variables noted that should be summed to create new variables.
         This occurs after any unit scaling.
@@ -1367,7 +1367,7 @@ class analysis:
                             model_obj = mod.obj[keys+['dp_pa']]
                             paired_data = sutil.omps_nm_pairing(model_obj,obs.obj,keys)
 
-                        paired_data = paired_data.where((paired_data.o3vmr > 0))
+                        paired_data = paired_data.where((paired_data.ozone_column > 0))
                         p = pair()
                         p.type = obs.obs_type
                         p.obs = obs.label
@@ -1379,26 +1379,36 @@ class analysis:
                         self.paired[label] = p
 
                     if obs.sat_type == 'tropomi_l2_no2':
-                        from .util import sat_l2_swath_utility as sutil
-                        from .util import cal_mod_no2col as mutil
+                        from .util import sat_l2_swath_utility as no2util
+                        from .util import satellite_utilities as sutil
 
                         # calculate model no2 trop. columns. M.Li
                         # to fix the "time" duplicate error
                         model_obj = mod.obj
-                        model_obj = model_obj.rename_dims({'time':'t'})
-                        model_obj = mutil.cal_model_no2columns(model_obj)
-                        #obs_dat = obs.obj.sel(time=slice(self.start_time.date(),self.end_time.date())).copy()
-
+                        i_no2_varname = [i for i,x in enumerate(obs_vars) if x == 'nitrogendioxide_tropospheric_column']
+                        print(keys)
+                        print(i_no2_varname)
+                        print(obs_vars)
+                        if len(i_no2_varname) > 1:
+                            print('The TROPOMI NO2 variable is matched to more than one model variable.')
+                            print('Pairing is being done for model variable: '+keys[i_no2_varname[0]])
+                        no2_varname = keys[i_no2_varname[0]]
+                        if pairing_kws['mod_to_overpass']:
+                            print('sampling model to 13:30 local overpass time')
+                            overpass_datetime = pd.date_range(self.start_time.replace(hour=13,minute=30),
+                                                              self.end_time.replace(hour=13,minute=30),freq='D')
+                            model_obj = sutil.mod_to_overpasstime(model_obj,overpass_datetime,partial_col=no2_varname)
+                            # enforce dimension order is time, z, y, x
+                            model_obj = model_obj.transpose('time','z','y','x',...)
+                        
                         if pairing_kws['apply_ak'] == True:
-                            paired_data = sutil.trp_interp_swatogrd_ak(obs.obj, model_obj)
+                            paired_data = no2util.trp_interp_swatogrd_ak(obs.obj, model_obj)
                         else:
-                            paired_data = sutil.trp_interp_swatogrd(obs.obj, model_obj)
+                            paired_data = no2util.trp_interp_swatogrd(obs.obj, model_obj)
 
-                        self.models[model_label].obj = model_obj
 
                         p = pair()
 
-                        paired_data = paired_data.reset_index("y") # for saving
                         paired_data_cp = paired_data.sel(time=slice(self.start_time.date(),self.end_time.date())).copy()
 
                         p.type = obs.obs_type
@@ -1444,9 +1454,6 @@ class analysis:
                         
                         if pairing_kws['apply_ak']: 
                             model_obj = mod.obj[keys+['pres_pa_mid']]
-                            # trim to only data within analysis window, as averaging kernels can't be applied outside it
-                            obs_dat = obs.obj.sel(time=slice(self.start_time.date(),self.end_time.date()))
-                            model_obj = model_obj.sel(time=slice(self.start_time.date(),self.end_time.date()))
                             
                             # Sample model to observation overpass time
                             if pairing_kws['mod_to_overpass']:
@@ -1454,7 +1461,9 @@ class analysis:
                                 overpass_datetime = pd.date_range(self.start_time.replace(hour=10,minute=30),
                                                                   self.end_time.replace(hour=10,minute=30),freq='D')
                                 model_obj = sutil.mod_to_overpasstime(model_obj,overpass_datetime)
-                            
+                            # trim to only data within analysis window, as averaging kernels can't be applied outside it
+                            obs_dat = obs.obj.sel(time=slice(self.start_time.date(),self.end_time.date()))
+                            model_obj = model_obj.sel(time=slice(self.start_time.date(),self.end_time.date()))
                             # interpolate model to observation, calculate column with averaging kernels applied
                             paired = sutil.mopitt_l3_pairing(model_obj,obs_dat,keys[0],global_model=mod.is_global)
                             p = pair()
