@@ -107,7 +107,7 @@ Aircraft specific plots are described below:
 .. figure:: /_static/figures/curtain_O3.png
 
    **Curtain** - Curtain plot comparing one model results with one
-   observation over the analysis window.
+   observation over the analysis window. Note: for multiple models being compared to one observation, each model-observation set would have a separate curtain plot.
 
 Please refer to the
 `MELODIES MONET project board <https://github.com/orgs/NOAA-CSL/projects/6>`__ 
