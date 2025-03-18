@@ -76,15 +76,15 @@ hourly, these will pair together). More time interpolation options will be added
 Available now:
    * `AirNow <https://www.airnow.gov/>`_
    * `AERONET <https://aeronet.gsfc.nasa.gov/>`_
-   * `AQS <https://www.epa.gov/aqs/>`_
-   * `ISH and ISH-Lite <https://www.ncei.noaa.gov/products/land-based-station/integrated-surface-database>`_
-   * `OpenAQ <https://openaq.org/>`_
+   * `AQS <https://www.epa.gov/aqs/>`_ - US EPA Air Quality System (AQS)
+   * `ISH and ISH-Lite <https://www.ncei.noaa.gov/products/land-based-station/integrated-surface-database>`_ - NOAA National Centers for Environmental Information (NCEI) Global Hourly - Integrated Surface Database
+   * `OpenAQ <https://openaq.org/>`_ - Global, aggregated, harmonized public air quality data hosted by OpenAQ
 
 Under Development:
-   * `IMPROVE <http://vista.cira.colostate.edu/Improve/>`_
-   * `CRN <https://www.ncdc.noaa.gov/crn/>`_
-   * `TOLNet <https://www-air.larc.nasa.gov/missions/TOLNet/>`_
-   * `CEMS <https://www.epa.gov/emc/emc-continuous-emission-monitoring-systems/>`_
+   * `IMPROVE <http://vista.cira.colostate.edu/Improve/>`_ - Interagency Monitoring of Protected Visual Environments
+   * `CRN <https://www.ncdc.noaa.gov/crn/>`_  - U.S. Climate Reference Network 
+   * `TOLNet <https://www-air.larc.nasa.gov/missions/TOLNet/>`_ - Tropospheric Ozone Lidar Network
+   * `CEMS <https://www.epa.gov/emc/emc-continuous-emission-monitoring-systems/>`_ - Air Emission Measurement Center (EMC) continuous emission monitoring system
    * `Pandora <https://pandora.gsfc.nasa.gov/>`_
 
 Please refer to the
@@ -123,12 +123,12 @@ below describes these options in more detail. Available datafile formats include
        | at a fixed location at the surface.
 
 Tested datasets include the following: 
-   * `FIREX-AQ <https://csl.noaa.gov/projects/firex-aq/>`_
-   * `ATom <https://espo.nasa.gov/atom/content/ATom>`_
-   * `SUNVEx <https://csl.noaa.gov/projects/sunvex/>`_
-   * `AEROMMA <https://csl.noaa.gov/projects/aeromma/>`_
-   * `ASIA-AQ <https://espo.nasa.gov/asia-aq>`_
-   * `GML ozonesondes <https://gml.noaa.gov/ozwv/ozsondes/>`_
+   * `FIREX-AQ <https://csl.noaa.gov/projects/firex-aq/>`_ - Fire Influence on Regional to Global Environments and Air Quality
+   * `ATom <https://espo.nasa.gov/atom/content/ATom>`_ - Atmospheric Tomography Mission
+   * `SUNVEx <https://csl.noaa.gov/projects/sunvex/>`_ - Southwest Urban NOx and VOC Experiment
+   * `AEROMMA <https://csl.noaa.gov/projects/aeromma/>`_ - Atmospheric Emissions and Reactions Observed from Megacities to Marine Areas
+   * `ASIA-AQ <https://espo.nasa.gov/asia-aq>`_ - Airborne and Satellite Investigation of Asian Air Quality 
+   * `GML ozonesondes <https://gml.noaa.gov/ozwv/ozsondes/>`_ - NOAA Global Monitoring Laboratory (GML) ozonesondes 
 
 MELODIES MONET is written generally enough that other field campaign datasets should work well in the tool with 
 minimal adjustments.
