@@ -102,7 +102,7 @@ Aircraft specific plots are described below:
    :scale: 25 %
 
    **Scatter Density** - Scatter density plot comparing one model results with one
-   observation over the analysis window.
+   observation over the analysis window. This plot type has two options: a) scatter plot: model and observation values as scatter dots or markers, b) kernel density estimate (KDE) plot which visually represents the probability density of observation and model values as continuous variable (shown in the example figure above). Note: for multiple models being compared to one observation, each model-observation set would have a separate scatter plot. 
 
 .. figure:: /_static/figures/curtain_O3.png
 
