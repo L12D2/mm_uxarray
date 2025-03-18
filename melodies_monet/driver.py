@@ -1635,9 +1635,11 @@ class analysis:
                     # Loop also over the domain types. So can easily create several overview and zoomed in plots.
                     domain_types = grp_dict.get('domain_type', [None])
                     domain_names = grp_dict.get('domain_name', [None])
+                    domain_infos = grp_dict.get('domain_info', {})
                     for domain in range(len(domain_types)):
                         domain_type = domain_types[domain]
                         domain_name = domain_names[domain]
+                        domain_info = domain_infos.get(domain_name, None)
 
 
                         
