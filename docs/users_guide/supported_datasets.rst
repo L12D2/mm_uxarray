@@ -75,7 +75,8 @@ hourly, these will pair together). More time interpolation options will be added
 
 Available now:
    * `AirNow <https://www.airnow.gov/>`_
-   * `AERONET <https://aeronet.gsfc.nasa.gov/>`_
+   * `AERONET <https://aeronet.gsfc.nasa.gov/>`_ - NASA AErosol RObotic NETwork 
+
    * `AQS <https://www.epa.gov/aqs/>`_ - US EPA Air Quality System (AQS)
    * `ISH and ISH-Lite <https://www.ncei.noaa.gov/products/land-based-station/integrated-surface-database>`_ - NOAA National Centers for Environmental Information (NCEI) Global Hourly - Integrated Surface Database
    * `OpenAQ <https://openaq.org/>`_ - Global, aggregated, harmonized public air quality data hosted by OpenAQ
