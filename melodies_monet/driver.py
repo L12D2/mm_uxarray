@@ -1344,7 +1344,8 @@ class analysis:
                             
                             paired_data = sutil.omps_nm_pairing_apriori(model_obj,obs.obj,keys)
                         else:
-                            model_obj = mod.obj[keys+['dp_pa']]
+                            keys.extend('dp_pa')
+                            model_obj = mod.obj[keys]
                             paired_data = sutil.omps_nm_pairing(model_obj,obs.obj,keys)
 
                         paired_data = paired_data.where((paired_data.ozone_column > 0))
