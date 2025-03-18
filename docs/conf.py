@@ -61,11 +61,14 @@ napoleon_use_ivar = False  # True
 napoleon_preprocess_types = True
 
 nb_execution_timeout = 300  # in seconds, for each notebook cell (default: 30)
-# nb_execution_mode = "auto"  # don't execute if all cells have output (default)
+nb_execution_mode = "auto"  # don't execute if all cells have output (default)
 # nb_execution_mode = "cache"  # to speed build when working on other things
-nb_execution_mode = "off"
+# nb_execution_mode = "off"
 nb_execution_excludepatterns = [
-    "examples/airnow_wrfchem.ipynb",
+    "examples/AEROMMA_*.ipynb",
+    "examples/airnow_*.ipynb",
+    "examples/camchem.ipynb",
+    "examples/*_paired_data.ipynb",
 ]
 nb_execution_show_tb = True
 
@@ -200,6 +203,8 @@ linkcheck_ignore = [
     "https://docs.github.com/en/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account",
     # NCEI sites having problems
     "https://www.ncdc.noaa.gov/crn/",
+    #PNAS sites having problems:
+    "https://doi.org/10.1093/pnasnexus/pgad483"
 ]
 user_agent = "Mozilla/5.0 (X11; Linux x86_64; rv:25.0) Gecko/20100101 Firefox/25.0"
 

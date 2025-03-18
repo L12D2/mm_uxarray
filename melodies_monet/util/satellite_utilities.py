@@ -1,4 +1,3 @@
-# Copyright (C) 2022 National Center for Atmospheric Research and National Oceanic and Atmospheric Administration
 # SPDX-License-Identifier: Apache-2.0
 #
 # File started by Maggie Bruckner. 
@@ -39,13 +38,16 @@ def mod_to_overpasstime(modobj,opass_tms,partial_col=None):
 
     Parameters
     ----------
-    modobj : xarray, model data
-    opass_tms : datetime64, satellite overpass local time
-     partial_col: str, optional calculation of partial column for variable named
+
+    modobj : xarray.Dataset
+        model data
+    opass_tms : pandas.DatetimeIndex
+        satellite overpass local time
 
     Output
     ------
-    outmod : revised model data at local overpass time
+    outmod : xarray.Dataset 
+        revised model data at local overpass time
     '''
     import pandas as pd
     import xarray as xr
@@ -55,16 +57,9 @@ def mod_to_overpasstime(modobj,opass_tms,partial_col=None):
     ny,nx = modobj.longitude.shape
     
     # Determine local time offset
-    local_utc_offset = np.zeros([ny,nx],dtype='timedelta64[ns]')
-    # pandas timedelta calculation doesn't work on ndarrays
-    for xi in np.arange(nx):
-        local_utc_offset[:,xi] = pd.to_timedelta((modobj['longitude'].isel(x=xi)/15).astype(np.int64),unit='h')
-    
+    local_utc_offset = (modobj['longitude']/15).round().astype('timedelta64[h]')
     # initialize local time as variable
-    modobj['localtime'] = (['time','y','x'],np.zeros([nmt,ny,nx],dtype='datetime64[ns]'))
-    # fill
-    for ti in np.arange(nmt):
-        modobj['localtime'][ti] = modobj['time'][ti].data + local_utc_offset
+    modobj['localtime'] = modobj['time'] + local_utc_offset
 
     # initalize new model object with satellite datetimes
     outmod = []
@@ -111,7 +106,7 @@ def check_timestep(model_data,obs_data):
         print('Timestep check and model resample failed')
         raise
 
-def mopitt_l3_pairing(model_data,obs_data,co_ppbv_varname,global_m=True):
+def mopitt_l3_pairing(model_data,obs_data,co_ppbv_varname,global_model=True):
     ''' Calculate model CO column, with MOPITT averaging kernel applied.
     '''
     import xarray as xr
@@ -123,17 +118,10 @@ def mopitt_l3_pairing(model_data,obs_data,co_ppbv_varname,global_m=True):
     
     # Aggregate time-step, if needed
     ## Check if same number of timesteps:
-    #if obs_data.time.size == model_data.time.size:
-    #    model_obstime = model_data
-    #    filtstr = '%Y-%m'
-    #elif obs_data.time.size > model_data.time.size:
-    #    print('Observation data appears to be a finer time resolution than model data')
-    #    raise
     if obs_data.attrs['monthly']:
-        # if obs_data is monthly, take montly mean of model data
         model_obstime = model_data.resample(time='MS').mean()
         filtstr = '%Y-%m'
-    elif obs_data.attrs['monthly'] == False:
+    elif not obs_data.attrs['monthly']:
         # obs_data is daily, so model and obs seem to be on same time step
         model_obstime = model_data
         filtstr = '%Y-%m-%d'
@@ -150,7 +138,7 @@ def mopitt_l3_pairing(model_data,obs_data,co_ppbv_varname,global_m=True):
     # initialize regridder for horizontal interpolation 
     # from model grid to MOPITT grid
     grid_adjust = xe.Regridder(model_obstime[['latitude','longitude']],obs_data[['lat','lon']],
-                               'bilinear',periodic=global_m,unmapped_to_nan=True)
+                               'bilinear',periodic=global_model,unmapped_to_nan=True)
     co_model_regrid = grid_adjust(model_obstime[co_ppbv_varname])
     pressure_model_regrid = grid_adjust(model_obstime['pres_pa_mid']/100.)
     

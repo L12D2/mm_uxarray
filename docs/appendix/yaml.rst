@@ -75,13 +75,26 @@ regarding the directory files are read from.
    * **method:** The file format to read from. Options are 'netcdf' and 'pkl'. 
    * **filenames:** The filename(s) that should be read in. For method: 'netcdf' this must be set as a dict in the form filenames: {'group1':str or iterable of filename(s) in group1, group2: str or iterable of filename(s) in group2,...}. For method: 'pkl' this must be set as either a string with the filename or as an or iterable of filenames. Wildcards will be expanded to any matching files. 
 
+**add_logo:** This is an optional argument.
+Set this to ``false`` to forgo adding the MELODIES MONET logo to the plots.
+
+**enable_dask_progress_bars:** This is an optional argument.
+Set this to ``true`` to enable Dask progress bars for a
+`Dask local task scheduler <https://docs.dask.org/en/stable/diagnostics-local.html>`__
+(i.e. not ``dask.distributed``).
+By default, this is disabled to keep logs cleaner
+(e.g. using :doc:`the CLI </cli>` to run a control file in a batch job).
+However, you may wish to enable this for interactive use in a Jupyter notebook
+or other interactive Python session,
+as it gives you some visual indication of the progress of multi-file data loading
+and some parts of the processing.
+
 **pairing_kwargs:** This is an optional argument. This dictionary allows for specifying keyword arguments for pairing methods.
 First level should be the observation type (e.g. "sat_grid_clm", "sat_swath_clm"). Then under the observation type label provide the specific pairing options for your application.
    
    * **apply_ak:** This is an optional argument used for pairing of satellite data. When no pairing keyword arguments are specified it will default to True. This should be set to True when application of satellite averaging kernels or apriori data to model observations is desired.
    * **mod_to_overpass:** This is an optional argument used for pairing of satellite data. When set to True the model data will be pre-processed to the published local overpass time for the satellite. As of now, local overpass times are hard-wired.
 
- 
 Models
 ------
 All input for each instance of the model class. First level should be the model 
@@ -113,7 +126,12 @@ data (e.g., surf_only: True).
 Typically this is set at the horizontal resolution of your model * 1.5. Setting 
 this to a smaller value will speed up the pairing process. 
 
-**apply_ak:** Deprecated and removed. Instead, specify ``pairing_kwargs`` in the analysis section. 
+**apply_ak:** Removed. Instead, specify ``pairing_kwargs`` in the analysis section.
+
+**is_global:** Optional boolean argument to specify if the model dataset is global or
+regional. Used in some satellite pairing methods to indicate if a longitude wrap should 
+be applied. Defaults to False when unspecified and xesmf-based satellite pairing methods
+will assume the model datset is regional.
 
 **mapping:** This is the mapping dictionary for all variables to be plotted. 
 For each observational dataset, add a mapping dictionary where the model 
@@ -328,6 +346,22 @@ For automatic EPA or Giorgi region boxes (if they are not included
 with the columns in the observation file), choose ``auto-region:epa`` or
 ``auto-region:giorgi``. Take into account that ``auto-region:epa`` is only a rough
 approximation, since it assumes perfect, rectangular lonlat boxes.
+If you only need a rectangular, lonlat box which does not cross the antimeridian, you can use
+``custom:box``, which needs to be combined with the ``domain_info`` parameter and
+a box of ``bounds: [minlat, minlon, maxlat, maxlon]``. See :doc:`/users_guide/region_selection` for examples.
+
+If you have ``regionmask`` installed, you can also use it for advanced region support.
+These regions can be arbitrary, and its use require providing ``domain_type`` parameters starting
+with ``custom:``.
+There are three ways to use ``regionmask``. ``custom:polygon`` lets the user define their own
+polygon in the section ``domain_info``, using the keyword ``mask_info``.
+``custom:defined-region`` lets the user utilize any region predefined by 
+`regionmask <https://regionmask.readthedocs.io/en/stable/>`__, defined in ``domain_info`` using
+the keywords ``name_regiontype`` and ``region``.
+The third option is using the keyword `custom:file`, which is defined in ``domain_info`` with
+either ``mask_path:path_shapefile_or_geojson`` or ``mask_url:url_of_shapefile_or_geojson``, 
+``abbrevs``, ``name`` and ``region_name``. See :doc:`/users_guide/region_selection` for examples and a more
+detailed explanation.
 
 **domain_name:** List of domain names to be plotted. If domain_type = all, all 
 data will be used and the domain_name is used only in the plot title. If 
@@ -357,6 +391,8 @@ for csi plot, list of model names (only) user choose to set as labels.
 **threshold_list:** csi plot only. list of values used as x variables. example: [10,20,30,40,50,60,70,80,90,100] 
 
 **score_name:** csi plot only. list of scores user can choose to plot. examples are "Critical Success Index' 'False Alarm Rate' 'Hit Rate'.
+
+**threshold_tick_style:** csi plot only. (optional) control for spacing of threshold (x-axis) ticks. example: use ``nonlinear`` when nonlinear xticks including all thresholds are desired. Any other selection (default = None) will choose xticks that are equally spaced between min(threshold_list):max(threshold_list) and likely won't include all thresholds. 
 
 **data:** This a list of model / observation pairs to be plotted where the 
 observation label is first and the model label is second 
