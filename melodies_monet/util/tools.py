@@ -1,4 +1,3 @@
-# Copyright (C) 2022 National Center for Atmospheric Research and National Oceanic and Atmospheric Administration
 # SPDX-License-Identifier: Apache-2.0
 #
 from __future__ import division
@@ -6,9 +5,13 @@ from __future__ import division
 from builtins import range
 
 import numpy as np
+import xarray as xr
 
 __author__ = 'barry'
 
+
+R = 8.31446261815324  # m3 * Pa / K / mol
+N_A = 6.02214076e23
 
 def search_listinlist(array1, array2):
     # find intersections
@@ -277,7 +280,6 @@ def get_epa_region_df(df):
 
 def resample_stratify(da, levels, vertical, axis=1,interpolation='linear',extrapolation='nan'):
     import stratify
-    import xarray as xr
 
     result = stratify.interpolate(levels, vertical.chunk().data, da.chunk().data, axis=axis,
                                  interpolation = interpolation,extrapolation = extrapolation)
@@ -294,7 +296,6 @@ def resample_stratify(da, levels, vertical, axis=1,interpolation='linear',extrap
     return out
 
 def vert_interp(ds_model,df_obs,var_name_list):
-    import xarray as xr
     from pandas import merge_asof, Series
 
     var_out_list = []
@@ -313,7 +314,13 @@ def vert_interp(ds_model,df_obs,var_name_list):
         var_out_list.append(out)
 
     df_model = xr.merge(var_out_list).to_dataframe().reset_index()
-    df_model.fillna({'pressure_model':df_model.pressure_obs},inplace=True)
+    for time in df_model.time.unique():
+        if df_model[df_model.time == time].pressure_obs.unique() > df_model[df_model.time == time].pressure_model.max():
+            df_model.fillna({'pressure_model':df_model[df_model.time == time].pressure_obs},inplace=True)
+        elif df_model[df_model.time == time].pressure_obs.unique() < df_model[df_model.time == time].pressure_model.min():
+            df_model.fillna({'pressure_model':df_model[df_model.time == time].pressure_obs},inplace=True)
+            print('Warning: You are pairing obs data above the model top. This is not recommended.')
+            print(time)
     df_model.drop(labels=['x','y','z','pressure_obs','time_obs'], axis=1, inplace=True)
     df_model.rename(columns={'pressure_model':'pressure_obs'}, inplace=True)
 
@@ -324,7 +331,6 @@ def vert_interp(ds_model,df_obs,var_name_list):
     return final_df_model
 
 def mobile_and_ground_pair(ds_model,df_obs, var_name_list):
-    import xarray as xr
     from pandas import merge_asof, Series
     
     var_out_list = []
@@ -346,8 +352,8 @@ def mobile_and_ground_pair(ds_model,df_obs, var_name_list):
     df_model.drop(labels=['x','y','time_obs'], axis=1, inplace=True)
 
     final_df_model = merge_asof(df_obs, df_model, 
-                            by=['latitude', 'longitude'], 
-                            on='time', direction='nearest')
+                            by=['latitude', 'longitude'],
+                            on='time', direction='nearest', suffixes=('', '_new'))
 
     return final_df_model
 
@@ -370,7 +376,6 @@ def find_obs_time_bounds(files=[],time_var=None):
     """
     import os 
     import monetio as mio
-    import xarray as xr
     
     if isinstance(files,str):
         files = [files]
@@ -472,9 +477,9 @@ def convert_std_to_amb_ams(ds,convert_vars=[],temp_var=None,pres_var=None):
     Losch = 2.69e25 # loschmidt's number
     #I checked the more detailed icart files
     #273 K, 1 ATM (101325 Pa)
-    std_ams = 101325.*6.02214e23/(8.314472*273.)
+    std_ams = 101325.*N_A/(R*273.)
     #use pressure_obs now, which is in pa
-    Airnum = ds[pres_var]*6.02214e23/(8.314472*ds[temp_var])
+    Airnum = ds[pres_var]*N_A/(R*ds[temp_var])
     
     # amb to std = Losch / Airnum
     convert_std_to_amb_ams = Airnum/std_ams
@@ -492,9 +497,9 @@ def convert_std_to_amb_bc(ds,convert_vars=[],temp_var=None,pres_var=None):
     #So I just need to convert the obs from std to amb.
     Losch = 2.69e25 # loschmidt's number
     #1013 mb, 273 K (101300 Pa)
-    std_bc = 101300.*6.02214e23/(8.314472*273.)
+    std_bc = 101300.*N_A/(R*273.)
     #use pressure_obs now, which is in pa
-    Airnum = ds[pres_var]*6.02214e23/(8.314472*ds[temp_var])
+    Airnum = ds[pres_var]*N_A/(R*ds[temp_var])
     
     # amb to std = Losch / Airnum
     convert_std_to_amb_bc = Airnum/std_bc
@@ -502,3 +507,81 @@ def convert_std_to_amb_bc(ds,convert_vars=[],temp_var=None,pres_var=None):
     for var in convert_vars:
         ds[var] = ds[var]*convert_std_to_amb_bc
 
+
+def calc_partialcolumn(modobj, var="NO2"):
+    """Calculates the partial column of a species from its concentration
+    within a gridcell.
+
+    Parameters
+    ----------
+    modobj : xr.Dataset
+        Model data
+    var : str
+        variable to calculate the partial column from
+
+    Returns
+    -------
+    xr.DataArray
+        DataArray containing the partial column of the species.
+    """
+    ppbv2molmol = 1e-9
+    m2_to_cm2 = 1e4
+    fac_units = ppbv2molmol * N_A / m2_to_cm2
+    partial_col = (
+        modobj[var]
+        * modobj["pres_pa_mid"]
+        * modobj["dz_m"]
+        * fac_units
+        / (R * modobj["temperature_k"])
+    )
+    partial_col.attrs = {"units": "molecules/cm2", "long_name": f"{var} partial column"}
+    return partial_col
+
+
+def calc_totalcolumn(modobj, var="NO2"):
+    """Calculates the total column of a species from its concentration.
+
+    Parameters
+    ----------
+    modobj : xr.Dataset
+        Model data
+    var : str
+        variable to calculate the total column from
+
+    Returns
+    -------
+    xr.DataArray
+        DataArray containing the total column of the species.
+    """
+    data = calc_partialcolumn(modobj, var)
+    try:
+        data = data.where(modobj['pres_pa_mid'] <= modobj['surfpres_pa'])
+    except KeyError:
+        pass
+    total_col = data.sum(dim='z', keep_attrs=True)
+    total_col.attrs = {"units": "molecules/cm2", "long_name": f"{var} total column"}
+    return total_col
+
+
+def calc_geolocaltime(modobj):
+    """Calculates the geographic local time based on the longitude.
+
+    Parameters
+    ----------
+    modobj : xr.Dataset
+        Model data
+
+    Returns
+    -------
+    xr.DataArray
+        DataArray containing the local time based on longitude.
+    """
+    # Make sure that lon is in the range [-180, 180]
+    # This should be guaranteed by the reader, and it isn't needed,
+    # but it is very cheap to redo and should make us be safer.
+
+    hrs2ms = 3600_000
+    timedelta = (modobj["longitude"].values * hrs2ms / 15).astype('timedelta64[ms]')
+    localtime = modobj["time"] + timedelta
+    localtime.attrs['description'] = 'Geographic local time, based on longitude'
+    return localtime

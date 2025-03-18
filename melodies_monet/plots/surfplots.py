@@ -1,4 +1,3 @@
-# Copyright (C) 2022 National Center for Atmospheric Research and National Oceanic and Atmospheric Administration
 # SPDX-License-Identifier: Apache-2.0
 #
 #Code to create plots for surface observations
@@ -1534,7 +1533,7 @@ def Calc_Score(score_name_input,threshold_input, model_input, obs_input):
    
     return output_score
 
-def Plot_CSI(score_name_input,threshold_list_input, comb_bx_input,plot_dict,fig_dict,text_dict,domain_type,domain_name,model_name_list):
+def Plot_CSI(score_name_input,threshold_list_input, comb_bx_input,plot_dict,fig_dict,text_dict,domain_type,domain_name,model_name_list,threshold_tick_style):
 
     CSI_output = []  #(2, threshold len)
     threshold_list = threshold_list_input
@@ -1566,7 +1565,10 @@ def Plot_CSI(score_name_input,threshold_list_input, comb_bx_input,plot_dict,fig_
 
     #Make Plot
     for i in range(len(CSI_output)):
-        plt.plot(threshold_list,CSI_output[i],'-*',label=model_name_list[i])  #CHANGE THIS ONE, MAIN PROGRAM
+        if threshold_tick_style == 'nonlinear':
+           plt.plot(range(len(threshold_list)),CSI_output[i],'-*',label=model_name_list[i])
+        else:
+           plt.plot(threshold_list,CSI_output[i],'-*',label=model_name_list[i])
         ax.set_xlabel('Threshold',fontsize = text_kwargs['fontsize']*0.8)
         ax.set_ylabel(score_name_input,fontsize = text_kwargs['fontsize']*0.8)
         ax.tick_params(labelsize=text_kwargs['fontsize']*0.8)
@@ -1575,8 +1577,14 @@ def Plot_CSI(score_name_input,threshold_list_input, comb_bx_input,plot_dict,fig_
         plt.grid()
      
     #add '>' to xticks
-    labels = ['>'+item.get_text() for item in ax.get_xticklabels()]
-    ax.set_xticklabels(labels)
+    if threshold_tick_style == 'nonlinear':
+       threshold_string_array = [str(x) for x in threshold_list]
+       labels = ['>'+item for item in threshold_string_array]
+       ax.set_xticks(range(len(threshold_list)),labels=labels)
+    else:
+       labels = ['>'+item.get_text() for item in ax.get_xticklabels()]
+       ax.set_xticklabels(labels)
+
     if domain_type is not None and domain_name is not None:
         if domain_type == 'epa_region':
             ax.set_title('EPA Region ' + domain_name,fontweight='bold',**text_kwargs)

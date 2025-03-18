@@ -1,4 +1,3 @@
-# Copyright (C) 2022 National Center for Atmospheric Research and National Oceanic and Atmospheric Administration
 # SPDX-License-Identifier: Apache-2.0
 #
 """
@@ -79,9 +78,16 @@ _examples = {
         "AEROMMA": (
             "example_model_data/ufsaqm_example/short_AEROMMA-Merge_20230627_L1_20240410_1459.csv",
             "sha256:81d60854f71eab73eed41b66f93ff6e2aeac4957ef955060c685ca9407845764",
-        ),   
+        ),
+        "cmaq52_2023-06-24_20-21": (
+            "example_model_data/ufsaqm_example/aqm.cmaq52.pocfix.orirave1.dyn.2023062420-21.nc",
+            "sha256:7a779c6a2095d9d40fdfd13fddaf5b941d926b725f7fcd243d80a53c76ca6da3",
+        ),
+        "cmaq54_2023-06-24_20-21": (
+            "example_model_data/ufsaqm_example/aqm.cmaq54.emisfix.orirave1.dyn.2023062420-21.nc",
+            "sha256:b78522d6bcbfbc5dc6243cfd3ca8465c7d5aaebbcb49a9c30b9cbd9b99209aff",
+        ),
     },
-
     "aeronet": {
         "2019-09": (
             "example_observation_data/surface/AERONET_L15_20190901_20190930.nc",
@@ -109,6 +115,12 @@ _examples = {
             "example_observation_data/surface/NCORE_DAILY_2019.nc",
             "888fb70f7f6cd9af8b49398b56240fcb70ebe886152c143e6a6016074d4f0bfe",
         )
+    },
+    "gml-100m-ozonesondes": {
+        "as-of-2024-02-09": (
+            "example_observation_data/profile/gml-100m-ozonesondes-as-of-2024-02-09.nc",
+            "sha256:cb078e01937d1fd7e1aea542cdcd3ffa5a78223d2aa339c3179b1834bbd45b0f",
+        ),
     },
 }
 """Files to fetch for a certain example, paths relative to the FTP site."""
