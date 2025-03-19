@@ -102,7 +102,7 @@ def trp_interp_swatogrd(obsobj, modobj):
     return no2_modgrid_avg
 
 
-def trp_interp_swatogrd_ak(obsobj, modobj):
+def trp_interp_swatogrd_ak(obsobj, modobj,no2varname='no2'):
 
     """
     interpolate sat swath to model grid applied with averaging kernel
@@ -119,17 +119,17 @@ def trp_interp_swatogrd_ak(obsobj, modobj):
     """
 
     # model grids attributes
-    nmodt, nz, ny, nx  = modobj['no2col'].shape # time, z, y, x, no2 columns at molec cm^-2
+    nmodt, nz, ny, nx  = modobj[f'{no2varname}_col'].shape # time, z, y, x, no2 columns at molec cm^-2
     
     time   = [datetime.strptime(x,'%Y-%m-%d') for x in obsobj.keys()]
     nobstime  = len(list(obsobj.keys()))
 
     # daily averaged sate data at model grids
-    no2_modgrid_avg=xr.Dataset(data_vars = dict(
-            nitrogendioxide_tropospheric_column=(["time", "x", "y"],
+    no2_modgrid_avg=xr.Dataset(data_vars = {
+        'nitrogendioxide_tropospheric_column':(["time", "x", "y"],
                                                 np.full([nobstime, ny, nx], np.nan, dtype=np.float32)),
-            no2trpcol=(["time", "x", "y"],np.full([nobstime, ny, nx], np.nan, dtype=np.float32))
-            ),
+        f'{no2varname}trpcol':(["time", "x", "y"],np.full([nobstime, ny, nx], np.nan, dtype=np.float32))
+            },
         coords = dict(
             time=time,
             longitude=(["x", "y"], modobj.coords['longitude'].values),
@@ -151,15 +151,15 @@ def trp_interp_swatogrd_ak(obsobj, modobj):
             print('Satellite data was outside available model times')
             continue
         #modobj_tm = modobj.sel(time=days)
-        no2col_satm = modobj_tm['no2col'].mean(dim='time')
+        no2col_satm = modobj_tm[f'{no2varname}col'].mean(dim='time')
               
         # sum up tropopause, needs to be revised to tropopause
         if 'pres_pa_trop' in list(modobj.keys()):
-            no2_modgrid_avg['no2trpcol'][nd, :,:] = modobj_tm['no2col'].where(modobj_tm['pres_pa_mid'] >= modobj_tm['pres_pa_trop']).sum(dim='z').values.squeeze()
+            no2_modgrid_avg[f'{no2varname}trpcol'][nd, :,:] = modobj_tm[f'{no2varname}_col'].where(modobj_tm['pres_pa_mid'] >= modobj_tm['pres_pa_trop']).sum(dim='z').values.squeeze()
 
         else:
             print('Caution: model tropospheric NO2 column was calculated assuming the model top is the tropopause')
-            no2_modgrid_avg['no2trpcol'][nd, :,:] = modobj_tm['no2col'].sum(dim='z').values.squeeze()
+            no2_modgrid_avg[f'{no2varname}trpcol'][nd, :,:] = modobj_tm[f'{no2varname}_col'].sum(dim='z').values.squeeze()
         # --- tropomi ---
         # number of swath
         nswath = len(obsobj[days])
@@ -180,7 +180,7 @@ def trp_interp_swatogrd_ak(obsobj, modobj):
             regridder_ms = xe.Regridder(grid_mod, grid_sat,'bilinear',ignore_degenerate=True,reuse_weights=False)
             
             # force model data to put z dimension last for pressure and no2 partial columns
-            mod_pres_no2 = modobj_tm[['pres_pa_mid','no2col']].mean(dim='time')#.transpose('y','x','z')
+            mod_pres_no2 = modobj_tm[['pres_pa_mid',f'{no2_varname}col']].mean(dim='time').transpose('y','x','z')
             #print(mod_pres_no2['no2col'].shape)
             # regridding for model pressure, and no2 vertical colums
             mod_rgd_sat = regridder_ms(mod_pres_no2)
