@@ -34,7 +34,7 @@ The other datasets can be downloaded in the same way::
 
 The Command Line Interface will default to compressing the dataset, which can significantly save space. However, this
 compression step also takes time and some users have run into problems. Users can easily turn this compression off 
-by adding ``--no-compress`` like that below::
+by adding ``--no-compress``::
 
     $ melodies-monet get-aqs -s 2023-08-01 -e 2023-09-01 --no-compress
 
