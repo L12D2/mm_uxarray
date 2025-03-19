@@ -8,6 +8,7 @@
 import numpy as np
 import xarray as xr
 from datetime import datetime
+import xesmf as xe
 
 import logging
 numba_logger = logging.getLogger('numba')
@@ -28,7 +29,6 @@ def trp_interp_swatogrd(obsobj, modobj):
     no2_modgrid_avg: Regridded satellite data at model grids for all datetime
 
     """
-    import xesmf as xe
     
     # model grids attributes
     nmodt, nz, ny, nx  = modobj['no2col'].shape # time, z, y, x, no2 columns at molec cm^-2
@@ -40,21 +40,18 @@ def trp_interp_swatogrd(obsobj, modobj):
     no2_modgrid_avg=xr.Dataset(data_vars = dict(
             nitrogendioxide_tropospheric_column=(["time", "x", "y"],
                                                 np.full([nobstime, ny, nx], np.nan, dtype=np.float32)),
-            no2trpcol=(["time", "x", "y"], np.full([nobstime, ny, nx], np.nan, dtype=np.float32)),
-            latitude=(["x", "y"],modobj.coords['latitude'].values),
-            longitude=(["x", "y"],modobj.coords['longitude'].values)
+            no2trpcol=(["time", "x", "y"], np.full([nobstime, ny, nx], np.nan, dtype=np.float32))
             ),
         coords = dict(
             time=time,
-            lon=(["x", "y"], modobj.coords['longitude'].values),
-            lat=(["x", "y"], modobj.coords['latitude'].values)),
+            longitude=(["x", "y"], modobj.coords['longitude'].values),
+            latitude=(["x", "y"], modobj.coords['latitude'].values)),
         attrs=dict(description="daily tropomi data at model grids"),)
 
     for nd in range(nobstime):
         days = list(obsobj.keys())[nd]
         # --- model
         # get model no2 trop. columns at 13:00 - 14:00 localtime
-        print(days)
         modobj_tm = modobj.sel(time=days.strfime('%Y-%d-%m'))
         
         # intermediate need: model NO2 partial columns for day
@@ -131,24 +128,21 @@ def trp_interp_swatogrd_ak(obsobj, modobj):
     no2_modgrid_avg=xr.Dataset(data_vars = dict(
             nitrogendioxide_tropospheric_column=(["time", "x", "y"],
                                                 np.full([nobstime, ny, nx], np.nan, dtype=np.float32)),
-            no2trpcol=(["time", "x", "y"],np.full([nobstime, ny, nx], np.nan, dtype=np.float32)),
-            latitude=(["x", "y"],modobj.coords['latitude'].values),
-            longitude=(["x", "y"],modobj.coords['longitude'].values)
+            no2trpcol=(["time", "x", "y"],np.full([nobstime, ny, nx], np.nan, dtype=np.float32))
             ),
         coords = dict(
             time=time,
-            lon=(["x", "y"], modobj.coords['longitude'].values),
-            lat=(["x", "y"], modobj.coords['latitude'].values)),
+            longitude=(["x", "y"], modobj.coords['longitude'].values),
+            latitude=(["x", "y"], modobj.coords['latitude'].values)),
         attrs=dict(description="daily tropomi data at model grids"),)
 
     tmpvalue = np.zeros([ny, nx], dtype = np.float64)
-    print(modobj.time)
+
     # loop over all days
     for nd in range(nobstime):
 
         days = time[nd].strftime('%Y-%m-%d')
         # --- model ---
-        print(days)
         # get model no2 trop. columns at 13:00 - 14:00 localtime
         try:
             modobj_tm = modobj.sel(time=days)

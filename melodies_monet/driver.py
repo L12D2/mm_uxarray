@@ -1387,13 +1387,11 @@ class analysis:
                         # to fix the "time" duplicate error
                         model_obj = mod.obj
                         i_no2_varname = [i for i,x in enumerate(obs_vars) if x == 'nitrogendioxide_tropospheric_column']
-                        print(keys)
-                        print(i_no2_varname)
-                        print(obs_vars)
                         if len(i_no2_varname) > 1:
                             print('The TROPOMI NO2 variable is matched to more than one model variable.')
                             print('Pairing is being done for model variable: '+keys[i_no2_varname[0]])
                         no2_varname = keys[i_no2_varname[0]]
+
                         if pairing_kws['mod_to_overpass']:
                             print('sampling model to 13:30 local overpass time')
                             overpass_datetime = pd.date_range(self.start_time.replace(hour=13,minute=30),

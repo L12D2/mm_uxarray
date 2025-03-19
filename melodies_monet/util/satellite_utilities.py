@@ -43,7 +43,8 @@ def mod_to_overpasstime(modobj,opass_tms,partial_col=None):
         model data
     opass_tms : pandas.DatetimeIndex
         satellite overpass local time
-
+    partial_col : str
+        variable to calculate partial columns for
     Output
     ------
     outmod : xarray.Dataset 
@@ -78,10 +79,9 @@ def mod_to_overpasstime(modobj,opass_tms,partial_col=None):
     outmod = xr.concat(outmod,dim='time')
     outmod['time'] = (['time'],opass_tms)
     
-    if partial_col == 'no2' or partial_col == 'no2_ave':
-        from .cal_mod_no2col import cal_model_no2partialcol
-        
-        outmod['no2col'] = cal_model_no2partialcol(outmod)
+    if partial_col:
+        from .tools import calc_partialcolumn        
+        outmod[f'{parital_col}_col'] = calc_partialcol(outmod,var=partial_col)
         
     return outmod
 
