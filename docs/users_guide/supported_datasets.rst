@@ -86,7 +86,7 @@ Under Development:
    * `CRN <https://www.ncdc.noaa.gov/crn/>`_  - U.S. Climate Reference Network 
    * `TOLNet <https://www-air.larc.nasa.gov/missions/TOLNet/>`_ - Tropospheric Ozone Lidar Network
    * `CEMS <https://www.epa.gov/emc/emc-continuous-emission-monitoring-systems/>`_ - Air Emission Measurement Center (EMC) Continuous Emission Monitoring System
-   * `Pandora <https://pandora.gsfc.nasa.gov/>`_ - Part of the `Pandonia Global Network <https://www.pandonia-global-network.org/>`_
+   * `Pandora <https://pandora.gsfc.nasa.gov/>`_ (`Pandonia Global Network <https://www.pandonia-global-network.org/>`_)
 
 Please refer to the
 `MELODIES MONET project board <https://github.com/orgs/NOAA-CSL/projects/6>`__ 
