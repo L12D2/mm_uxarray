@@ -526,7 +526,6 @@ class model:
         print(self.model.lower())
 
         self.glob_files()
-        print(self.files)
         # Calculate species to input into MONET, so works for all mechanisms in wrfchem
         # I want to expand this for the other models too when add aircraft data.
         # First make a list of variables not in mapping but from variable_summing, if provided
@@ -562,10 +561,6 @@ class model:
                 self.mod_kwargs.update({'fname_pm25' : self.files_pm25})
             self.mod_kwargs.update({'var_list' : list_input_var})
             self.obj = mio.models._rrfs_cmaq_mm.open_mfdataset(self.files,**self.mod_kwargs)
-        elif "ufsaqm_phy" in self.model.lower():
-            self.obj = mio.models._ufsaqm_phy_mm.open_mfdataset(self.files)
-        elif "ufschem" in self.model.lower():
-            self.obj = mio.models._ufschem_v1.open_mfdataset(self.files)
         elif 'gsdchem' in self.model.lower():
             print('**** Reading GSD-Chem model output...')
             if len(self.files) > 1:
@@ -595,6 +590,7 @@ class model:
             self.mod_kwargs.update({"fname_met_2D": control_dict['model'][self.label].get('files_met_surf', None)})
             self.obj = mio.models._camx_mm.open_mfdataset(self.files, **self.mod_kwargs)
         elif 'raqms' in self.model.lower():
+            self.mod_kwargs.updata({'var_list': list_input_var})
             if time_interval is not None:
                 # fill filelist with subset
                 print('subsetting model files to interval')
