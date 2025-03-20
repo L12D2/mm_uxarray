@@ -104,7 +104,7 @@ Aircraft specific plots are described below:
    **Scatter Density** - Scatter density plot comparing one model results with one
    observation over the analysis window. This plot type has two options: a) scatter plot: model and observation values as scatter dots or markers, b) kernel density estimate (KDE) plot which visually represents the probability density of observation and model values as continuous variable (shown in the example figure above). Note: for multiple models being compared to one observation, each model-observation set would have a separate scatter plot. 
 
-.. figure:: /_static/figures/curtain_O3.png
+.. figure:: /_static/figures/plot_grp5.curtain.O3_CL_RYERSON.2019-09-05_12.2019-09-06_00.all.CONUS_firexaq_vs_wrfchem_v4.2.png
 
    **Curtain** - Curtain plot comparing one model results with one
    observation over the analysis window. Note: for multiple models being compared to one observation, each model-observation set would have a separate curtain plot.
