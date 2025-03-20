@@ -152,8 +152,9 @@ The generated HTML will be created in ``docs/_build/html``,
 with ``docs/_build/html/index.html`` the main page that can be
 viewed in any browser.
 
-Please see the `MELODIES-MONET Documentation <https://github.com/orgs/NOAA-CSL/projects/6>`_ 
-project on GitHub to learn about current and future development.
+Please refer to the
+`MELODIES MONET project board <https://github.com/orgs/NOAA-CSL/projects/6>`__ 
+to learn more about our current and future documentation plans.
 
 
 .. _clone-notes:
