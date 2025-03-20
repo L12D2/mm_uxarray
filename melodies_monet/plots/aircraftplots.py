@@ -335,7 +335,7 @@ def make_curtain_plot(time, altitude, model_data_2d, obs_pressure, pairdf, mod_v
     fig.autofmt_xdate(rotation=45, ha='right')
 
     # Set the main title and subplot titles
-    fig.suptitle(f"Model vs Observation Curtain Plot: {mod_var} vs {obs_var}", fontsize=text_dict.get('fontsize', 16), fontweight=text_dict.get('fontweight', 'bold'))
+    fig.suptitle(f"Curtain Plot: {mod_var} vs {obs_var}", fontsize=text_dict.get('fontsize', 16), fontweight=text_dict.get('fontweight', 'bold'))
     axs[0].set_title("Model Curtain with Model Scatter Overlay", fontsize=text_dict.get('fontsize', 18), fontweight=text_dict.get('fontweight', 'bold'))
     
     ##axs[0].set_ylabel('Pressure (Pa)', fontsize=text_dict.get('fontsize', 18), fontweight=text_dict.get('fontweight', 'bold')) #removed explicit y-axis label (made it flexible: see pressure_units via yaml)
@@ -409,7 +409,7 @@ def make_curtain_plot(time, altitude, model_data_2d, obs_pressure, pairdf, mod_v
 
     # Save the curtain plot for the current pair immediately
     print(f"Saving curtain plot to {outname}...")
-    savefig(f"{outname}", loc=4, logo_height=100, dpi=300)
+    savefig(f"{outname}", loc=4, logo_height=250, dpi=300)
     plt.show()
 
     # Only close the plot if not in debug mode
