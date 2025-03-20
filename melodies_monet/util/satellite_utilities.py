@@ -81,7 +81,7 @@ def mod_to_overpasstime(modobj,opass_tms,partial_col=None):
     
     if partial_col:
         from .tools import calc_partialcolumn        
-        outmod[f'{parital_col}_col'] = calc_partialcol(outmod,var=partial_col)
+        outmod[f'{partial_col}_col'] = calc_partialcolumn(outmod,var=partial_col)
         
     return outmod
 

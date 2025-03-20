@@ -151,7 +151,7 @@ def trp_interp_swatogrd_ak(obsobj, modobj,no2varname='no2'):
             print('Satellite data was outside available model times')
             continue
         #modobj_tm = modobj.sel(time=days)
-        no2col_satm = modobj_tm[f'{no2varname}col'].mean(dim='time')
+        no2col_satm = modobj_tm[f'{no2varname}_col'].mean(dim='time')
               
         # sum up tropopause, needs to be revised to tropopause
         if 'pres_pa_trop' in list(modobj.keys()):
@@ -180,7 +180,7 @@ def trp_interp_swatogrd_ak(obsobj, modobj,no2varname='no2'):
             regridder_ms = xe.Regridder(grid_mod, grid_sat,'bilinear',ignore_degenerate=True,reuse_weights=False)
             
             # force model data to put z dimension last for pressure and no2 partial columns
-            mod_pres_no2 = modobj_tm[['pres_pa_mid',f'{no2_varname}col']].mean(dim='time').transpose('y','x','z')
+            mod_pres_no2 = modobj_tm[['pres_pa_mid',f'{no2varname}_col']].mean(dim='time')#.transpose('y','x','z')
             #print(mod_pres_no2['no2col'].shape)
             # regridding for model pressure, and no2 vertical colums
             mod_rgd_sat = regridder_ms(mod_pres_no2)
@@ -188,7 +188,7 @@ def trp_interp_swatogrd_ak(obsobj, modobj,no2varname='no2'):
             # convert from aks to trop.aks
             working_swath['averaging_kernel'] = working_swath['averaging_kernel'] * working_swath['air_mass_factor_total'] / working_swath['air_mass_factor_troposphere']
             # calculate the revised tamf_mod, and ratio = tamf_mod / tamf_org
-            ratio = cal_amf_wrfchem(working_swath['averaging_kernel'], mod_rgd_sat['pres_pa_mid'].values, working_swath['preslev'], working_swath['troppres'], mod_rgd_sat['no2col'].values,
+            ratio = cal_amf_wrfchem(working_swath['averaging_kernel'], mod_rgd_sat['pres_pa_mid'].values, working_swath['preslev'], working_swath['troppres'], mod_rgd_sat[f'{no2varname}_col'].values,
                                     working_swath['air_mass_factor_troposphere'], grid_sat['lon'], grid_sat['lat'], grid_mod['lon'], grid_mod['lat'])
 
             # averaing kernel applied done
