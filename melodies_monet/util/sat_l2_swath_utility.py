@@ -14,7 +14,7 @@ import logging
 numba_logger = logging.getLogger('numba')
 numba_logger.setLevel(logging.WARNING)
 
-def trp_interp_swatogrd(obsobj, modobj):
+def trp_interp_swatogrd(obsobj, modobj,no2varname='no2'):
 
     """
     interpolate sat swath to model grid
@@ -31,17 +31,17 @@ def trp_interp_swatogrd(obsobj, modobj):
     """
     
     # model grids attributes
-    nmodt, nz, ny, nx  = modobj['no2col'].shape # time, z, y, x, no2 columns at molec cm^-2
+    nmodt, nz, ny, nx  = modobj[f'{no2varname}_col'].shape # time, z, y, x, no2 columns at molec cm^-2
     
     time   = [datetime.strptime(x,'%Y-%m-%d') for x in obsobj.keys()]
     nobstime  = len(list(obsobj.keys()))
 
     # daily averaged sate data at model grids
-    no2_modgrid_avg=xr.Dataset(data_vars = dict(
-            nitrogendioxide_tropospheric_column=(["time", "x", "y"],
+    no2_modgrid_avg=xr.Dataset(data_vars = {
+        'nitrogendioxide_tropospheric_column':(["time", "x", "y"],
                                                 np.full([nobstime, ny, nx], np.nan, dtype=np.float32)),
-            no2trpcol=(["time", "x", "y"], np.full([nobstime, ny, nx], np.nan, dtype=np.float32))
-            ),
+        f'{no2varname}trpcol':(["time", "x", "y"], np.full([nobstime, ny, nx], np.nan, dtype=np.float32))
+            },
         coords = dict(
             time=time,
             longitude=(["x", "y"], modobj.coords['longitude'].values),
@@ -59,11 +59,11 @@ def trp_interp_swatogrd(obsobj, modobj):
         
         # sum up tropopause
         if 'pres_pa_trop' in list(modobj.keys()):
-            no2_modgrid_avg['no2trpcol'][nd, :,:] = modobj_tm['no2col'].where(modobj_tm['pres_pa_mid'] >= modobj_tm['pres_pa_trop']).sum(dim='z').values.squeeze()
+            no2_modgrid_avg[f'{no2varname}trpcol'][nd, :,:] = modobj_tm[f'{no2varname}_col'].where(modobj_tm['pres_pa_mid'] >= modobj_tm['pres_pa_trop']).sum(dim='z').values.squeeze()
 
         else:
             print('Caution: model tropospheric NO2 column was calculated assuming the model top is the tropopause')
-            no2_modgrid_avg['no2trpcol'][nd, :,:] = modobj_tm['no2col'].sum(dim='z').values.squeeze()
+            no2_modgrid_avg[f'{no2varname}trpcol'][nd, :,:] = modobj_tm[f'{no2varname}_col'].sum(dim='z').values.squeeze()
             
         # --- TROPOMI
         # number of swath

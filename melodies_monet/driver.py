@@ -1399,7 +1399,7 @@ class analysis:
                         if pairing_kws['apply_ak'] == True:
                             paired_data = no2util.trp_interp_swatogrd_ak(obs.obj, model_obj,no2varname=no2_varname)
                         else:
-                            paired_data = no2util.trp_interp_swatogrd(obs.obj, model_obj)
+                            paired_data = no2util.trp_interp_swatogrd(obs.obj, model_obj, no2varname=no2_varname)
 
 
                         p = pair()
