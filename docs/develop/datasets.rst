@@ -4,15 +4,16 @@ Adding New Datasets
 Observations
 ------------
 
-Examples for how to read in data from Aeronet, AirNow, and Improve are in the
-``examples/process_obs`` folder in the MELODIES MONET repository
-`on GitHub <https://github.com/NOAA-CSL/MELODIES-MONET>`__.
-Use these examples as reference in order to add new surface observational datasets.
+Surface
+^^^^^^^
 
-Instructions for reading in aircraft and satellite observations are under development. 
+The MELODIES MONET tool has a :doc:`/cli` that can be used to download and create 
+MELODIES MONET-ready datasets for: AirNow, AERONET, AQS, ISH, ISH-Lite, and OpenAQ. 
+New surface observational datasets formally added to MELODIES MONET should be added 
+to this Command Line Interface.
 
-If you are interested in converting a new observational dataset to our netCDF format,
-please see the notes below.
+If you are interested in converting a new observational dataset to our netCDF format
+on your own for testing within MELODIES MONET, please see the notes below.
 
 * The dataset should have these dimensions (in this order):
 
@@ -69,6 +70,22 @@ You can examine the ``get_*`` functions in the :doc:`/cli`
 (``melodies_monet/_cli.py``) for examples of converting observational datasets
 in pandas DataFrame format to xarray Dataset format.
 
+Aircraft, Sonde, Mobile, and Ground Campaign Data
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+New aircraft, sonde, mobile, and ground campaign datasets should work in the tool with no changes as long 
+as the data format is NetCDF, ICARTT, or CSV. We are constantly working to generalize our code. If an issue 
+arises, please post `on GitHub Issues <https://github.com/NOAA-CSL/MELODIES-MONET/issues>`__.
+
+Satellite
+^^^^^^^^^
+Examples for reading satellite datasets can be
+found in the ``monetio/sat`` folder in the MONETIO repository
+`on GitHub <https://github.com/noaa-oar-arl/monetio>`__.
+While a part of the MONETIO repository,
+the private MELODIES MONET readers are designated with prefix ``_`` 
+and suffix ``_mm``.
+
 Models
 ------
 Examples for reading model datasets can be
@@ -76,7 +93,8 @@ found in the ``monetio/models`` folder in the MONETIO repository
 `on GitHub <https://github.com/noaa-oar-arl/monetio>`__.
 These include e.g., _cesm_fv_mm.py, _cmaq_mm.py, and _wrfchem_mm.py.
 While a part of the MONETIO repository,
-the private MELODIES MONET readers are designated with prefix ``_mm``.
+the private MELODIES MONET readers are designated with prefix ``_`` 
+and suffix ``_mm``.
 
 Support for additional models is also under developed.
 
