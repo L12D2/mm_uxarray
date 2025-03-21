@@ -45,9 +45,9 @@ def calc_grid_corners(ds, lat="latitude", lon="longitude"):
     except ImportError:
         raise ImportError("Calculating gridcell bounds requires cf_xarray. Pleas install")
     corners = ds[[lat, lon]].cf.add_bounds([lat, lon])
-    ds['lat_b'] = cfxr.bounds_to_vertices(corners[f"{lat}_bounds"], "bounds", order=None)
-    ds['lon_b'] = cfxr.bounds_to_vertices(corners[f"{lon}_bounds"], "bounds", order=None)
-    return 
+    ds["lat_b"] = cfxr.bounds_to_vertices(corners[f"{lat}_bounds"], "bounds", order=None)
+    ds["lon_b"] = cfxr.bounds_to_vertices(corners[f"{lon}_bounds"], "bounds", order=None)
+    return
 
 
 def speedup_regridding(dset, variables="all"):
@@ -194,6 +194,46 @@ def _interp_vert(orig, target, data):
     return interp
 
 
+def calc_altitude_from_thickness(dz_m):
+    """Calculate layer altitude above ground
+
+    Parameters
+    ----------
+    data : xr.DataArray
+        DataArray containing dz_m
+
+    Returns
+    -------
+    Model altitude in satellite space
+    """
+    altitude_interface = xr.zeros_like(dz_m)
+    altitude_interface[{"z": 0}] = dz_m[{"z": 0}]
+    for lev in altitude_interface["z"][1:]:
+        altitude_interface[{"z": lev}] = altitude_interface[{"z": lev - 1}] + dz_m[{"z": lev}]
+    return altitude_interface
+
+
+def calc_dz_m_from_altitude(altitude):
+    """Calculates dz_m from altitude AGL (in m).
+
+    Parameters
+    ----------
+    altitude : xr.DataArray
+        DataArray containing the layer interface altitude AGL at the
+        interface.
+
+    Returns
+    -------
+    xr.DataArray
+        DataArray containing the layer thickness (dz_m) in m.
+    """
+    dz_m = xr.zeros_like(altitude)
+    dz_m[{"z": 0}] = altitude[{"z": 0}]
+    for lev in altitude["z"][1:]:
+        dz_m[{"z": lev}] = altitude[{"z": lev}] - altitude[{"z": lev - 1}]
+    return dz_m
+
+
 def interp_vertical_mod2swath(obsobj, modobj, variables="NO2_col"):
     """Interpolates model vertical layers to TEMPO vertical layers
 
@@ -232,14 +272,14 @@ def interp_vertical_mod2swath(obsobj, modobj, variables="NO2_col"):
         modsatlayers[var] = xr.DataArray(
             data=interpolated, dims=dimensions, coords=coords, attrs=modobj[var].attrs
         )
-    modsatlayers["p_mid_tempo"] = xr.DataArray(
+    modsatlayers["pres_pa_mid"] = xr.DataArray(
         data=p_mid_tempo,
         dims=dimensions,
         coords=coords,
         attrs=modobj["pres_pa_mid"].attrs,
     )
     _interp_description = "Mid layer pressure interpolated to TEMPO mid swt_layer pressures"
-    modsatlayers["p_mid_tempo"].attrs["description"] = _interp_description
+    modsatlayers["pres_pa_mid"].attrs["description"] = _interp_description
     return modsatlayers
 
 
@@ -298,8 +338,8 @@ def apply_weights_mod2tempo_no2_hydrostatic(obsobj, modobj, species="NO2"):
     tropopause_pressure = obsobj["tropopause_pressure"]
     scattering_weights = obsobj["scattering_weights"].transpose("swt_level", "x", "y")
     scattering_weights = scattering_weights.rename({"swt_level": "z"})
-    scattering_weights = scattering_weights.where(modobj["p_mid_tempo"] >= tropopause_pressure)
-    modno2 = modobj[species].where(modobj["p_mid_tempo"] >= tropopause_pressure)
+    scattering_weights = scattering_weights.where(modobj["pres_pa_mid"] >= tropopause_pressure)
+    modno2 = modobj[species].where(modobj["pres_pa_mid"] >= tropopause_pressure)
     amf_troposphere = obsobj["amf_troposphere"]
     modno2col_trfmd = (dp * scattering_weights * modno2).sum(dim="z") * unit_c * ppbv2molmol
     modno2col_trfmd = modno2col_trfmd.where(modno2.isel(z=0).notnull())
@@ -312,7 +352,7 @@ def apply_weights_mod2tempo_no2_hydrostatic(obsobj, modobj, species="NO2"):
     return modno2col_trfmd.where(np.isfinite(modno2col_trfmd))
 
 
-def apply_weights_mod2tempo_no2(obsobj, modobj, species="NO2", column_type='tropospheric'):
+def apply_weights_mod2tempo_no2(obsobj, modobj, species="NO2", column_type="tropospheric"):
     """Apply the scattering weights and air mass factors according to
     Cooper et. al, 2020, doi: https://doi.org/10.5194/acp-20-7231-2020
 
@@ -337,7 +377,7 @@ def apply_weights_mod2tempo_no2(obsobj, modobj, species="NO2", column_type='trop
     scattering_weights = scattering_weights.rename({"swt_level": "z"})
     if column_type == "tropospheric":
         tropopause_pressure = obsobj["tropopause_pressure"] * 100
-        scattering_weights = scattering_weights.where(modobj["p_mid_tempo"] >= tropopause_pressure)
+        scattering_weights = scattering_weights.where(modobj["pres_pa_mid"] >= tropopause_pressure)
         amf_troposphere = obsobj["amf_troposphere"]
     modno2col_trfmd = (scattering_weights * partial_col).sum(dim="z") / amf_troposphere
     modno2col_trfmd = modno2col_trfmd.where(modobj[f"{species}_col"].isel(z=0).notnull())
@@ -483,9 +523,13 @@ def _regrid_and_apply_weights(
         if "lat_b" not in obsobj:
             calc_grid_corners(obsobj, lat="lat", lon="lon")
     modobj_hs = tempo_interp_mod2swath(obsobj, modobj, method=method, weights=weights)
-    if ("layer_height_agl" in modobj.keys()) or ("dz_m" in modobj.keys()):
-        modobj_hs[f"{species[0]}_col"] = calc_partialcolumn(modobj_hs, var=species[0])
-        modobj_swath = interp_vertical_mod2swath(obsobj, modobj_hs, [f"{species[0]}_col"])
+    if "dz_m" in modobj.keys():
+        modobj_hs["altitude"] = calc_altitude_from_thickness(modobj_hs["dz_m"])
+        modobj_swath = interp_vertical_mod2swath(
+            obsobj, modobj_hs, [f"{species[0]}", "altitude", "temperature_k"]
+        )
+        modobj_swath["dz_m"] = calc_dz_m_from_altitude(modobj_swath["altitude"])
+        modobj_swath[f"{species[0]}_col"] = calc_partialcolumn(modobj_swath, var=species[0])
         da_out = apply_weights(obsobj, modobj_swath, species=f"{species[0]}")
     else:
         warnings.warn(
