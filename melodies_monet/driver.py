@@ -2961,7 +2961,7 @@ class analysis:
                         # convert to dataframe
                         # handle different dimensios, M.Li
 
-                        if 'tempo_l2' in p.obs:
+                        if self.obs[p.obs].sat_type is not None and self.obs[p.obs].sat_type.startswith("tempo_l2"):
                             stacked = p_region.obj.rename({"y": "ll"}).stack(y=("x", "ll")).drop("x")
                             pairdf_all = stacked.to_dataframe(dim_order=["time", "y"])
                             del stacked
