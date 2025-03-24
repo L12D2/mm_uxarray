@@ -181,7 +181,6 @@ def _interp_vert(orig, target, data):
     assert orig.shape == data.shape, "Grid shape does not match data"
     nz, nx, ny = target.shape
     interp = np.zeros((nz, nx, ny))
-    # for t in nt:
     for x in range(nx):
         for y in range(ny):
             interp[:, x, y] = np.flip(
@@ -210,6 +209,11 @@ def calc_altitude_from_thickness(dz_m):
     altitude_interface[{"z": 0}] = dz_m[{"z": 0}]
     for lev in altitude_interface["z"][1:]:
         altitude_interface[{"z": lev}] = altitude_interface[{"z": lev - 1}] + dz_m[{"z": lev}]
+    altitude_interface.attrs = {
+        "description": "Altitude AGL in m at layer interface",
+        "units": "m",
+        "long_name": "altitude_agl",
+    }
     return altitude_interface
 
 
@@ -229,8 +233,14 @@ def calc_dz_m_from_altitude(altitude):
     """
     dz_m = xr.zeros_like(altitude)
     dz_m[{"z": 0}] = altitude[{"z": 0}]
-    for lev in altitude["z"][1:]:
-        dz_m[{"z": lev}] = altitude[{"z": lev}] - altitude[{"z": lev - 1}]
+    dz_m[{"z": slice(1, None)}] = (
+        altitude[{"z": slice(1, None)}].values - altitude[{"z": slice(0, -1)}].values
+    )
+    dz_m.attrs = {
+        "description": "Layer thickness in m",
+        "units": "m",
+        "long_name": "layer_thickness",
+    }
     return dz_m
 
 
@@ -260,10 +270,8 @@ def interp_vertical_mod2swath(obsobj, modobj, variables="NO2_col"):
         + obsobj["pressure"].isel(swt_level_stagg=slice(1, None)).values
     ) / 2
     p_orig = modobj["pres_pa_mid"].values
-    # dimensions = ("time", "z", "lon", "lat")
     dimensions = ("z", "x", "y")
     coords = {
-        # "time": (("time",), modobj["time"].values),
         "lon": (("x", "y"), modobj["lon"].values),
         "lat": (("x", "y"), modobj["lat"].values),
     }
@@ -533,7 +541,7 @@ def _regrid_and_apply_weights(
         da_out = apply_weights(obsobj, modobj_swath, species=f"{species[0]}")
     else:
         warnings.warn(
-            "There is no layer_height_agl variable, and the partial column"
+            "There is no dz_m variable, and the partial column"
             + "cannot be directly calculated. Assuming hydrostatic equation."
         )
         modobj_swath = interp_vertical_mod2swath(obsobj, modobj_hs, species)
@@ -582,12 +590,6 @@ def regrid_and_apply_weights(
         an OrderedDict is returned.
     """
 
-    # modgrid = {
-    #     "lon": np.asfortranarray(modobj["lon"].values),
-    #     "lat": np.asfortranarray(modobj["lat"].values),
-    #     "lon_b": np.asfortranarray(modobj["lat"].values),
-    #     "lat_b": np.asfortranarray(modobj["lat"].values),
-    # }
     if tempo_sp == "NO2":
         sat_species_name = "vertical_column_troposphere"
     else:
@@ -693,8 +695,6 @@ def back_to_modgrid(
         ordered_keys = sorted(list(paireddict.keys()))
     else:
         ordered_keys = sorted(list(keys_to_merge))
-    # modobj["longitude"] = modobj["longitude"].astype("float64", order="C")
-    # modobj["latitude"] = modobj["latitude"].astype("float64", order="C")
     concatenated = paireddict[ordered_keys[0]]
     scan_num = concatenated.attrs["scan_num"]
     granules = [concatenated.attrs["granule_number"]]
@@ -715,14 +715,12 @@ def back_to_modgrid(
     end_time = np.array(
         paireddict[ordered_keys[-1]].attrs["final_time_string"], dtype="datetime64[ns]"
     )
-    # concatenated = concatenated.rename({"longitude" : "lon", "latitude": "lat"})
     if grid_path is not None:
         grid = xr.open_dataset(grid_path)
         regridder = xe.Regridder(concatenated, grid, method=method, unmapped_to_nan=True)
     else:
         regridder = xe.Regridder(concatenated, modobj, method=method, unmapped_to_nan=True)
     out_regridded = regridder(concatenated)
-    # out_regridded = out_regridded.rename({"longitude": "lon", "latitude": "lat"})
     for v in out_regridded.variables:
         if v in concatenated.variables:
             out_regridded[v].attrs = concatenated[v].attrs
