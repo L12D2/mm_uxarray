@@ -590,7 +590,7 @@ class model:
             self.mod_kwargs.update({"fname_met_2D": control_dict['model'][self.label].get('files_met_surf', None)})
             self.obj = mio.models._camx_mm.open_mfdataset(self.files, **self.mod_kwargs)
         elif 'raqms' in self.model.lower():
-            self.mod_kwargs.updata({'var_list': list_input_var})
+            self.mod_kwargs.update({'var_list': list_input_var})
             if time_interval is not None:
                 # fill filelist with subset
                 print('subsetting model files to interval')
