@@ -2956,19 +2956,8 @@ class analysis:
                         else:
                             p_region = p.obj
 
-                        # convert to dataframe
-                        # handle different dimensios, M.Li
-
-                        if self.obs[p.obs].sat_type is not None and self.obs[p.obs].sat_type.startswith("tempo_l2"):
-                            stacked = p_region.obj.rename({"y": "ll"}).stack(y=("x", "ll")).drop("x")
-                            pairdf_all = stacked.to_dataframe(dim_order=["time", "y"])
-                            del stacked
-                        if ('y' in p_region.dims) and ('x' in p_region.dims):
-                            pairdf_all = p_region.to_dataframe(dim_order=["x", "y"])
-                        elif ('y' in p_region.dims) and ('time' in p_region.dims):
-                            pairdf_all = p_region.to_dataframe(dim_order=["time", "y"])
-                        else:
-                            pairdf_all = p_region.to_dataframe(dim_order=["time", "x"])
+                        dim_order = [dim for dim in ["time", "y", "x"] if dim in p_region.dims]
+                        pairdf_all = p_region.to_dataframe(dim_order=dim_order)
 
                         # Select only the analysis time window.
                         pairdf_all = pairdf_all.loc[self.start_time : self.end_time]
