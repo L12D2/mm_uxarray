@@ -2950,8 +2950,6 @@ class analysis:
                         if obsvar == 'nitrogendioxide_tropospheric_column':
                             modvar = modvar + 'trpcol' 
                         
-                        # TODO: Cleanup TEMPO code for stats
-
                         # Query selected points if applicable
                         if domain_type != 'all':
                             p_region = select_region(p.obj, domain_type, domain_name, domain_info)
