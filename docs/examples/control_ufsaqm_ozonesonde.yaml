@@ -49,7 +49,7 @@ model:
 obs:
   gml-ozonesondes: # obs label
     filename: 'example:gml-100m-ozonesondes:as-of-2024-02-09'
-    obs_type: ozone_sonder
+    obs_type: sonde
     variables: #Opt 
       o3:
         unit_scale: 1000 #Opt Scaling factor (original ppmv, convert to ppbv)
