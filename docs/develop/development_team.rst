@@ -26,7 +26,7 @@ David Fillmore     dwfncar         Satellite obs, Plots, Stats, Connection to ME
 Colin Harkins      colin-harkins   Docs, Aircraft obs, Plots, Stats
 Louisa Emmons      lkemmons        Docs, Aircraft obs, Plots, Stats
 Rebecca Schwantes  rschwant        Docs, Surface and aircraft obs, Plots, Stats
-Maggie Bruckner  mbruckner-work  Docs, Satellite obs, Plots, Stats
+Maggie Bruckner    mbruckner-work  Docs, Satellite obs, Plots, Stats
 Rebecca Buchholz   rrbuchholz      Docs, Satellite obs, Plots, Stats
 Pablo Lichtig      blychs          Docs, Satellite and surface obs, Plots, Stats
 Quazi Ziaur Rasool quaz115         Docs, Aircraft obs, Plots, Stats
