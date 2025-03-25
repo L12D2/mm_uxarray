@@ -1364,7 +1364,7 @@ class analysis:
                             model_obj = mod.obj[keys]
                             paired_data = sutil.omps_nm_pairing(model_obj,obs.obj,keys)
 
-                        paired_data = paired_data.where((paired_data.ozone_column > 0))
+                        paired_data = paired_data.where(~np.isnan(paired_data.ozone_column))
                         p = pair()
                         p.type = obs.obs_type
                         p.obs = obs.label
