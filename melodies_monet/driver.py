@@ -123,6 +123,7 @@ class observation:
         self.variable_summing = None
         self.resample = None
         self.time_var = None
+        self.regrid_method = None
 
     def __repr__(self):
         return (
@@ -296,6 +297,10 @@ class observation:
                 #from monetio import tropomi_l2_no2
                 print('Reading TROPOMI L2 NO2')
                 self.obj = mio.sat._tropomi_l2_no2_mm.read_trpdataset(
+                    self.file, self.variable_dict, debug=self.debug)
+            elif "tempo_l2" in self.sat_type:
+                print('Reading TEMPO L2')
+                self.obj = mio.sat._tempo_l2_no2_mm.open_dataset(
                     self.file, self.variable_dict, debug=self.debug)
             else:
                 print('file reader not implemented for {} observation'.format(self.sat_type))
@@ -1345,9 +1350,9 @@ class analysis:
                 elif obs.obs_type.lower() == 'sat_swath_clm':
                     # grab kwargs for pairing. Use default if not specified
                     pairing_kws = {'apply_ak':True,'mod_to_overpass':False}
-                    for key in self.pairing_kwargs[obs.obs_type.lower()]:
+                    for key in self.pairing_kwargs.get(obs.obs_type.lower(), {}):
                         pairing_kws[key] = self.pairing_kwargs[obs.obs_type.lower()][key]
-                    if 'apply_ak' not in self.pairing_kwargs[obs.obs_type.lower()]:
+                    if 'apply_ak' not in self.pairing_kwargs.get(obs.obs_type.lower(), {}):
                         print('WARNING: The satellite pairing option apply_ak is being set to True because it was not specified in the YAML. Pairing will fail if there is no AK available.')
                     
                     if obs.sat_type == 'omps_nm':
@@ -1410,12 +1415,53 @@ class analysis:
                         label = '{}_{}'.format(p.obs,p.model)
 
                         self.paired[label] = p
+
+                    if 'tempo_l2' in obs.sat_type:
+                        from .util import sat_l2_swath_utility_tempo as sutil
+
+                        if obs.sat_type == 'tempo_l2_no2':
+                            sat_sp = 'NO2'
+                            sp = 'vertical_column_troposphere'
+                            key = "tempo_l2_no2"
+                        elif obs.sat_type == 'tempo_l2_hcho':
+                            sat_sp = 'HCHO'
+                            sp = 'vertical_column'
+                            key = "tempo_l2_hcho"
+                        else:
+                            raise KeyError(f" You asked for {obs.sat_type}. "
+                                           + "Only NO2 and HCHO L2 data have been implemented")
+                        mod_sp = [
+                            k_sp for k_sp, v in mod.mapping[key].items() if v == sp
+                        ]
+
+                        regrid_method = obs.regrid_method if obs.regrid_method is not None else "bilinear"
+                        paired_data_atswath = sutil.regrid_and_apply_weights(
+                            obs.obj, mod.obj, species=mod_sp, method=regrid_method, tempo_sp=sat_sp
+                        )
+                        paired_data_atgrid = sutil.back_to_modgrid_multiscan(
+                            paired_data_atswath, model_obj, method=regrid_method
+                        )
+
+                        p = pair()
+
+                        paired_data = paired_data_atgrid.sel(time=slice(self.start_time, self.end_time))
+
+                        p.type = obs.obs_type
+                        p.obs = obs.label
+                        p.model = mod.label
+                        p.model_vars = keys
+                        p.obs_vars = obs_vars
+                        p.obj = paired_data
+                        label = "{}_{}".format(p.obs,p.model)
+                        p.filename = "{}.nc".format(label)
+
+                        self.paired[label] = p
                         
                 # if sat_grid_clm (satellite l3 column products)
                 elif obs.obs_type.lower() == 'sat_grid_clm':
                     # grab kwargs for pairing. Use default if not specified
                     pairing_kws = {'apply_ak':True,'mod_to_overpass':False}
-                    for key in self.pairing_kwargs[obs.obs_type.lower()]:
+                    for key in self.pairing_kwargs.get(obs.obs_type.lower(), {}):
                         pairing_kws[key] = self.pairing_kwargs[obs.obs_type.lower()][key]
                     if 'apply_ak' not in self.pairing_kwargs[obs.obs_type.lower()]:
                         print('WARNING: The satellite pairing option apply_ak is being set to True because it was not specified in the YAML. Pairing will fail if there is no AK available.')
@@ -1509,7 +1555,7 @@ class analysis:
             from .plots import surfplots as splots, savefig
             from .plots import aircraftplots as airplots
             from .plots import ozone_sonder_plots as sonderplots
-
+        from .plots import xarray_plots as xrplots
         if not self.add_logo:
             savefig.keywords.update(decorate=False)
 
@@ -1579,23 +1625,23 @@ class analysis:
                 threshold_tick_style = grp_dict.get('threshold_tick_style',None)
 
             # first get the observational obs labels
-            pair1 = self.paired[list(self.paired.keys())[0]]
-            obs_vars = pair1.obs_vars
-            obs_type = pair1.type
-            # loop through obs variables
-            for obsvar in obs_vars:
-                # Loop also over the domain types. So can easily create several overview and zoomed in plots.
-                domain_types = grp_dict['domain_type']
-                domain_names = grp_dict['domain_name']
-                domain_infos = grp_dict.get('domain_info', {})
-                for domain in range(len(domain_types)):
-                    domain_type = domain_types[domain]
-                    domain_name = domain_names[domain]
-                    domain_info = domain_infos.get(domain_name, None)
 
-                    # Then loop through each of the pairs to add to the plot.
-                    for p_index, p_label in enumerate(pair_labels):
-                        p = self.paired[p_label]
+            for p_index, p_label in enumerate(pair_labels):
+                p = self.paired[p_label]
+                obs_vars = p.obs_vars
+                obs_type = p.type
+                # loop through obs variables
+                for obsvar in obs_vars:
+                    # Loop also over the domain types. So can easily create several overview and zoomed in plots.
+                    domain_types = grp_dict.get('domain_type', [None])
+                    domain_names = grp_dict.get('domain_name', [None])
+                    domain_infos = grp_dict.get('domain_info', {})
+                    for domain in range(len(domain_types)):
+                        domain_type = domain_types[domain]
+                        domain_name = domain_names[domain]
+                        domain_info = domain_infos.get(domain_name, None)
+
+
                         
                         # find the pair model label that matches the obs var
                         index = p.obs_vars.index(obsvar)
@@ -1622,13 +1668,8 @@ class analysis:
                              # convert index to time; setup for sat_swath_clm
                             
                             if 'time' not in p_region.dims and obs_type == 'sat_swath_clm':
-                                
                                 pairdf_all = p_region.swap_dims({'x':'time'})
-                            # squash lat/lon dimensions into single dimension
-                            ## 2024-03 MEB rechecking necessity of this.
-                            #elif obs_type == 'sat_grid_clm':
-                            #    pairdf_all = p.obj.stack(ll=['x','y'])
-                            #    pairdf_all = pairdf_all.rename_dims({'ll':'y'})
+
                             else:
                                 pairdf_all = p_region
                             # Select only the analysis time window.
@@ -1664,7 +1705,7 @@ class analysis:
                             text_dict = None
 
                         # Read in some plotting specifications stored with observations.
-                        if self.obs[p.obs].variable_dict is not None:
+                        if p.obs in self.obs and self.obs[p.obs].variable_dict is not None:
                             if obsvar in self.obs[p.obs].variable_dict.keys():
                                 obs_plot_dict = self.obs[p.obs].variable_dict[obsvar].copy()
                             else:
@@ -1679,7 +1720,7 @@ class analysis:
                             use_ylabel = None
 
                         # Determine if set axis values or use defaults
-                        if grp_dict['data_proc']['set_axis'] == True:
+                        if grp_dict['data_proc'].get('set_axis', False):
                             if obs_plot_dict:  # Is not null
                                 set_yaxis = True
                             else:
@@ -1750,7 +1791,8 @@ class analysis:
                                                                         "sat_grid_sfc", "sat_grid_clm", 
                                                                         "sat_swath_prof"]: 
                             # xarray doesn't need nan drop because its math operations seem to ignore nans
-                            pairdf = pairdf_all
+                            # MEB (10/9/24): Add statement to ensure model and obs variables have nans at the same place
+                            pairdf = pairdf_all.where(pairdf_all[obsvar].notnull() & pairdf_all[modvar].notnull())
 
                         else:
                             print('Warning: set rem_obs_nan = True for regulatory metrics') 
@@ -1808,7 +1850,7 @@ class analysis:
                             outname = self.output_dir + '/' + outname  # Extra / just in case.
 
                         # Types of plots
-                        if plot_type.lower() == 'timeseries':
+                        if plot_type.lower() == 'timeseries' or plot_type.lower() == 'diurnal':
                             if set_yaxis == True:
                                 if all(k in obs_plot_dict for k in ('vmin_plot', 'vmax_plot')):
                                     vmin = obs_plot_dict['vmin_plot']
@@ -1872,41 +1914,49 @@ class analysis:
                                         pairdf = pairdf[pairdf[column].between(vmin_y2, vmax_y2)]
                             
                             # Now proceed wit plotting, call the make_timeseries function with the subsetted pairdf (if vmin2 and vmax2 are not nOne) otherwise whole df                                 
+                            if self.obs[p.obs].sat_type is not None and self.obs[p.obs].sat_type.startswith("tempo_l2"):
+                                if plot_type.lower() == 'timeseries':
+                                    make_timeseries = xrplots.make_timeseries
+                                else:
+                                    make_timeseries = xrplots.make_diurnal_cycle
+                                plot_kwargs = {'dset': pairdf, 'varname': obsvar}
+                            else:
+                                if plot_type.lower() == "timeseries":
+                                    make_timeseries = splots.make_timeseries
+                                else:
+                                    make_timeseries = splots.make_diurnal_cycle
+                                plot_kwargs = {
+                                    'df': pairdf, 'df_reg': pairdf_reg, 'column': obsvar
+                                }
+                            settings = grp_dict.get('settings', {})
+                            plot_kwargs = {
+                                **plot_kwargs,
+                                **{
+                                    'label':p.obs,
+                                    'avg_window': a_w,
+                                    'ylabel': use_ylabel,
+                                    'vmin':vmin,
+                                    'vmax':vmax,
+                                    'domain_type': domain_type,
+                                    'domain_name': domain_name,
+                                    'plot_dict': obs_dict,
+                                    'fig_dict': fig_dict,
+                                    'text_dict': text_dict,
+                                    'debug': self.debug,
+                                },
+                                **settings
+                            }
                             if p_index == 0:
                                 # First plot the observations.
-                                ax = splots.make_timeseries(
-                                    pairdf,
-                                    pairdf_reg,
-                                    column=obsvar,
-                                    label=p.obs,
-                                    avg_window=a_w,
-                                    ylabel=use_ylabel,
-                                    vmin=vmin,
-                                    vmax=vmax,
-                                    domain_type=domain_type,
-                                    domain_name=domain_name,
-                                    plot_dict=obs_dict,
-                                    fig_dict=fig_dict,
-                                    text_dict=text_dict,
-                                    debug=self.debug
-                                )
+                                ax = make_timeseries(**plot_kwargs)
                             # For all p_index plot the model.
-                            ax = splots.make_timeseries(
-                                pairdf,
-                                pairdf_reg,
-                                column=modvar,
-                                label=p.model,
-                                ax=ax,
-                                avg_window=a_w,
-                                ylabel=use_ylabel,
-                                vmin=vmin,
-                                vmax=vmax,
-                                domain_type=domain_type,
-                                domain_name=domain_name,
-                                plot_dict=plot_dict,
-                                text_dict=text_dict,
-                                debug=self.debug
-                            )
+                            if self.obs[p.obs].sat_type is not None and self.obs[p.obs].sat_type.startswith("tempo_l2"):
+                                plot_kwargs['varname']=modvar
+                            else:
+                                plot_kwargs['column']=modvar
+                            plot_kwargs['label'] = p.model
+                            plot_kwargs['ax'] = ax
+                            ax = make_timeseries(**plot_kwargs)
 
                             # Extract text_kwargs from the appropriate plot group
                             text_kwargs = grp_dict.get('text_kwargs', {'fontsize': 20})  # Default to fontsize 20 if not defined                            
@@ -1934,9 +1984,6 @@ class analysis:
                                   ##  ax = airplots.add_yax2_altitude(ax, pairdf, altitude_variable, altitude_ticks, text_kwargs)
                                 ##savefig(outname + '.png', logo_height=150)
                                 ##del (ax, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict) #Clear axis for next plot.
-                        
-
-
 
                         elif plot_type.lower() == 'curtain':
                             # Set cmin and cmax from obs_plot_dict for colorbar limits
@@ -2554,50 +2601,54 @@ class analysis:
 
 
                         elif plot_type.lower() == 'taylor':
+                            if self.obs[p.obs].sat_type is not None and self.obs[p.obs].sat_type.startswith("tempo_l2"):
+                                make_taylor = xrplots.make_taylor
+                                plot_kwargs = {
+                                    'dset': pairdf,
+                                    'varname_o': obsvar,
+                                    'varname_m': modvar,
+                                    'normalize': True,
+                                }
+                            else:
+                                make_taylor = splots.make_taylor
+                                plot_kwargs = {
+                                    'df': pairdf,
+                                    'column_o': obsvar,
+                                    'column_m': modvar,
+                                }
+                            plot_kwargs = {
+                                **plot_kwargs,
+                                **{
+                                    'label_o': p.obs,
+                                    'label_m': p.model,
+                                    'ylabel': use_ylabel,
+                                    'domain_type': domain_type,
+                                    'domain_name': domain_name,
+                                    'plot_dict': plot_dict,
+                                    'fig_dict': fig_dict,
+                                    'text_dict': text_dict,
+                                    'debug': self.debug,
+                                }
+                            }
+
                             if set_yaxis == True:
                                 if 'ty_scale' in obs_plot_dict.keys():
-                                    ty_scale = obs_plot_dict['ty_scale']
+                                    plot_kwargs["ty_scale"] = obs_plot_dict['ty_scale']
                                 else:
                                     print('Warning: ty_scale not specified for ' + obsvar + ', so default used.')
-                                    ty_scale = 1.5  # Use default
+                                    plot_kwargs["ty_scale"] = 1.5  # Use default
                             else:
-                                ty_scale = 1.5  # Use default
+                                plot_kwargs["ty_scale"] = 1.5  # Use default
+                            try: 
+                                plot_kwargs["ty_scale"] = grp_dict["data_proc"].get("ty_scale", 1.5)
+                            except KeyError:
+                                plot_kwargs["ty_scale"]=2
                             if p_index == 0:
                                 # Plot initial obs/model
-                                dia = splots.make_taylor(
-                                    pairdf,
-                                    pairdf_reg,
-                                    column_o=obsvar,
-                                    label_o=p.obs,
-                                    column_m=modvar,
-                                    label_m=p.model,
-                                    ylabel=use_ylabel,
-                                    ty_scale=ty_scale,
-                                    domain_type=domain_type,
-                                    domain_name=domain_name,
-                                    plot_dict=plot_dict,
-                                    fig_dict=fig_dict,
-                                    text_dict=text_dict,
-                                    debug=self.debug
-                                )
+                                dia = make_taylor(**plot_kwargs)
                             else:
                                 # For the rest, plot on top of dia
-                                dia = splots.make_taylor(
-                                    pairdf,
-                                    pairdf_reg,
-                                    column_o=obsvar,
-                                    label_o=p.obs,
-                                    column_m=modvar,
-                                    label_m=p.model,
-                                    dia=dia,
-                                    ylabel=use_ylabel,
-                                    ty_scale=ty_scale,
-                                    domain_type=domain_type,
-                                    domain_name=domain_name,
-                                    plot_dict=plot_dict,
-                                    text_dict=text_dict,
-                                    debug=self.debug
-                                )
+                                dia = make_taylor(dia=dia, **plot_kwargs)
                             # At the end save the plot.
                             if p_index == len(pair_labels) - 1:
                                 savefig(outname + '.png', logo_height=70)
@@ -2635,22 +2686,57 @@ class analysis:
                                 debug=self.debug
                             )
                         elif plot_type.lower() == 'gridded_spatial_bias':
-                            splots.make_spatial_bias_gridded(
-                                p.obj,
-                                column_o=obsvar,
-                                label_o=p.obs,
-                                column_m=modvar,
-                                label_m=p.model,
-                                ylabel=use_ylabel,
-                                #vdiff=vdiff,
-                                outname=outname,
-                                domain_type=domain_type,
-                                domain_name=domain_name,
-                                fig_dict=fig_dict,
-                                text_dict=text_dict,
-                                debug=self.debug
-                                )    
+                            outname = "{}.{}".format(outname, p_label)
+                            if self.obs[p.obs].sat_type is not None and self.obs[p.obs].sat_type.startswith("tempo_l2"):
+                                make_spatial_bias_gridded = xrplots.make_spatial_bias_gridded
+                                plot_kwargs = {
+                                    'dset': pairdf, 'varname_o': obsvar, 'varname_m': modvar,
+                                }
+                            else:
+                                make_spatial_bias_gridded = splots.make_spatial_bias_gridded
+                                plot_kwargs = {'df': pairdf, 'column_o': obsvar, 'column_m': modvar}
+
+                            plot_kwargs = {
+                                **plot_kwargs,
+                                **{
+                                    "label_o": p.obs,
+                                    "label_m": p.model,
+                                    "ylabel": use_ylabel,
+                                    "outname": outname,
+                                    "domain_type": domain_type,
+                                    "domain_name": domain_name,
+                                    "fig_dict": fig_dict,
+                                    "text_dict": text_dict,
+                                    "debug": self.debug
+                                }
+                            }
+                            make_spatial_bias_gridded(**plot_kwargs)
                             del (fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict) #Clear info for next plot.
+                        elif plot_type.lower() == 'spatial_dist':
+                            outname = "{}.{}".format(outname, p.obs)
+                            plot_kwargs = {
+                                "dset": p.obj,
+                                "varname": obsvar,
+                                "outname": outname,
+                                "label": p.obs,
+                                "ylabel": use_ylabel,
+                                "domain_type": domain_type,
+                                "domain_name": domain_name,
+                                "vmax": grp_dict["data_proc"].get("vmax", None),
+                                "vmin": grp_dict["data_proc"].get("vmin", None),
+                                "fig_dict": fig_dict,
+                                "text_dict": text_dict,
+                                "debug": self.debug,
+                            }
+                            if isinstance(plot_kwargs["vmax"], str):
+                                plot_kwargs["vmax"] = float(plot_kwargs["vmax"])
+                            if isinstance(plot_kwargs["vmin"], str):
+                                plot_kwargs["vmin"] = float(plot_kwargs["vmin"])
+                            xrplots.make_spatial_dist(**plot_kwargs)
+                            plot_kwargs["varname"] = modvar
+                            plot_kwargs["label"] = p.model
+                            plot_kwargs["outname"] = outname.replace(p.obs, p.model)
+                            xrplots.make_spatial_dist(**plot_kwargs)
                         elif plot_type.lower() == 'spatial_bias_exceedance':
                             if cal_reg:
                                 if set_yaxis == True:
@@ -2863,21 +2949,15 @@ class analysis:
                         # for satellite no2 trop. columns paired data, M.Li
                         if obsvar == 'nitrogendioxide_tropospheric_column':
                             modvar = modvar + 'trpcol' 
-
+                        
                         # Query selected points if applicable
                         if domain_type != 'all':
                             p_region = select_region(p.obj, domain_type, domain_name, domain_info)
                         else:
                             p_region = p.obj
 
-                        # convert to dataframe
-                        # handle different dimensios, M.Li
-                        if ('y' in p_region.dims) and ('x' in p_region.dims):
-                            pairdf_all = p_region.to_dataframe(dim_order=["x", "y"])
-                        elif ('y' in p_region.dims) and ('time' in p_region.dims):
-                            pairdf_all = p_region.to_dataframe(dim_order=["time", "y"])
-                        else:
-                            pairdf_all = p_region.to_dataframe(dim_order=["time", "x"])
+                        dim_order = [dim for dim in ["time", "y", "x"] if dim in p_region.dims]
+                        pairdf_all = p_region.to_dataframe(dim_order=dim_order)
 
                         # Select only the analysis time window.
                         pairdf_all = pairdf_all.loc[self.start_time : self.end_time]
