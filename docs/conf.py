@@ -199,10 +199,10 @@ linkcheck_ignore = [
     # Auth required:
     "https://rdhpcs-common-docs.rdhpcs.noaa.gov/wiki/index.php/Anaconda#Installation",
     "https://www2.cisl.ucar.edu/resources/conda-environments",
-    "https://doi.org/10.3390/atmos8110210",
-    "https://doi.org/10.1021/acs.est.5c00902",
     # Sphinx 4.5 linkcheck having problem:
     "https://docs.github.com/en/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account",
+    "https://doi.org/10.3390/atmos8110210",
+    "https://doi.org/10.1021/acs.est.5c00902",
     # NCEI sites having problems
     "https://www.ncdc.noaa.gov/crn/",
     #PNAS sites having problems:
