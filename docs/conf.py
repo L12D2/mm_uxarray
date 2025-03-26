@@ -10,7 +10,7 @@
 # -- Project information -----------------------------------------------------
 
 project = u'MELODIES-MONET'
-copyright = u'2022, NCAR/UCAR, NOAA'
+copyright = u'2022, NSF NCAR, CIRES'
 author = u'Rebecca Schwantes (NOAA), Barry Baker (NOAA), Louisa Emmons (NCAR), Rebecca Buchholz (NCAR)'
 
 # The short X.Y version
