@@ -110,14 +110,8 @@ def mopitt_l3_pairing(model_data,obs_data,co_ppbv_varname,global_model=True):
         raise
     
     # Aggregate time-step, if needed
-    ## Check if same number of timesteps:
-    if obs_data.time.size == model_data.time.size:
-        model_obstime = model_data
-        filtstr = '%Y-%m'
-    elif obs_data.time.size > model_data.time.size:
-        print('Observation data appears to be a finer time resolution than model data')
-        raise
-    elif obs_data.attrs['monthly']:
+    ## Check if obs are monthly or daily
+    if obs_data.attrs['monthly']:
         # if obs_data is monthly, take monthly mean of model data
         model_obstime = model_data.resample(time='MS').mean()
         filtstr = '%Y-%m'
@@ -127,6 +121,7 @@ def mopitt_l3_pairing(model_data,obs_data,co_ppbv_varname,global_model=True):
         filtstr = '%Y-%m-%d'
     else:
         # check frequency of model data 
+        # Should not get here.
         tstep = xr.infer_freq(model_data.time.dt.round('D'))
         if tstep == 'MS' or tstep == 'M':
             model_obstime = model_data
