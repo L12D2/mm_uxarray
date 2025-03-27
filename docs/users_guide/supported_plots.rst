@@ -5,8 +5,9 @@ Model to Model Comparisons
 --------------------------
 Under development. 
 
-See the `Spatial Verification in MELODIES-MONET <https://github.com/orgs/NOAA-CSL/projects/6>`_ 
-project on GitHub to learn about current and future development.
+Please refer to the
+`MELODIES MONET project board <https://github.com/orgs/NOAA-CSL/projects/6>`__ 
+to learn more about current and future development plans.
 
 Model to Observation Comparisons
 ---------------------------------
@@ -45,6 +46,12 @@ Surface Evaluation
    results overlaid in markers averaged over the analysis window with
    options to specify the domain.  
   
+.. note::
+   For "spatial_bias", "spatial_overlay", and "spatial_bias_exceedance" plots, if ``domain_type`` is 'all' 
+   and ``domain_name`` is 'CONUS' the following extent will be used for visual effect only: 
+   ``[-130.0, -60.0, 25.0, 50.0]``. This extent will not impact any calculations like spatial 
+   averages or statistics.
+
 .. figure:: /_static/figures/plot_grp5.boxplot.OZONE.2019-08-01_12.2019-08-11_12.all.CONUS.png
    :scale: 25 %
 
@@ -66,19 +73,50 @@ Surface Evaluation
 
    **Critical Success Index** Plot of the Critical Success Index, as commonly used in Forecast evaluation.
 
-See the `Expand Surface Observations in MELODIES-MONET <https://github.com/orgs/NOAA-CSL/projects/6>`_ 
-project on GitHub to learn about current and future development.
+Please refer to the
+`MELODIES MONET project board <https://github.com/orgs/NOAA-CSL/projects/6>`__ 
+under milestone "Surface and Aircraft Evaluation Version 2" to learn more about our current and future development plans.
 
 Aircraft Evaluation 
 ^^^^^^^^^^^^^^^^^^^
-Under development. 
+Timeseries, Taylor, and BOX-plots described above in Surface Evaluation can also be created for aircraft evaluation. 
+Aircraft specific plots are described below:
 
-See the `Incorporate Aircraft Evaluation in MELODIES-MONET <https://github.com/orgs/NOAA-CSL/projects/6>`_ 
-project on GitHub to learn about current and future development.
+.. figure:: /_static/figures/plot_grp1.timeseries.CO_LGR.2023-06-27_00.2023-06-28_23.all.LosAngeles.png
+
+   **Timeseries with Altitude** - Identical to the Timeseries plot described above for surface evaluation. For aircraft evaluation,
+   users can optionally plot altitude on the secondary right y-axis.
+
+.. figure:: /_static/figures/plot_grp2.vertprofile.NO2_LIF.2023-06-27_00.2023-06-28_23.all.LosAngeles.png
+
+   **Vertical Profile** - Plot comparing one or more model results with altitude (y-axis)
+   versus  one observation (x-axis) over the analysis window.
+
+.. figure:: /_static/figures/plot_grp3.violin.O3_CL.2023-06-27_00.2023-06-28_23.all.LosAngeles.png
+   :scale: 15 %
+
+   **Violin** - Violin plot comparing one or more model results with one
+   observation over the analysis window.
+
+.. figure:: /_static/figures/plot_grp4.scatter_density.O3_CL.2023-06-27_00.2023-06-28_23.all.LosAngeles_aeromma_vs_ufsaqm.png
+   :scale: 25 %
+
+   **Scatter Density** - Scatter density plot comparing one model results with one
+   observation over the analysis window. This plot type has two options: a) scatter plot: model and observation values as scatter dots or markers, b) kernel density estimate (KDE) plot which visually represents the probability density of observation and model values as continuous variable (shown in the example figure above). Note: for multiple models being compared to one observation, each model-observation set would have a separate scatter plot. 
+
+.. figure:: /_static/figures/plot_grp5.curtain.O3_CL_RYERSON.2019-09-05_12.2019-09-06_00.all.CONUS_firexaq_vs_wrfchem_v4.2.png
+
+   **Curtain** - Curtain plot comparing one model results with one
+   observation over the analysis window. Note: for multiple models being compared to one observation, each model-observation set would have a separate curtain plot.
+
+Please refer to the
+`MELODIES MONET project board <https://github.com/orgs/NOAA-CSL/projects/6>`__ 
+under milestone "Surface and Aircraft Evaluation Version 2" to learn more about our current and future development plans.
 
 Satellite Evaluation 
 ^^^^^^^^^^^^^^^^^^^^
 Under development.
 
-See the `Incorporate Satellite Evaluation in MELODIES-MONET <https://github.com/orgs/NOAA-CSL/projects/6>`_ 
-project on GitHub to learn about current and future development.
+Please refer to the
+`MELODIES MONET project board <https://github.com/orgs/NOAA-CSL/projects/6>`__ 
+under milestone "Satellite Evaluation Version 2" to learn more about our current and future development plans.

@@ -116,9 +116,9 @@ def mopitt_l3_pairing(model_data,obs_data,co_ppbv_varname,global_model=True):
         print('satellite_utilities: xesmf module not found')
         raise
     
-    # Aggregate time-step, if needed
-    ## Check if same number of timesteps:
+    ## Check if obs are monthly or daily
     if obs_data.attrs['monthly']:
+        # if obs_data is monthly, take monthly mean of model data
         model_obstime = model_data.resample(time='MS').mean()
         filtstr = '%Y-%m'
     elif not obs_data.attrs['monthly']:
@@ -127,6 +127,7 @@ def mopitt_l3_pairing(model_data,obs_data,co_ppbv_varname,global_model=True):
         filtstr = '%Y-%m-%d'
     else:
         # check frequency of model data 
+        # Should not get here.
         tstep = xr.infer_freq(model_data.time.dt.round('D'))
         if tstep == 'MS' or tstep == 'M':
             model_obstime = model_data
