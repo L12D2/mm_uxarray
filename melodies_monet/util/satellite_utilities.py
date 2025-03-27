@@ -287,11 +287,11 @@ def omps_nm_pairing(model_data,obs_data,ozone_ppbv_varname):
 
     
     du_fac = 1.0e-5*6.023e23/28.97/9.8/2.687e19 # conversion factor; moves model from ppbv to dobson
-    pair_variables = ['dp_pa',ozone_ppbv_varname]
+    pair_variables = ['dp_pa',ozone_ppbv_varname[0]]
     paired_ds = space_and_time_pairing(model_data,obs_data,pair_variables)
     
     # calculate ozone column, no averaging kernel or apriori applied.
-    col = np.nansum(du_fac*(paired_ds['dp_pa']/100.)*paired_ds['o3vmr'],axis=0) # new dimensions will be (satellite_x, satellite_y)
+    col = np.nansum(du_fac*(paired_ds['dp_pa']/100.)*paired_ds[ozone_ppbv_varname[0]],axis=0) # new dimensions will be (satellite_x, satellite_y)
     ds = xr.Dataset({ozone_ppbv_varname[0]: (['time','y'],col),
                      'ozone_column':(['time','y'],obs_data.ozone_column.values)
                                },
