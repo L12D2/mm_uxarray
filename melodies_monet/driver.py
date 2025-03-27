@@ -1395,11 +1395,11 @@ class analysis:
                             model_obj = sutil.mod_to_overpasstime(model_obj,overpass_datetime,partial_col=no2_varname)
                             # enforce dimension order is time, z, y, x
                             model_obj = model_obj.transpose('time','z','y','x',...)
-                       else:
-                           print('Warning: The pairing_kwarg mod_to_overpass is False.')
-                           print('Pairing will proceed assuming that the model data is already at overpass time.')
-                           from .util.tools import calc_partialcolumn
-                           model_obj[f'{no2_varname}_col'] = calc_partialcolumn(model_obj,var=no2_varname)
+                        else:
+                            print('Warning: The pairing_kwarg mod_to_overpass is False.')
+                            print('Pairing will proceed assuming that the model data is already at overpass time.')
+                            from .util.tools import calc_partialcolumn
+                            model_obj[f'{no2_varname}_col'] = calc_partialcolumn(model_obj,var=no2_varname)
                         if pairing_kws['apply_ak'] == True:
                             paired_data = no2util.trp_interp_swatogrd_ak(obs.obj, model_obj,no2varname=no2_varname)
                         else:
