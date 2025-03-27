@@ -605,8 +605,10 @@ class model:
 
         else:
             print('**** Reading Unspecified model output. Take Caution...')
-            if len(self.files) >= 1:
+            if len(self.files) > 1:
                 self.obj = xr.open_mfdataset(self.files,**self.mod_kwargs)
+            else:
+                self.obj = xr.open_dataset(self.files[0],**self.mod_kwargs)
         self.mask_and_scale()
         self.rename_vars() # rename any variables as necessary 
         self.sum_variables()
