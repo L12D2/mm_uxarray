@@ -601,7 +601,8 @@ class model:
                 self.obj = mio.models.raqms.open_mfdataset(file_list,**self.mod_kwargs)
             else:
                 self.obj = mio.models.raqms.open_dataset(file_list)
-            self.obj = self.obj.rename({'ptrop':'pres_pa_trop'})
+            if 'ptrop' in self.obj and 'pres_pa_trop' not in self.obj:
+                self.obj = self.obj.rename({'ptrop':'pres_pa_trop'})
 
         else:
             print('**** Reading Unspecified model output. Take Caution...')
