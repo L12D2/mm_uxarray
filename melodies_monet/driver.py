@@ -1650,8 +1650,6 @@ class analysis:
                         p = self.paired[p_label]
                         obs_type = p.type
 
-
-                        
                         # find the pair model label that matches the obs var
                         index = p.obs_vars.index(obsvar)
                         modvar = p.model_vars[index]
