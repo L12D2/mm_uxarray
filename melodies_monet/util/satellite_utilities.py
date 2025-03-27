@@ -151,8 +151,6 @@ def mopitt_l3_pairing(model_data,obs_data,co_ppbv_varname,global_model=True):
     # MEB: loop over time outside of regrid lowers memory usage
     for t in range(obs_data.time.size):
         obs_day = obs_data.time[t].dt.strftime(filtstr)
-        print(filtstr)
-        print(pressure_model_regrid.sel(time=obs_day))
         co_regrid[t] = vertical_regrid(pressure_model_regrid.sel(time=obs_day).values.squeeze(), 
                                        co_model_regrid.sel(time=obs_day).values.squeeze(), 
                                        obs_data['pressure'][t].values)
@@ -227,8 +225,6 @@ def space_and_time_pairing(model_data,obs_data,pair_variables):
     mod_nf,mod_nz,mod_nx,mod_ny = model_data[pair_variables[0]].shape # assumes model data is structured (time,z,lon,lat). lon/lat dimension order likely unimportant
     obs_nz = obs_data['pressure'].shape # assumes 1d pressure field in observation set
     obs_nx,obs_ny = obs_data['longitude'].shape # assumes 2d lat/lon fields in observation ser
-    print(pair_variables)
-    print(mod_nz,obs_nx,obs_ny)
     # initialize dictionary and arrays for interpolated model data
     ds = {i:np.zeros((mod_nz,obs_nx,obs_ny)) for i in pair_variables}
     
