@@ -397,8 +397,6 @@ class observation:
                         print('The variable name, {}, already exists and cannot be created with variable_summing.'.format(var_new))
                         raise ValueError
                     var_new_info = self.variable_summing[var_new]
-                    if self.variable_dict is None:
-                        self.variable_dict = {}
                     self.variable_dict[var_new] = var_new_info
                     for i,var in enumerate(var_new_info['vars']):
                         if i ==0:
@@ -1628,20 +1626,27 @@ class analysis:
 
             # first get the observational obs labels
 
-            for p_index, p_label in enumerate(pair_labels):
-                p = self.paired[p_label]
-                obs_vars = p.obs_vars
-                obs_type = p.type
-                # loop through obs variables
-                for obsvar in obs_vars:
-                    # Loop also over the domain types. So can easily create several overview and zoomed in plots.
-                    domain_types = grp_dict.get('domain_type', [None])
-                    domain_names = grp_dict.get('domain_name', [None])
-                    domain_infos = grp_dict.get('domain_info', {})
-                    for domain in range(len(domain_types)):
-                        domain_type = domain_types[domain]
-                        domain_name = domain_names[domain]
-                        domain_info = domain_infos.get(domain_name, None)
+            obs_vars = []
+            for pair_label in pair_labels:
+                obs_vars.extend(self.paired[pair_label].obs_vars)
+            # Guarantee uniqueness of obs_vars, without altering order
+            obs_vars = list(dict.fromkeys(obs_vars))
+
+            # loop through obs variables
+            for obsvar in obs_vars:
+                # Loop also over the domain types. So can easily create several overview and zoomed in plots.
+                domain_types = grp_dict.get('domain_type', [None])
+                domain_names = grp_dict.get('domain_name', [None])
+                domain_infos = grp_dict.get('domain_info', {})
+                # Use only pair_labels containing obs_var
+                use_pair_labels = [p for p in pair_labels if obsvar in self.paired[p].obs_vars]
+                for domain in range(len(domain_types)):
+                    domain_type = domain_types[domain]
+                    domain_name = domain_names[domain]
+                    domain_info = domain_infos.get(domain_name, None)
+                    for p_index, p_label in enumerate(use_pair_labels):
+                        p = self.paired[p_label]
+                        obs_type = p.type
 
 
                         
