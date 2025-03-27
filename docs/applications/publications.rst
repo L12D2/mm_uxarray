@@ -4,19 +4,17 @@ Publications
 Papers Describing MELODIES MONET
 --------------------------------
 
-MONET development is described in the following paper:
+MONET version 1.0 (which included what is now MONETIO) development is described in the following paper:
 
 * Baker, B. and Pan, L.: Overview of the Model and Observation Evaluation 
   Toolkit (MONET) Version 1.0 for Evaluating Atmospheric Transport Models, Atmosphere, 8, 
   no. 11, 210, https://doi.org/10.3390/atmos8110210, 2017.
 
-MELODIES MONET development is described in the following papers:
+MELODIES MONET version 1, MONET version 2, and MONETIO version 0.2 development are described in the following papers:
 
-* A paper describing surface and aircraft capabilities in version 1 
-  of MELODIES MONET is currently being drafted.
+* A paper describing surface and aircraft capabilities is in preparation.
 
-* A paper describing satellite capabilities in version 1 
-  of MELODIES MONET is currently being drafted.
+* A paper describing satellite capabilities is in preparation.
 
 Papers Using MELODIES MONET
 ---------------------------
