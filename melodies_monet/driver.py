@@ -1641,12 +1641,12 @@ class analysis:
                 domain_names = grp_dict.get('domain_name', [None])
                 domain_infos = grp_dict.get('domain_info', {})
                 # Use only pair_labels containing obs_var
-                use_pair_labels = [p for p in pair_labels if obsvar in self.paired[p].obs_vars]
+                pair_labels_obsvar = [p for p in pair_labels if obsvar in self.paired[p].obs_vars]
                 for domain in range(len(domain_types)):
                     domain_type = domain_types[domain]
                     domain_name = domain_names[domain]
                     domain_info = domain_infos.get(domain_name, None)
-                    for p_index, p_label in enumerate(use_pair_labels):
+                    for p_index, p_label in enumerate(pair_labels_obsvar):
                         p = self.paired[p_label]
                         obs_type = p.type
 
