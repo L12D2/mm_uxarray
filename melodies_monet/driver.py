@@ -1265,7 +1265,7 @@ class analysis:
                     self.paired[label] = p
                     # write_util.write_ncf(p.obj,p.filename) # write out to file
 
-                elif obs.obs_type.lower() == 'ozone_sonder':
+                elif obs.obs_type.lower() == 'sonde':
                     from .util.tools import vert_interp
                     # convert this to pandas dataframe unless already done because second time paired this obs
                     if not isinstance(obs.obj, pd.DataFrame):
@@ -1274,15 +1274,16 @@ class analysis:
                     obs.obj = obs.obj.reset_index().dropna(subset=['pressure_obs','latitude','longitude']).set_index('time')
  
                     import datetime 
-                    plot_dict_ozone_sonder = self.control_dict['plots']
-                    for grp_ozone_sonder, grp_dict_ozone_sonder in plot_dict_ozone_sonder.items():
-                        plot_type_ozone_sonder = grp_dict_ozone_sonder['type']
-                        plot_os_type_list_all = ['vertical_single_date','vertical_boxplot_os','density_scatter_plot_os']
-                        if plot_type_ozone_sonder in plot_os_type_list_all:
-                           station_name_os = grp_dict_ozone_sonder['station_name']
-                           cds_os = grp_dict_ozone_sonder['compare_date_single']
-                           obs.obj=obs.obj.loc[obs.obj['station']==station_name_os[0]]
-                           obs.obj=obs.obj.loc[datetime.datetime(cds_os[0],cds_os[1],cds_os[2],cds_os[3],cds_os[4],cds_os[5])]
+                    plot_dict_sonde = self.control_dict['plots']
+                    for grp_sonde, grp_dict_sonde in plot_dict_sonde.items():
+                        plot_type_sonde = grp_dict_sonde['type']
+                        plot_sonde_type_list_all = ['vertical_single_date','vertical_boxplot_os','density_scatter_plot_os']
+                        if plot_type_sonde in plot_sonde_type_list_all:
+                           station_name_sonde = grp_dict_sonde['station_name']
+                           cds_sonde = grp_dict_sonde['compare_date_single']
+                           obs.obj=obs.obj.loc[obs.obj['station']==station_name_sonde[0]]
+                           obs.obj=obs.obj.loc[datetime.datetime(
+                               cds_sonde[0],cds_sonde[1],cds_sonde[2],cds_sonde[3],cds_sonde[4],cds_sonde[5])]
                            break
                    
                     # do the facy trick to convert to get something useful for MONET
@@ -1297,7 +1298,7 @@ class analysis:
                     print('In pair function, After pairing: ', paired_data)
                     # this outputs as a pandas dataframe.  Convert this to xarray obj
                     p = pair()
-                    p.type = 'ozone_sonder'
+                    p.type = 'sonde'
                     p.radius_of_influence = None
                     p.obs = obs.label
                     p.model = mod.label
@@ -1556,7 +1557,7 @@ class analysis:
         else: 
             from .plots import surfplots as splots, savefig
             from .plots import aircraftplots as airplots
-            from .plots import ozone_sonder_plots as sonderplots
+            from .plots import sonde_plots as sondeplots
         from .plots import xarray_plots as xrplots
         if not self.add_logo:
             savefig.keywords.update(decorate=False)
@@ -1595,7 +1596,7 @@ class analysis:
                 region_list = grp_dict['region_list']
                 model_name_list = grp_dict['model_name_list']     
 
-            #read-in special settings for ozone sonder related plots
+            #read-in special settings for ozone sonde related plots
             if plot_type in {'vertical_single_date', 'vertical_boxplot_os', 'density_scatter_plot_os'}:
                 altitude_range = grp_dict['altitude_range']
                 altitude_method = grp_dict['altitude_method']
@@ -1788,7 +1789,7 @@ class analysis:
                             pairdf_all = pairdf_all.loc[pairdf_all[grp_var].isin(grp_select[grp_var].values)]
 
                         # Drop NaNs if using pandas 
-                        if obs_type in ['pt_sfc','aircraft','mobile','ground','ozone_sonder']: 
+                        if obs_type in ['pt_sfc','aircraft','mobile','ground','sonde']: 
                             if grp_dict['data_proc']['rem_obs_nan'] == True:
                                 # I removed drop=True in reset_index in order to keep 'time' as a column.
                                 pairdf = pairdf_all.reset_index().dropna(subset=[modvar, obsvar])
@@ -2214,7 +2215,7 @@ class analysis:
                                 comb_bx, label_bx = splots.calculate_boxplot(pairdf, pairdf_reg, column=obsvar, label=p.obs, plot_dict=obs_dict)
                             comb_bx, label_bx = splots.calculate_boxplot(pairdf, pairdf_reg, column=modvar, label=p.model, plot_dict=plot_dict, comb_bx = comb_bx, label_bx = label_bx)
                             if p_index == len(pair_labels) - 1:
-                                sonderplots.make_vertical_single_date(pairdf,
+                                sondeplots.make_vertical_single_date(pairdf,
                                                                       comb_bx,
                                                                       altitude_range=altitude_range,
                                                                       altitude_method=altitude_method,
@@ -2251,7 +2252,7 @@ class analysis:
                             comb_bx, label_bx = splots.calculate_boxplot(pairdf, pairdf_reg, column=modvar, label=p.model, plot_dict=plot_dict, comb_bx = comb_bx, label_bx = label_bx)
 
                             if p_index == len(pair_labels) - 1:
-                                sonderplots.make_vertical_boxplot_os(pairdf,
+                                sondeplots.make_vertical_boxplot_os(pairdf,
                                                                      comb_bx,
                                                                      label_bx=label_bx,
                                                                      altitude_range=altitude_range,
@@ -2284,7 +2285,7 @@ class analysis:
 
                             #begin plotting
                             plt.figure()
-                            sonderplots.density_scatter_plot_os(pairdf,altitude_range,vmin,vmax,station_name,altitude_method,cmap_method,modvar,obsvar)
+                            sondeplots.density_scatter_plot_os(pairdf,altitude_range,vmin,vmax,station_name,altitude_method,cmap_method,modvar,obsvar)
                             plt.title('Scatter plot for '+model_name_list[0]+' vs. '+model_name_list[p_index+1]+'\nat '+str(station_name[0])+' on '+str(release_time)+' UTC',fontsize=15)
                             plt.tight_layout()
                             savefig(outname+"."+p_label+"."+"-".join(altitude_method[0].split())+".png", loc=monet_logo_position[0], logo_height=100, dpi=300)

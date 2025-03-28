@@ -103,7 +103,7 @@ Pairing capabilities include time, horizontal, and vertical interpolation. Horiz
 nearest neighbor approach. Vertical interpolation uses linear interpolation and nearest neighbor for extrapolation 
 with a warning if users are pairing points above the model top, which is not recommended. Users can evaluate aircraft data, 
 ozonesonde data, mobile or walking data, and single ground site data. To use these options in MELODIES MONET 
-specify "obs_type" equal to "aircraft", "ozone_sonder", "mobile", or "ground" in your YAML file. The table 
+specify "obs_type" equal to "aircraft", "sonde", "mobile", or "ground" in your YAML file. The table 
 below describes these options in more detail. Available datafile formats include NetCDF, ICARTT, and CSV.
 
 .. list-table:: Description of YAML File Options for "obs_type" For Campaign Data
@@ -114,8 +114,8 @@ below describes these options in more detail. Available datafile formats include
      - Description of Pairing
    * - "aircraft"
      - Aircraft - Time, horizontal, and vertical interpolation across the entire dataset.
-   * - "ozone_sonder"
-     - | Ozonesonde - Vertical interpolation across the entire dataset. Time and 
+   * - "sonde"
+     - | Sonde - Vertical interpolation across the entire dataset. Time and 
        | horizontal interpolation at a fixed release time and location.
    * - "mobile"
      - Mobile - Time and horizontal interpolation across the entire dataset at the surface.

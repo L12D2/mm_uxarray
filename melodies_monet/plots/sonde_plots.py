@@ -7,7 +7,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 sns.set_context('paper')
 
-#Define ozone sonder, vertical single date plot
+#Define ozone sonde, vertical single date plot
 def make_vertical_single_date(df,comb_bx,altitude_range,altitude_method,vmin, vmax,station_name,release_time,label_bx,fig_dict,text_dict):
     ALT_sl = df['altitude']
     O3_OBS = comb_bx[comb_bx.columns[0]].to_list()
@@ -60,7 +60,7 @@ def make_vertical_single_date(df,comb_bx,altitude_range,altitude_method,vmin, vm
     ax.set_ylabel(alt_p_name,fontsize=text_kwargs['fontsize']*0.8)
     ax.set_xlabel(ylabel+' (ppbv)',fontsize=text_kwargs['fontsize']*0.8)
 
-#Define ozone sonder, vertical single date plot
+#Define ozone sonde, vertical single date plot
 def make_vertical_boxplot_os(df,comb_bx,label_bx,altitude_range,altitude_method,vmin, vmax,altitude_threshold_list,station_name,release_time,fig_dict,text_dict):
     ALT_sl = df['altitude']
     O3_OBS = comb_bx[comb_bx.columns[0]].to_list()
@@ -161,7 +161,7 @@ def density_scatter_plot_os(df,altitude_range,vmin,vmax,station_name,altitude_me
     elif altitude_method[0] == 'sea level':
         height_value = 0
 
-    #get o3 model, o3 sonder (obs) and height
+    #get o3 model, o3 sonde (obs) and height
     df_short = df[df['altitude']<altitude_range[1]+height_value]
     ALT = df_short['altitude']-height_value
     O3_OBS = df_short[obsvar]  #'o3'
