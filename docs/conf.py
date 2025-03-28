@@ -10,7 +10,7 @@
 # -- Project information -----------------------------------------------------
 
 project = u'MELODIES-MONET'
-copyright = u'2022, NCAR/UCAR, NOAA'
+copyright = u'2022, NSF NCAR, CIRES'
 author = u'Rebecca Schwantes (NOAA), Barry Baker (NOAA), Louisa Emmons (NCAR), Rebecca Buchholz (NCAR)'
 
 # The short X.Y version
@@ -201,6 +201,8 @@ linkcheck_ignore = [
     "https://www2.cisl.ucar.edu/resources/conda-environments",
     # Sphinx 4.5 linkcheck having problem:
     "https://docs.github.com/en/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account",
+    "https://doi.org/10.3390/atmos8110210",
+    "https://doi.org/10.1021/acs.est.5c00902",
     # NCEI sites having problems
     "https://www.ncdc.noaa.gov/crn/",
     #PNAS sites having problems:

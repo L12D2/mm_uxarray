@@ -5,7 +5,7 @@ The need for MELODIES (Model EvaLuation using Observations, DIagnostics
 and Experiments Software) arose when the study of atmospheric chemistry 
 moved towards a unified approach. Specifically, the MUlti-scale 
 Infrastructure for Chemistry and Aerosols (MUSICA) developed by the 
-Atmospheric Chemistry Observations & Modeling (ACOM) Laboratory at NCAR 
+Atmospheric Chemistry Observations & Modeling (ACOM) Laboratory at NSF NCAR 
 simultaneously studies atmospheric composition across multiple scales. 
 New models required re-writing of old-code to handle the variable 
 resolution of model grids. Concurrently, measurement techniques and 

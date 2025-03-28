@@ -1,12 +1,12 @@
 MELODIES MONET
 ==============
 
-**MELODIES MONET** is a joint project between NCAR and NOAA to develop a 
+**MELODIES MONET** is a joint project between NSF NCAR and NOAA to develop a 
 modular framework that integrates existing and future diverse atmospheric 
 chemistry observational datasets with chemistry model results for the 
 evaluation of air quality and atmospheric composition. MELODIES MONET combines 
 the Model EvaLuation using Observations, DIagnostics and Experiments Software 
-(MELODIES) project at NCAR with the Model and ObservatioN Evaluation Toolkit 
+(MELODIES) project at NSF NCAR with the Model and ObservatioN Evaluation Toolkit 
 (MONET) project at NOAA to develop a python diagnostic package that is open 
 source, generic, portable, and model-agnostic. Overall, the project provides a 
 framework for evaluating a wide range of models in a more consistent manner. 
@@ -23,18 +23,15 @@ MONETIO please refer to:
 - https://monet-arl.readthedocs.io
 - https://monetio.readthedocs.io
 
-
-.. warning::
-   MELODIES MONET is currently under development. The code is public to 
-   encourage collaboration amongst the community. Do not publish results using 
-   MELODIES MONET without consulting the development team.
-   
 .. note::
    Please cite the following to acknowledge use of MELODIES MONET
 
-   - Baker, Barry; Pan, Li. 2017. “Overview of the Model and Observation Evaluation Toolkit (MONET) Version 1.0 for Evaluating Atmospheric Transport Models.” Atmosphere 8, no. 11: 210
+   - Baker, B. and Pan, L.: Overview of the Model and Observation Evaluation 
+     Toolkit (MONET) Version 1.0 for Evaluating Atmospheric Transport Models, Atmosphere, 8, 
+     no. 11, 210, https://doi.org/10.3390/atmos8110210, 2017.
 
-   - MELODIES - TBD
+   - Two MELODIES MONET development papers are currently in preparation. We will 
+     update this list when they are available.
 
 Funding
 -------
