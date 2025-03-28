@@ -1628,23 +1628,28 @@ class analysis:
 
             # first get the observational obs labels
 
-            for p_index, p_label in enumerate(pair_labels):
-                p = self.paired[p_label]
-                obs_vars = p.obs_vars
-                obs_type = p.type
-                # loop through obs variables
-                for obsvar in obs_vars:
-                    # Loop also over the domain types. So can easily create several overview and zoomed in plots.
-                    domain_types = grp_dict.get('domain_type', [None])
-                    domain_names = grp_dict.get('domain_name', [None])
-                    domain_infos = grp_dict.get('domain_info', {})
-                    for domain in range(len(domain_types)):
-                        domain_type = domain_types[domain]
-                        domain_name = domain_names[domain]
-                        domain_info = domain_infos.get(domain_name, None)
+            obs_vars = []
+            for pair_label in pair_labels:
+                obs_vars.extend(self.paired[pair_label].obs_vars)
+            # Guarantee uniqueness of obs_vars, without altering order
+            obs_vars = list(dict.fromkeys(obs_vars))
 
+            # loop through obs variables
+            for obsvar in obs_vars:
+                # Loop also over the domain types. So can easily create several overview and zoomed in plots.
+                domain_types = grp_dict.get('domain_type', [None])
+                domain_names = grp_dict.get('domain_name', [None])
+                domain_infos = grp_dict.get('domain_info', {})
+                # Use only pair_labels containing obs_var
+                pair_labels_obsvar = [p for p in pair_labels if obsvar in self.paired[p].obs_vars]
+                for domain in range(len(domain_types)):
+                    domain_type = domain_types[domain]
+                    domain_name = domain_names[domain]
+                    domain_info = domain_infos.get(domain_name, None)
+                    for p_index, p_label in enumerate(pair_labels_obsvar):
+                        p = self.paired[p_label]
+                        obs_type = p.type
 
-                        
                         # find the pair model label that matches the obs var
                         index = p.obs_vars.index(obsvar)
                         modvar = p.model_vars[index]
