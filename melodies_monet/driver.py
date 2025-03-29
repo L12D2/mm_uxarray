@@ -1962,6 +1962,7 @@ class analysis:
                             else:
                                 plot_kwargs['column']=modvar
                             plot_kwargs['label'] = p.model
+                            plot_kwargs['plot_dict'] = plot_dict
                             plot_kwargs['ax'] = ax
                             ax = make_timeseries(**plot_kwargs)
 
