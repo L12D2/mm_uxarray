@@ -32,17 +32,19 @@ def vertical_regrid(input_press, input_values, output_press):
             out_array[y,x,:] = f(xnew)
     return out_array
 
-def mod_to_overpasstime(modobj,opass_tms):
+def mod_to_overpasstime(modobj,opass_tms,partial_col=None):
     '''
     Interpolate model to satellite overpass time.
 
     Parameters
     ----------
+
     modobj : xarray.Dataset
         model data
     opass_tms : pandas.DatetimeIndex
         satellite overpass local time
-
+    partial_col : str
+        variable to calculate partial columns for
     Output
     ------
     outmod : xarray.Dataset 
@@ -76,6 +78,11 @@ def mod_to_overpasstime(modobj,opass_tms):
     #print(outmod)
     outmod = xr.concat(outmod,dim='time')
     outmod['time'] = (['time'],opass_tms)
+    
+    if partial_col:
+        from .tools import calc_partialcolumn        
+        outmod[f'{partial_col}_col'] = calc_partialcolumn(outmod,var=partial_col)
+        
     return outmod
 
 def check_timestep(model_data,obs_data):
@@ -109,7 +116,6 @@ def mopitt_l3_pairing(model_data,obs_data,co_ppbv_varname,global_model=True):
         print('satellite_utilities: xesmf module not found')
         raise
     
-    # Aggregate time-step, if needed
     ## Check if obs are monthly or daily
     if obs_data.attrs['monthly']:
         # if obs_data is monthly, take monthly mean of model data
@@ -220,7 +226,6 @@ def space_and_time_pairing(model_data,obs_data,pair_variables):
     mod_nf,mod_nz,mod_nx,mod_ny = model_data[pair_variables[0]].shape # assumes model data is structured (time,z,lon,lat). lon/lat dimension order likely unimportant
     obs_nz = obs_data['pressure'].shape # assumes 1d pressure field in observation set
     obs_nx,obs_ny = obs_data['longitude'].shape # assumes 2d lat/lon fields in observation ser
-    
     # initialize dictionary and arrays for interpolated model data
     ds = {i:np.zeros((mod_nz,obs_nx,obs_ny)) for i in pair_variables}
     
@@ -283,11 +288,11 @@ def omps_nm_pairing(model_data,obs_data,ozone_ppbv_varname):
 
     
     du_fac = 1.0e-5*6.023e23/28.97/9.8/2.687e19 # conversion factor; moves model from ppbv to dobson
-    pair_variables = ['dp_pa',ozone_ppbv_varname]
+    pair_variables = ['dp_pa',ozone_ppbv_varname[0]]
     paired_ds = space_and_time_pairing(model_data,obs_data,pair_variables)
     
     # calculate ozone column, no averaging kernel or apriori applied.
-    col = np.nansum(du_fac*(paired_ds['dp_pa']/100.)*paired_ds['o3vmr'],axis=0) # new dimensions will be (satellite_x, satellite_y)
+    col = np.nansum(du_fac*(paired_ds['dp_pa']/100.)*paired_ds[ozone_ppbv_varname[0]],axis=0) # new dimensions will be (satellite_x, satellite_y)
     ds = xr.Dataset({ozone_ppbv_varname[0]: (['time','y'],col),
                      'ozone_column':(['time','y'],obs_data.ozone_column.values)
                                },
