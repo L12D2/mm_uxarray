@@ -1238,14 +1238,27 @@ def get_openaq(
             "Parameters. "
             "Use '-p' more than once to get multiple parameters. "
             "Other examples: 'no', 'no2', 'nox', 'so2', 'co', 'bc'. "
-            "Only applicable to the web API methods ('api-v2')."
+            "Only applicable to the web API methods ('api-v*')."
         )
     ),
     reference_grade: bool = typer.Option(True, help="Include reference-grade sensors."),
     low_cost: bool = typer.Option(False, help="Include low-cost sensors."),
-    method: str = typer.Option("api-v2", "-m", "--method", help=(
+    country: List[str] = typer.Option(None, "-c", "--country",
+        help=(
+            "Two-letter country code(s). (US, CA, MX, ...). "
+            "Use more than once to specify multiple countries."
+        )
+    ),
+    method: str = typer.Option("api-v3", "-m", "--method", help=(
             "Method (reader) to use for fetching data. "
-            "Options: 'api-v2', 'openaq-fetches'."
+            "Options: 'api-v3', 'api-v2', 'openaq-fetches'."
+        )
+    ),
+    sensor_limit: int = typer.Option(None,
+        help=(
+            "Limit the number of sensors to fetch data for. "
+            "This is useful for testing or debugging. "
+            "Only applicable to the 'api-v3' method."
         )
     ),
     compress: bool = typer.Option(True, help=(
@@ -1274,7 +1287,7 @@ def get_openaq(
 
     typer.echo(HEADER)
 
-    if method not in {"api-v2", "openaq-fetches"}:
+    if method not in {"api-v3", "api-v2", "openaq-fetches"}:
         typer.secho(f"Error: method {method!r} not recognized", fg=ERROR_COLOR)
         raise typer.Exit(2)
 
@@ -1283,7 +1296,7 @@ def get_openaq(
 
     if method in {"openaq-fetches"}:
         dates = pd.date_range(start_date, end_date, freq="D")
-    elif method in {"api-v2"}:
+    elif method.startswith("api-v"):
         dates = pd.date_range(start_date, end_date, freq="h")
     else:
         raise AssertionError
@@ -1291,8 +1304,15 @@ def get_openaq(
         print("Dates:")
         print(dates)
 
-    if verbose and method in {"api-v2"}:
+    if not country:
+        country = None
+
+    if verbose and method.startswith("api-v"):
         print("Params:", param)
+    if verbose and method == "api-v3" and country is not None:
+        print("Country:", country)
+    if verbose and method == "api-v3":
+        print("Sensor limit:", sensor_limit)
 
     # Set destination and file name
     fmt = r"%Y%m%d"
@@ -1315,7 +1335,7 @@ def get_openaq(
         sensor_types.append("reference grade")
     if low_cost:
         sensor_types.append("low-cost sensor")
-    if not sensor_types and method in {"api-v2"}:
+    if not sensor_types and method.startswith("api-v"):
         typer.secho(
             "Error: no sensor types selected. Use --reference-grade and/or --low-cost",
             fg=ERROR_COLOR,
@@ -1345,15 +1365,29 @@ def get_openaq(
             # But seems like a few are actual time-wise lat/lon duplicates
             df = df.drop_duplicates(["time", "siteid"])
 
-        elif method == "api-v2":
-            df = mio.obs.openaq_v2.add_data(
-                dates,
+        elif method.startswith("api-v"):
+            kws = dict(
                 parameters=param,
                 sensor_type=sensor_types,
                 wide_fmt=True,
                 timeout=60,
                 retry=15,
                 threads=num_workers if num_workers > 1 else None,
+            )
+            if method == "api-v3":
+                kws.update(
+                    hourly=True,
+                    country=country,
+                    sensor_limit=sensor_limit,
+                )
+                func = mio.obs.openaq_v3.add_data
+            elif method == "api-v2":
+                func = mio.obs.openaq_v2.add_data
+            else:
+                raise AssertionError
+            df = func(
+                dates,
+                **kws,
             )
 
             dupes = df[df.duplicated(["time", "siteid"], keep=False)]
@@ -1367,10 +1401,14 @@ def get_openaq(
         else:
             raise AssertionError
 
-        # Drop times not on the hour
-        good = df.time == df.time.dt.floor("H")
-        typer.echo(f"Dropping {(~good).sum()}/{len(good)} rows that aren't on the hour.")
-        df = df[good]
+        if df.empty:
+            raise RuntimeError("No data found")
+
+        if method == "api-v2":
+            # Drop times not on the hour
+            good = df.time == df.time.dt.floor("H")
+            typer.echo(f"Dropping {(~good).sum()}/{len(good)} rows that aren't on the hour.")
+            df = df[good]
 
     with _timer("Forming xarray Dataset"):
         df = df.drop(columns=["index"], errors="ignore")
@@ -1409,7 +1447,25 @@ def get_openaq(
             for vn in ["city", "is_analysis"]:  # may have been dropped for being all null
                 if vn not in df.columns:
                     site_vns.remove(vn)
-
+        elif method == "api-v3":
+            df = df.drop(
+                columns=[
+                    "sensor_id",
+                    "period_label",
+                ],
+                errors="ignore",
+            )
+            site_vns = [
+                "siteid",  # real OpenAQ location ID
+                "latitude",
+                "longitude",
+                "utcoffset",
+                #
+                "country",
+                #
+                "is_mobile",
+                "is_monitor",
+            ]
         else:
             raise AssertionError
 
