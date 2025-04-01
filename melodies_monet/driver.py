@@ -12,8 +12,6 @@ import numpy as np
 import datetime
 
 
-from .util import write_util
-
 __all__ = (
     "pair",
     "observation",
@@ -156,8 +154,6 @@ class observation:
         from numpy import sort
         
         from . import tutorial
-        from .util import analysis_util
-        from .util import read_grid_util
 
         if self.file.startswith("example:"):
             example_id = ":".join(s.strip() for s in self.file.split(":")[1:])
@@ -526,9 +522,6 @@ class model:
         None
         """
         from .util import time_interval_subset as tsub
-        from .util import analysis_util
-        from .util import read_grid_util
-        from .util import regrid_util
 
         print(self.model.lower())
 
@@ -1018,10 +1011,6 @@ class analysis:
         -------
         None
         """
-        from .util import analysis_util
-        from .util import read_grid_util
-        from .util import regrid_util
-
         if 'obs' in self.control_dict:
             for obs in self.control_dict['obs']:
                 o = observation()
