@@ -1223,6 +1223,7 @@ def make_multi_boxplot(comb_bx, label_bx,region_bx,region_list = None, model_nam
     ax.set_xlabel('')
     ax.set_ylabel(ylabel,fontweight='bold',**text_kwargs)
     ax.tick_params(labelsize=text_kwargs['fontsize']*0.8)
+    plt.legend(fontsize=text_kwargs['fontsize']*0.8)
     if domain_type is not None and domain_name is not None:
         if domain_type == 'epa_region':
             ax.set_title('EPA Region ' + domain_name,fontweight='bold',**text_kwargs)
@@ -1655,7 +1656,7 @@ def Calc_Score(score_name_input,threshold_input, model_input, obs_input):
    
     return output_score
 
-def Plot_CSI(score_name_input,threshold_list_input, comb_bx_input,plot_dict,fig_dict,text_dict,domain_type,domain_name,model_name_list,threshold_tick_style):
+def Plot_CSI(column,score_name_input,threshold_list_input, comb_bx_input,plot_dict,fig_dict,text_dict,domain_type,domain_name,model_name_list,threshold_tick_style):
 
     CSI_output = []  #(2, threshold len)
     threshold_list = threshold_list_input
@@ -1695,7 +1696,7 @@ def Plot_CSI(score_name_input,threshold_list_input, comb_bx_input,plot_dict,fig_
         ax.set_ylabel(score_name_input,fontsize = text_kwargs['fontsize']*0.8)
         ax.tick_params(labelsize=text_kwargs['fontsize']*0.8)
         plt.ylim(0,1)
-        plt.legend()
+        plt.legend(fontsize=text_kwargs['fontsize']*0.6)
         plt.grid()
      
     #add '>' to xticks
@@ -1709,9 +1710,9 @@ def Plot_CSI(score_name_input,threshold_list_input, comb_bx_input,plot_dict,fig_
 
     if domain_type is not None and domain_name is not None:
         if domain_type == 'epa_region':
-            ax.set_title('EPA Region ' + domain_name,fontweight='bold',**text_kwargs)
+            ax.set_title(column+' EPA Region ' + domain_name,fontweight='bold',**text_kwargs)
         else:
-            ax.set_title(domain_name,fontweight='bold',**text_kwargs)
+            ax.set_title(column+' '+domain_name,fontweight='bold',**text_kwargs)
  
 
 
