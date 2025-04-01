@@ -131,9 +131,12 @@ class observation:
             f"    file={self.file!r},\n"
             f"    obj={repr(self.obj) if self.obj is None else '...'},\n"
             f"    type={self.type!r},\n"
-            f"    type={self.data_proc!r},\n"
+            f"    sat_type={self.sat_type!r},\n"
+            f"    data_proc={self.data_proc!r},\n"
             f"    variable_dict={self.variable_dict!r},\n"
             f"    resample={self.resample!r},\n"
+            f"    time_var={self.time_var!r},\n"
+            f"    regrid_method={self.regrid_method!r},\n"
             ")"
         )
 
@@ -462,12 +465,14 @@ class model:
         return (
             f"{type(self).__name__}(\n"
             f"    model={self.model!r},\n"
+            f"    is_global={self.is_global!r},\n"
             f"    radius_of_influence={self.radius_of_influence!r},\n"
             f"    mod_kwargs={self.mod_kwargs!r},\n"
             f"    file_str={self.file_str!r},\n"
             f"    label={self.label!r},\n"
             f"    obj={repr(self.obj) if self.obj is None else '...'},\n"
             f"    mapping={self.mapping!r},\n"
+            f"    variable_dict={self.variable_dict!r},\n"
             f"    label={self.label!r},\n"
             "    ...\n"
             ")"
@@ -747,6 +752,7 @@ class analysis:
             f"    debug={self.debug!r},\n"
             f"    save={self.save!r},\n"
             f"    read={self.read!r},\n"
+            f"    regrid={self.regrid!r},\n"
             ")"
         )
 
