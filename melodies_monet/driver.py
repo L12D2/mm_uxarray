@@ -142,7 +142,7 @@ class observation:
         and apply mask and scaling.
 
         Parameters
-        __________
+        ----------
         time_interval (optional, default None) : [pandas.Timestamp, pandas.Timestamp]
             If not None, restrict obs to datetime range spanned by time interval [start, end].
 
@@ -205,7 +205,7 @@ class observation:
                 self.obj['latitude'] = xr.ones_like(self.obj['time'],dtype=np.float64)*self.ground_coordinate['latitude']
                 self.obj['longitude'] = xr.ones_like(self.obj['time'],dtype=np.float64)*self.ground_coordinate['longitude']
             elif self.ground_coordinate and ~isinstance(self.ground_coordinate,dict): 
-                raise TypeError(f'The ground_coordinate option must be specified as a dict with keys latitude and longitude.')
+                raise TypeError('The ground_coordinate option must be specified as a dict with keys latitude and longitude.')
 
     def rename_vars(self):
         """Rename any variables in observation with rename set.
@@ -235,7 +235,7 @@ class observation:
         dataset read in from the associated file (self.file) by the satellite file reader
 
         Parameters
-        __________
+        ----------
         time_interval (optional, default None) : [pandas.Timestamp, pandas.Timestamp]
             If not None, restrict obs to datetime range spanned by time interval [start, end].
 
@@ -253,7 +253,8 @@ class observation:
                 print('Reading OMPS_NM')
                 if time_interval is not None:
                     flst = tsub.subset_OMPS_l2(self.file,time_interval)
-                else: flst = self.file
+                else:
+                    flst = self.file
 
                 self.obj = mio.sat._omps_nadir_mm.read_OMPS_nm(flst)
 
@@ -269,7 +270,8 @@ class observation:
                 print('Reading MOPITT')
                 if time_interval is not None:
                     flst = tsub.subset_mopitt_l3(self.file,time_interval)
-                else: flst = self.file
+                else:
+                    flst = self.file
                 self.obj = mio.sat._mopitt_l3_mm.open_dataset(flst, ['column','pressure_surf','apriori_col',
                                                                           'apriori_surf','apriori_prof','ak_col'])
 
@@ -513,7 +515,7 @@ class model:
         models, add the new model option to this module.
 
         Parameters
-        __________
+        ----------
         time_interval (optional, default None) : [pandas.Timestamp, pandas.Timestamp]
             If not None, restrict models to datetime range spanned by time interval [start, end].
 
@@ -747,6 +749,7 @@ class analysis:
             f"    read={self.read!r},\n"
             ")"
         )
+
     def read_control(self, control=None):
         """Read the input yaml file,
         updating various :class:`analysis` instance attributes.
@@ -908,7 +911,7 @@ class analysis:
         object for each of them, populating the :attr:`models` dict.
 
         Parameters
-        __________
+        ----------
         time_interval (optional, default None) : [pandas.Timestamp, pandas.Timestamp]
             If not None, restrict models to datetime range spanned by time interval [start, end].
         load_files (optional, default True): boolean
@@ -1001,7 +1004,7 @@ class analysis:
         populating the :attr:`obs` dict.
 
         Parameters
-        __________
+        ----------
         time_interval (optional, default None) : [pandas.Timestamp, pandas.Timestamp]
             If not None, restrict obs to datetime range spanned by time interval [start, end].
         load_files (optional, default True): boolean
@@ -1130,7 +1133,7 @@ class analysis:
         populating the :attr:`paired` dict.
 
         Parameters
-        __________
+        ----------
         time_interval (optional, default None) : [pandas.Timestamp, pandas.Timestamp]
             If not None, restrict pairing to datetime range spanned by time interval [start, end].
 
@@ -1139,7 +1142,6 @@ class analysis:
         -------
         None
         """
-        pairs = {}  # TODO: unused
         print('1, in pair data')
         for model_label in self.models:
             mod = self.models[model_label]
@@ -1796,9 +1798,9 @@ class analysis:
                                 pairdf = pairdf_all.reset_index().dropna(subset=[modvar, obsvar])
                             else:
                                 pairdf = pairdf_all.reset_index().dropna(subset=[modvar])
-                        elif obs_type in  ["sat_swath_sfc", "sat_swath_clm", 
-                                                                        "sat_grid_sfc", "sat_grid_clm", 
-                                                                        "sat_swath_prof"]: 
+                        elif obs_type in ["sat_swath_sfc", "sat_swath_clm", 
+                                          "sat_grid_sfc", "sat_grid_clm", 
+                                          "sat_swath_prof"]: 
                             # xarray doesn't need nan drop because its math operations seem to ignore nans
                             # MEB (10/9/24): Add statement to ensure model and obs variables have nans at the same place
                             pairdf = pairdf_all.where(pairdf_all[obsvar].notnull() & pairdf_all[modvar].notnull())
@@ -2392,7 +2394,7 @@ class analysis:
                             obs_label = p.obs
                             
                             try:
-                                mapping = self.control_dict['model'][model_label]['mapping'][obs_label]
+                                _ = self.control_dict['model'][model_label]['mapping'][obs_label]
                             except KeyError:
                                 print(f"Error: Mapping not found for model label '{model_label}' with observation label '{obs_label}' in scatter_density plot")
                                 continue  # Skip this iteration if mapping is not found
@@ -2446,7 +2448,9 @@ class analysis:
                             
                         elif plot_type.lower() == 'boxplot':
                             # squeeze the xarray for boxplot, M.Li
-                            if obs_type in  ["sat_swath_sfc", "sat_swath_clm", "sat_grid_sfc", "sat_grid_clm", "sat_swath_prof"]:
+                            if obs_type in ["sat_swath_sfc", "sat_swath_clm",
+                                            "sat_grid_sfc", "sat_grid_clm",
+                                            "sat_swath_prof"]:
                                 pairdf_sel = pairdf.squeeze()
                             else: 
                                 pairdf_sel = pairdf
