@@ -1186,7 +1186,7 @@ def make_multi_boxplot(comb_bx, label_bx,region_bx,region_list = None, model_nam
     #Define characteristics of boxplot.
     boxprops = {'edgecolor': 'k', 'linewidth': 1.5}
     lineprops = {'color': 'k', 'linewidth': 1.5}
-    boxplot_kwargs = {'boxprops': boxprops, 'medianprops': lineprops,  # TODO: unused
+    boxplot_kwargs = {'boxprops': boxprops, 'medianprops': lineprops,
                   'whiskerprops': lineprops, 'capprops': lineprops,
                   'fliersize' : 2.0, 
                   'flierprops': dict(marker='*', 
@@ -1217,7 +1217,7 @@ def make_multi_boxplot(comb_bx, label_bx,region_bx,region_list = None, model_nam
 
     tdf =pd.concat(to_concat)
     acro = region_list
-    sns.boxplot(x='Regions',y='Value',hue='model',data=tdf.loc[tdf.Regions.isin(acro)], order = acro, showfliers=False)
+    sns.boxplot(x='Regions',y='Value',hue='model',data=tdf.loc[tdf.Regions.isin(acro)], order=acro, showfliers=False, **boxplot_kwargs)
     ax.set_xlabel('')
     ax.set_ylabel(ylabel,fontweight='bold',**text_kwargs)
     ax.tick_params(labelsize=text_kwargs['fontsize']*0.8)
