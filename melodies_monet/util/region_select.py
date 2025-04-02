@@ -6,11 +6,9 @@ Masking arbitrary regions with regionmask
 """
 
 from functools import lru_cache
-import re
 import warnings
 
 import pandas as pd
-import requests
 
 from melodies_monet.util.tools import get_epa_region_bounds, get_giorgi_region_bounds
 

@@ -12,7 +12,6 @@ import glob
 import logging
 import warnings
 
-import monetio as mio
 import numba
 import numpy as np
 import xarray as xr
