@@ -112,7 +112,7 @@ def make_vertical_boxplot_os(df,comb_bx,label_bx,altitude_range,altitude_method,
         alt_p_name = 'ALT-ground level (km)'
 
     output_list_obs = split_by_threshold(O3_OBS,alt_p,altitude_threshold_list)
-    bplot_obs=ax.boxplot(output_list_obs,vert = False,patch_artist=True,
+    _=ax.boxplot(output_list_obs,vert = False,patch_artist=True,
                          whiskerprops=dict(color=label_bx[0]['color']),
                          capprops=dict(color=label_bx[0]['color']),
                          boxprops=dict(facecolor='w',color=label_bx[0]['color']),
@@ -124,7 +124,7 @@ def make_vertical_boxplot_os(df,comb_bx,label_bx,altitude_range,altitude_method,
 
     for i in range(len(O3_MODEL_ALL)):
         output_list_model = split_by_threshold(O3_MODEL_ALL[i],alt_p,altitude_threshold_list)
-        bplot_model=ax.boxplot(output_list_model,vert = False,patch_artist=True,
+        _=ax.boxplot(output_list_model,vert = False,patch_artist=True,
                                whiskerprops=dict(color=label_bx[i+1]['color']),
                                capprops=dict(color=label_bx[i+1]['color']),
                                boxprops=dict(facecolor='w',color=label_bx[i+1]['color']),
