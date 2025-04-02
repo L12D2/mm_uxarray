@@ -1066,7 +1066,7 @@ def make_boxplot(comb_bx, label_bx, ylabel = None, vmin = None, vmax = None, out
     if ylabel is None:
         ylabel = label_bx[0]['column']
 
-    #Fix the order and palate colors
+    #Fix the order and palette colors
     order_box = []
     pal = {}
     for i in range(len(label_bx)):
@@ -1171,13 +1171,20 @@ def make_multi_boxplot(comb_bx, label_bx,region_bx,region_list = None, model_nam
     if ylabel is None:
         ylabel = label_bx[0]['column']
     
-    #Fix the order and palate colors
+    #Fix the order and palette colors
     order_box = []
     pal = {}
     for i in range(len(label_bx)):
         order_box.append(label_bx[i]['label'])
         pal[label_bx[i]['label']] = label_bx[i]['color']
-        
+    #Use model_name_list names instead if we have
+    if model_name_list is None:
+        model_name_list = order_box
+    else:
+        for old_label, new_label in zip(order_box, model_name_list):
+            pal[new_label] = pal.pop(old_label)
+        order_box = model_name_list
+
     #Make plot
     if fig_dict is not None:
         f,ax = plt.subplots(**fig_dict)    
