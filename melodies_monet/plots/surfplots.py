@@ -2,12 +2,8 @@
 #
 #Code to create plots for surface observations
 
-import os
-import monetio as mio
 import monet as monet
 import seaborn as sns
-from monet.util.tools import calc_8hr_rolling_max, calc_24hr_ave
-import xarray as xr
 import pandas as pd
 import numpy as np
 import cartopy.crs as ccrs
@@ -20,7 +16,6 @@ from matplotlib.colors import ListedColormap
 from monet.util.tools import get_epa_region_bounds as get_epa_bounds 
 import math
 from ..plots import savefig
-import warnings
 
 def make_24hr_regulatory(df, col=None):
     """Calculates 24-hour averages
@@ -153,7 +148,11 @@ def map_projection(m, *, model_name=None):
             elif isinstance(m.proj, ccrs.Projection):
                 return m.proj
             else:
-                raise TypeError(f"`model.proj` should be None or `ccrs.Projection` instance.")
+                raise TypeError(
+                    "`model.proj` should be None or str starting with 'model:' "
+                    "or `ccrs.Projection` instance. "
+                    f"Got {type(m.proj)}."
+                )
     else:
         mod = model_name
 
@@ -202,8 +201,7 @@ def get_utcoffset(lat,lon):
     UTC offset in hour
 
     """
-    import datetime, pytz
-    from datetime import datetimee, timezone
+    import datetime
     import pytz
     from timezonefinder import TimezoneFinder
 
@@ -294,7 +292,7 @@ def make_spatial_bias(df, df_reg=None, column_o=None, label_o=None, column_m=Non
         surface bias plot
         
     """
-    if debug == False:
+    if debug is False:
         plt.ioff()
         
     def_map = dict(states=True,figsize=[10, 5])
@@ -430,7 +428,7 @@ def make_timeseries(df, df_reg=None, column=None, label=None, ax=None, avg_windo
         same plot
         
     """
-    if debug == False:
+    if debug is False:
         plt.ioff()
     #First define items for all plots
     #set default text size
@@ -544,7 +542,7 @@ def make_diurnal_cycle(df, column=None, label=None, ax=None, avg_window=None, yl
         same plot
         
     """
-    if debug == False:
+    if debug is False:
         plt.ioff()
     #First define items for all plots
     #set default text size
@@ -668,7 +666,7 @@ def make_taylor(df, df_reg=None, column_o=None, label_o='Obs', column_m=None, la
         
     """
     #First define items for all plots
-    if debug == False:
+    if debug is False:
         plt.ioff()
         
     #set default text size
@@ -788,7 +786,7 @@ def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
         spatial overlay plot
         
     """
-    if debug == False:
+    if debug is False:
         plt.ioff()
         
     def_map = dict(states=True,figsize=[15, 8])
@@ -843,11 +841,11 @@ def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
     #With pcolormesh, a Warning shows because nearest interpolation may not work for non-monotonically increasing regions.
     #Because I do not want to pull in the edges of the lat lon for every model I switch to contourf.
     #First determine colorbar, so can use the same for both contourf and scatter
-    if vmin == None and vmax == None:
+    if vmin is None and vmax is None:
         vmin = np.min((vmodel_mean.quantile(0.01), df_mean[column_o].quantile(0.01)))
         vmax = np.max((vmodel_mean.quantile(0.99), df_mean[column_o].quantile(0.99)))
         
-    if nlevels == None:
+    if nlevels is None:
         nlevels = 21
     
     clevel = np.linspace(vmin,vmax,nlevels)
@@ -862,7 +860,7 @@ def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
         fig = plt.figure( figsize=fig_dict['figsize'] )
         ax = fig.add_subplot(1,1,1,projection=proj)
         
-        p2d = Plot_2D( vmodel_mean, scrip_file=vmodel.mio_scrip_file, cmap=cmap, #colorticks=clevel, colorlabels=clevel,
+        _ = Plot_2D( vmodel_mean, scrip_file=vmodel.mio_scrip_file, cmap=cmap, #colorticks=clevel, colorlabels=clevel,
                        cmin=vmin, cmax=vmax, lon_range=[lonmin,lonmax], lat_range=[latmin,latmax],
                        ax=ax, state=fig_dict['states'] )
     else:
@@ -1055,7 +1053,7 @@ def make_boxplot(comb_bx, label_bx, ylabel = None, vmin = None, vmax = None, out
     plot 
         box plot
     """
-    if debug == False:
+    if debug is False:
         plt.ioff()
     #First define items for all plots
     #set default text size
@@ -1160,7 +1158,7 @@ def make_multi_boxplot(comb_bx, label_bx,region_bx,region_list = None, model_nam
         multi-box plot
         
     """
-    if debug == False:
+    if debug is False:
         plt.ioff()
     #First define items for all plots
     #set default text size
@@ -1188,7 +1186,7 @@ def make_multi_boxplot(comb_bx, label_bx,region_bx,region_list = None, model_nam
     #Define characteristics of boxplot.
     boxprops = {'edgecolor': 'k', 'linewidth': 1.5}
     lineprops = {'color': 'k', 'linewidth': 1.5}
-    boxplot_kwargs = {'boxprops': boxprops, 'medianprops': lineprops,
+    boxplot_kwargs = {'boxprops': boxprops, 'medianprops': lineprops,  # TODO: unused
                   'whiskerprops': lineprops, 'capprops': lineprops,
                   'fliersize' : 2.0, 
                   'flierprops': dict(marker='*', 
@@ -1295,7 +1293,7 @@ def scorecard_step1_combine_df(df, df_reg=None, region_name=None, urban_rural_na
 
 def scorecard_step2_prepare_individual_df(comb_bx,region_bx,msa_bx,time_bx,model_name_list=None): 
 
-    len_combx = len(comb_bx.columns)
+    # len_combx = len(comb_bx.columns)
     data_obs = comb_bx[comb_bx.columns[0]].to_frame().rename({comb_bx.columns[0]:'Value'},axis=1)
     data_model1 = comb_bx[comb_bx.columns[1]].to_frame().rename({comb_bx.columns[1]:'Value'},axis=1)
     data_model2 = comb_bx[comb_bx.columns[2]].to_frame().rename({comb_bx.columns[2]:'Value'},axis=1)
@@ -1322,8 +1320,9 @@ def scorecard_step2_prepare_individual_df(comb_bx,region_bx,msa_bx,time_bx,model
 
     return output_obs, output_model1, output_model2
 
-from datetime import  datetime,timedelta
 def GetDateList(start_time_input,end_time_input):
+    from datetime import datetime, timedelta
+
     start_date_str = str(start_time_input).split(' ')[0]
     end_date_str = str(end_time_input).split(' ')[0]
     FMT='%Y-%m-%d'
@@ -1353,6 +1352,8 @@ def scorecard_step3_getLUC(region_name_input,ds_name,urban_rural_differentiate_v
     return rural_index_list, urban_index_list
 
 def scorecard_step4_GetRegionLUCDate(ds_name=None,region_list=None,datelist=None,urban_rural_differentiate_value=None):
+    from datetime import datetime
+
     Region_Date_Urban_list = [] #(region * date)
     Region_Date_Rural_list = [] #(region * date)
 
@@ -1409,8 +1410,8 @@ def scorecard_step5_KickNan(obs_input=None,model_input_1=None,model_input_2=None
             model1_output = []
             model2_output = []
             for i in range(len(obs_here_array[0])):
-                if math.isnan(float(obs_here_array[0][i])) == False:
-                    if math.isnan(float(model1_here_array[0][i])) == False:
+                if math.isnan(float(obs_here_array[0][i])) is False:
+                    if math.isnan(float(model1_here_array[0][i])) is False:
                         obs_output.append(obs_here_array[0][i])
                         model1_output.append(model1_here_array[0][i])
                         model2_output.append(model2_here_array[0][i])
@@ -1759,7 +1760,7 @@ def make_spatial_bias_exceedance(df, column_o=None, label_o=None, column_m=None,
     plot 
         surface bias plot
     """
-    if debug == False:
+    if debug is False:
         plt.ioff()
 
     def_map = dict(states=True,figsize=[10, 5])
