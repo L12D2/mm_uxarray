@@ -53,15 +53,15 @@ def mod_to_overpasstime(modobj,opass_tms,partial_col=None):
     '''
 
     nst, = opass_tms.shape
-    nmt, = modobj.time.shape
-    ny,nx = modobj.longitude.shape
+    # nmt, = modobj.time.shape
+    # ny,nx = modobj.longitude.shape
     
     # Determine local time offset
     local_utc_offset = (modobj['longitude']/15).round().astype('timedelta64[h]')
     # initialize local time as variable
     modobj['localtime'] = modobj['time'] + local_utc_offset
 
-    # initalize new model object with satellite datetimes
+    # initialize new model object with satellite datetimes
     outmod = []
 
     for ti in np.arange(nst):
@@ -220,7 +220,7 @@ def space_and_time_pairing(model_data,obs_data,pair_variables):
         raise
     mod_nf,mod_nz,mod_nx,mod_ny = model_data[pair_variables[0]].shape # assumes model data is structured (time,z,lon,lat). lon/lat dimension order likely unimportant
     # obs_nz = obs_data['pressure'].shape # assumes 1d pressure field in observation set
-    obs_nx,obs_ny = obs_data['longitude'].shape # assumes 2d lat/lon fields in observation ser
+    obs_nx,obs_ny = obs_data['longitude'].shape # assumes 2d lat/lon fields in observation set
     # initialize dictionary and arrays for interpolated model data
     ds = {i:np.zeros((mod_nz,obs_nx,obs_ny)) for i in pair_variables}
     
@@ -314,7 +314,7 @@ def omps_nm_pairing_apriori(model_data,obs_data,ozone_ppbv_varname):
     # Grab necessary shape information
     nf,nz_m,nx_m,ny_m = model_data[ozone_ppbv_varname[0]].shape
     nx,ny = obs_data.ozone_column.shape
-    ## initialize intermediates for use in calcluating column
+    ## initialize intermediates for use in calculating column
     pressure_temp = np.zeros((nz_m,nx,ny))
     ozone_temp = np.zeros((nz_m,nx,ny))
     sfc = np.zeros((nx,ny))

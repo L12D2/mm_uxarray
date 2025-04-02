@@ -976,7 +976,7 @@ def calculate_multi_boxplot(df, df_reg=None, region_name= None,column=None, labe
     dataframe, list, dataframe           
         dataframe containing information to create box-plot
         list of string labels to use in box-plot
-        dataframe containing informaiton for regions to help create multi-box-plot
+        dataframe containing information for regions to help create multi-box-plot
         
     """
     region_bx = pd.DataFrame()
@@ -1258,7 +1258,7 @@ def scorecard_step1_combine_df(df, df_reg=None, region_name=None, urban_rural_na
     dataframe, list, dataframe  
         dataframe containing information to create box-plot
         list of string labels to use in box-plot
-        dataframe containing informaiton for regions to help create multi-box-plot
+        dataframe containing information for regions to help create multi-box-plot
 
     """
     region_bx = pd.DataFrame()                   
@@ -1485,31 +1485,31 @@ def scorecard_step7_SigLevel(model1_input=None,model2_input=None):
     X1=  np.array(model1_input)
     X2=  np.array(model2_input)
 
-    #confidence interal 95% for model 1
+    #confidence interval 95% for model 1
     mean_X1 = np.mean(X1)
     STD_X1  = np.std(X1)
     lower_bd_X1_95 = mean_X1 - 1.96*(STD_X1/(len(X1))**0.5)
     upper_bd_X1_95 = mean_X1 + 1.96*(STD_X1/(len(X1))**0.5)
 
-    #confidence interal 95% for model 2
+    #confidence interval 95% for model 2
     mean_X2 = np.mean(X2)
     STD_X2  = np.std(X2)
     lower_bd_X2_95 = mean_X2 - 1.96*(STD_X2/(len(X2))**0.5)
     upper_bd_X2_95 = mean_X2 + 1.96*(STD_X2/(len(X2))**0.5)
 
-    #confidence interal 99% for model 1
+    #confidence interval 99% for model 1
     lower_bd_X1_99 = mean_X1 - 2.576*(STD_X1/(len(X1))**0.5)
     upper_bd_X1_99 = mean_X1 + 2.576*(STD_X1/(len(X1))**0.5)
 
-    #confidence interal 99% for model 2
+    #confidence interval 99% for model 2
     lower_bd_X2_99 = mean_X2 - 2.576*(STD_X2/(len(X2))**0.5)
     upper_bd_X2_99 = mean_X2 + 2.576*(STD_X2/(len(X2))**0.5)
 
-    #confidence interal 99.9% for model 1
+    #confidence interval 99.9% for model 1
     lower_bd_X1_999 = mean_X1 - 3.291*(STD_X1/(len(X1))**0.5)
     upper_bd_X1_999 = mean_X1 + 3.291*(STD_X1/(len(X1))**0.5)
  
-    #confidence interal 99.9% for model 2
+    #confidence interval 99.9% for model 2
     lower_bd_X2_999 = mean_X2 - 3.291*(STD_X2/(len(X2))**0.5)
     upper_bd_X2_999 = mean_X2 + 3.291*(STD_X2/(len(X2))**0.5)
 

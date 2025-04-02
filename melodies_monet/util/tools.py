@@ -373,7 +373,7 @@ def find_obs_time_bounds(files=[],time_var=None):
         str or list of str containing filenames that should be read.
         
     time_var : str
-        Optional, variable name that should be assumed to be time when reading aircaft csv files.
+        Optional, variable name that should be assumed to be time when reading aircraft csv files.
 
     Returns
     -------

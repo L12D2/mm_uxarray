@@ -1233,7 +1233,7 @@ def sel_region(domain_type=None, domain_name=None, domain_box=None):
     domain_name: str
         EPA or Giorgi region acronym
     domain_box: list[int|float, int|float, int|float, int|float]
-        domain box conatining the region to be plotted. Only read if
+        domain box containing the region to be plotted. Only read if
         region is 'custom'. Expected order: latmin, lonmin, latmax, lonmax
 
     Returns

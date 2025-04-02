@@ -36,7 +36,7 @@ def trp_interp_swatogrd(obsobj, modobj,no2varname='no2'):
     time   = [datetime.strptime(x,'%Y-%m-%d') for x in obsobj.keys()]
     nobstime  = len(list(obsobj.keys()))
 
-    # daily averaged sate data at model grids
+    # daily averaged sat data at model grids
     no2_modgrid_avg=xr.Dataset(data_vars = {
         'nitrogendioxide_tropospheric_column':(["time", "x", "y"],
                                                 np.full([nobstime, ny, nx], np.nan, dtype=np.float32)),
@@ -123,7 +123,7 @@ def trp_interp_swatogrd_ak(obsobj, modobj,no2varname='no2'):
     time   = [datetime.strptime(x,'%Y-%m-%d') for x in obsobj.keys()]
     nobstime  = len(list(obsobj.keys()))
 
-    # daily averaged sate data at model grids
+    # daily averaged sat data at model grids
     no2_modgrid_avg=xr.Dataset(data_vars = {
         'nitrogendioxide_tropospheric_column':(["time", "x", "y"],
                                                 np.full([nobstime, ny, nx], np.nan, dtype=np.float32)),
@@ -181,7 +181,7 @@ def trp_interp_swatogrd_ak(obsobj, modobj,no2varname='no2'):
             # force model data to put z dimension last for pressure and no2 partial columns
             mod_pres_no2 = modobj_tm[['pres_pa_mid',f'{no2varname}_col']].mean(dim='time')#.transpose('y','x','z')
             #print(mod_pres_no2['no2col'].shape)
-            # regridding for model pressure, and no2 vertical colums
+            # regridding for model pressure, and no2 vertical columns
             mod_rgd_sat = regridder_ms(mod_pres_no2)
             mod_rgd_sat = mod_rgd_sat.transpose('y','x','z')
             # convert from aks to trop.aks

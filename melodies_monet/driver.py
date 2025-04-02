@@ -265,7 +265,7 @@ class observation:
                 self.obj = self.obj.swap_dims({'x':'time'}) # indexing needs
                 self.obj = self.obj.sortby('time') # enforce time in order. 
                 # restrict observation data to time_interval if using
-                # additional development to deal with files crossing intervals needed (eg situtations where orbit start at 23hrs, ends next day).
+                # additional development to deal with files crossing intervals needed (eg situations where orbit start at 23hrs, ends next day).
                 if time_interval is not None:
                     self.obj = self.obj.sel(time=slice(time_interval[0],time_interval[-1]))
 
@@ -1668,7 +1668,7 @@ class analysis:
                         if obsvar == modvar:
                             modvar = modvar + '_new'
 
-                        # Adjust the modvar for satelitte no2 trop. column paring. M.Li
+                        # Adjust the modvar for satellite no2 trop. column paring. M.Li
                         if obsvar == 'nitrogendioxide_tropospheric_column':
                             modvar = modvar + 'trpcol'
                             
@@ -1893,7 +1893,7 @@ class analysis:
 
                             #Steps needed to subset paired df if secondary y-axis (altitude_variable) limits are provided, 
                             #ELSE: make_timeseries from surfaceplots.py plots the whole df by default
-                            #Edit below to accomodate 'ground' or 'mobile' where altitude_yax2 is not needed for timeseries
+                            #Edit below to accommodate 'ground' or 'mobile' where altitude_yax2 is not needed for timeseries
                             altitude_yax2 = grp_dict['data_proc'].get('altitude_yax2', {})
 
                             # Extract vmin_y2 and vmax_y2 from filter_dict
@@ -1930,7 +1930,7 @@ class analysis:
                                     if operation == "between" and isinstance(value, list) and len(value) == 2:
                                         pairdf = pairdf[pairdf[column].between(vmin_y2, vmax_y2)]
                             
-                            # Now proceed wit plotting, call the make_timeseries function with the subsetted pairdf (if vmin2 and vmax2 are not nOne) otherwise whole df                                 
+                            # Now proceed with plotting, call the make_timeseries function with the subsetted pairdf (if vmin2 and vmax2 are not nOne) otherwise whole df                                 
                             if self.obs[p.obs].sat_type is not None and self.obs[p.obs].sat_type.startswith("tempo_l2"):
                                 if plot_type.lower() == 'timeseries':
                                     make_timeseries = xrplots.make_timeseries
