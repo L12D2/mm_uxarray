@@ -1194,7 +1194,7 @@ def make_multi_boxplot(comb_bx, label_bx,region_bx,region_list = None, model_nam
                                      markeredgecolor='none',
                                      markersize = 6.0),
                   'width': 0.75, 'palette': pal,
-                  'order': order_box,
+                  'hue_order': order_box,
                   'showmeans': True, 
                   'meanprops': {'marker': ".", 'markerfacecolor': 'black', 
                                 'markeredgecolor': 'black',
@@ -1217,7 +1217,7 @@ def make_multi_boxplot(comb_bx, label_bx,region_bx,region_list = None, model_nam
 
     tdf =pd.concat(to_concat)
     acro = region_list
-    sns.boxplot(x='Regions',y='Value',hue='model',data=tdf.loc[tdf.Regions.isin(acro)], order=acro, showfliers=False, **boxplot_kwargs)
+    sns.boxplot(x='Regions',y='Value',hue='model',data=tdf.loc[tdf.Regions.isin(acro)],order=acro,showfliers=False,**boxplot_kwargs)
     ax.set_xlabel('')
     ax.set_ylabel(ylabel,fontweight='bold',**text_kwargs)
     ax.tick_params(labelsize=text_kwargs['fontsize']*0.8)
