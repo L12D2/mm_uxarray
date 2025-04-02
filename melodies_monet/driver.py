@@ -1365,7 +1365,7 @@ class analysis:
                         if 'time' in obs.obj.dims:
                             obs.obj = obs.obj.sel(time=slice(self.start_time,self.end_time))
                             obs.obj = obs.obj.swap_dims({'time':'x'})
-                        if pairing_kws['apply_ak'] == True:
+                        if pairing_kws['apply_ak'] is True:
                             model_obj = mod.obj[keys+['pres_pa_mid','surfpres_pa']]
                             
                             paired_data = sutil.omps_nm_pairing_apriori(model_obj,obs.obj,keys)
@@ -1409,7 +1409,7 @@ class analysis:
                             print('Pairing will proceed assuming that the model data is already at overpass time.')
                             from .util.tools import calc_partialcolumn
                             model_obj[f'{no2_varname}_col'] = calc_partialcolumn(model_obj,var=no2_varname)
-                        if pairing_kws['apply_ak'] == True:
+                        if pairing_kws['apply_ak'] is True:
                             paired_data = no2util.trp_interp_swatogrd_ak(obs.obj, model_obj,no2varname=no2_varname)
                         else:
                             paired_data = no2util.trp_interp_swatogrd(obs.obj, model_obj, no2varname=no2_varname)
@@ -1799,7 +1799,7 @@ class analysis:
 
                         # Drop NaNs if using pandas 
                         if obs_type in ['pt_sfc','aircraft','mobile','ground','sonde']: 
-                            if grp_dict['data_proc']['rem_obs_nan'] == True:
+                            if grp_dict['data_proc']['rem_obs_nan'] is True:
                                 # I removed drop=True in reset_index in order to keep 'time' as a column.
                                 pairdf = pairdf_all.reset_index().dropna(subset=[modvar, obsvar])
                             else:
@@ -1868,7 +1868,7 @@ class analysis:
 
                         # Types of plots
                         if plot_type.lower() == 'timeseries' or plot_type.lower() == 'diurnal':
-                            if set_yaxis == True:
+                            if set_yaxis is True:
                                 if all(k in obs_plot_dict for k in ('vmin_plot', 'vmax_plot')):
                                     vmin = obs_plot_dict['vmin_plot']
                                     vmax = obs_plot_dict['vmax_plot']
@@ -2147,7 +2147,7 @@ class analysis:
                                 
                         #qzr++ Added vertprofile plotype for aircraft vs model comparisons         
                         elif plot_type.lower() == 'vertprofile':
-                            if set_yaxis == True:
+                            if set_yaxis is True:
                                 if all(k in obs_plot_dict for k in ('vmin_plot', 'vmax_plot')):
                                     vmin = obs_plot_dict['vmin_plot']
                                     vmax = obs_plot_dict['vmax_plot']
@@ -2209,7 +2209,7 @@ class analysis:
 
                         elif plot_type.lower() == 'vertical_single_date':
                             #to use vmin, vmax from obs in yaml
-                            if set_yaxis == True:
+                            if set_yaxis is True:
                                 if all(k in obs_plot_dict for k in ('vmin_plot','vmax_plot')):
                                     vmin = obs_plot_dict['vmin_plot']
                                     vmax = obs_plot_dict['vmax_plot']
@@ -2245,7 +2245,7 @@ class analysis:
 
                         elif plot_type.lower() == 'vertical_boxplot_os':
                             #to use vmin, vmax from obs in yaml
-                            if set_yaxis == True:
+                            if set_yaxis is True:
                                 if all(k in obs_plot_dict for k in ('vmin_plot','vmax_plot')):
                                     vmin = obs_plot_dict['vmin_plot']
                                     vmax = obs_plot_dict['vmax_plot']
@@ -2281,7 +2281,7 @@ class analysis:
 
                         elif plot_type.lower() == 'density_scatter_plot_os':
                             #to use vmin, vmax from obs in yaml
-                            if set_yaxis == True:
+                            if set_yaxis is True:
                                 if all(k in obs_plot_dict for k in ('vmin_plot','vmax_plot')):
                                     vmin = obs_plot_dict['vmin_plot']
                                     vmax = obs_plot_dict['vmax_plot']
@@ -2461,7 +2461,7 @@ class analysis:
                             else: 
                                 pairdf_sel = pairdf
 
-                            if set_yaxis == True:
+                            if set_yaxis is True:
                                 if all(k in obs_plot_dict for k in ('vmin_plot', 'vmax_plot')):
                                     vmin = obs_plot_dict['vmin_plot']
                                     vmax = obs_plot_dict['vmax_plot']
@@ -2500,7 +2500,7 @@ class analysis:
                                 del (comb_bx, label_bx, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict)   
                         
                         elif plot_type.lower() == 'multi_boxplot':
-                            if set_yaxis == True:
+                            if set_yaxis is True:
                                 if all(k in obs_plot_dict for k in ('vmin_plot', 'vmax_plot')):
                                     vmin = obs_plot_dict['vmin_plot']
                                     vmax = obs_plot_dict['vmax_plot']
@@ -2652,7 +2652,7 @@ class analysis:
                                 }
                             }
 
-                            if set_yaxis == True:
+                            if set_yaxis is True:
                                 if 'ty_scale' in obs_plot_dict.keys():
                                     plot_kwargs["ty_scale"] = obs_plot_dict['ty_scale']
                                 else:
@@ -2679,7 +2679,7 @@ class analysis:
                         
                         
                         elif plot_type.lower() == 'spatial_bias':
-                            if set_yaxis == True:
+                            if set_yaxis is True:
                                 if 'vdiff_plot' in obs_plot_dict.keys():
                                     vdiff = obs_plot_dict['vdiff_plot']
                                 else:
@@ -2760,7 +2760,7 @@ class analysis:
                             xrplots.make_spatial_dist(**plot_kwargs)
                         elif plot_type.lower() == 'spatial_bias_exceedance':
                             if cal_reg:
-                                if set_yaxis == True:
+                                if set_yaxis is True:
                                     if 'vdiff_reg_plot' in obs_plot_dict.keys():
                                         vdiff = obs_plot_dict['vdiff_reg_plot']
                                     else:
@@ -2791,7 +2791,7 @@ class analysis:
                                 print('Warning: spatial_bias_exceedance plot only works when regulatory=True.')
                         # JianHe: need updates to include regulatory option for overlay plots
                         elif plot_type.lower() == 'spatial_overlay':
-                            if set_yaxis == True:
+                            if set_yaxis is True:
                                 if all(k in obs_plot_dict for k in ('vmin_plot', 'vmax_plot', 'nlevels_plot')):
                                     vmin = obs_plot_dict['vmin_plot']
                                     vmax = obs_plot_dict['vmax_plot']
@@ -3083,7 +3083,7 @@ class analysis:
                 df_o_d = df_o_d.round(round_output)
                 df_o_d.to_csv(path_or_buf=outname + '.csv', index=False)
 
-                if stat_dict['output_table'] == True:
+                if stat_dict['output_table'] is True:
                     # Output as a table graphic too.
                     # Change to use the name with full spaces.
                     df_o_d['Stat_FullName'] = stat_fullname_s
