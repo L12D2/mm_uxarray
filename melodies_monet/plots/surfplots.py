@@ -581,7 +581,7 @@ def make_diurnal_cycle(df, column=None, label=None, ax=None, avg_window=None, yl
     df_plot_group = df.groupby(time.hour)
     df_plot = df_plot_group.median(numeric_only=True)
     ax = df_plot[column].plot(ax=ax, legend=True, **plot_kwargs) 
-    shading_range = kwargs.get("shading_range", None)
+    shading_range = kwargs.get("shading_range", "IQR")
     if shading_range is not None:
         if shading_range not in ["IQR", "std", "total_range"]:
             raise ValueError (
