@@ -177,7 +177,7 @@ def control_custom_mask(data, domain_type, domain_info=None, **kwargs):
     if regionmask is None:
         raise ImportError(
             "regionmask is not installed, try alternative functions."
-                + " create_autoregion can probably do the trick."
+            + " create_autoregion can probably do the trick."
         )
     if domain_info is None:
         raise KeyError("If regionmask is used, domain_info must exist.")
@@ -218,7 +218,7 @@ def create_autoregion(data, domain_type, domain_name, domain_info=None):
         This is used as the region name, or to read the info.
     domain_info: None | dict[str, tuple[float, float, float, float]]
         if not None, dict containing the domain name and a tuple with
-        latmin, lonmin, latmax, lonmax. Only required if domain_type
+         lonmin, lonmax, latmin, latmax. Only required if domain_type
         is auto-region:
     Returns
     -------
@@ -241,18 +241,17 @@ def create_autoregion(data, domain_type, domain_name, domain_info=None):
         )
     if isinstance(data, pd.DataFrame):
         data_all = data.loc[
-            (data["latitude"] >= bounds[0])
-            & (data["longitude"] >= bounds[1])
-            & (data["latitude"] <= bounds[2])
-            & (data["longitude"] <= bounds[3])
+            (data["longitude"] >= bounds[0])
+            & (data["longitude"] <= bounds[1])
+            & (data["latitude"] >= bounds[2])
+            & (data["latitude"] <= bounds[3])
         ]
     else:
         data_all = data.where(
-            (data["latitude"] >= bounds[0])
-            & (data["longitude"] >= bounds[1])
-            & (data["latitude"] <= bounds[2])
-            & (data["longitude"] <= bounds[3]),
-            # drop=True,
+            (data["longitude"] >= bounds[0])
+            & (data["longitude"] <= bounds[1])
+            & (data["latitude"] >= bounds[2])
+            & (data["latitude"] <= bounds[3]),
         )
     return data_all
 
