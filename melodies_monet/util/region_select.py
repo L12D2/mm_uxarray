@@ -5,8 +5,8 @@
 Masking arbitrary regions with regionmask
 """
 
-from functools import lru_cache
 import warnings
+from functools import lru_cache
 
 import pandas as pd
 
@@ -14,8 +14,8 @@ from melodies_monet.util.tools import get_epa_region_bounds, get_giorgi_region_b
 
 try:
     import geopandas as gpd
-    from shapely.geometry import MultiPolygon, Polygon
     import regionmask
+    from shapely.geometry import MultiPolygon, Polygon
 except ImportError:
     regionmask = None
 
@@ -218,8 +218,9 @@ def create_autoregion(data, domain_type, domain_name, domain_info=None):
         This is used as the region name, or to read the info.
     domain_info: None | dict[str, tuple[float, float, float, float]]
         if not None, dict containing the domain name and a tuple with
-         lonmin, lonmax, latmin, latmax. Only required if domain_type
+        lonmin, lonmax, latmin, latmax. Only required if domain_type
         is auto-region:
+
     Returns
     -------
     xr.Dataset | pd.DataFrame
