@@ -134,8 +134,6 @@ def make_timeseries(
         plot_dict["label"] = label
     if (label is None) and (label not in plot_dict.keys()):
         plot_dict["label"] = varname
-    if vmin is not None and vmax is not None:
-        plot_dict["ylim"] = [vmin, vmax]
     # scale the fontsize for the x and y labels by the text_kwargs
     plot_dict["fontsize"] = text_kwargs["fontsize"] * 0.8
 
@@ -217,6 +215,7 @@ def make_timeseries(
     # ax.legend(frameon=False, fontsize=text_kwargs["fontsize"] * 0.8)
     ax.tick_params(axis="both", length=10.0, direction="inout")
     ax.tick_params(axis="both", which="minor", length=5.0, direction="out")
+    ax.set_ylim(vmin, vmax)
     ax.legend(
         frameon=False,
         fontsize=text_kwargs["fontsize"] * 0.8,
