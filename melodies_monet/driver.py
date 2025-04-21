@@ -2736,7 +2736,7 @@ class analysis:
                         elif plot_type.lower() == 'spatial_dist':
                             outname = "{}.{}".format(outname, p.obs)
                             plot_kwargs = {
-                                "dset": p.obj,
+                                "dset": pairdf,
                                 "varname": obsvar,
                                 "outname": outname,
                                 "label": p.obs,
