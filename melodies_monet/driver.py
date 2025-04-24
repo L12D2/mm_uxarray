@@ -548,6 +548,12 @@ class model:
                 list_input_var = list_input_var + list(set(self.mapping[obs_map].keys()) - set(list_input_var))
         #Only certain models need this option for speeding up i/o.
 
+        # Remove standardized variable names that user may have requested to pair on or output in MM
+        # as they will be added anyway and here would cause [var_list] to fail in the below model readers.
+        for vn in ["temperature_k", "pres_pa_mid"]:
+            if vn in list_input_var:
+                list_input_var.remove(vn)
+
         if 'cmaq' in self.model.lower():
             print('**** Reading CMAQ model output...')
             self.mod_kwargs.update({'var_list' : list_input_var})
