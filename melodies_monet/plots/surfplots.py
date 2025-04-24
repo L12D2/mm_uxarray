@@ -1834,7 +1834,7 @@ def make_spatial_bias_exceedance(df, column_o=None, label_o=None, column_m=None,
             df_reg, col1=column_o+'_day', col2=column_m+'_day', map_kwargs=map_kwargs,val_max=vdiff,
             cmap="OrangeBlue", edgecolor='k',linewidth=.8)
 
-        if domain_type == 'all':
+        if domain_type == 'all' and domain_name == 'CONUS':
             latmin= 25.0
             lonmin=-130.0
             latmax= 50.0
