@@ -2732,6 +2732,8 @@ class analysis:
                                     "outname": outname,
                                     "domain_type": domain_type,
                                     "domain_name": domain_name,
+                                    "vdiff": grp_dict["data_proc"].get("vdiff", None),
+                                    "nlevels": grp_dict["data_proc"].get("nlevels", None),
                                     "fig_dict": fig_dict,
                                     "text_dict": text_dict,
                                     "debug": self.debug
