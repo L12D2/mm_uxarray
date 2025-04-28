@@ -749,7 +749,7 @@ def make_spatial_bias_gridded(df, column_o=None, label_o=None, column_m=None,
     norm = mpl.colors.BoundaryNorm(clevel, ncolors=cmap.N, clip=False)
         
     #I add extend='both' here because the colorbar is setup to plot the values outside the range
-    states = fig_dict.get('states', True)
+    states = fig_dict.get('states', False)
     counties = fig_dict.get('counties', False)
     ax = monet.plots.mapgen.draw_map(crs=map_kwargs['crs'],extent=map_kwargs['extent'], states=states, counties=counties)
     # draw scatter plot of model and satellite differences
