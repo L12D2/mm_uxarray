@@ -825,7 +825,7 @@ def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
     elif domain_type.startswith('custom:') or domain_type.startswith('auto-region:'):
         valid_data = vmodel.notnull()
         lons = vmodel.longitude.where(valid_data)
-        lats = vmodel.latitutde.where(valid_data)
+        lats = vmodel.latitude.where(valid_data)
         latmin, lonmin, latmax, lonmax = lats.min(), lons.min(), lats.max(), lons.max()
         title_add = domain_name + ': '
     else:
