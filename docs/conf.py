@@ -205,6 +205,7 @@ linkcheck_ignore = [
     "https://doi.org/10.1021/acs.est.5c00902",
     # NCEI sites having problems
     "https://www.ncdc.noaa.gov/crn/",
+    "https://www.ncei.noaa.gov/products/land-based-station/integrated-surface-database",
     #PNAS sites having problems:
     "https://doi.org/10.1093/pnasnexus/pgad483"
 ]
