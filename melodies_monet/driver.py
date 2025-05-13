@@ -576,11 +576,13 @@ class model:
             if self.files_pm25 is not None:
                 self.mod_kwargs.update({'fname_pm25' : self.files_pm25})
             self.mod_kwargs.update({'var_list' : list_input_var})
-            if hasattr(mio.models, '_rrfs_cmaq_mm'):
-                warnings.warn("usage of _rrfs_cmaq_mm is deprecated, use models.ufs.open_mf_dataset", DeprecationWarning)
-                loader = mio.models._rrfs_cmaq_mm.open_mfdataset
-            else:
+            if hasattr(mio.models, 'ufs'):
                 loader = mio.models.ufs.open_mfdataset
+            else:
+                warnings.warn(
+                    "usage of _rrfs_cmaq_mm is deprecated, use models.ufs.open_mf_dataset",
+                    DeprecationWarning)
+                loader = mio.models._rrfs_cmaq_mm.open_mfdataset
             self.obj = loader(self.files,**self.mod_kwargs)
         elif 'gsdchem' in self.model.lower():
             print('**** Reading GSD-Chem model output...')
