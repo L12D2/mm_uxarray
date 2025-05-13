@@ -18,7 +18,7 @@ analysis:
 model:
   cam-chem: # model label to be shown on plots
     files: example:camchem:fv
-    mod_type: 'cesm_fv' # defines model type to tell how to process in the driver choices: camchem, wrfchem, cmaq, rrfs, gsdchem
+    mod_type: 'cesm_fv' # defines model type to tell how to process in the driver choices: camchem, wrfchem, cmaq, ufs (rrfs), gsdchem
     radius_of_influence: 1.5e+5 # meters; e.g., horizontal resolution * 1.5
     mapping: #model species name : obs species name
       airnow: 

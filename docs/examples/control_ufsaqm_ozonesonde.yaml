@@ -12,7 +12,7 @@ analysis:
 model:
   ufsaqm_cmaq52: # model label
     files: 'example:ufsaqm:cmaq52_2023-06-24_20-21'
-    mod_type: 'rrfs'
+    mod_type: 'ufs'
     radius_of_influence: 19500 #meters: horizontal resolution * 1.5
     mapping: #model species name : obs species name
       gml-ozonesondes:
@@ -30,7 +30,7 @@ model:
 
   ufsaqm_cmaq54: # model label
     files: 'example:ufsaqm:cmaq54_2023-06-24_20-21'
-    mod_type: 'rrfs'
+    mod_type: 'ufs'
     radius_of_influence: 19500 #meters: horizontal resolution * 1.5
     mapping: #model species name : obs species name
       gml-ozonesondes:

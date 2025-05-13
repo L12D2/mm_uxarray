@@ -128,7 +128,7 @@ def map_projection(m, *, model_name=None):
     m : melodies_monet.driver.model
         Model class instance.
     model_name : str, optional
-        For example, ``'rrfs'``. ``m.model.lower()`` used if not provided.
+        For example, ``'ufs'``. ``m.model.lower()`` used if not provided.
         If provided, will be used to create a new projection
         (i.e., an existing ``m.proj`` projection won't be returned).
 
@@ -170,7 +170,7 @@ def map_projection(m, *, model_name=None):
         else:
             raise NotImplementedError('WRFChem projection not supported. Please add to surfplots.py')         
     # Need to add the projections you want to use for the other models here.
-    elif mod == 'rrfs':
+    elif mod in ('rrfs', 'ufs'):
         proj = ccrs.LambertConformal(
             central_longitude=m.obj.cen_lon, central_latitude=m.obj.cen_lat)
     elif mod in {'cesm_fv', 'cesm_se', 'raqms'}:

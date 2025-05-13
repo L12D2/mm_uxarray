@@ -11,7 +11,7 @@ analysis:
 model:
   rrfs_r131v1_all: # model label
     files: /scratch2/BMC/rcm1/rhs/fv3/regional/processed/surf_oper_rrfs_r131_v1/08_pm25/data/rrfs/*dynf*.nc
-    mod_type: 'rrfs'
+    mod_type: 'ufs'
     mod_kwargs:
       mech: 'cb6r3_ae6_aq'
       surf_only: True
@@ -30,7 +30,7 @@ model:
       linestyle: '-'
   rrfs_r131v1_wopc: # model label
     files: /scratch2/BMC/rcm1/rhs/fv3/regional/processed/surf_oper_rrfs_r131_v1/08_pm25/data/rrfs/*dynf*.nc
-    mod_type: 'rrfs'
+    mod_type: 'ufs'
     mod_kwargs:
       mech: 'cb6r3_ae6_aq'
       surf_only: True
@@ -50,7 +50,7 @@ model:
   rrfs_r131v1_pm25: # model label
     files: /scratch2/BMC/rcm1/rhs/fv3/regional/processed/surf_oper_rrfs_r131_v1/08_pm25/data/rrfs/*dynf*.nc
     files_pm25: /scratch2/BMC/rcm1/rhs/fv3/regional/processed/surf_oper_rrfs_r131_v1/08_pm25/data/rrfs/*pm25tot_f*.nc
-    mod_type: 'rrfs'
+    mod_type: 'ufs'
     mod_kwargs:
       mech: 'cb6r3_ae6_aq'
       surf_only: True

@@ -515,7 +515,7 @@ class model:
         """Open the model files, store data in :class:`model` instance attributes,
         and apply mask and scaling.
         
-        Models supported are cmaq, wrfchem, rrfs, and gsdchem.
+        Models supported are cmaq, wrfchem, ufs (rrfs is deprecated), and gsdchem.
         If a model is not supported, MELODIES-MONET will try to open 
         the model data using a generic reader. If you wish to include new 
         models, add the new model option to this module.
@@ -571,7 +571,7 @@ class model:
             self.obj = mio.models._wrfchem_mm.open_mfdataset(self.files,**self.mod_kwargs)
         elif any([mod_type in self.model.lower() for mod_type in ('ufs', 'rrfs')]):
             print('**** Reading UFS-AQM (RRFS-CMAQ) model output...')
-            if self.model.lower() == 'rrfs':
+            if 'rrfs' in self.model.lower():
                 warnings.warn("mod_type: 'rrfs' is deprecated. use 'ufs'." , DeprecationWarning)
             if self.files_pm25 is not None:
                 self.mod_kwargs.update({'fname_pm25' : self.files_pm25})
