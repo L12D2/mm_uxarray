@@ -40,8 +40,8 @@ extensions = [
 ]
 
 extlinks = {
-    'issue': ('https://github.com/noaa-csl/melodies-monet/issues/%s', 'GH %s'),
-    'pull': ('https://github.com/noaa-csl/melodies-monet/pull/%s', 'PR %s'),
+    'issue': ('https://github.com/ncar/melodies-monet/issues/%s', 'GH %s'),
+    'pull': ('https://github.com/ncar/melodies-monet/pull/%s', 'PR %s'),
 }
 
 autosummary_generate = True  # default in Sphinx v4
@@ -205,6 +205,7 @@ linkcheck_ignore = [
     "https://doi.org/10.1021/acs.est.5c00902",
     # NCEI sites having problems
     "https://www.ncdc.noaa.gov/crn/",
+    "https://www.ncei.noaa.gov/products/land-based-station/integrated-surface-database",
     #PNAS sites having problems:
     "https://doi.org/10.1093/pnasnexus/pgad483"
 ]
