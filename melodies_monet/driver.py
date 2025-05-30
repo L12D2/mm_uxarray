@@ -596,6 +596,9 @@ class model:
             self.mod_kwargs.update({"fname_met_3D": control_dict['model'][self.label].get('files_vert', None)})
             self.mod_kwargs.update({"fname_met_2D": control_dict['model'][self.label].get('files_met_surf', None)})
             self.obj = mio.models._camx_mm.open_mfdataset(self.files, **self.mod_kwargs)
+        elif 'fv3raqms' in self.model.lower():
+            print(self.mod_kwargs)
+            self.obj = mio.models.fv3raqms.open_mfdataset(self.files,**self.mod_kwargs)
         elif 'raqms' in self.model.lower():
             self.mod_kwargs.update({'var_list': list_input_var})
             if time_interval is not None:
