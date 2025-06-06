@@ -247,7 +247,7 @@ def get_utcoffset(lat,lon):
     return utchour
 
 
-def make_spatial_bias(df, df_reg=None, column_o=None, label_o=None, column_m=None, 
+def make_spatial_bias(df, df_reg=None, wind_barb=None, column_o=None, label_o=None, column_m=None, 
                       label_m=None, ylabel = None, ptile = None, vdiff=None,
                       outname = 'plot', 
                       domain_type=None, domain_name=None, fig_dict=None, 
@@ -367,7 +367,34 @@ def make_spatial_bias(df, df_reg=None, column_o=None, label_o=None, column_m=Non
     if 'extent' not in map_kwargs:
         map_kwargs['extent'] = [lonmin,lonmax,latmin,latmax]  
     ax.axes.set_extent(map_kwargs['extent'],crs=ccrs.PlateCarree())
-    
+
+    if wind_barb is not None:
+        print("You may experience longer wait times when plotting wind barbs. Please be patient.")
+        
+        # #need the u and v directly for the wind barbs. 
+        def wind_uv_from_speed_dir(windspeed, wind_dir):
+            u = -windspeed * np.sin(np.deg2rad(wind_dir))
+            v = -windspeed * np.cos(np.deg2rad(wind_dir))
+            return u, v
+
+        u_obs, v_obs = wind_uv_from_speed_dir(df_mean["WS"], df_mean["WD"])
+        u_mod, v_mod = wind_uv_from_speed_dir(df_mean["windspeed"], df_mean["winddir"])
+
+        # ensure all bias stats are MODEL-OBS (enables you to tell the direction of the 
+        # model relative to observations)
+        #u_mean=u_mod - u_obs
+        #v_mean=v_mod - v_obs
+
+        # set skip for less clutter
+        skip=2
+        ax.barbs(
+            df_mean["longitude"][::skip], # long
+            df_mean["latitude"][::skip], # lat
+            u_mod[::skip], 
+            v_mod[::skip], # u, v 
+            length=6, linewidth=0.85
+        )  # order per matplot lib follows (x, y, u, v)
+        
     #Update colorbar
     f = plt.gcf()
     model_ax = f.get_axes()[0]
@@ -883,7 +910,7 @@ def make_taylor(df, df_reg=None, column_o=None, label_o='Obs', column_m=None, la
     ax.axis["right"].major_ticklabels.set_fontsize(text_kwargs['fontsize']*0.8)
     return dia
 
-def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None, 
+def make_spatial_overlay(df, vmodel, wind_barb=None, column_o=None, label_o=None, column_m=None, 
                       label_m=None, ylabel = None, vmin=None,
                       vmax = None, nlevels = None, proj = None, outname = 'plot', 
                       domain_type=None, domain_name=None, fig_dict=None, 
@@ -1023,7 +1050,43 @@ def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
         ax = vmodel_mean.monet.quick_contourf(cbar_kwargs=cbar_kwargs, figsize=map_kwargs['figsize'], map_kws=map_kwargs,
                                     robust=True, norm=norm, cmap=cmap, levels=clevel, extend='both') 
     
+
+    #print(vmodel_mean)
+    #print("this is vmod:", vmodel)
+    #print(df_mean)
     
+    if wind_barb is not None: 
+        print("You may experience longer wait times when plotting wind barbs. Please be patient.")
+        # #need the u and v directly for the wind barbs. 
+        def wind_uv_from_speed_dir(windspeed, wind_dir):
+            u = -windspeed * np.sin(np.deg2rad(wind_dir))
+            v = -windspeed * np.cos(np.deg2rad(wind_dir))
+            return u, v
+
+        u,v = wind_uv_from_speed_dir(vmodel.windspeed, vmodel.winddir)
+        #print(u)
+
+        # vector average the wind. DO NOT do scalar average. 
+        u=u.mean(dim="time") # avg. across the dimension time. 
+        v=v.mean(dim="time")
+        
+        # u,v are still 3D. So, need to make 2D
+        u2d = u.isel(z=0)
+        v2d = v.isel(z=0)
+        #print(u2d)
+        
+        lon = u2d["longitude"].values
+        lat = u2d["latitude"].values
+
+        # set skip for less clutter
+        skip=2
+        ax.barbs(
+            lon[::skip, ::skip], 
+            lat[::skip, ::skip],
+            u2d[::skip, ::skip], v2d[::skip, ::skip],
+            length=6, linewidth=0.85
+        )  # order per matplot lib follows (x, y, u, v)
+
     plt.gcf().canvas.draw() 
     plt.tight_layout(pad=0)
     plt.title(title_add + label_o + ' overlaid on ' + label_m,fontweight='bold',**text_kwargs)
@@ -1955,10 +2018,11 @@ def Plot_CSI(column,score_name_input,threshold_list_input, comb_bx_input,plot_di
 
 
 def make_spatial_bias_exceedance(df, column_o=None, label_o=None, column_m=None,
-                      label_m=None, ylabel = None,  vdiff=None,
-                      outname = 'plot',
-                      domain_type=None, domain_name=None, fig_dict=None,
-                      text_dict=None,debug=False):
+                                 wind_barb=None,
+                                 label_m=None, ylabel = None,  vdiff=None,
+                                 outname = 'plot',
+                                 domain_type=None, domain_name=None, fig_dict=None,
+                                 text_dict=None,debug=False):
 
     """Creates surface spatial bias plot. 
     

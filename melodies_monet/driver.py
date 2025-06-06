@@ -1887,7 +1887,10 @@ class analysis:
 
                         if self.output_dir is not None:
                             outname = self.output_dir + '/' + outname  # Extra / just in case.
-
+                            
+                        # Setting wind barbs
+                        wind_barb = grp_dict['data_proc'].get('wind_barb', False)
+                        
                         # Types of plots
                         if plot_type.lower() == 'timeseries' or plot_type.lower() == 'diurnal':
                             if set_yaxis is True:
@@ -2727,9 +2730,14 @@ class analysis:
                                 vdiff = None
                             # p_label needs to be added to the outname for this plot
                             outname = "{}.{}".format(outname, p_label)
+                            
+                            # Setting wind barbs
+                            wind_barb = grp_dict['data_proc'].get('wind_barb', False)
+                            
                             splots.make_spatial_bias(
                                 pairdf,
                                 pairdf_reg,
+                                wind_barb=wind_barb,
                                 column_o=obsvar,
                                 label_o=p.obs,
                                 column_m=modvar,
@@ -2800,6 +2808,7 @@ class analysis:
                             plot_kwargs["label"] = p.model
                             plot_kwargs["outname"] = outname.replace(p.obs, p.model)
                             xrplots.make_spatial_dist(**plot_kwargs)
+                            
                         elif plot_type.lower() == 'spatial_bias_exceedance':
                             if cal_reg:
                                 if set_yaxis is True:
@@ -2818,6 +2827,7 @@ class analysis:
                                     column_o=obsvar+'_reg',
                                     label_o=p.obs,
                                     column_m=modvar+'_reg',
+                                    wind_barb=wind_barb,
                                     label_m=p.model,
                                     ylabel=use_ylabel,
                                     vdiff=vdiff,
@@ -2870,6 +2880,10 @@ class analysis:
                             proj = splots.map_projection(self.models[p.model])
                             # p_label needs to be added to the outname for this plot
                             outname = "{}.{}".format(outname, p_label)
+                            
+                            # Setting wind barbs
+                            wind_barb = grp_dict['data_proc'].get('wind_barb', False)
+                            
                             # For just the spatial overlay plot, you do not use the model data from the pair file
                             # So get the variable name again since pairing one could be _new.
                             # JianHe: only make overplay plots for non-regulatory variables for now
@@ -2877,6 +2891,7 @@ class analysis:
                                 splots.make_spatial_overlay(
                                     pairdf,
                                     vmodel,
+                                    wind_barb=wind_barb,
                                     column_o=obsvar,
                                     label_o=p.obs,
                                     column_m=p.model_vars[index],
@@ -2897,57 +2912,6 @@ class analysis:
                                 print('Warning: Spatial overlay plots are not available yet for regulatory metrics.')
 
                             del (fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict) #Clear info for next plot.
-                            
-                        elif plot_type.lower() == "slr":
-                            if obs_type in ["airnow_ufschem_v1"]:
-                                pairdf_sel = pairdf.squeeze()
-                            else:
-                                pairdf_sel = pairdf
-                            if p_index == 0: 
-                                obs_x, label_x = splots.make_slr_plot(pairdf_sel
-                                                                     )
-                                
-                            splots.make_slr_plot(
-                                pairdf,
-                                column_o=obsvar,
-                                label_o=p.obs,
-                                column_m=modvar,
-                                label_m=p.model,
-
-                                fig_dict=fig_dict,
-                                text_dict=text_dict,
-                                debug=self.debug
-                            )
-
-
-                            # First for p_index = 0 create the obs box plot data array.
-                            if p_index == 0:
-                                comb_bx, label_bx = splots.calculate_boxplot(pairdf_sel, pairdf_reg, column=obsvar,   
-                                                                                       label=p.obs, plot_dict=obs_dict)
-                            # Then add the models to this dataarray.
-                            comb_bx, label_bx = splots.calculate_boxplot(pairdf_sel, pairdf_reg, column=modvar, label=p.model,  
-                                                                                    plot_dict=plot_dict, comb_bx=comb_bx,
-                                                                                    label_bx=label_bx)
-                            # For the last p_index make the plot.
-                            if p_index == len(pair_labels) - 1:
-                                splots.make_boxplot(
-                                    comb_bx,
-                                    label_bx,
-                                    ylabel=use_ylabel,
-                                    vmin=vmin,
-                                    vmax=vmax,
-                                    outname=outname,
-                                    domain_type=domain_type,
-                                    domain_name=domain_name,
-                                    plot_dict=obs_dict,
-                                    fig_dict=fig_dict,
-                                    text_dict=text_dict,
-                                    debug=self.debug,
-                                    set_stat_sig=False
-                                )
-                                #Clear info for next plot.
-                                del (comb_bx, label_bx, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict)   
-
 
         # Restore figure count warning
         plt.rcParams["figure.max_open_warning"] = initial_max_fig
