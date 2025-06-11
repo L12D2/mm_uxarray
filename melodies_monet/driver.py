@@ -1616,11 +1616,19 @@ class analysis:
             if plot_type == 'multi_boxplot':
                 interval_list = grp_dict.get('interval_list', None)
                 interval_var = grp_dict.get('interval_var', None)
+                gridlines = grp_dict.get('gridlines', None)
                 interval_labels = grp_dict.get('interval_labels', None)
                 region_name = grp_dict.get('region_name', None)
                 region_list = grp_dict.get('region_list', None)
-                model_name_list = grp_dict.get('model_name_list', None)     
+                model_name_list = grp_dict.get('model_name_list', None)    
 
+            #read-in special settings for multi-boxplot
+            if plot_type == 'boxplot':
+                gridlines = grp_dict.get('gridlines', None)
+            
+            if plot_type == 'violin':
+                gridlines = grp_dict.get('gridlines', None)   
+                
             #read-in special settings for ozone sonde related plots
             if plot_type in {'vertical_single_date', 'vertical_boxplot_os', 'density_scatter_plot_os'}:
                 altitude_range = grp_dict['altitude_range']
@@ -1651,6 +1659,7 @@ class analysis:
                 score_name = grp_dict['score_name']
                 model_name_list = grp_dict['model_name_list']
                 threshold_tick_style = grp_dict.get('threshold_tick_style',None)
+                gridlines = grp_dict.get('gridlines', None)
 
             #read-in special settings for rose plot
             if plot_type == "rose_plot":
@@ -1776,7 +1785,7 @@ class analysis:
                         outname = "{}.{}.{}.{}.{}.{}.{}".format(grp, plot_type, obsvar, startdatename, enddatename, domain_type, domain_name)
                         # Setting statistical Significance for Boxplots and Violin plots 
                         set_stat_sig = grp_dict['data_proc'].get('set_stat_sig', False)
-                    
+                       
                         # Query with filter options
                         if 'filter_dict' in grp_dict['data_proc'] and 'filter_string' in grp_dict['data_proc']:
                             raise Exception("""For plot group: {}, only one of filter_dict and filter_string can be specified.""".format(grp))
@@ -2420,6 +2429,7 @@ class analysis:
                                     domain_name=domain_name,
                                     fig_dict=fig_dict,
                                     text_dict=text_dict,
+                                    gridlines=gridlines,
                                     debug=self.debug
                                 )
                             
@@ -2443,6 +2453,8 @@ class analysis:
                             vmax_x = scatter_density_config.get('vmax_x', None)
                             vmin_y = scatter_density_config.get('vmin_y', None)
                             vmax_y = scatter_density_config.get('vmax_y', None)
+
+                            gridlines = scatter_density_config.get("gridlines", None)
                                                     
                             # Accessing the correct model and observation configuration/labels/variables
                             model_label = p.model
@@ -2481,7 +2493,7 @@ class analysis:
                             
                             # Create the scatter density plot
                             print(f"Processing scatter density plot for model '{model_label}' and observation '{obs_label}'...")
-                            ax = airplots.make_scatter_density_plot(
+                            ax = splots.make_scatter_density_plot(
                                 pairdf,
                                 mod_var=modvar,
                                 obs_var=obsvar,
@@ -2544,7 +2556,8 @@ class analysis:
                                     fig_dict=fig_dict,
                                     text_dict=text_dict,
                                     debug=self.debug,
-                                    set_stat_sig=False
+                                    set_stat_sig=False,
+                                    gridlines = gridlines,
                                 )
                                 #Clear info for next plot.
                                 del (comb_bx, label_bx, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict)   
@@ -2604,6 +2617,7 @@ class analysis:
                                     plot_dict=obs_dict,
                                     fig_dict=fig_dict,
                                     text_dict=text_dict,
+                                    gridlines = gridlines,
                                     debug=self.debug)
                                 #Clear info for next plot.
                                 del (comb_bx, label_bx,region_bx, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict)
@@ -2677,7 +2691,8 @@ class analysis:
                                                 domain_type=domain_type,
                                                 domain_name=domain_name,
                                                 model_name_list=model_name_list,
-                                                threshold_tick_style=threshold_tick_style)
+                                                threshold_tick_style=threshold_tick_style,
+                                                gridlines=gridlines)
                                 #save figure
                                 plt.tight_layout()
                                 savefig(outname +'.'+score_name+'.png', loc=1, logo_height=100) 

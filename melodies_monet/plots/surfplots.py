@@ -527,7 +527,7 @@ def make_timeseries(df, df_reg=None, column=None, label=None, ax=None, avg_windo
             ax.set_title(domain_name,fontweight='bold',**text_kwargs)
     return ax
 
-def make_scatter_density_plot(df, mod_var=None, obs_var=None, ax=None, color_map='viridis', xlabel=None, ylabel=None, title=None, fill=False, vmin_x=None, vmax_x=None, vmin_y=None, vmax_y=None, outname='plot', **kwargs):
+def make_scatter_density_plot(df, mod_var=None, obs_var=None, ax=None, color_map='viridis', xlabel=None, ylabel=None, title=None, fill=False, vmin_x=None, vmax_x=None, vmin_y=None, gridlines = False, vmax_y=None, outname='plot', **kwargs):
     
     """  
     Creates a scatter density plot for the specified column (variable) in the paired DataFrame (df).
@@ -556,7 +556,8 @@ def make_scatter_density_plot(df, mod_var=None, obs_var=None, ax=None, color_map
         File location and name of plot.
     **kwargs: dict 
         Additional keyword arguments for customization
-
+    gridlines : boolean
+        Draws background gridlines 
     Returns
     -------
     ax : ax
@@ -595,7 +596,7 @@ def make_scatter_density_plot(df, mod_var=None, obs_var=None, ax=None, color_map
 
     if isinstance(cmap, mpl.colors.ListedColormap):
         cmap = LinearSegmentedColormap.from_list("custom", cmap.colors)
-
+        
     # Check if 'ax' is None and create a new subplot if needed
     if ax is None:
         fig, ax = plt.subplots()
@@ -641,6 +642,12 @@ def make_scatter_density_plot(df, mod_var=None, obs_var=None, ax=None, color_map
         plt.plot(x_line, y_line, color="black", ls="--", label="Best Fit Line")
         plt.legend()
     
+    # gridline option
+    if gridlines is not None:
+        ax.grid(True)
+    else:
+        ax.grid(False)
+        
     # Set plot labels and titles
     if xlabel:
         plt.xlabel(xlabel, fontweight='bold')
@@ -1267,7 +1274,7 @@ def calculate_multi_boxplot(df, df_reg=None, region_name= None, interval_list=No
 
 def make_boxplot(comb_bx, label_bx, ylabel = None, vmin = None, vmax = None, outname='plot',
                  domain_type=None, domain_name=None,
-                 plot_dict=None, fig_dict=None,text_dict=None,debug=False, set_stat_sig=False):
+                 plot_dict=None, fig_dict=None,text_dict=None,debug=False, set_stat_sig=False, gridlines = False):
 
     """Creates box-plot. 
 
@@ -1302,6 +1309,8 @@ def make_boxplot(comb_bx, label_bx, ylabel = None, vmin = None, vmax = None, out
         submitting jobs to supercomputer turn off interactive mode.
     set_stat_sig : boolean 
         Whether to provide statistical significance marker or not. 
+    gridlines : boolean
+        Draws background gridlines
     Returns
     -------
     plot 
@@ -1319,7 +1328,13 @@ def make_boxplot(comb_bx, label_bx, ylabel = None, vmin = None, vmax = None, out
     # set ylabel to column if not specified.
     if ylabel is None:
         ylabel = label_bx[0]['column']
-
+    
+    # gridline option
+    if gridlines is not None:
+        sns.set_style("whitegrid")
+    else:
+        sns.set_style("ticks")
+        
     #Fix the order and palette colors
     order_box = []
     pal = {}
@@ -1332,6 +1347,7 @@ def make_boxplot(comb_bx, label_bx, ylabel = None, vmin = None, vmax = None, out
         f,ax = plt.subplots(**fig_dict)
     else:
         f,ax = plt.subplots(figsize=(8,8))
+        
     #Define characteristics of boxplot.
     boxprops = {'edgecolor': 'k', 'linewidth': 1.5}
     lineprops = {'color': 'k', 'linewidth': 1.5}
@@ -1348,13 +1364,12 @@ def make_boxplot(comb_bx, label_bx, ylabel = None, vmin = None, vmax = None, out
                   'meanprops': {'marker': ".", 'markerfacecolor': 'black',
                                 'markeredgecolor': 'black',
                                'markersize': 20.0}}
-    sns.set_style("whitegrid")
-    sns.set_style("ticks")
+          
     sns.boxplot(ax=ax,x="variable", y="value",data=pd.melt(comb_bx), hue="variable", **boxplot_kwargs)
     ax.set_xlabel('')
     ax.set_ylabel(ylabel,fontweight='bold',**text_kwargs)
     ax.tick_params(labelsize=text_kwargs['fontsize']*0.8)
-
+        
     if set_stat_sig is not None:
         # statistical significance of the means 
         p_values = []
@@ -1377,7 +1392,7 @@ def make_boxplot(comb_bx, label_bx, ylabel = None, vmin = None, vmax = None, out
         
         annotator.configure(test=None, text_format='star', loc='inside', verbose=2, line_offset_to_group=-0.15, fontsize = text_kwargs["fontsize"]) 
         annotator.set_pvalues_and_annotate(p_values) 
-    
+        
     if domain_type is not None and domain_name is not None:
         if domain_type == 'epa_region':
             ax.set_title('EPA Region ' + domain_name,fontweight='bold',**text_kwargs)
@@ -1391,7 +1406,7 @@ def make_boxplot(comb_bx, label_bx, ylabel = None, vmin = None, vmax = None, out
   
 def make_multi_boxplot(comb_bx, label_bx,region_bx,region_list = None, region_name=None, interval_labels=None, interval_var=None, interval_list=None, model_name_list=None,ylabel = None, vmin = None, vmax = None, outname='plot',  
                        domain_type=None, domain_name=None,
-                       plot_dict=None, fig_dict=None,text_dict=None,debug=False):
+                       plot_dict=None, fig_dict=None,text_dict=None,debug=False, gridlines = False):
     
     """Creates box-plot. 
     
@@ -1429,7 +1444,8 @@ def make_multi_boxplot(comb_bx, label_bx,region_bx,region_list = None, region_na
     debug : boolean
         Whether to plot interactively (True) or not (False). Flag for 
         submitting jobs to supercomputer turn off interactive mode.
-        
+    gridlines : boolean
+        Draws background gridlines    
     Returns
     -------
     plot 
@@ -1449,6 +1465,12 @@ def make_multi_boxplot(comb_bx, label_bx,region_bx,region_list = None, region_na
     if ylabel is None:
         ylabel = label_bx[0]['column']
     
+    # gridline option
+    if gridlines is not None:
+        sns.set_style("whitegrid")
+    else:
+        sns.set_style("ticks")
+        
     #Fix the order and palette colors
     order_box = []
     pal = {}
@@ -1468,7 +1490,8 @@ def make_multi_boxplot(comb_bx, label_bx,region_bx,region_list = None, region_na
         f,ax = plt.subplots(**fig_dict)    
     else: 
         f,ax = plt.subplots(figsize=(8,8))
-    #Define characteristics of boxplot.
+        
+    #Define characteristics of boxplot. 
     boxprops = {'edgecolor': 'k', 'linewidth': 1.5}
     lineprops = {'color': 'k', 'linewidth': 1.5}
     boxplot_kwargs = {'boxprops': boxprops, 'medianprops': lineprops,
@@ -1484,8 +1507,7 @@ def make_multi_boxplot(comb_bx, label_bx,region_bx,region_list = None, region_na
                   'meanprops': {'marker': ".", 'markerfacecolor': 'black', 
                                 'markeredgecolor': 'black',
                                'markersize': 20.0}}
-    sns.set_style("whitegrid")
-    sns.set_style("ticks")
+        
     len_combx = len(comb_bx.columns)
 
     data_obs = comb_bx[comb_bx.columns[0]].to_frame().rename({comb_bx.columns[0]:'Value'},axis=1)
@@ -1523,12 +1545,12 @@ def make_multi_boxplot(comb_bx, label_bx,region_bx,region_list = None, region_na
                 data=tdf.loc[tdf.Regions.isin(acro)],
                 order=acro,
                 showfliers=False,**boxplot_kwargs)
-
+        
     ax.set_xlabel('')
     ax.set_ylabel(ylabel,fontweight='bold',**text_kwargs)
     ax.tick_params(labelsize=text_kwargs['fontsize']*0.8)
     plt.legend(fontsize=text_kwargs['fontsize']*0.8)
-
+        
     if domain_type is not None and domain_name is not None:
         if domain_type == 'epa_region':
             ax.set_title('EPA Region ' + domain_name,fontweight='bold',**text_kwargs)
@@ -1540,13 +1562,6 @@ def make_multi_boxplot(comb_bx, label_bx,region_bx,region_list = None, region_na
     plt.tight_layout()
     savefig(outname + '.png', loc=4, logo_height=100)
 
-    # if msa_name is not None:
-    #     msa = comb_bx[comb_bx["msa_name"]==" Sacramento--Arden-Arcade--Roseville, CA "] # need to make sure this is the yaml option
-    #     df_obs = msa.copy()
-    #     df_mod = msa.copy()
-    #     df_obs=df_obs.dropna(subset = ["WD", "WS"], axis = 0) # drop rows where the subset column value has NAN 
-    #     df_mod=df_mod.dropna(subset = ["winddir", "windspeed"], axis = 0) # drop rows where the subset column value has NAN . This has to be each time for modeled and observation.  
-    # # insert a print statement that shows what msa_names are supported if msa_name provided is not valid
     
 def make_rose_plot(rose_df, 
                    obsvar,
@@ -2075,7 +2090,7 @@ def Calc_Score(score_name_input,threshold_input, model_input, obs_input):
    
     return output_score
 
-def Plot_CSI(column,score_name_input,threshold_list_input, comb_bx_input,plot_dict,fig_dict,text_dict,domain_type,domain_name,model_name_list,threshold_tick_style):
+def Plot_CSI(column,score_name_input,threshold_list_input, comb_bx_input,plot_dict,fig_dict,text_dict,domain_type,domain_name,model_name_list,threshold_tick_style, gridlines = None):
 
     CSI_output = []  #(2, threshold len)
     threshold_list = threshold_list_input
@@ -2116,7 +2131,12 @@ def Plot_CSI(column,score_name_input,threshold_list_input, comb_bx_input,plot_di
         ax.tick_params(labelsize=text_kwargs['fontsize']*0.8)
         plt.ylim(0,1)
         plt.legend(fontsize=text_kwargs['fontsize']*0.6)
-        plt.grid()
+    
+    # gridline option
+    if gridlines:
+        plt.grid(True)
+    else:
+        plt.grid(False)
      
     #add '>' to xticks
     if threshold_tick_style == 'nonlinear':

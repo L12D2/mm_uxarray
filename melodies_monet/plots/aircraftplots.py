@@ -738,7 +738,7 @@ def make_vertprofile(df, column=None, label=None, ax=None, bins=None, altitude_v
 
 
 ##NEW Scatter Density Plot for model obs pairs (matplotlib scatter plot if fill=False or seaborn kde sactter density plot if fill= True)
-def make_scatter_density_plot(df, mod_var=None, obs_var=None, ax=None, color_map='viridis', xlabel=None, ylabel=None, title=None, fill=False, vmin_x=None, vmax_x=None, vmin_y=None, vmax_y=None, outname='plot', **kwargs):
+def make_scatter_density_plot(df, mod_var=None, obs_var=None, ax=None, color_map='viridis', xlabel=None, ylabel=None, title=None, fill=False, vmin_x=None, vmax_x=None, vmin_y=None, vmax_y=None, outname='plot', gridlines = False, **kwargs):
     
     """  
     Creates a scatter density plot for the specified column (variable) in the paired DataFrame (df).
@@ -767,7 +767,8 @@ def make_scatter_density_plot(df, mod_var=None, obs_var=None, ax=None, color_map
         File location and name of plot.
     **kwargs: dict 
         Additional keyword arguments for customization
-
+    gridlines : boolean
+        Draws background gridlines
     Returns
     -------
     ax : ax
@@ -932,7 +933,7 @@ def calculate_violin(df, column=None, label=None,
 def make_violin_plot(comb_violin, label_violin, outname='plot',
                      domain_type=None, domain_name=None,
                      fig_dict=None, text_dict=None, debug=False,
-                     ylabel=None, vmin=None, vmax=None):  
+                     ylabel=None, vmin=None, vmax=None, gridlines=False):  
     """
     Creates a violin plot using combined data from multiple model/observation datasets.
 
@@ -960,7 +961,8 @@ def make_violin_plot(comb_violin, label_violin, outname='plot',
         The minimum value for the y-axis.
     vmax : float, optional
         The maximum value for the y-axis.
-
+    gridlines : boolean
+        Draws background gridlines
     Returns
     -------
     None
@@ -984,7 +986,12 @@ def make_violin_plot(comb_violin, label_violin, outname='plot',
     # Set default text size, modify here for bigger text
     def_text = dict(fontsize=14)  # can increase fontsize for default text (> 14) 
     text_kwargs = {**def_text, **text_dict} if text_dict else def_text
-
+    
+    # gridline option
+    if gridlines is not None:
+        plt.grid(True)
+    else:
+        plt.grid(False)
 
     # Create the violin plot
     # Use 'hue' parameter and set 'orient' to 'v' for vertical orientation
