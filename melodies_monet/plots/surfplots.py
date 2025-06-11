@@ -19,6 +19,8 @@ import math
 from ..plots import savefig
 from scipy.stats import ttest_ind
 from statannotations.Annotator import Annotator
+import windrose # windrose package not found via conda.. 
+from windrose import WindroseAxes
 
 def make_24hr_regulatory(df, col=None):
     """Calculates 24-hour averages
@@ -1533,6 +1535,159 @@ def make_multi_boxplot(comb_bx, label_bx,region_bx,region_list = None, region_na
     
     plt.tight_layout()
     savefig(outname + '.png', loc=4, logo_height=100)
+
+# may not be necessary... 
+"""def calc_rose_plot(df,
+                   obsvar, 
+                   modvar,
+                   region_list = None, 
+                   region_name = None, 
+                   epa_region=None,
+                   msa_name=None,
+                   pollution_rose = None, 
+                   pollutant = None, 
+                   color_map="viridis",
+                   outname = 'plot', 
+                   domain_type=None, domain_name=None, 
+                   fig_dict=None, 
+                   plot_dict = None,
+                   text_dict=None,
+                   debug=False):
+    
+    # open region list 
+    axes_list = []
+    if region_list is not None and region_name is not None:
+        for region in region_list:
+            rose_df = df[df[region_name] == region].copy()
+            if rose_df.empty:
+                print(f"Warning. No data for {region_name} = {region}")
+                continue
+            axes = make_rose_plot(
+                rose_df,
+                obsvar=obsvar,
+                modvar=modvar,
+                region_list=None, 
+                region_name=None,
+                epa_region=epa_region,
+                msa_name=msa_name,
+                pollution_rose=pollution_rose,
+                pollutant=pollutant,
+                color_map=color_map,
+                outname=f"{outname}_{region}",
+                domain_type=domain_type,
+                domain_name=region,  
+                fig_dict=fig_dict,
+                plot_dict=plot_dict,
+                text_dict=text_dict,
+                debug=debug
+            )
+            axes_list.append(axes)
+        else:
+            axes = make_rose_plot(
+                df,
+                obsvar=obsvar,
+                modvar=modvar,
+                region_list=region_list,
+                region_name=region_name,
+                epa_region=epa_region,
+                msa_name=msa_name,
+                pollution_rose=pollution_rose,
+                pollutant=pollutant,
+                color_map=color_map,
+                outname=outname,
+                domain_type=domain_type,
+                domain_name=domain_name,
+                fig_dict=fig_dict,
+                plot_dict=plot_dict,
+                text_dict=text_dict,
+                debug=debug
+            )
+            axes_list.append(axes)
+            savefig(outname + '.png', logo_height=250)
+        return axes_list"""
+
+    # if msa_name is not None:
+    #     msa = comb_bx[comb_bx["msa_name"]==" Sacramento--Arden-Arcade--Roseville, CA "] # need to make sure this is the yaml option
+    #     df_obs = msa.copy()
+    #     df_mod = msa.copy()
+    #     df_obs=df_obs.dropna(subset = ["WD", "WS"], axis = 0) # drop rows where the subset column value has NAN 
+    #     df_mod=df_mod.dropna(subset = ["winddir", "windspeed"], axis = 0) # drop rows where the subset column value has NAN . This has to be each time for modeled and observation.  
+    # # insert a print statement that shows what msa_names are supported if msa_name provided is not valid
+    
+def make_rose_plot(rose_df, 
+                   obsvar,
+                   modvar,
+                   color_map="viridis",
+                   outname = 'plot', 
+                   domain_type=None, 
+                   domain_name=None, 
+                   fig_dict=None, 
+                   plot_dict = None,
+                   text_dict=None,
+                   debug=False):
+
+    """
+    
+    """
+    if debug is False:
+        plt.ioff()
+    def_text = dict(fontsize=14)
+    if text_dict is not None:
+        text_kwargs = {**def_text, **text_dict}
+    else:
+        text_kwargs = def_text
+
+    #not supported by the windroseaxes library 
+    # if fig_dict is not None:
+    #     fig = plt.subplots(**fig_dict)
+    # else:
+    #     fig = plt.subplots((8,8))
+        
+    #Plot settings
+    fig = plt.figure(figsize = (8,8))
+    
+    #need to be put in fig_dict? 
+    rect_set1 = [0.3, 0.1, 0.4, 0.8]
+    rect_set2 = [0.98, 0.1, 0.4, 0.8]
+    colors = plt.cm.plasma
+        
+    #draw ax1 
+    ax1 = WindroseAxes.from_ax(fig = fig,rect=rect_set1)
+    ax1.bar(rose_df.WD, rose_df[obsvar], normed=True, cmap=colors, label = "Observed")
+    #print(rose_df.WD.mode()[0])
+    
+    # draw ax2
+    ax2 = WindroseAxes.from_ax(fig = fig, rect=rect_set2)
+    ax2.bar(rose_df.winddir, rose_df[modvar], normed=True, cmap=colors, label = "Modeled")
+    #print(rose_df.winddir.mode()[0])
+    
+    # set label settings for the two axs
+    for ax in [ax1, ax2]:
+        fontsize = text_kwargs["fontsize"]*0.8
+        ax.set_thetagrids(range(0, 360, 45), 
+                          fontsize=fontsize)
+
+        for label in ax.get_yticklabels():
+            label.set_fontsize(fontsize*0.8)
+        
+    ax1.set_xlabel("Observed", fontsize=text_kwargs["fontsize"]*0.9)
+    ax2.set_xlabel("Modeled", fontsize=text_kwargs["fontsize"]*0.9)
+    
+    legend_title = f"{obsvar}" # dynamically set eventually 
+    plt.legend(loc=(1.28, 0.4), fontsize=text_kwargs['fontsize']*0.8, title=legend_title,
+              title_fontsize=text_kwargs["fontsize"]*0.8)
+
+    if domain_type is not None and domain_name is not None:
+        if domain_type == 'epa_region':
+            ax1.set_title('EPA Region ' + domain_name,fontweight='bold',**text_kwargs)
+        else:
+            ax1.set_title(domain_name,fontweight='bold',**text_kwargs)
+    
+    print(f"Saving rose plot to {outname}...")
+    savefig(outname + '.png', loc=4, logo_height=150, dpi=300)
+    
+    plt.show()
+    return (ax1, ax2)
 
 def scorecard_step1_combine_df(df, df_reg=None, region_name=None, urban_rural_name=None,column=None, label=None, plot_dict=None, comb_bx = None, label_bx = None):
     """Combines data into acceptable format for box-plot

@@ -1572,6 +1572,7 @@ class analysis:
         from .util.tools import resample_stratify
         from .util.region_select import select_region
         import matplotlib.pyplot as plt
+        
         pair_keys = list(self.paired.keys())
         if self.paired[pair_keys[0]].type.lower() in ['sat_grid_clm','sat_swath_clm']:
             from .plots import satplots as splots,savefig
@@ -1651,14 +1652,11 @@ class analysis:
                 model_name_list = grp_dict['model_name_list']
                 threshold_tick_style = grp_dict.get('threshold_tick_style',None)
 
-            # Read in special settings for SLR 
-            if plot_type == "slr":
-                model_name_list = grp_dict["model_name_list"]
-               
+            #read-in special settings for rose plot
+            if plot_type == "rose_plot":
+                print("Development use only. Go back and add options?")
             
-
             # first get the observational obs labels
-
             obs_vars = []
             for pair_label in pair_labels:
                 obs_vars.extend(self.paired[pair_label].obs_vars)
@@ -1969,7 +1967,8 @@ class analysis:
                                     make_timeseries = splots.make_diurnal_cycle
                                 plot_kwargs = {
                                     'df': pairdf, 'df_reg': pairdf_reg, 'column': obsvar
-                                }
+                                }      
+                                
                             settings = grp_dict.get('settings', {})
                             plot_kwargs = {
                                 **plot_kwargs,
@@ -1988,6 +1987,7 @@ class analysis:
                                 },
                                 **settings
                             }
+                            
                             if p_index == 0:
                                 # First plot the observations.
                                 ax = make_timeseries(**plot_kwargs)
@@ -2232,6 +2232,30 @@ class analysis:
                                 savefig(outname + '.png', logo_height=250)
                                 del (ax, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict) # Clear axis for next plot.
 
+                        elif plot_type.lower() == 'rose_plot':
+                            
+                                rose_df = pairdf.reset_index().dropna(subset=["WD", "winddir"], axis=0)
+                                #print(len(rose_df) 
+                                # WD and winddir are not optional
+                                # user can change out obsvar and modvar to create pollution rose. 
+
+                                splots.make_rose_plot(
+                                    rose_df,
+                                    obsvar=obsvar,
+                                    modvar=modvar,
+                                    outname=outname,
+                                    domain_type=domain_type,
+                                    domain_name=domain_name,
+                                    plot_dict=obs_dict,
+                                    fig_dict=fig_dict,
+                                    text_dict=text_dict,
+                                    debug=self.debug)
+                    
+                                #savefig(outname + '.png', logo_height=250)
+                    
+                                #Clear info for next plot.
+                                del (fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict)
+                            
                         elif plot_type.lower() == 'vertical_single_date':
                             #to use vmin, vmax from obs in yaml
                             if set_yaxis is True:
@@ -2583,7 +2607,7 @@ class analysis:
                                     debug=self.debug)
                                 #Clear info for next plot.
                                 del (comb_bx, label_bx,region_bx, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict)
-                                
+                            
                         elif plot_type.lower() == 'scorecard':
                             # First for p_index = 0 create the obs box plot data array.
                             if p_index == 0:
@@ -2915,7 +2939,7 @@ class analysis:
 
         # Restore figure count warning
         plt.rcParams["figure.max_open_warning"] = initial_max_fig
-
+            
     def stats(self):
         """Calculate statistics specified in the input yaml file.
         
