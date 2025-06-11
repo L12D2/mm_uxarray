@@ -926,6 +926,8 @@ def make_spatial_overlay(df, vmodel, wind_barb=None, column_o=None, label_o=None
         model/obs pair data to plot
     vmodel: dataarray
         slice of model data to plot
+    wind_barb : dataarray
+        slice of wind to plot
     column_o : str
         Column label of observation variable to plot
     label_o : str
@@ -1298,6 +1300,8 @@ def make_boxplot(comb_bx, label_bx, ylabel = None, vmin = None, vmax = None, out
     debug : boolean
         Whether to plot interactively (True) or not (False). Flag for
         submitting jobs to supercomputer turn off interactive mode.
+    set_stat_sig : boolean 
+        Whether to provide statistical significance marker or not. 
     Returns
     -------
     plot 
@@ -1536,76 +1540,6 @@ def make_multi_boxplot(comb_bx, label_bx,region_bx,region_list = None, region_na
     plt.tight_layout()
     savefig(outname + '.png', loc=4, logo_height=100)
 
-# may not be necessary... 
-"""def calc_rose_plot(df,
-                   obsvar, 
-                   modvar,
-                   region_list = None, 
-                   region_name = None, 
-                   epa_region=None,
-                   msa_name=None,
-                   pollution_rose = None, 
-                   pollutant = None, 
-                   color_map="viridis",
-                   outname = 'plot', 
-                   domain_type=None, domain_name=None, 
-                   fig_dict=None, 
-                   plot_dict = None,
-                   text_dict=None,
-                   debug=False):
-    
-    # open region list 
-    axes_list = []
-    if region_list is not None and region_name is not None:
-        for region in region_list:
-            rose_df = df[df[region_name] == region].copy()
-            if rose_df.empty:
-                print(f"Warning. No data for {region_name} = {region}")
-                continue
-            axes = make_rose_plot(
-                rose_df,
-                obsvar=obsvar,
-                modvar=modvar,
-                region_list=None, 
-                region_name=None,
-                epa_region=epa_region,
-                msa_name=msa_name,
-                pollution_rose=pollution_rose,
-                pollutant=pollutant,
-                color_map=color_map,
-                outname=f"{outname}_{region}",
-                domain_type=domain_type,
-                domain_name=region,  
-                fig_dict=fig_dict,
-                plot_dict=plot_dict,
-                text_dict=text_dict,
-                debug=debug
-            )
-            axes_list.append(axes)
-        else:
-            axes = make_rose_plot(
-                df,
-                obsvar=obsvar,
-                modvar=modvar,
-                region_list=region_list,
-                region_name=region_name,
-                epa_region=epa_region,
-                msa_name=msa_name,
-                pollution_rose=pollution_rose,
-                pollutant=pollutant,
-                color_map=color_map,
-                outname=outname,
-                domain_type=domain_type,
-                domain_name=domain_name,
-                fig_dict=fig_dict,
-                plot_dict=plot_dict,
-                text_dict=text_dict,
-                debug=debug
-            )
-            axes_list.append(axes)
-            savefig(outname + '.png', logo_height=250)
-        return axes_list"""
-
     # if msa_name is not None:
     #     msa = comb_bx[comb_bx["msa_name"]==" Sacramento--Arden-Arcade--Roseville, CA "] # need to make sure this is the yaml option
     #     df_obs = msa.copy()
@@ -1626,9 +1560,38 @@ def make_rose_plot(rose_df,
                    text_dict=None,
                    debug=False):
 
+    """Creates windroses and pollution roses. Roses can be generated for any meteorological and chemical variable. 
+    
+    Parameters
+    ----------
+    rose_df : dataframe
+             model/obs pair data to plot
+    obsvar: 
+             observed variable to compare with observed wind direction
+    obsvar: 
+             modeled variable to compare with modeled wind direction
+    color_map: 
+             TBD
+    outname : str
+        file location and name of plot (do not include .png)
+    domain_type : str
+        Domain type specified in input yaml file
+    domain_name : str
+        Domain name specified in input yaml file
+    fig_dict : dictionary
+        Dictionary containing information about figure
+    text_dict : dictionary
+        Dictionary containing information about text
+    debug : boolean
+        Whether to plot interactively (True) or not (False). Flag for 
+        submitting jobs to supercomputer turn off interactive mode.
+    
+    Returns
+    -------
+    plot 
+        rose plot  
     """
     
-    """
     if debug is False:
         plt.ioff()
     def_text = dict(fontsize=14)
