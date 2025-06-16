@@ -249,7 +249,7 @@ def get_utcoffset(lat,lon):
     return utchour
 
 
-def make_spatial_bias(df, df_reg=None, wind_barb=None, column_o=None, label_o=None, column_m=None, 
+def make_spatial_bias(df, df_reg=None, wind_barb=False, column_o=None, label_o=None, column_m=None, 
                       label_m=None, ylabel = None, ptile = None, vdiff=None,
                       outname = 'plot', 
                       domain_type=None, domain_name=None, fig_dict=None, 
@@ -370,7 +370,7 @@ def make_spatial_bias(df, df_reg=None, wind_barb=None, column_o=None, label_o=No
         map_kwargs['extent'] = [lonmin,lonmax,latmin,latmax]  
     ax.axes.set_extent(map_kwargs['extent'],crs=ccrs.PlateCarree())
 
-    if wind_barb is not None:
+    if wind_barb:
         print("You may experience longer wait times when plotting wind barbs. Please be patient.")
         
         # #need the u and v directly for the wind barbs. 
@@ -919,7 +919,7 @@ def make_taylor(df, df_reg=None, column_o=None, label_o='Obs', column_m=None, la
     ax.axis["right"].major_ticklabels.set_fontsize(text_kwargs['fontsize']*0.8)
     return dia
 
-def make_spatial_overlay(df, vmodel, wind_barb=None, column_o=None, label_o=None, column_m=None, 
+def make_spatial_overlay(df, vmodel, wind_barb=False, column_o=None, label_o=None, column_m=None, 
                       label_m=None, ylabel = None, vmin=None,
                       vmax = None, nlevels = None, proj = None, outname = 'plot', 
                       domain_type=None, domain_name=None, fig_dict=None, 
@@ -1066,7 +1066,7 @@ def make_spatial_overlay(df, vmodel, wind_barb=None, column_o=None, label_o=None
     #print("this is vmod:", vmodel)
     #print(df_mean)
     
-    if wind_barb is not None: 
+    if wind_barb: # is not None: 
         print("You may experience longer wait times when plotting wind barbs. Please be patient.")
         # #need the u and v directly for the wind barbs. 
         def wind_uv_from_speed_dir(windspeed, wind_dir):
@@ -1364,12 +1364,12 @@ def make_boxplot(comb_bx, label_bx, ylabel = None, vmin = None, vmax = None, out
                   'meanprops': {'marker': ".", 'markerfacecolor': 'black',
                                 'markeredgecolor': 'black',
                                'markersize': 20.0}}
-          
+
     sns.boxplot(ax=ax,x="variable", y="value",data=pd.melt(comb_bx), hue="variable", **boxplot_kwargs)
     ax.set_xlabel('')
     ax.set_ylabel(ylabel,fontweight='bold',**text_kwargs)
     ax.tick_params(labelsize=text_kwargs['fontsize']*0.8)
-        
+
     if set_stat_sig is not None:
         # statistical significance of the means 
         p_values = []
@@ -1390,9 +1390,10 @@ def make_boxplot(comb_bx, label_bx, ylabel = None, vmin = None, vmax = None, out
         annotator = Annotator(ax, pairs, data=pd.melt(comb_bx), x='variable', y='value', order=order_box)
         # for more than 2 violin plots/boxplots, you can use pairs = [] to specify how the stat sig test is done.
         
-        annotator.configure(test=None, text_format='star', loc='inside', verbose=2, line_offset_to_group=-0.15, fontsize = text_kwargs["fontsize"]) 
+        annotator.configure(test=None, text_format='star', verbose=2, loc='inside',
+                            line_offset_to_group=-0.15, fontsize = text_kwargs["fontsize"]) 
         annotator.set_pvalues_and_annotate(p_values) 
-        
+            
     if domain_type is not None and domain_name is not None:
         if domain_type == 'epa_region':
             ax.set_title('EPA Region ' + domain_name,fontweight='bold',**text_kwargs)

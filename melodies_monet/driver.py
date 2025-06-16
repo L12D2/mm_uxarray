@@ -4,6 +4,7 @@
 Drive the entire analysis package via the :class:`analysis` class.
 """
 import monetio as mio
+from monetio import models
 import monet as m
 import os
 import xarray as xr
@@ -632,6 +633,10 @@ class model:
         self.mask_and_scale()
         self.rename_vars() # rename any variables as necessary 
         self.sum_variables()
+
+    #if u,v in list_input_var:
+        # self.calculate_met()
+        # 
 
     def rename_vars(self):
         """Rename any variables in model with rename set.
@@ -1625,9 +1630,20 @@ class analysis:
             #read-in special settings for multi-boxplot
             if plot_type == 'boxplot':
                 gridlines = grp_dict.get('gridlines', None)
-            
+                set_stat_sig = grp_dict.get('data_proc', {}).get('set_stat_sig', None)
+                
+            # read in special settings for violin 
             if plot_type == 'violin':
-                gridlines = grp_dict.get('gridlines', None)   
+                gridlines = grp_dict.get('gridlines', None) 
+                set_stat_sig = grp_dict.get('data_proc', {}).get('set_stat_sig', None)
+
+            # read in special settings for spatial overlay
+            if plot_type == "spatial_overlay":
+                wind_barb = grp_dict.get('data_proc', {}).get('wind_barb', None)
+
+            # read in special settings for spatial bias
+            if plot_type == "spatial_bias":
+                wind_barb = grp_dict.get('data_proc', {}).get('wind_barb', None)
                 
             #read-in special settings for ozone sonde related plots
             if plot_type in {'vertical_single_date', 'vertical_boxplot_os', 'density_scatter_plot_os'}:
@@ -1783,8 +1799,9 @@ class analysis:
 
                         # Determine outname
                         outname = "{}.{}.{}.{}.{}.{}.{}".format(grp, plot_type, obsvar, startdatename, enddatename, domain_type, domain_name)
+                        
                         # Setting statistical Significance for Boxplots and Violin plots 
-                        set_stat_sig = grp_dict['data_proc'].get('set_stat_sig', False)
+                        #set_stat_sig = grp_dict['data_proc'].get('set_stat_sig', False)
                        
                         # Query with filter options
                         if 'filter_dict' in grp_dict['data_proc'] and 'filter_string' in grp_dict['data_proc']:
@@ -2556,7 +2573,7 @@ class analysis:
                                     fig_dict=fig_dict,
                                     text_dict=text_dict,
                                     debug=self.debug,
-                                    set_stat_sig=False,
+                                    set_stat_sig=set_stat_sig,
                                     gridlines = gridlines,
                                 )
                                 #Clear info for next plot.
@@ -2771,7 +2788,7 @@ class analysis:
                             outname = "{}.{}".format(outname, p_label)
                             
                             # Setting wind barbs
-                            wind_barb = grp_dict['data_proc'].get('wind_barb', False)
+                            #wind_barb = grp_dict['data_proc'].get('wind_barb', False)
                             
                             splots.make_spatial_bias(
                                 pairdf,
@@ -2921,7 +2938,7 @@ class analysis:
                             outname = "{}.{}".format(outname, p_label)
                             
                             # Setting wind barbs
-                            wind_barb = grp_dict['data_proc'].get('wind_barb', False)
+                            #wind_barb = grp_dict['data_proc'].get('wind_barb', False)
                             
                             # For just the spatial overlay plot, you do not use the model data from the pair file
                             # So get the variable name again since pairing one could be _new.
