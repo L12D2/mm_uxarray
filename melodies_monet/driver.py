@@ -1911,9 +1911,6 @@ class analysis:
 
                         if self.output_dir is not None:
                             outname = self.output_dir + '/' + outname  # Extra / just in case.
-                            
-                        # Setting wind barbs
-                        wind_barb = grp_dict['data_proc'].get('wind_barb', False)
                         
                         # Types of plots
                         if plot_type.lower() == 'timeseries' or plot_type.lower() == 'diurnal':
@@ -2259,28 +2256,43 @@ class analysis:
                                 del (ax, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict) # Clear axis for next plot.
 
                         elif plot_type.lower() == 'rose_plot':
-                            
-                                rose_df = pairdf.reset_index().dropna(subset=["WD", "winddir"], axis=0)
-                                #print(len(rose_df) 
-                                # WD and winddir are not optional
-                                # user can change out obsvar and modvar to create pollution rose. 
 
-                                splots.make_rose_plot(
-                                    rose_df,
-                                    obsvar=obsvar,
-                                    modvar=modvar,
-                                    outname=outname,
-                                    domain_type=domain_type,
-                                    domain_name=domain_name,
-                                    plot_dict=obs_dict,
-                                    fig_dict=fig_dict,
-                                    text_dict=text_dict,
-                                    debug=self.debug)
-                    
-                                #savefig(outname + '.png', logo_height=250)
-                    
-                                #Clear info for next plot.
-                                del (fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict)
+                            # need to handle for different wdir, winddir, WD, wd, etc. combos
+                            # rename. 
+
+                            rename_dict = {}
+                            for col in pairdf.columns:
+                                if col.lower() == "wdir":
+                                    rename_dict[col] = "WD"
+                                elif col.lower() == "winddir":
+                                    rename_dict[col] = "winddir"
+                            print("Renaming columns:", rename_dict)
+                            pairdf = pairdf.rename(columns=rename_dict)
+
+                            # probably need to throw in some sort of error message here so we can update this renaming dict. 
+                            # Rename columns
+                            pairdf = pairdf.rename(columns=rename_dict)
+                            rose_df = pairdf.reset_index().dropna(subset=["WD", "winddir"], axis=0)
+                            
+                            print(len(rose_df)) 
+                            # WD and winddir are not optional
+                            # user can change out obsvar and modvar to create pollution rose. 
+                            splots.make_rose_plot(
+                                rose_df,
+                                obsvar=obsvar,
+                                modvar=modvar,
+                                outname=outname,
+                                domain_type=domain_type,
+                                domain_name=domain_name,
+                                plot_dict=obs_dict,
+                                fig_dict=fig_dict,
+                                text_dict=text_dict,
+                                debug=self.debug)
+                
+                            #savefig(outname + '.png', logo_height=250)
+                
+                            #Clear info for next plot.
+                            del (fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict)
                             
                         elif plot_type.lower() == 'vertical_single_date':
                             #to use vmin, vmax from obs in yaml
@@ -2787,9 +2799,6 @@ class analysis:
                             # p_label needs to be added to the outname for this plot
                             outname = "{}.{}".format(outname, p_label)
                             
-                            # Setting wind barbs
-                            #wind_barb = grp_dict['data_proc'].get('wind_barb', False)
-                            
                             splots.make_spatial_bias(
                                 pairdf,
                                 pairdf_reg,
@@ -2936,9 +2945,6 @@ class analysis:
                             proj = splots.map_projection(self.models[p.model])
                             # p_label needs to be added to the outname for this plot
                             outname = "{}.{}".format(outname, p_label)
-                            
-                            # Setting wind barbs
-                            #wind_barb = grp_dict['data_proc'].get('wind_barb', False)
                             
                             # For just the spatial overlay plot, you do not use the model data from the pair file
                             # So get the variable name again since pairing one could be _new.
