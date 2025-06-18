@@ -456,6 +456,7 @@ class model:
         self.files_pm25 = None
         self.label = None
         self.obj = None
+        self.extra_calc = None
         self.mapping = None
         self.variable_dict = None
         self.variable_summing = None
@@ -472,6 +473,7 @@ class model:
             f"    file_str={self.file_str!r},\n"
             f"    label={self.label!r},\n"
             f"    obj={repr(self.obj) if self.obj is None else '...'},\n"
+            f"    extra_calc={self.extra_calc!r},\n"
             f"    mapping={self.mapping!r},\n"
             f"    variable_dict={self.variable_dict!r},\n"
             f"    label={self.label!r},\n"
@@ -542,6 +544,7 @@ class model:
             for var in self.variable_summing.keys():
                 vars_for_summing= vars_for_summing + self.variable_summing[var]['vars']
         list_input_var = list(self.variable_dict.keys()) if self.variable_dict is not None else []
+        
         for obs_map in self.mapping:
             if self.variable_summing is not None:
                 list_input_var = list_input_var + list(set(self.mapping[obs_map].keys()).union(set(vars_for_summing)) - set(self.variable_summing.keys()) - set(list_input_var) )
@@ -549,14 +552,34 @@ class model:
                 list_input_var = list_input_var + list(set(self.mapping[obs_map].keys()) - set(list_input_var))
         #Only certain models need this option for speeding up i/o.
 
+        if self.extra_calc is not None:
+            for v in self.extra_calc.keys():
+                if v not in list_input_var:
+                    list_input_var.append(v)
+                    print(list_input_var)
+                    
+        #print(list_input_var)
+            
+        for v in self.extra_calc.values():
+            if v is None:
+                continue
+            for input_var in v.values():
+                if input_var not in list_input_var:
+                    list_input_var.append(input_var)
+                    
         # Remove standardized variable names that user may have requested to pair on or output in MM
         # as they will be added anyway and here would cause [var_list] to fail in the below model readers.
         for vn in ["temperature_k", "pres_pa_mid"]:
             if vn in list_input_var:
                 list_input_var.remove(vn)
 
+        # Remove variables that havent been calcd yet. 
+        if self.extra_calc is not None: 
+            calc_vars = set(self.extra_calc.keys())
+            list_input_var = [v for v in list_input_var if v not in calc_vars]
+                    
         if 'cmaq' in self.model.lower():
-            print('**** Reading CMAQ model output...')
+            print('**** Reading CMAQ model output...')            
             self.mod_kwargs.update({'var_list' : list_input_var})
             if self.files_vert is not None:
                 self.mod_kwargs.update({'fname_vert' : self.files_vert})
@@ -630,14 +653,46 @@ class model:
                 self.obj = xr.open_mfdataset(self.files,**self.mod_kwargs)
             else:
                 self.obj = xr.open_dataset(self.files[0],**self.mod_kwargs)
+                
         self.mask_and_scale()
         self.rename_vars() # rename any variables as necessary 
         self.sum_variables()
 
-    #if u,v in list_input_var:
-        # self.calculate_met()
-        # 
+        if self.extra_calc is not None:
+            print("Performing extra calculations...")
+            
+            if "dewpoint" in self.extra_calc:
+                print("Calculating Dewpoint...")
+                from .util.metcalc import dewpoint # import functions from the util.metcalc file
+                
+                varmap = self.extra_calc["dewpoint"]
+                self.obj=dewpoint(self.obj, varmap = varmap)
+                #print(self.obj)
 
+            if "rel_hum" in self.extra_calc:
+                print("Calculating relative humidity...")
+                from .util.metcalc import relh
+
+                varmap = self.extra_calc["rel_hum"]
+                self.obj=relh(self.obj, varmap = varmap)
+                #print(self.obj)
+
+            if "windspeed" in self.extra_calc:
+                print("Calculating windpseed...")
+                from .util.metcalc import wspd
+
+                varmap = self.extra_calc["windspeed"]
+                self.obj=wspd(self.obj, varmap = varmap)
+                #print(self.obj)
+                
+            if "winddir" in self.extra_calc:
+                print("Calculating wind direction...")
+                from .util.metcalc import wdir
+
+                varmap = self.extra_calc["winddir"]
+                self.obj=wdir(self.obj, varmap = varmap)
+                #print(self.obj)        
+                
     def rename_vars(self):
         """Rename any variables in model with rename set.
         
@@ -973,10 +1028,14 @@ class analysis:
                 if 'files_pm25' in self.control_dict['model'][mod].keys():
                     m.file_pm25_str = os.path.expandvars(
                         self.control_dict['model'][mod]['files_pm25'])
+                    
+                # create extra_calc mapping 
+                m.extra_calc = self.control_dict['model'][mod]['extra_calc']
+                
                 # create mapping
                 m.mapping = self.control_dict['model'][mod]['mapping']
+                
                 # add variable dict
-
                 if 'variables' in self.control_dict['model'][mod].keys():
                     m.variable_dict = self.control_dict['model'][mod]['variables']
                 if 'variable_summing' in self.control_dict['model'][mod].keys():
@@ -2259,21 +2318,29 @@ class analysis:
 
                             # need to handle for different wdir, winddir, WD, wd, etc. combos
                             # rename. 
-
+                            # this fix should work for ISH and ISH-Lite
+                            
                             rename_dict = {}
+                            print("pairdf before:", pairdf.columns)
                             for col in pairdf.columns:
-                                if col.lower() == "wdir":
+                                if col == "wdir":
                                     rename_dict[col] = "WD"
-                                elif col.lower() == "winddir":
+                                elif col == "winddir":
                                     rename_dict[col] = "winddir"
-                            print("Renaming columns:", rename_dict)
+                            #print("Renaming columns:", rename_dict)
+
                             pairdf = pairdf.rename(columns=rename_dict)
+                            #print("pairdf after:", pairdf.columns)
 
                             # probably need to throw in some sort of error message here so we can update this renaming dict. 
                             # Rename columns
-                            pairdf = pairdf.rename(columns=rename_dict)
+                            # somewhere the -1 for the wdir arent being replaced with NaN which results in the most common winddir being -1.0
+                            # will have to figure out how to do this in the surfplots rather than the driver. 
+                            pairdf.replace(-1, np.nan, inplace=True)
+                            #print(pairdf)
                             rose_df = pairdf.reset_index().dropna(subset=["WD", "winddir"], axis=0)
-                            
+
+                            #print(rose_df)
                             print(len(rose_df)) 
                             # WD and winddir are not optional
                             # user can change out obsvar and modvar to create pollution rose. 

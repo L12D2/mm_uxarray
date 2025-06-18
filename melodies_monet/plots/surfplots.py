@@ -1744,12 +1744,12 @@ def make_rose_plot(rose_df,
     #draw ax1 
     ax1 = WindroseAxes.from_ax(fig = fig,rect=rect_set1)
     ax1.bar(rose_df.WD, rose_df[obsvar], normed=True, cmap=colors, label = "Observed")
-    print(rose_df.WD.mode()[0])
+    print("Obs:", rose_df.WD.mode()[0])
     
     # draw ax2
     ax2 = WindroseAxes.from_ax(fig = fig, rect=rect_set2)
     ax2.bar(rose_df.winddir, rose_df[modvar], normed=True, cmap=colors, label = "Modeled")
-    print(rose_df.winddir.mode()[0])
+    print("Mod:",rose_df.winddir.mode()[0])
     
     # set label settings for the two axs
     for ax in [ax1, ax2]:
