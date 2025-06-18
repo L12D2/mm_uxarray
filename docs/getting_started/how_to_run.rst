@@ -135,7 +135,7 @@ time period or create hundreds of plots submitting a bash script as a job on
 your HPC computer is preferred. Bash script examples for running MELODIES MONET 
 are in the ``examples/submit_jobs`` folder of the code on GitHub.
 
-   * If you are using a model like WRF-Chem, CMAQ, or UFS (RRFS-CMAQ) that is run in
+   * If you are using a model like WRF-Chem, CMAQ, or UFS-AQM that is run in
      forecasting mode and you want to combine model results across multiple 
      days or even over an entire month, you may need to link model data into 
      a directory first to ensure that you have sequential model results to 

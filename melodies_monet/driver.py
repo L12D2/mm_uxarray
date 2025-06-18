@@ -570,7 +570,7 @@ class model:
             self.mod_kwargs.update({'var_list' : list_input_var})
             self.obj = mio.models._wrfchem_mm.open_mfdataset(self.files,**self.mod_kwargs)
         elif any([mod_type in self.model.lower() for mod_type in ('ufs', 'rrfs')]):
-            print('**** Reading UFS (RRFS-CMAQ) model output...')
+            print('**** Reading UFS-AQM model output...')
             if 'rrfs' in self.model.lower():
                 warnings.warn("mod_type: 'rrfs' is deprecated. use 'ufs'." , DeprecationWarning)
             if self.files_pm25 is not None:

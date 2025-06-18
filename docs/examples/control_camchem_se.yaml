@@ -17,7 +17,7 @@ analysis:
 model:
   cam-chem-se: # model label to be shown on plots
     files: example:camchem:se
-    mod_type: 'cesm_se' # defines model type to tell how to process in the driver choices: camchem, wrfchem, cmaq, ufs (rrfs), gsdchem
+    mod_type: 'cesm_se' # defines model type to tell how to process in the driver choices: camchem, wrfchem, cmaq, ufs, gsdchem
     scrip_file: example:camchem:se_scrip
     radius_of_influence: 18000 #meters: horizontal resolution * 1.5
     mapping: #model species name : obs species name
