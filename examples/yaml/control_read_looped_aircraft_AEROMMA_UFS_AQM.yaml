@@ -21,7 +21,7 @@ analysis:
 model:
   ufsaqm: # model label
     files: '/scratch1/BMC/rcm2/rhs/monet_example/AEROMMA/UFS-AQM/cmaq54_OriRave1/aqm.20230627/12/aqm.t12z.dyn.f001.nc'
-    mod_type: 'rrfs'
+    mod_type: 'ufs'
     radius_of_influence: 19500 #meters
     mapping: #model species name : obs species name
       aeromma:

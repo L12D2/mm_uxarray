@@ -48,7 +48,7 @@ model:
   rrfs_v150_a: # model label
     files: /scratch2/BMC/rcm1/rhs/fv3/regional/processed/v150_a/data/rrfs_v150_a/201908*dynf*.nc
     files_pm25: /scratch2/BMC/rcm1/rhs/fv3/regional/processed/v150_a/data/rrfs_v150_a/201908*pm25tot*.nc
-    mod_type: 'rrfs'
+    mod_type: 'ufs'
     mod_kwargs:
       mech: 'cb6r3_ae6_aq'
       surf_only: True

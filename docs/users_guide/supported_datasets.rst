@@ -40,7 +40,7 @@ Supported Models
      - Yes
      - Needs testing
      - Needs testing
-   * - `UFS-AQM (RRFS) <https://github.com/ufs-community/ufs-srweather-app/wiki/Air-Quality-Modeling>`_
+   * - `UFS-AQM <https://github.com/ufs-community/ufs-srweather-app/wiki/Air-Quality-Modeling>`_
      - Yes
      - Yes
      - Needs testing

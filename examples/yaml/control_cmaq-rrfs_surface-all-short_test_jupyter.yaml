@@ -12,7 +12,7 @@ model:
   rrfs_r131v1: # model label
     files: /scratch2/BMC/rcm1/rhs/fv3/regional/processed/surf_oper_rrfs_r131_v1/08/data/rrfs/*0801*dynf*.nc
     files_pm25: /scratch2/BMC/rcm1/rhs/fv3/regional/processed/surf_oper_rrfs_r131_v1/08/data/rrfs/*0801*pm25tot_f*.nc
-    mod_type: 'rrfs'
+    mod_type: 'ufs'
     mod_kwargs:
       mech: 'cb6r3_ae6_aq'
       surf_only: True

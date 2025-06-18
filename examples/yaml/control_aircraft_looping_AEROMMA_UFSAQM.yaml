@@ -4,7 +4,7 @@ analysis:
   
 model:
   ufsaqm: # model label
-    mod_type: 'rrfs'
+    mod_type: 'ufs'
     radius_of_influence: 19500 #meters
     mapping: #model species name : obs species name
       aeromma:
