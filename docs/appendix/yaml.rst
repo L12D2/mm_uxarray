@@ -19,6 +19,7 @@ General Rules
   * spatial_overlay - average over entire analysis window
   * spatial_overlay_exceedance - number of exceedances within the analysis window 
   * boxplot - calculated over entire analysis window
+  * rose_plot - calculated over entire analysis window
 * If "set_axis" = True in "data_proc" section of each "plot_grp", the y-axis 
   for that "plot_grp" will be set based on the values specified in the "obs" 
   section for each "variable". If "set_axis" = False, then the automatic
@@ -125,6 +126,42 @@ data (e.g., surf_only: True).
 **radius_of_influence:** The "radius of influence" used for pairing in MONET. 
 Typically this is set at the horizontal resolution of your model * 1.5. Setting 
 this to a smaller value will speed up the pairing process. 
+
+**extra_calc:** The extra_calc section allows users to calculate complex meteorological 
+variables that may not have standard variable names across datasets. E.g. u, v, u10, and v10
+all commonly refer to the u and v components of wind speed. However, the naming convention
+varies by model). 
+
+This section allows dewpoint, relative humidity, wind speed, and wind direction to be 
+calculated. Users can also specify whether their spatial overlay, spatial bias, and spatial 
+exceedance plots display wind barbs. 
+
+* Model dewpoint can be calculated with the specific humidity. Users will need to know the
+naming convention of specific humidity in their specific model. Observations will sometimes 
+only record dewpoint or relative humidity. Hence, both options are available for calculation,
+provided the model has specific humidity. 
+Standard hydrometeorological variables continue to be incorporated into MELODIES-MONET. 
+
+* Model relative humidity can be calculated with the specific humidity. Users will need to know 
+the naming convention of specific humidity in their specific model. Observations will sometimes 
+only record dewpoint or relative humidity. Hence, both options are available for calculation,
+provided the model has specific humidity. 
+Standard hydrometeorological variables continue to be incorporated into MELODIES-MONET.
+
+* Wind speed is calculated using the u-component and v-component. Users are responsible for
+knowing what those components are called in their model. If modeled wind speed is already 
+available, simply add the variable name to the variable list. 
+
+* Wind direction is calculated using the u-component and v-component. Users are responsible for
+knowing what those components are called in their model. If modeled wind direction is already 
+available, simply add the variable name to the variable list. 
+
+* Wind barbs can be plotted using the u-component and v-component. Users are responsible for
+knowing what those components are called in their model. If wind barbs are desired, at the 
+moment, users will also need to add the model variable name for the wind components to the 
+variables dictionary (see the airnow-ufschem example). NOTE: plotted wind barbs are in knots. 
+Wind speed everywhere else in the model is by default m/s unless specified elsewhere in the 
+YAML options. 
 
 **apply_ak:** Removed. Instead, specify ``pairing_kwargs`` in the analysis section.
 
@@ -374,6 +411,15 @@ where domain_type is equal to domain_name.
 **region_list:** list of regions we will calculate for scorecard. 
 (e.g., ['R1','R2','R3','R4','R5','R6','R7','R8','R9','R10']
 
+**interval_list:** list of points that will create a single groupped boxplot. 
+E.g. [0, 3, 5, 8, 11, 14] will create groupped boxplots for [0-3), [3-5), and so forth.
+
+**interval_var:** the variable a grouped boxplot will be created for. 
+
+**interval_labels:** Labels that refer to the interval list. 
+e.g. ["[0, 3)", "[3, 5)", "[5, 8)", "[8, 11)", "[11, 14)"] are labels that will appear on
+the x-axis
+
 **urban_rural_name:** list of only one string input, which is variable used to
 determine whether urban or rural site. (e.g., ['msa_name'])
 
@@ -401,7 +447,7 @@ dataset (e.g., altitude)
 Units should be identical to the units of the altitude_variable specified above (e.g., 
 [0, 500, 1000, 1500, 2000, 2500, 3000, 3500, 4000] if altitude is in meters)
 
-**color_map:** For 'scatter_density' plot only. Specify a default colormap in Matplotlib (e.g., 'RdBu_r'). 
+**color_map:** For 'scatter_density' & rose_plot plots only. Specify a default colormap in Matplotlib (e.g., 'RdBu_r'). NOTE: custom color_map is not available for rose_plot.  
 To use a custom colormap, leave color_map blank and provide the following options:
 
    * **colors:** Specify a list of colors (e.g., ['royalblue', 'cyan', 'yellow', 'orange']).
@@ -447,6 +493,10 @@ No conversions occur. Current options are only 'hPa' and 'Pa'.
 **data:** This a list of model / observation pairs to be plotted where the 
 observation label is first and the model label is second 
 (e.g., ['airnow_cmaq_expt', 'airnow_rrfs_13km', 'airnow_wrfchem_v4.2'])
+
+**gridlines:** This allows users to provide background gridlines to their plots. Currently supported on the CSI, boxplot, and multi-boxplots.
+
+
 
 **data_proc:** This section stores all of the data processing information.
    
@@ -508,6 +558,16 @@ observation label is first and the model label is second
    * **interquartile_style:** For "vert_profile" plot only. Specify 'shading' to 
      plot shaded curves of the 25th and 75th percentile range of each vertical bin or 
      'box' to plot box-plots of each vertical bin.
+
+   * **set_stat_sig:** This option allows the user to calculate an independent
+      t-test between two independent samples. The variances are assumed to be equal.
+      Example output: p-value annotation legend:
+      ns: 5.00e-02 < p <= 1.00e+00
+       *: 1.00e-02 < p <= 5.00e-02
+      **: 1.00e-03 < p <= 1.00e-02
+     ***: 1.00e-04 < p <= 1.00e-03
+    ****: p <= 1.00e-04
+
 
 Stats
 -----
@@ -592,14 +652,4 @@ observation label is first and the model label is second
      only look at values at the beginning of each hour. Set 'times' to ''
      if all times should be used. This calculation occurs 
      over the entire analysis window and prior to calculating the regulatory metrics.
-    * **set_stat_sig:** This option allows the user to calculate an independent
-      t-test between two independent samples. The variances are assumed to be equal.
-      This option is currently only available for the UFS-CHEM airnow boxplots. 
-      Example output: p-value annotation legend:
-      ns: 5.00e-02 < p <= 1.00e+00
-       *: 1.00e-02 < p <= 5.00e-02
-      **: 1.00e-03 < p <= 1.00e-02
-     ***: 1.00e-04 < p <= 1.00e-03
-    ****: p <= 1.00e-04
-
 
