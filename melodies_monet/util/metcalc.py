@@ -71,6 +71,7 @@ def relh(obj, varmap = None, output_key = "rel_hum"):
     else:
         return rlh_np
 
+# calc windspeed
 def wspd(obj, varmap = None, output_key = "windspeed"):
     # grab variable names from the yaml 
     u_key = varmap["u_comp"] 
@@ -96,7 +97,8 @@ def wspd(obj, varmap = None, output_key = "windspeed"):
         return obj
     else:
         return wspd_np
-    
+
+# calc wind direction
 def wdir(obj, varmap = None, output_key = "winddir"):
     # grab variable names from the yaml 
     u_key = varmap["u_comp"] 
@@ -106,11 +108,10 @@ def wdir(obj, varmap = None, output_key = "winddir"):
     v = obj[v_key]
 
     # metpy version of this is throwing in weird dimensions so calc by hand
-
-    wdr_rad = 90 * units.degrees - np.arctan2(-v, -u)
+    wdr_rad = np.arctan2(-v, -u)
     wdr_deg = np.degrees(wdr_rad)
     winddir = wdr_deg % 360
-    print(winddir)
+    #print(winddir)
     
     # Add this to obj
     if hasattr(obj, "coords") and hasattr(obj, "dims"):  
@@ -122,4 +123,4 @@ def wdir(obj, varmap = None, output_key = "winddir"):
         return obj
     else:
         return winddir
-
+        

@@ -249,11 +249,11 @@ def get_utcoffset(lat,lon):
     return utchour
 
 
-def make_spatial_bias(df, df_reg=None, wind_barb=False, column_o=None, label_o=None, column_m=None, 
+def make_spatial_bias(df, df_reg=None, column_o=None, label_o=None, column_m=None, 
                       label_m=None, ylabel = None, ptile = None, vdiff=None,
-                      outname = 'plot', 
+                      outname = 'plot', u_comp = None, v_comp = None,
                       domain_type=None, domain_name=None, fig_dict=None, 
-                      text_dict=None,debug=False):
+                      text_dict=None,debug=False): 
         
     """Creates surface spatial bias plot. 
     
@@ -324,7 +324,7 @@ def make_spatial_bias(df, df_reg=None, wind_barb=False, column_o=None, label_o=N
         ylabel = 'Mean '+ylabel
     else:
         ylabel = '{:02d}'.format(ptile)+'th percentile '+ylabel
- 
+
     if df_reg is not None:
         # JianHe: include options for percentile calculation (set in yaml file)
         if ptile is None:
@@ -370,20 +370,15 @@ def make_spatial_bias(df, df_reg=None, wind_barb=False, column_o=None, label_o=N
         map_kwargs['extent'] = [lonmin,lonmax,latmin,latmax]  
     ax.axes.set_extent(map_kwargs['extent'],crs=ccrs.PlateCarree())
 
-    if wind_barb:
-        print("You may experience longer wait times when plotting wind barbs. Please be patient.")
-        
-        # #need the u and v directly for the wind barbs. 
-        def wind_uv_from_speed_dir(windspeed, wind_dir):
-            u = -windspeed * np.sin(np.deg2rad(wind_dir))
-            v = -windspeed * np.cos(np.deg2rad(wind_dir))
-            return u, v
+    #print(df.columns)
+    
+    if u_comp is not None and v_comp is not None: 
+        print("Wind barbs may take longer to plot... Please be patient.")
+        u_mod = df_mean[u_comp]
+        v_mod = df_mean[v_comp] 
 
-        u_obs, v_obs = wind_uv_from_speed_dir(df_mean["WS"], df_mean["WD"])
-        u_mod, v_mod = wind_uv_from_speed_dir(df_mean["windspeed"], df_mean["winddir"])
-
-        # ensure all bias stats are MODEL-OBS (enables you to tell the direction of the 
-        # model relative to observations)
+        #ensure all bias stats are MODEL-OBS (enables you to tell the direction of the 
+        #model relative to observations)
         #u_mean=u_mod - u_obs
         #v_mean=v_mod - v_obs
 
@@ -396,7 +391,9 @@ def make_spatial_bias(df, df_reg=None, wind_barb=False, column_o=None, label_o=N
             v_mod[::skip], # u, v 
             length=6, linewidth=0.85
         )  # order per matplot lib follows (x, y, u, v)
-        
+    else:
+        print("U-comp and V-comp need to be specified in the yaml file. Plotting wind barbs failed!")
+
     #Update colorbar
     f = plt.gcf()
     model_ax = f.get_axes()[0]
@@ -919,7 +916,7 @@ def make_taylor(df, df_reg=None, column_o=None, label_o='Obs', column_m=None, la
     ax.axis["right"].major_ticklabels.set_fontsize(text_kwargs['fontsize']*0.8)
     return dia
 
-def make_spatial_overlay(df, vmodel, wind_barb=False, column_o=None, label_o=None, column_m=None, 
+def make_spatial_overlay(df, vmodel, u_comp = None, v_comp = None, column_o=None, label_o=None, column_m=None, 
                       label_m=None, ylabel = None, vmin=None,
                       vmax = None, nlevels = None, proj = None, outname = 'plot', 
                       domain_type=None, domain_name=None, fig_dict=None, 
@@ -1060,43 +1057,28 @@ def make_spatial_overlay(df, vmodel, wind_barb=False, column_o=None, label_o=Non
         #I add extend='both' here because the colorbar is setup to plot the values outside the range
         ax = vmodel_mean.monet.quick_contourf(cbar_kwargs=cbar_kwargs, figsize=map_kwargs['figsize'], map_kws=map_kwargs,
                                     robust=True, norm=norm, cmap=cmap, levels=clevel, extend='both') 
-    
 
-    #print(vmodel_mean)
-    #print("this is vmod:", vmodel)
-    #print(df_mean)
-    
-    if wind_barb: # is not None: 
-        print("You may experience longer wait times when plotting wind barbs. Please be patient.")
-        # #need the u and v directly for the wind barbs. 
-        def wind_uv_from_speed_dir(windspeed, wind_dir):
-            u = -windspeed * np.sin(np.deg2rad(wind_dir))
-            v = -windspeed * np.cos(np.deg2rad(wind_dir))
-            return u, v
+    if u_comp is not None and v_comp is not None: 
+        print("Wind barbs may take longer to plot... Please be patient.")
+        u_mod = df_mean[u_comp]
+        v_mod = df_mean[v_comp] 
 
-        u,v = wind_uv_from_speed_dir(vmodel.windspeed, vmodel.winddir)
-        #print(u)
-
-        # vector average the wind. DO NOT do scalar average. 
-        u=u.mean(dim="time") # avg. across the dimension time. 
-        v=v.mean(dim="time")
-        
-        # u,v are still 3D. So, need to make 2D
-        u2d = u.isel(z=0)
-        v2d = v.isel(z=0)
-        #print(u2d)
-        
-        lon = u2d["longitude"].values
-        lat = u2d["latitude"].values
+        #ensure all bias stats are MODEL-OBS (enables you to tell the direction of the 
+        #model relative to observations)
+        #u_mean=u_mod - u_obs
+        #v_mean=v_mod - v_obs
 
         # set skip for less clutter
         skip=2
         ax.barbs(
-            lon[::skip, ::skip], 
-            lat[::skip, ::skip],
-            u2d[::skip, ::skip], v2d[::skip, ::skip],
+            df_mean["longitude"][::skip], # long
+            df_mean["latitude"][::skip], # lat
+            u_mod[::skip]*1.94384, 
+            v_mod[::skip]*1.94384, # u, v 
             length=6, linewidth=0.85
         )  # order per matplot lib follows (x, y, u, v)
+    else:
+        print("U-comp and V-comp need to be specified in the yaml file. Plotting wind barbs failed!")
 
     plt.gcf().canvas.draw() 
     plt.tight_layout(pad=0)
@@ -1563,115 +1545,10 @@ def make_multi_boxplot(comb_bx, label_bx,region_bx,region_list = None, region_na
     plt.tight_layout()
     savefig(outname + '.png', loc=4, logo_height=100)
 
-# keep this version of the make_rose_plot in case it needs to be reverted back
-# def make_rose_plot(rose_df, 
-#                    obsvar,
-#                    modvar,
-#                    color_map="viridis",
-#                    outname = 'plot', 
-#                    domain_type=None, 
-#                    domain_name=None, 
-#                    fig_dict=None, 
-#                    plot_dict = None,
-#                    text_dict=None,
-#                    debug=False):
-
-#     """Creates windroses and pollution roses. Roses can be generated for any meteorological and chemical variable. 
-    
-#     Parameters
-#     ----------
-#     rose_df : dataframe
-#              model/obs pair data to plot
-#     obsvar: 
-#              observed variable to compare with observed wind direction
-#     obsvar: 
-#              modeled variable to compare with modeled wind direction
-#     color_map: 
-#              TBD
-#     outname : str
-#         file location and name of plot (do not include .png)
-#     domain_type : str
-#         Domain type specified in input yaml file
-#     domain_name : str
-#         Domain name specified in input yaml file
-#     fig_dict : dictionary
-#         Dictionary containing information about figure
-#     text_dict : dictionary
-#         Dictionary containing information about text
-#     debug : boolean
-#         Whether to plot interactively (True) or not (False). Flag for 
-#         submitting jobs to supercomputer turn off interactive mode.
-    
-#     Returns
-#     -------
-#     plot 
-#         rose plot  
-#     """
-    
-#     if debug is False:
-#         plt.ioff()
-#     def_text = dict(fontsize=14)
-#     if text_dict is not None:
-#         text_kwargs = {**def_text, **text_dict}
-#     else:
-#         text_kwargs = def_text
-
-#     #not supported by the windroseaxes library 
-#     # if fig_dict is not None:
-#     #     fig = plt.subplots(**fig_dict)
-#     # else:
-#     #     fig = plt.subplots((8,8))
-        
-#     #Plot settings
-#     fig = plt.figure(figsize = (8,8))
-    
-#     #need to be put in fig_dict? 
-#     rect_set1 = [0.3, 0.1, 0.4, 0.8]
-#     rect_set2 = [0.98, 0.1, 0.4, 0.8]
-#     colors = plt.cm.plasma
-        
-#     #draw ax1 
-#     ax1 = WindroseAxes.from_ax(fig = fig,rect=rect_set1)
-#     ax1.bar(rose_df.WD, rose_df[obsvar], normed=True, cmap=colors, label = "Observed")
-#     #print(rose_df.WD.mode()[0])
-    
-#     # draw ax2
-#     ax2 = WindroseAxes.from_ax(fig = fig, rect=rect_set2)
-#     ax2.bar(rose_df.winddir, rose_df[modvar], normed=True, cmap=colors, label = "Modeled")
-#     #print(rose_df.winddir.mode()[0])
-    
-#     # set label settings for the two axs
-#     for ax in [ax1, ax2]:
-#         fontsize = text_kwargs["fontsize"]*0.8
-#         ax.set_thetagrids(range(0, 360, 45), 
-#                           fontsize=fontsize)
-
-#         for label in ax.get_yticklabels():
-#             label.set_fontsize(fontsize*0.8)
-        
-#     ax1.set_xlabel("Observed", fontsize=text_kwargs["fontsize"]*0.9)
-#     ax2.set_xlabel("Modeled", fontsize=text_kwargs["fontsize"]*0.9)
-    
-#     legend_title = f"{obsvar}" # dynamically set eventually 
-#     plt.legend(loc=(1.28, 0.4), fontsize=text_kwargs['fontsize']*0.8, title=legend_title,
-#               title_fontsize=text_kwargs["fontsize"]*0.8)
-
-#     if domain_type is not None and domain_name is not None:
-#         if domain_type == 'epa_region':
-#             ax1.set_title('EPA Region ' + domain_name,fontweight='bold',**text_kwargs)
-#         else:
-#             ax1.set_title(domain_name,fontweight='bold',**text_kwargs)
-    
-#     print(f"Saving rose plot to {outname}...")
-#     savefig(outname + '.png', loc=4, logo_height=150, dpi=300)
-    
-#     plt.show()
-#     return (ax1, ax2)
-
 def make_rose_plot(rose_df, 
                    obsvar, # obs windspeed
                    modvar, # mod windspeed
-                   color_map="viridis",
+                   color_map= 'viridis',
                    outname = 'plot', 
                    domain_type=None, 
                    domain_name=None, 
@@ -1732,24 +1609,34 @@ def make_rose_plot(rose_df,
     #need to be put in fig_dict? 
     rect_set1 = [0.3, 0.1, 0.4, 0.8]
     rect_set2 = [0.98, 0.1, 0.4, 0.8]
-    colors = plt.cm.plasma
+    #colors = color_map
 
-    # # throw an error and tell the user to check here. ^^^ 
-    # if not wdir_obs or not wdir_mod:
-    #     raise KeyError("Required columns for wind speed or wind direction not found in plotting! Refer to surfplot.py")
-    # else: 
-    #     print("Found required columns for plotting wind speed or wind direction. Proceeding...")
+    color_map_config = color_map
+    
+    # string is not callable. converting it. 
+    if isinstance(color_map_config, dict):
+        colors = color_map_config['colors']
+        over = color_map_config.get('over', None)
+        under = color_map_config.get('under', None)
+        
+        cmap = (mpl.colors.ListedColormap(colors)
+                .with_extremes(over=over, under=under))
+    else:
+        cmap = plt.get_cmap(color_map_config)
 
-    print(len(rose_df))
+    if isinstance(cmap, mpl.colors.ListedColormap):
+        cmap = LinearSegmentedColormap.from_list("custom", cmap.colors)
+        
+    #print(len(rose_df))
     #draw ax1 
     ax1 = WindroseAxes.from_ax(fig = fig,rect=rect_set1)
-    ax1.bar(rose_df.WD, rose_df[obsvar], normed=True, cmap=colors, label = "Observed")
-    print("Obs:", rose_df.WD.mode()[0])
+    ax1.bar(rose_df.WD, rose_df[obsvar], normed=True, cmap=cmap, label = "Observed")
+    #print("Obs:", rose_df.WD.mode()[0])
     
     # draw ax2
     ax2 = WindroseAxes.from_ax(fig = fig, rect=rect_set2)
-    ax2.bar(rose_df.winddir, rose_df[modvar], normed=True, cmap=colors, label = "Modeled")
-    print("Mod:",rose_df.winddir.mode()[0])
+    ax2.bar(rose_df.winddir, rose_df[modvar], normed=True, cmap=cmap, label = "Modeled")
+    #print("Mod:",rose_df.winddir.mode()[0])
     
     # set label settings for the two axs
     for ax in [ax1, ax2]:
@@ -2268,7 +2155,7 @@ def Plot_CSI(column,score_name_input,threshold_list_input, comb_bx_input,plot_di
 
 
 def make_spatial_bias_exceedance(df, column_o=None, label_o=None, column_m=None,
-                                 wind_barb=None,
+                                 u_comp = None, v_comp = None,
                                  label_m=None, ylabel = None,  vdiff=None,
                                  outname = 'plot',
                                  domain_type=None, domain_name=None, fig_dict=None,
@@ -2392,6 +2279,28 @@ def make_spatial_bias_exceedance(df, column_o=None, label_o=None, column_m=None,
             map_kwargs['extent'] = [lonmin,lonmax,latmin,latmax]
         ax.axes.set_extent(map_kwargs['extent'],crs=ccrs.PlateCarree())
 
+        if u_comp is not None and v_comp is not None: 
+            print("Wind barbs may take longer to plot... Please be patient.")
+            u_mod = df_mean[u_comp]
+            v_mod = df_mean[v_comp] 
+    
+            #ensure all bias stats are MODEL-OBS (enables you to tell the direction of the 
+            #model relative to observations)
+            #u_mean=u_mod - u_obs
+            #v_mean=v_mod - v_obs
+    
+            # set skip for less clutter
+            skip=2
+            ax.barbs(
+                df_mean["longitude"][::skip], # long
+                df_mean["latitude"][::skip], # lat
+                u_mod[::skip]*1.94384, 
+                v_mod[::skip]*1.94384, # u, v 
+                length=6, linewidth=0.85
+            )  # order per matplot lib follows (x, y, u, v)
+        else:
+            print("U-comp and V-comp need to be specified in the yaml file. Plotting wind barbs failed!")
+        
         #Update colorbar
         f = plt.gcf()
         model_ax = f.get_axes()[0]

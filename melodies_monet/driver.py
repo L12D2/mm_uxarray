@@ -552,13 +552,12 @@ class model:
                 list_input_var = list_input_var + list(set(self.mapping[obs_map].keys()) - set(list_input_var))
         #Only certain models need this option for speeding up i/o.
 
-        if self.extra_calc is not None:
-            for v in self.extra_calc.keys():
-                if v not in list_input_var:
-                    list_input_var.append(v)
-                    print(list_input_var)
-                    
-        #print(list_input_var)
+        # print("1", list_input_var)
+        # if self.extra_calc is not None:
+        #     for v in self.extra_calc.keys():
+        #         if v not in list_input_var:
+        #             list_input_var.append(v)
+        #             print("2", list_input_var)
             
         for v in self.extra_calc.values():
             if v is None:
@@ -566,7 +565,7 @@ class model:
             for input_var in v.values():
                 if input_var not in list_input_var:
                     list_input_var.append(input_var)
-                    
+
         # Remove standardized variable names that user may have requested to pair on or output in MM
         # as they will be added anyway and here would cause [var_list] to fail in the below model readers.
         for vn in ["temperature_k", "pres_pa_mid"]:
@@ -576,6 +575,7 @@ class model:
         # Remove variables that havent been calcd yet. 
         if self.extra_calc is not None: 
             calc_vars = set(self.extra_calc.keys())
+            #print("this is calc vars", calc_vars)
             list_input_var = [v for v in list_input_var if v not in calc_vars]
                     
         if 'cmaq' in self.model.lower():
@@ -691,7 +691,12 @@ class model:
 
                 varmap = self.extra_calc["winddir"]
                 self.obj=wdir(self.obj, varmap = varmap)
-                #print(self.obj)        
+                #print(self.obj)   
+
+            if "wind_barb" in self.extra_calc:
+                print("Calculating wind barbs...")
+                u_comp = self.extra_calc.get('wind_barb', {}).get("u_comp", None)
+                v_comp = self.extra_calc.get('wind_barb', {}).get("v_comp", None)         
                 
     def rename_vars(self):
         """Rename any variables in model with rename set.
@@ -1654,6 +1659,7 @@ class analysis:
 
         # first get the plotting dictionary from the yaml file
         plot_dict = self.control_dict['plots']
+        
         # Calculate any items that do not need to recalculate each loop.
         startdatename = str(datetime.datetime.strftime(self.start_time, '%Y-%m-%d_%H'))
         enddatename = str(datetime.datetime.strftime(self.end_time, '%Y-%m-%d_%H'))
@@ -1698,11 +1704,24 @@ class analysis:
 
             # read in special settings for spatial overlay
             if plot_type == "spatial_overlay":
-                wind_barb = grp_dict.get('data_proc', {}).get('wind_barb', None)
+                model_key = list(self.control_dict["model"].keys())[0]
+                extra_calc = self.control_dict["model"][model_key]["extra_calc"]
+                u_comp = extra_calc.get('wind_barb', {}).get('u_comp', None)
+                v_comp = extra_calc.get('wind_barb', {}).get('v_comp', None)
 
             # read in special settings for spatial bias
             if plot_type == "spatial_bias":
-                wind_barb = grp_dict.get('data_proc', {}).get('wind_barb', None)
+                model_key = list(self.control_dict["model"].keys())[0]
+                extra_calc = self.control_dict["model"][model_key]["extra_calc"]
+                u_comp = extra_calc.get('wind_barb', {}).get('u_comp', None)
+                v_comp = extra_calc.get('wind_barb', {}).get('v_comp', None)
+
+            # read in special settings for spatial bias exceedance
+            if plot_type == "spatial_bias_exceedance":
+                model_key = list(self.control_dict["model"].keys())[0]
+                extra_calc = self.control_dict["model"][model_key]["extra_calc"]
+                u_comp = extra_calc.get('wind_barb', {}).get('u_comp', None)
+                v_comp = extra_calc.get('wind_barb', {}).get('v_comp', None)
                 
             #read-in special settings for ozone sonde related plots
             if plot_type in {'vertical_single_date', 'vertical_boxplot_os', 'density_scatter_plot_os'}:
@@ -1738,7 +1757,7 @@ class analysis:
 
             #read-in special settings for rose plot
             if plot_type == "rose_plot":
-                print("Development use only. Go back and add options?")
+                color_map = grp_dict.get('color_map', 'viridis')
             
             # first get the observational obs labels
             obs_vars = []
@@ -1858,9 +1877,6 @@ class analysis:
 
                         # Determine outname
                         outname = "{}.{}.{}.{}.{}.{}.{}".format(grp, plot_type, obsvar, startdatename, enddatename, domain_type, domain_name)
-                        
-                        # Setting statistical Significance for Boxplots and Violin plots 
-                        #set_stat_sig = grp_dict['data_proc'].get('set_stat_sig', False)
                        
                         # Query with filter options
                         if 'filter_dict' in grp_dict['data_proc'] and 'filter_string' in grp_dict['data_proc']:
@@ -2321,7 +2337,7 @@ class analysis:
                             # this fix should work for ISH and ISH-Lite
                             
                             rename_dict = {}
-                            print("pairdf before:", pairdf.columns)
+                            #print("pairdf before:", pairdf.columns)
                             for col in pairdf.columns:
                                 if col == "wdir":
                                     rename_dict[col] = "WD"
@@ -2341,13 +2357,14 @@ class analysis:
                             rose_df = pairdf.reset_index().dropna(subset=["WD", "winddir"], axis=0)
 
                             #print(rose_df)
-                            print(len(rose_df)) 
+                            #print(len(rose_df)) 
                             # WD and winddir are not optional
                             # user can change out obsvar and modvar to create pollution rose. 
                             splots.make_rose_plot(
                                 rose_df,
                                 obsvar=obsvar,
                                 modvar=modvar,
+                                color_map=color_map,
                                 outname=outname,
                                 domain_type=domain_type,
                                 domain_name=domain_name,
@@ -2865,11 +2882,11 @@ class analysis:
                                 vdiff = None
                             # p_label needs to be added to the outname for this plot
                             outname = "{}.{}".format(outname, p_label)
-                            
                             splots.make_spatial_bias(
                                 pairdf,
                                 pairdf_reg,
-                                wind_barb=wind_barb,
+                                u_comp=u_comp, 
+                                v_comp=v_comp,
                                 column_o=obsvar,
                                 label_o=p.obs,
                                 column_m=modvar,
@@ -2959,7 +2976,8 @@ class analysis:
                                     column_o=obsvar+'_reg',
                                     label_o=p.obs,
                                     column_m=modvar+'_reg',
-                                    wind_barb=wind_barb,
+                                    u_comp = u_comp,
+                                    v_comp = v_comp,
                                     label_m=p.model,
                                     ylabel=use_ylabel,
                                     vdiff=vdiff,
@@ -3020,7 +3038,8 @@ class analysis:
                                 splots.make_spatial_overlay(
                                     pairdf,
                                     vmodel,
-                                    wind_barb=wind_barb,
+                                    u_comp=u_comp, 
+                                    v_comp=v_comp,
                                     column_o=obsvar,
                                     label_o=p.obs,
                                     column_m=p.model_vars[index],
