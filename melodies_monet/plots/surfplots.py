@@ -372,8 +372,9 @@ def make_spatial_bias(df, df_reg=None, column_o=None, label_o=None, column_m=Non
 
     #print(df.columns)
     
-    if u_comp is not None and v_comp is not None: 
+    if u_comp is not None and v_comp is not None:  
         print("Wind barbs may take longer to plot... Please be patient.")
+
         u_mod = df_mean[u_comp]
         v_mod = df_mean[v_comp] 
 
@@ -1060,8 +1061,11 @@ def make_spatial_overlay(df, vmodel, u_comp = None, v_comp = None, column_o=None
 
     if u_comp is not None and v_comp is not None: 
         print("Wind barbs may take longer to plot... Please be patient.")
-        u_mod = df_mean[u_comp]
-        v_mod = df_mean[v_comp] 
+        u_mod = vmodel[u_comp].mean(dim='time').squeeze()
+        v_mod = vmodel[v_comp].mean(dim='time').squeeze()
+        
+        #u_mod = vmodel_u[u_comp]
+        #v_mod = vmodel_v[v_comp] 
 
         #ensure all bias stats are MODEL-OBS (enables you to tell the direction of the 
         #model relative to observations)
@@ -1071,8 +1075,8 @@ def make_spatial_overlay(df, vmodel, u_comp = None, v_comp = None, column_o=None
         # set skip for less clutter
         skip=2
         ax.barbs(
-            df_mean["longitude"][::skip], # long
-            df_mean["latitude"][::skip], # lat
+            u_mod["longitude"][::skip], # long
+            u_mod["latitude"][::skip], # lat
             u_mod[::skip]*1.94384, 
             v_mod[::skip]*1.94384, # u, v 
             length=6, linewidth=0.85

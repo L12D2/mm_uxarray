@@ -130,7 +130,7 @@ this to a smaller value will speed up the pairing process.
 **extra_calc:** The extra_calc section allows users to calculate complex meteorological 
 variables that may not have standard variable names across datasets. E.g. u, v, u10, and v10
 all commonly refer to the u and v components of wind speed. However, the naming convention
-varies by model). 
+varies by model. 
 
 This section allows dewpoint, relative humidity, wind speed, and wind direction to be 
 calculated. Users can also specify whether their spatial overlay, spatial bias, and spatial 
@@ -157,9 +157,7 @@ knowing what those components are called in their model. If modeled wind directi
 available, simply add the variable name to the variable list. 
 
 * Wind barbs can be plotted using the u-component and v-component. Users are responsible for
-knowing what those components are called in their model. If wind barbs are desired, at the 
-moment, users will also need to add the model variable name for the wind components to the 
-variables dictionary (see the airnow-ufschem example). NOTE: plotted wind barbs are in knots. 
+knowing what those components are called in their model. NOTE: plotted wind barbs are in knots. 
 Wind speed everywhere else in the model is by default m/s unless specified elsewhere in the 
 YAML options. 
 

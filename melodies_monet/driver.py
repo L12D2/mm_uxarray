@@ -539,6 +539,15 @@ class model:
         # Calculate species to input into MONET, so works for all mechanisms in wrfchem
         # I want to expand this for the other models too when add aircraft data.
         # First make a list of variables not in mapping but from variable_summing, if provided
+        for v in self.extra_calc.values():
+            if v is None:
+                continue
+            for input_var in v.values():
+                if self.variable_dict is None:
+                    self.variable_dict = {}
+                if input_var not in self.variable_dict.keys():
+                    self.variable_dict.update({input_var: "None"})
+        
         if self.variable_summing is not None:
             vars_for_summing  = []
             for var in self.variable_summing.keys():
@@ -551,20 +560,14 @@ class model:
             else:
                 list_input_var = list_input_var + list(set(self.mapping[obs_map].keys()) - set(list_input_var))
         #Only certain models need this option for speeding up i/o.
-
-        # print("1", list_input_var)
-        # if self.extra_calc is not None:
-        #     for v in self.extra_calc.keys():
-        #         if v not in list_input_var:
-        #             list_input_var.append(v)
-        #             print("2", list_input_var)
             
-        for v in self.extra_calc.values():
-            if v is None:
-                continue
-            for input_var in v.values():
-                if input_var not in list_input_var:
-                    list_input_var.append(input_var)
+        # for v in self.extra_calc.values():
+        #     if v is None:
+        #         continue
+        #     for input_var in v.values():
+        #         if input_var not in list_input_var:
+        #             list_input_var.append(input_var)
+        #     print("THIS:",list_input_var)  
 
         # Remove standardized variable names that user may have requested to pair on or output in MM
         # as they will be added anyway and here would cause [var_list] to fail in the below model readers.
@@ -2341,7 +2344,7 @@ class analysis:
                             for col in pairdf.columns:
                                 if col == "wdir":
                                     rename_dict[col] = "WD"
-                                elif col == "winddir":
+                                if col == "winddir":
                                     rename_dict[col] = "winddir"
                             #print("Renaming columns:", rename_dict)
 
