@@ -98,7 +98,7 @@ TROPOMI NO2 L2 product released by KNMI, paring the satellite pixels to WRF-Chem
 the plotting and statistical analyses in satellite-model comparisons.
 
 **Rebecca Schwantes:**
-I am a research scientist at CIRES/NOAA CSL coordinating the 
+I am a research chemist at NOAA CSL coordinating the 
 development of MELODIES MONET. My development plans include incorporating 
 additional surface observational datasets, adding the capability of pairing 
 to aircraft observations, and expanding plotting and statistics for analysis 
