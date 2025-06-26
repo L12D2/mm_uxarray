@@ -28,7 +28,6 @@ Supported Models
      - Yes
      - Needs testing
      - Yes
-     - Needs testing
    * - `CESM/CAM-chem SE <https://www2.acom.ucar.edu/gcm/cam-chem>`_
      - Yes
      - | Needs testing & to 
