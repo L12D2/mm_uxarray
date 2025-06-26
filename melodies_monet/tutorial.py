@@ -43,6 +43,10 @@ _examples = {
             "example_observation_data/surface/AIRNOW_20190701_20190731.nc",
             "sha256:67da806bcdca90289147254a3fa63a746b8a63ef973a497d0b47c789d48291c2",
         ),
+        "2017-07": (
+            "example_observation_data/surface/AirNow_20170701_20170704.nc",
+            "sha256:5f48c4c7063859cd603f5a04c3074b12dc6849a07d120e2c6510dcc170309293",
+        )
     },
     "camchem": {
         "fv": (
@@ -86,6 +90,12 @@ _examples = {
         "cmaq54_2023-06-24_20-21": (
             "example_model_data/ufsaqm_example/aqm.cmaq54.emisfix.orirave1.dyn.2023062420-21.nc",
             "sha256:b78522d6bcbfbc5dc6243cfd3ca8465c7d5aaebbcb49a9c30b9cbd9b99209aff",
+        ),
+    },
+    "ufschem": {
+        "2017-07": (
+            "example_model_data/ufschem_example/2017_07_01_03_ufschemv1.nc",
+            "sha256:697cde19c930d8138528c084140282e192407912c40a1f8b0cc37d80f5c7d3b7",
         ),
     },
     "aeronet": {

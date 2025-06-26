@@ -2340,12 +2340,14 @@ class analysis:
                             # this fix should work for ISH and ISH-Lite
                             
                             rename_dict = {}
-                            #print("pairdf before:", pairdf.columns)
+                            print("pairdf before:", pairdf.columns)
                             for col in pairdf.columns:
                                 if col == "wdir":
                                     rename_dict[col] = "WD"
-                                if col == "winddir":
+                                elif col == "winddir":
                                     rename_dict[col] = "winddir"
+                                elif col == "wd":
+                                    rename_dict[col] = "WD"
                             #print("Renaming columns:", rename_dict)
 
                             pairdf = pairdf.rename(columns=rename_dict)
@@ -2359,6 +2361,16 @@ class analysis:
                             #print(pairdf)
                             rose_df = pairdf.reset_index().dropna(subset=["WD", "winddir"], axis=0)
 
+                            wd_mode = rose_df["WD"].mode()
+                            winddir_mode = rose_df["winddir"].mode()
+                            
+                            #print("type of wd:", pairdf["WD"].dtype)
+                            #print("wd", wd_mode)
+                            #print("winddir", winddir_mode)
+
+                            #print(pairdf["WD"].unique())
+                            #print(pairdf["winddir"].unique())
+                            
                             #print(rose_df)
                             #print(len(rose_df)) 
                             # WD and winddir are not optional
