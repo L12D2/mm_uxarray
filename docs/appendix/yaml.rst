@@ -137,29 +137,31 @@ calculated. Users can also specify whether their spatial overlay, spatial bias, 
 exceedance plots display wind barbs. 
 
 * Model dewpoint can be calculated with the specific humidity. Users will need to know the
-naming convention of specific humidity in their specific model. Observations will sometimes 
-only record dewpoint or relative humidity. Hence, both options are available for calculation,
-provided the model has specific humidity. 
-Standard hydrometeorological variables continue to be incorporated into MELODIES-MONET. 
+  naming convention of specific humidity in their specific model. Observations will sometimes 
+  only record dewpoint or relative humidity. Hence, both options are available for calculation,
+  provided the model has specific humidity. 
+
+* Standard hydrometeorological variables continue to be incorporated into MELODIES-MONET. 
 
 * Model relative humidity can be calculated with the specific humidity. Users will need to know 
-the naming convention of specific humidity in their specific model. Observations will sometimes 
-only record dewpoint or relative humidity. Hence, both options are available for calculation,
-provided the model has specific humidity. 
-Standard hydrometeorological variables continue to be incorporated into MELODIES-MONET.
+  the naming convention of specific humidity in their specific model. Observations will sometimes 
+  only record dewpoint or relative humidity. Hence, both options are available for calculation,
+  provided the model has specific humidity. 
+
+* Standard hydrometeorological variables continue to be incorporated into MELODIES-MONET.
 
 * Wind speed is calculated using the u-component and v-component. Users are responsible for
-knowing what those components are called in their model. If modeled wind speed is already 
-available, simply add the variable name to the variable list. 
+  knowing what those components are called in their model. If modeled wind speed is already 
+  available, simply add the variable name to the variable list. 
 
 * Wind direction is calculated using the u-component and v-component. Users are responsible for
-knowing what those components are called in their model. If modeled wind direction is already 
-available, simply add the variable name to the variable list. 
+  knowing what those components are called in their model. If modeled wind direction is already 
+  available, simply add the variable name to the variable list. 
 
 * Wind barbs can be plotted using the u-component and v-component. Users are responsible for
-knowing what those components are called in their model. NOTE: plotted wind barbs are in knots. 
-Wind speed everywhere else in the model is by default m/s unless specified elsewhere in the 
-YAML options. 
+  knowing what those components are called in their model. NOTE: plotted wind barbs are in knots. 
+  Wind speed everywhere else in the model is by default m/s unless specified elsewhere in the 
+  YAML options. 
 
 **apply_ak:** Removed. Instead, specify ``pairing_kwargs`` in the analysis section.
 
@@ -559,12 +561,14 @@ observation label is first and the model label is second
 
    * **set_stat_sig:** This option allows the user to calculate an independent
       t-test between two independent samples. The variances are assumed to be equal.
+
       Example output: p-value annotation legend:
-      ns: 5.00e-02 < p <= 1.00e+00
-       *: 1.00e-02 < p <= 5.00e-02
-      **: 1.00e-03 < p <= 1.00e-02
-     ***: 1.00e-04 < p <= 1.00e-03
-    ****: p <= 1.00e-04
+
+      *    ns: 5.00e-02 < p <= 1.00e+00
+      *     *: 1.00e-02 < p <= 5.00e-02
+      *    **: 1.00e-03 < p <= 1.00e-02
+      *   ***: 1.00e-04 < p <= 1.00e-03
+      *  ****: p <= 1.00e-04
 
 
 Stats
