@@ -112,8 +112,17 @@ Shell variables prefixed with the ``$`` symbol, such as ``$HOME``, will be expan
 please provide location of ``*.metcro2d.ncf`` files here.
 Shell variables prefixed with the ``$`` symbol, such as ``$HOME``, will be expanded.
 
-**mod_type:** The model type. Options are: "cmaq", "wrfchem", "rrfs", "gsdchem",
-"cesm_fv", "cesm_se", and "raqms". 
+**mod_type:** The model type. Current options available: 
+
+* cmaq
+* wrfchem
+* ufschem
+* rrfs
+* gsdchem
+* cesm_fv 
+* cesm_se 
+* raqms
+
 If you specify another name, MELODIES MONET will try to read in the data using
 xarray.open_mfdataset and xarray.open_dataset().
 
@@ -136,32 +145,35 @@ This section allows dewpoint, relative humidity, wind speed, and wind direction 
 calculated. Users can also specify whether their spatial overlay, spatial bias, and spatial 
 exceedance plots display wind barbs. 
 
-* Model dewpoint can be calculated with the specific humidity. Users will need to know the
-  naming convention of specific humidity in their specific model. Observations will sometimes 
-  only record dewpoint or relative humidity. Hence, both options are available for calculation,
-  provided the model has specific humidity. 
+* **Hydrometeorology:** 
 
-* Standard hydrometeorological variables continue to be incorporated into MELODIES-MONET. 
+   * Observations will sometimes only record dewpoint or relative humidity. Hence, both options are available for
+     calculation, provided the model has specific humidity. 
 
-* Model relative humidity can be calculated with the specific humidity. Users will need to know 
-  the naming convention of specific humidity in their specific model. Observations will sometimes 
-  only record dewpoint or relative humidity. Hence, both options are available for calculation,
-  provided the model has specific humidity. 
+   * **Model dewpoint:** can be calculated with the specific humidity. Users will need to know the
+     naming convention of specific humidity in their specific model. Observations will sometimes 
+     only record dewpoint or relative humidity. Hence, both options are available for calculation,
+     provided the model has specific humidity. 
+ 
+   * **Model relative humidity:** can be calculated with the specific humidity. Users will need to know 
+     the naming convention of specific humidity in their specific model. 
 
-* Standard hydrometeorological variables continue to be incorporated into MELODIES-MONET.
+   * *Standardized hydrometeorological variables continue to be incorporated into MELODIES-MONET.*
 
-* Wind speed is calculated using the u-component and v-component. Users are responsible for
-  knowing what those components are called in their model. If modeled wind speed is already 
-  available, simply add the variable name to the variable list. 
+* **Wind speed and direction:**
 
-* Wind direction is calculated using the u-component and v-component. Users are responsible for
-  knowing what those components are called in their model. If modeled wind direction is already 
-  available, simply add the variable name to the variable list. 
+   * **Wind speed:** is calculated using the u-component and v-component. Users are responsible for
+     knowing what those components are called in their model. If modeled wind speed is already 
+     available, simply add the variable name to the variable list. 
 
-* Wind barbs can be plotted using the u-component and v-component. Users are responsible for
-  knowing what those components are called in their model. NOTE: plotted wind barbs are in knots. 
-  Wind speed everywhere else in the model is by default m/s unless specified elsewhere in the 
-  YAML options. 
+   * **Wind direction:** is calculated using the u-component and v-component. Users are responsible for
+     knowing what those components are called in their model. If modeled wind direction is already 
+     available, simply add the variable name to the variable list. 
+
+   * **Wind barbs:** can be plotted using the u-component and v-component. Users are responsible for
+     knowing what those components are called in their model. **NOTE: plotted wind barbs are in knots. 
+     Wind speed everywhere else in the model/observations are by default m/s unless specified elsewhere in the 
+     YAML options.** 
 
 **apply_ak:** Removed. Instead, specify ``pairing_kwargs`` in the analysis section.
 
@@ -409,7 +421,7 @@ where domain_type is equal to domain_name.
 (e.g., ['epa_region'])
 
 **region_list:** list of regions we will calculate for scorecard. 
-(e.g., ['R1','R2','R3','R4','R5','R6','R7','R8','R9','R10']
+(e.g., ['R1', 'R2', 'R3', 'R4', 'R5', 'R6', 'R7', 'R8', 'R9', 'R10']
 
 **interval_list:** list of points that will create a single groupped boxplot. 
 E.g. [0, 3, 5, 8, 11, 14] will create groupped boxplots for [0-3), [3-5), and so forth.
@@ -559,16 +571,16 @@ observation label is first and the model label is second
      plot shaded curves of the 25th and 75th percentile range of each vertical bin or 
      'box' to plot box-plots of each vertical bin.
 
-   * **set_stat_sig:** This option allows the user to calculate an independent
-      t-test between two independent samples. The variances are assumed to be equal.
+   * **set_stat_sig:** This option allows the user to calculate an independent 
+     t-test between two independent samples. The variances are assumed to be equal.
 
       Example output: p-value annotation legend:
 
-      *    ns: 5.00e-02 < p <= 1.00e+00
-      *     *: 1.00e-02 < p <= 5.00e-02
-      *    **: 1.00e-03 < p <= 1.00e-02
-      *   ***: 1.00e-04 < p <= 1.00e-03
-      *  ****: p <= 1.00e-04
+      *   ``ns``: 5.00e-02 < p <= 1.00e+00
+      *    ``*``: 1.00e-02 < p <= 5.00e-02
+      *   ``**``: 1.00e-03 < p <= 1.00e-02
+      *  ``***``: 1.00e-04 < p <= 1.00e-03
+      * ``****``: p <= 1.00e-04
 
 
 Stats
