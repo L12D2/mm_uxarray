@@ -213,7 +213,7 @@ See :doc:`../getting_started/downloading_obs` for more details.
 **obs_type:** The observation type. Options are: "pt_sfc" or point surface. Adding 
 options for Aircraft and Satellite observations are under development.
 
-**sat_type:** The satellite observation type. Options include: "mopitt_l3", "omps_l3", "omps_nm", "modis_l2", and "tropomi_l2_no2". Additional options are under development. 
+**sat_type:** The satellite observation type. Options include: "mopitt_l3", "omps_l3", "omps_nm", "modis_l2", "tropomi_l2_no2", "tempo_l2_no2" and "tempo_l2_hcho". Additional options are under development. 
 
 **data_proc:** This section stores all of the data processing information.
    
