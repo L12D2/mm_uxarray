@@ -104,6 +104,7 @@ Table of Contents
    examples/airnow_wrfchem
    examples/airnow_wrfchem_reg
    examples/airnow_camchem_se
+   examples/airnow_ufschem
    examples/camchem
    examples/idealized
    examples/save_paired_data
