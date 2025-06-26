@@ -18,7 +18,7 @@
 analysis:
   start_time: "2017-07-01-00:00:00" # UTC
   end_time: "2017-07-02-00:00:00" # UTC
-  output_dir: ./output/ufschem # relative to the program using this control file
+  output_dir: ./output/airnow_ufschem # relative to the program using this control file
   #   Currently, the directory must exist or plot saving will error and fail.
   debug: True
 
@@ -258,7 +258,7 @@ stats:
   #    'ME','MdnE','NME', 'NMdnE', 'FE', 'R2', 'RMSE','d1',
   #    'E1', 'IOA', 'AC']
   round_output: 2 # optional; defaults to rounding to 3rd decimal place
-  output_table: False
+  output_table: True
   # ^ Always outputs a .txt file.
   #   Optional to also output a Matplotlib figure table (image).
   output_table_kwargs: # optional
