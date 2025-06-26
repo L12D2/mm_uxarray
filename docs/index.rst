@@ -107,6 +107,7 @@ Table of Contents
    examples/airnow_ufschem
    examples/camchem
    examples/idealized
+   examples/ish_ufschem
    examples/save_paired_data
    examples/read_paired_data
    examples/aircraft_pairing

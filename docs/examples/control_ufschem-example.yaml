@@ -24,8 +24,7 @@ analysis:
 
 model:
   ufschem_v1: # model label
-    files: /wrk/d2/rschwantes/UFS-Chem_v1/outdir_UFS_C96_CATChem_AM4GAS/short/2017_07_01_03_ufschemv1.nc
-    #/wrk/d2/rschwantes/UFS-Chem_v1/outdir_UFS_C96_CATChem_AM4GAS/gfs.20170701/00/model_data/atmos/history/gfs.t00z.atmf0*.nc # change here
+    files: example:ufschem:2017-07
     mod_type: "ufschem" #change
     mod_kwargs:
       surf_only: True  # specify that we have only one vertical level; WRF-Chem specific
@@ -68,7 +67,7 @@ model:
 obs:
   airnow: # obs label
     use_airnow: True
-    filename: /home/lthompson/obs/airnow/AirNow_20170701_20170704.nc
+    filename: example:airnow:2017-07
     obs_type: pt_sfc
     variables: # optional
       OZONE:
