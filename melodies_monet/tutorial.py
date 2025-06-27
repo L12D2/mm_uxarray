@@ -133,13 +133,13 @@ _examples = {
         ),
     },
     "ish": {
-        "2017-07": (
+        "2017-07" : (
             "example_observation_data/surface/ISH_20170701_20170703.nc",
             "sha256:26aad8d1d00d724d35b36d508ff11855b01c7d4a0955a757bd59d7ab3dbb67d3",
         ),
     },
     "ish-lite": {
-        "2017-07": (
+        "2017-07" : (
             "example_observation_data/surface/ISH-Lite_20170701_20170703.nc",
             "sha256:3617501a3d7e97c0aade3855b1fa2a5d76aa2407474ca9a013cc8a3b186265e0",
         ),
