@@ -23,11 +23,11 @@ Supported Models
    * - `WRF-Chem <https://www2.acom.ucar.edu/wrf-chem>`_
      - Yes
      - Yes
-     - TROPOMI, TEMPO
+     - TEMPO, MOPITT, TROPOMI
    * - `CESM/CAM-chem FV <https://www2.acom.ucar.edu/gcm/cam-chem>`_
      - Yes
      - Needs testing
-     - Yes
+     - MOPITT, MODIS, TEMPO
    * - `CESM/CAM-chem SE <https://www2.acom.ucar.edu/gcm/cam-chem>`_
      - Yes
      - | Needs testing & to 
@@ -43,11 +43,11 @@ Supported Models
    * - `UFS-AQM <https://github.com/ufs-community/ufs-srweather-app/wiki/Air-Quality-Modeling>`_
      - Yes
      - Yes
-     - Needs testing
+     - MOPITT
    * - `CAMx <https://www.camx.com/>`_
      - Yes
      - Needs testing
-     - TROPOMI, TEMPO
+     - TEMPO, MOPITT
    * - `RAQMS <http://raqms-ops.ssec.wisc.edu/>`_
      - Yes
      - Needs testing
