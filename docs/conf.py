@@ -10,7 +10,7 @@
 # -- Project information -----------------------------------------------------
 
 project = u'MELODIES-MONET'
-copyright = u'2022, NCAR/UCAR, NOAA'
+copyright = u'2022, NSF NCAR, CIRES'
 author = u'Rebecca Schwantes (NOAA), Barry Baker (NOAA), Louisa Emmons (NCAR), Rebecca Buchholz (NCAR)'
 
 # The short X.Y version
@@ -40,8 +40,8 @@ extensions = [
 ]
 
 extlinks = {
-    'issue': ('https://github.com/noaa-csl/melodies-monet/issues/%s', 'GH %s'),
-    'pull': ('https://github.com/noaa-csl/melodies-monet/pull/%s', 'PR %s'),
+    'issue': ('https://github.com/ncar/melodies-monet/issues/%s', 'GH %s'),
+    'pull': ('https://github.com/ncar/melodies-monet/pull/%s', 'PR %s'),
 }
 
 autosummary_generate = True  # default in Sphinx v4
@@ -61,11 +61,14 @@ napoleon_use_ivar = False  # True
 napoleon_preprocess_types = True
 
 nb_execution_timeout = 300  # in seconds, for each notebook cell (default: 30)
-# nb_execution_mode = "auto"  # don't execute if all cells have output (default)
+nb_execution_mode = "auto"  # don't execute if all cells have output (default)
 # nb_execution_mode = "cache"  # to speed build when working on other things
-nb_execution_mode = "off"
+# nb_execution_mode = "off"
 nb_execution_excludepatterns = [
-    "examples/airnow_wrfchem.ipynb",
+    "examples/AEROMMA_*.ipynb",
+    "examples/airnow_*.ipynb",
+    "examples/camchem.ipynb",
+    "examples/*_paired_data.ipynb",
 ]
 nb_execution_show_tb = True
 
@@ -198,8 +201,13 @@ linkcheck_ignore = [
     "https://www2.cisl.ucar.edu/resources/conda-environments",
     # Sphinx 4.5 linkcheck having problem:
     "https://docs.github.com/en/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account",
+    "https://doi.org/10.3390/atmos8110210",
+    "https://doi.org/10.1021/acs.est.5c00902",
     # NCEI sites having problems
     "https://www.ncdc.noaa.gov/crn/",
+    "https://www.ncei.noaa.gov/products/land-based-station/integrated-surface-database",
+    #PNAS sites having problems:
+    "https://doi.org/10.1093/pnasnexus/pgad483"
 ]
 user_agent = "Mozilla/5.0 (X11; Linux x86_64; rv:25.0) Gecko/20100101 Firefox/25.0"
 

@@ -1,9 +1,9 @@
-# Copyright (C) 2022 National Center for Atmospheric Research and National Oceanic and Atmospheric Administration
 # SPDX-License-Identifier: Apache-2.0
 #
 """
 Check for consistency with the tutorial datasets and that options work.
 """
+import os
 import subprocess
 
 import numpy as np
@@ -29,6 +29,36 @@ else:
 
 ds0_aeronet = xr.open_dataset(fetch_example("aeronet:2019-09"))
 ds0_airnow = xr.open_dataset(fetch_example("airnow:2019-09"))
+
+have_openaq_api_key = len(os.environ.get("OPENAQ_API_KEY", "")) > 0
+
+
+def test_get_aeronet_no_data_err():
+    cmd = [
+        "melodies-monet",
+        "get-aeronet",
+        "-s", "2100-01-01",  # future
+        "-e", "2100-01-02",
+    ]
+    cp = subprocess.run(cmd, capture_output=True)
+    assert cp.returncode != 0
+    assert cp.stdout.decode().splitlines()[-2].startswith(
+        "Error message (type: Exception): loading from URL 'https://aeronet.gsfc.nasa.gov/"
+    )
+
+
+def test_get_aeronet_empty_date_range_err():
+    cmd = [
+        "melodies-monet",
+        "get-aeronet",
+        "-s", "2019-09-01",
+        "-e", "2019-08-31",
+    ]
+    cp = subprocess.run(cmd, capture_output=True)
+    assert cp.returncode != 0
+    assert cp.stdout.decode().splitlines()[-2] == (
+        "Error message (type: ValueError): Neither `start` nor `end` can be NaT"
+    )
 
 
 def test_get_aeronet(tmp_path):
@@ -173,3 +203,50 @@ def test_get_aqs_hourly(tmp_path):
         for v in ds.data_vars
         if ds[v].dims == ("time", "y", "x")
     } == {"OZONE", "time_local"}
+
+
+@pytest.mark.skipif(not have_openaq_api_key, reason="OPENAQ_API_KEY not set")
+def test_get_openaq(tmp_path):
+    fn = "x.nc"
+    cmd = [
+        "melodies-monet", "get-openaq",
+        "-s", "2024-09-10", "-e" "2024-09-10 00:59",
+        "--sensor-limit", "50",
+        "-n", "2",
+        "--dst", tmp_path.as_posix(), "-o", fn,
+    ]
+    subprocess.run(cmd, check=True)
+
+    ds = xr.open_dataset(tmp_path / fn)
+
+    assert ds.time.size == 1
+    assert {
+        v
+        for v in ds.data_vars
+        if ds[v].dims == ("time", "y", "x")
+    } == {"o3", "pm25", "pm10", "time_local"}
+    assert ds.is_monitor.all()
+
+
+@pytest.mark.skipif(not have_openaq_api_key, reason="OPENAQ_API_KEY not set")
+def test_get_openaq_lowcost(tmp_path):
+    fn = "x.nc"
+    cmd = [
+        "melodies-monet", "get-openaq",
+        "-s", "2024-09-10", "-e" "2024-09-10 00:59",
+        "-p", "pm25",
+        "--sensor-limit", "10",
+        "--no-reference-grade", "--low-cost",
+        "--dst", tmp_path.as_posix(), "-o", fn,
+    ]
+    subprocess.run(cmd, check=True)
+
+    ds = xr.open_dataset(tmp_path / fn)
+
+    assert ds.time.size == 1
+    assert {
+        v
+        for v in ds.data_vars
+        if ds[v].dims == ("time", "y", "x")
+    } == {"pm25", "time_local"}
+    assert (~ds.is_monitor).all()

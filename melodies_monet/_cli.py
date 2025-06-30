@@ -1,13 +1,19 @@
-# Copyright (C) 2022 National Center for Atmospheric Research and National Oceanic and Atmospheric Administration
 # SPDX-License-Identifier: Apache-2.0
 #
 """
 melodies-monet -- MELODIES MONET CLI
 """
+import os
 import time
 from contextlib import contextmanager
 from pathlib import Path
-from typing import List
+from typing import List, Tuple
+
+_LOGGING_LEVEL = os.environ.get("MM_LOGGING_LEVEL", None)
+if _LOGGING_LEVEL is not None:
+    import logging
+
+    logging.basicConfig(level=_LOGGING_LEVEL.upper())
 
 try:
     import typer
@@ -20,8 +26,6 @@ except ImportError as e:
     )
     raise SystemExit(1)
 
-from typing import Tuple
-
 DEBUG = False
 INFO_COLOR = typer.colors.CYAN
 ERROR_COLOR = typer.colors.BRIGHT_RED
@@ -32,6 +36,20 @@ HEADER = """
 | MELODIES MONET |
 ------------------    
 """.strip()
+
+
+def _get_full_name(obj):
+    """Get the full name of a function or type,
+    including the module name if not builtin."""
+    import builtins
+    import inspect
+
+    mod = inspect.getmodule(obj)
+    name = obj.__qualname__
+    if mod is None or mod is builtins:
+        return name
+    else:
+        return f"{mod.__name__}.{name}"
 
 
 @contextmanager
@@ -48,7 +66,7 @@ def _timer(desc=""):
             tpl.format(status="failed", elapsed=time.perf_counter() - start),
             fg=ERROR_COLOR
         )
-        typer.secho(f"Error message: {e}", fg=ERROR_COLOR)
+        typer.secho(f"Error message (type: {_get_full_name(type(e))}): {e}", fg=ERROR_COLOR)
         if DEBUG:
             raise
         else:
@@ -303,7 +321,7 @@ def get_aeronet(
             .drop_vars(site_vns)
             .merge(ds_site)
             .set_coords(site_vns)
-            .assign(x=range(ds_site.dims["x"]))
+            .assign(x=range(ds_site.sizes["x"]))
             .expand_dims("y")
             .transpose("time", "y", "x")
         )
@@ -459,7 +477,7 @@ def get_airnow(
             .drop_vars(site_vns)
             .merge(ds_site)
             .set_coords(["latitude", "longitude"])
-            .assign(x=range(ds_site.dims["x"]))
+            .assign(x=range(ds_site.sizes["x"]))
         )
 
         # Add units
@@ -670,7 +688,7 @@ def get_ish_lite(
             .drop_vars(site_vns)
             .merge(ds_site)
             .set_coords(["latitude", "longitude"])
-            .assign(x=range(ds_site.dims["x"]))
+            .assign(x=range(ds_site.sizes["x"]))
         )
 
         # Add units
@@ -847,7 +865,7 @@ def get_ish(
                     "station name": "station_name",
                     "elev(m)": "elevation",
                 },
-              errors="ignore",
+            errors="ignore",
             )
             .drop(columns=["elev"], errors="ignore")  # keep just elevation from the site meta file
         )
@@ -889,7 +907,7 @@ def get_ish(
             .drop_vars(site_vns)
             .merge(ds_site)
             .set_coords(["latitude", "longitude"])
-            .assign(x=range(ds_site.dims["x"]))
+            .assign(x=range(ds_site.sizes["x"]))
         )
 
         # Add units
@@ -1028,26 +1046,59 @@ def get_aqs(
                     typer.echo("Note that the daily option currently requires monetio >0.2.5")
                 raise
 
-    if not daily:
-        with _timer("Fetching site metadata"):
-            # Need UTC offset in order to compute local time
-            # But currently the `meta=True` option doesn't work
-            meta0 = pd.read_csv(
-                "https://aqs.epa.gov/aqsweb/airdata/aqs_sites.zip",
-                encoding="ISO-8859-1",
-                usecols=[0, 1, 2, 17],
-                dtype=str,
+    with _timer("Fetching site metadata"):
+        # Need UTC offset in order to compute local time
+        # But currently the `meta=True` option doesn't work
+        meta0 = pd.read_csv(
+            "https://aqs.epa.gov/aqsweb/airdata/aqs_sites.zip",
+            encoding="ISO-8859-1",
+            usecols=[0, 1, 2, 17, 24, 25],
+            dtype=str,
+        )
+        meta = (
+            meta0.copy()
+            .assign(
+                siteid=meta0["State Code"] + meta0["County Code"] + meta0["Site Number"],
+                utcoffset=meta0["GMT Offset"].astype(int),
             )
-            meta = (
-                meta0.copy()
-                .assign(
-                    siteid=meta0["State Code"] + meta0["County Code"] + meta0["Site Number"],
-                    utcoffset=meta0["GMT Offset"].astype(int),
-                )
-                .drop(
-                    columns=["State Code", "County Code", "Site Number", "GMT Offset"],
-                )
+            .drop(
+                columns=["Site Number", "GMT Offset"],
             )
+            .rename(
+                columns={
+                    "State Code": "state_code",
+                    "County Code": "county_code",
+                    "City Name": "city_name",
+                    "CBSA Name": "cbsa_name",
+                }
+            )
+        )
+        meta.loc[meta["city_name"] == "Not in a City", "city_name"] = "Not in a city"  # normalize
+
+        counties0 = pd.read_csv(
+            "https://aqs.epa.gov/aqsweb/documents/codetables/states_and_counties.csv",
+            encoding="ISO-8859-1",
+            dtype=str,
+        )
+        counties = (
+            counties0.copy()
+            .rename(
+                columns={
+                    "State Code": "state_code",
+                    "State Name": "state_name",
+                    "State Abbreviation": "state_abbr",
+                    "County Code": "county_code",
+                    "County Name": "county_name",
+                    "EPA Region": "epa_region",  # note without R prefix
+                }
+            )
+        )
+        counties["epa_region"] = "R" + counties["epa_region"].str.lstrip("0")
+
+        meta = meta.merge(counties, on=["state_code", "county_code"], how="left")
+
+        if daily:
+            meta = meta.drop(columns=["utcoffset"])
 
     with _timer("Forming xarray Dataset"):
         # Select requested time period (older monetio doesn't do this)
@@ -1093,17 +1144,24 @@ def get_aqs(
         site_vns = [
             "siteid",
             "state_code",
+            "state_name",
+            "state_abbr",
             "county_code",
+            "county_name",
+            "city_name",
+            "cbsa_name",
             "site_num",
+            "epa_region",
             "latitude",
             "longitude",
         ]
         if daily:
-            site_vns.extend(["local_site_name", "address", "city_name", "msa_name"])
-        # NOTE: time_local not included since it varies in time as well
-        if not daily:
-            df = df.merge(meta, on="siteid", how="left")
+            site_vns.extend(["local_site_name", "address", "msa_name"])
+        else:
             site_vns.append("utcoffset")
+        # NOTE: time_local not included since it varies in time as well
+
+        df = df.merge(meta, on="siteid", how="left", suffixes=(None, "_meta"))
 
         ds_site = (
             df[site_vns]
@@ -1123,13 +1181,14 @@ def get_aqs(
         ds = (
             df[cols]
             .drop(columns=[vn for vn in site_vns if vn != "siteid"])
+            .drop(columns=[col for col in df.columns if col.endswith("_meta")])
             .drop_duplicates(["time", "siteid"], keep="first")
             .set_index(["time", "siteid"])
             .to_xarray()
             .swap_dims(siteid="x")
             .merge(ds_site)
             .set_coords(["latitude", "longitude"])
-            .assign(x=range(ds_site.dims["x"]))
+            .assign(x=range(ds_site.sizes["x"]))
         )
 
         # Add units
@@ -1159,6 +1218,302 @@ def get_aqs(
         else:
             ds.to_netcdf(dst / out_name)
 
+
+@app.command()
+def get_openaq(
+    start_date: str = typer.Option(..., "-s", "--start-date", help=f"Start date. {_DATE_FMT_NOTE}"),
+    end_date: str = typer.Option(..., "-e", "--end-date", help=f"End date. {_DATE_FMT_NOTE} {_DATE_END_NOTE}"),
+    out_name: str = typer.Option(None, "-o",
+        help=(
+            "Output file name (or full/relative path). "
+            "By default the name is generated like 'OpenAQ_<start-date>_<end-date>.nc'."
+        )
+    ),
+    dst: Path = typer.Option(".", "-d", "--dst", help=(
+            "Destination directory (to control output location "
+            "if using default output file name)."
+        )
+    ),
+    param: List[str] = typer.Option(["o3", "pm25", "pm10"], "-p", "--param", help=(
+            "Parameters. "
+            "Use '-p' more than once to get multiple parameters. "
+            "Other examples: 'no', 'no2', 'nox', 'so2', 'co', 'bc'. "
+            "Only applicable to the web API methods ('api-v*')."
+        )
+    ),
+    reference_grade: bool = typer.Option(True, help="Include reference-grade sensors."),
+    low_cost: bool = typer.Option(False, help="Include low-cost sensors."),
+    country: List[str] = typer.Option(None, "-c", "--country",
+        help=(
+            "Two-letter country code(s). (US, CA, MX, ...). "
+            "Use more than once to specify multiple countries."
+        )
+    ),
+    method: str = typer.Option("api-v3", "-m", "--method", help=(
+            "Method (reader) to use for fetching data. "
+            "Options: 'api-v3', 'api-v2', 'openaq-fetches'."
+        )
+    ),
+    sensor_limit: int = typer.Option(None,
+        help=(
+            "Limit the number of sensors to fetch data for. "
+            "This is useful for testing or debugging. "
+            "Only applicable to the 'api-v3' method."
+        )
+    ),
+    compress: bool = typer.Option(True, help=(
+            "If true, pack float to int and apply compression using zlib with complevel 7. "
+            "This can take time if the dataset is large, but can lead to "
+            "significant space savings."
+        )
+    ),
+    num_workers: int = typer.Option(1, "-n", "--num-workers", help="Number of download workers."),
+    verbose: bool = typer.Option(False),
+    debug: bool = typer.Option(
+        False, "--debug/", help="Print more messages (including full tracebacks)."
+    ),
+):
+    """Download hourly OpenAQ data using monetio and reformat for MM usage."""
+    import warnings
+
+    import monetio as mio
+    import pandas as pd
+
+    from .util.write_util import write_ncf
+
+    global DEBUG
+
+    DEBUG = debug
+
+    typer.echo(HEADER)
+
+    if method not in {"api-v3", "api-v2", "openaq-fetches"}:
+        typer.secho(f"Error: method {method!r} not recognized", fg=ERROR_COLOR)
+        raise typer.Exit(2)
+
+    start_date = pd.Timestamp(start_date)
+    end_date = pd.Timestamp(end_date)
+
+    if method in {"openaq-fetches"}:
+        dates = pd.date_range(start_date, end_date, freq="D")
+    elif method.startswith("api-v"):
+        dates = pd.date_range(start_date, end_date, freq="h")
+    else:
+        raise AssertionError
+    if verbose:
+        print("Dates:")
+        print(dates)
+
+    if not country:
+        country = None
+
+    if verbose and method.startswith("api-v"):
+        print("Params:", param)
+    if verbose and method == "api-v3" and country is not None:
+        print("Country:", country)
+    if verbose and method == "api-v3":
+        print("Sensor limit:", sensor_limit)
+
+    # Set destination and file name
+    fmt = r"%Y%m%d"
+    if out_name is None:
+        out_name = f"OpenAQ_{start_date:{fmt}}_{end_date:{fmt}}.nc"
+    else:
+        p = Path(out_name)
+        if p.name == out_name:
+            # `out_name` is just the file name
+            out_name = p.name
+        else:
+            # `out_name` has path
+            if dst != Path("."):
+                typer.echo(f"warning: overriding `dst` setting {dst.as_posix()!r} with `out_name` {p.as_posix()!r}")
+            dst = p.parent
+            out_name = p.name
+
+    sensor_types = []
+    if reference_grade:
+        sensor_types.append("reference grade")
+    if low_cost:
+        sensor_types.append("low-cost sensor")
+    if not sensor_types and method.startswith("api-v"):
+        typer.secho(
+            "Error: no sensor types selected. Use --reference-grade and/or --low-cost",
+            fg=ERROR_COLOR,
+        )
+        raise typer.Exit(2)
+
+    if verbose and method in {"openaq-fetches"}:
+        from dask.diagnostics import ProgressBar
+
+        ProgressBar().register()
+
+    with _timer("Fetching data with monetio"):
+        if method == "openaq-fetches":
+            with warnings.catch_warnings():
+                warnings.filterwarnings(
+                    "ignore",
+                    message="The (error|warn)_bad_lines argument has been deprecated"
+                )
+                df = mio.openaq.add_data(
+                    dates,
+                    n_procs=num_workers,
+                    # wide_fmt=True,
+                )
+
+            # Address time-wise non-unique site IDs
+            # Some (most?) are just slightly different lat/lon
+            # But seems like a few are actual time-wise lat/lon duplicates
+            df = df.drop_duplicates(["time", "siteid"])
+
+        elif method.startswith("api-v"):
+            kws = dict(
+                parameters=param,
+                sensor_type=sensor_types,
+                wide_fmt=True,
+                timeout=60,
+                retry=15,
+                threads=num_workers if num_workers > 1 else None,
+            )
+            if method == "api-v3":
+                kws.update(
+                    hourly=True,
+                    country=country,
+                    sensor_limit=sensor_limit,
+                )
+                func = mio.obs.openaq_v3.add_data
+            elif method == "api-v2":
+                func = mio.obs.openaq_v2.add_data
+            else:
+                raise AssertionError
+            df = func(
+                dates,
+                **kws,
+            )
+
+            dupes = df[df.duplicated(["time", "siteid"], keep=False)]
+            if not dupes.empty:
+                typer.echo(
+                    f"warning: {len(dupes)} unexpected time-siteid duplicated rows:"
+                )
+                if verbose:
+                    typer.echo(dupes)
+                df = df.drop_duplicates(["time", "siteid"])
+        else:
+            raise AssertionError
+
+        if df.empty:
+            raise RuntimeError("No data found")
+
+        if method == "api-v2":
+            # Drop times not on the hour
+            good = df.time == df.time.dt.floor("H")
+            typer.echo(f"Dropping {(~good).sum()}/{len(good)} rows that aren't on the hour.")
+            df = df[good]
+
+    with _timer("Forming xarray Dataset"):
+        df = df.drop(columns=["index"], errors="ignore")
+        df = df.dropna(subset=["latitude", "longitude"])
+
+        if method == "openaq-fetches":
+            site_vns = [
+                "siteid",  # based on country and lat/lon
+                "latitude",
+                "longitude",
+                "utcoffset",
+                #
+                "city",
+                "country",  # 2-char codes
+                #
+                "sourceName",
+                "sourceType",  # "government"
+            ]
+            # NOTE: time_local not included since it varies in time as well
+        elif method == "api-v2":
+            site_vns = [
+                "siteid",  # real OpenAQ location ID
+                "latitude",
+                "longitude",
+                "utcoffset",
+                #
+                "location",
+                "city",
+                "country",
+                #
+                "entity",
+                "sensor_type",
+                "is_mobile",
+                "is_analysis",
+            ]
+            for vn in ["city", "is_analysis"]:  # may have been dropped for being all null
+                if vn not in df.columns:
+                    site_vns.remove(vn)
+        elif method == "api-v3":
+            df = df.drop(
+                columns=[
+                    "sensor_id",
+                    "period_label",
+                ],
+                errors="ignore",
+            )
+            site_vns = [
+                "siteid",  # real OpenAQ location ID
+                "latitude",
+                "longitude",
+                "utcoffset",
+                #
+                "country",
+                #
+                "is_mobile",
+                "is_monitor",
+            ]
+        else:
+            raise AssertionError
+
+        ds_site = (
+            df[site_vns]
+            .groupby("siteid")
+            .first()
+            .to_xarray()
+            .swap_dims(siteid="x")
+        )
+
+        ds = (
+            df.drop(columns=[vn for vn in site_vns if vn not in ["siteid"]])
+            .set_index(["time", "siteid"])
+            .to_xarray()
+            .swap_dims(siteid="x")
+            .merge(ds_site)
+            .set_coords(["latitude", "longitude"])
+            .assign(x=range(ds_site.dims["x"]))
+        )
+
+        # Rename species vars and add units as attr
+        nice_us = {"ppm": "ppmv", "ugm3": "ug m-3", "ppb": "pbbv"}
+        for vn0 in [n for n in df.columns if n.endswith(("_ppm", "ppb", "_ugm3", "_umg3"))]:
+            i_last_underscore = vn0.rfind("_")
+            vn, u = vn0[:i_last_underscore], vn0[i_last_underscore + 1:]
+            if u == "umg3":
+                u = "ugm3"
+            nice_u = nice_us[u]
+            ds[vn0].attrs.update(units=nice_u)
+            ds = ds.rename_vars({vn0: vn})
+
+        # Fill in local time array
+        # (in the df, not all sites have rows for all times, so we have NaTs at this point)
+        ds["time_local"] = ds.time + ds.utcoffset
+
+        # Expand
+        ds = (
+            ds
+            .expand_dims("y")
+            .transpose("time", "y", "x")
+        )
+
+    with _timer("Writing netCDF file"):
+        if compress:
+            write_ncf(ds, dst / out_name, verbose=verbose)
+        else:
+            ds.to_netcdf(dst / out_name)
 
 cli = app
 

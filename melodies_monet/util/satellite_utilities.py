@@ -1,10 +1,10 @@
-# Copyright (C) 2022 National Center for Atmospheric Research and National Oceanic and Atmospheric Administration
 # SPDX-License-Identifier: Apache-2.0
 #
 # File started by Maggie Bruckner. 
 # Contains satellite specific pairing operators
 import numpy as np
-from datetime import datetime,timedelta
+import pandas as pd
+import xarray as xr
 
 def vertical_regrid(input_press, input_values, output_press):
     '''
@@ -33,15 +33,64 @@ def vertical_regrid(input_press, input_values, output_press):
             out_array[y,x,:] = f(xnew)
     return out_array
 
+def mod_to_overpasstime(modobj,opass_tms,partial_col=None):
+    '''
+    Interpolate model to satellite overpass time.
+
+    Parameters
+    ----------
+
+    modobj : xarray.Dataset
+        model data
+    opass_tms : pandas.DatetimeIndex
+        satellite overpass local time
+    partial_col : str
+        variable to calculate partial columns for
+    Output
+    ------
+    outmod : xarray.Dataset 
+        revised model data at local overpass time
+    '''
+
+    nst, = opass_tms.shape
+    # nmt, = modobj.time.shape
+    # ny,nx = modobj.longitude.shape
+    
+    # Determine local time offset
+    local_utc_offset = (modobj['longitude']/15).round().astype('timedelta64[h]')
+    # initialize local time as variable
+    modobj['localtime'] = modobj['time'] + local_utc_offset
+
+    # initialize new model object with satellite datetimes
+    outmod = []
+
+    for ti in np.arange(nst):
+        # Apply filter to select model data within +/- 1 output time step of the overpass time
+        tempmod = modobj.where(np.abs(modobj['localtime'] - opass_tms[ti].to_datetime64()) < (modobj.time[1] - modobj.time[0]))
+        
+        # determine factors for linear interpolation in time
+        tfac = 1 - (np.abs(tempmod['localtime'] - opass_tms[ti].to_datetime64())/(modobj.time[1] - modobj.time[0]))
+        tempmod = tempmod.drop_vars('localtime')
+        # Carry out time interpolation
+        ## Note regarding current behavior: will only carry out time interpolation if at least 2 model timesteps
+        outmod.append((tfac*tempmod).sum(dim='time', min_count=2,keep_attrs=True))
+    #print(outmod)
+    outmod = xr.concat(outmod,dim='time')
+    outmod['time'] = (['time'],opass_tms)
+    
+    if partial_col:
+        from .tools import calc_partialcolumn        
+        outmod[f'{partial_col}_col'] = calc_partialcolumn(outmod,var=partial_col)
+        
+    return outmod
+
 def check_timestep(model_data,obs_data):
     ''' When pairing to level 3 data, model data may need to be aggregated to observation timestep.
         This function checks if the model data and observation data have the same timestep. Model data 
         is aggregated to observation timestep. Assumes level 3 data has a monthly or daily timestep and 
         that the model data is higher frequency or same frequency.
     '''
-    import xarray as xr
-    import pandas as pd
-    
+
     # check if l3 is daily
     timestep = xr.infer_freq(obs_data.time.dt.round('D'))
     # if not daily, check if l3 is monthly
@@ -54,31 +103,39 @@ def check_timestep(model_data,obs_data):
         print('Timestep check and model resample failed')
         raise
 
-def mopitt_l3_pairing(model_data,obs_data,co_ppbv_varname):
+def mopitt_l3_pairing(model_data,obs_data,co_ppbv_varname,global_model=True):
     ''' Calculate model CO column, with MOPITT averaging kernel applied.
     '''
-    import xarray as xr
     try:
         import xesmf as xe
-    except ImportError as e:
+    except ImportError:
         print('satellite_utilities: xesmf module not found')
         raise
     
-    # Aggregate time-step, if needed
-    ## Check if same number of timesteps:
-    if obs_data.time.size == model_data.time.size:
+    ## Check if obs are monthly or daily
+    if obs_data.attrs['monthly']:
+        # if obs_data is monthly, take monthly mean of model data
+        model_obstime = model_data.resample(time='MS').mean()
+        filtstr = '%Y-%m'
+    elif not obs_data.attrs['monthly']:
+        # obs_data is daily, so model and obs seem to be on same time step
         model_obstime = model_data
-    elif obs_data.time.size < model_data.time.size and obs_data.time.size >2:
-        model_obstime = check_timestep(model_data,obs_data)
-    elif obs_data.time.size < model_data.time.size and obs_data.time.size < 3:
-        print('Model data and obs data timesteps do not match, and there are not enough observation timesteps to infer the spacing from.')
-        raise
-    elif obs_data.time.size > mod_data.time.size:
-        print('Observation data appears to be a finer time resolution than model data')
-        raise
+        filtstr = '%Y-%m-%d'
+    else:
+        # check frequency of model data 
+        # Should not get here.
+        tstep = xr.infer_freq(model_data.time.dt.round('D'))
+        if tstep == 'MS' or tstep == 'M':
+            model_obstime = model_data
+            filtstr = '%Y-%m'
+        else:
+            print('Time resolution of model data and MOPITT data is incompatible')
+            raise
+        
     # initialize regridder for horizontal interpolation 
     # from model grid to MOPITT grid
-    grid_adjust = xe.Regridder(model_obstime[['latitude','longitude']],obs_data[['lat','lon']],'bilinear')
+    grid_adjust = xe.Regridder(model_obstime[['latitude','longitude']],obs_data[['lat','lon']],
+                               'bilinear',periodic=global_model,unmapped_to_nan=True)
     co_model_regrid = grid_adjust(model_obstime[co_ppbv_varname])
     pressure_model_regrid = grid_adjust(model_obstime['pres_pa_mid']/100.)
     
@@ -90,7 +147,10 @@ def mopitt_l3_pairing(model_data,obs_data,co_ppbv_varname):
     co_regrid = xr.full_like(obs_data['pressure'], np.nan)
     # MEB: loop over time outside of regrid lowers memory usage
     for t in range(obs_data.time.size):
-        co_regrid[t] = vertical_regrid(pressure_model_regrid[t].values, co_model_regrid[t].values, obs_data['pressure'][t].values)
+        obs_day = obs_data.time[t].dt.strftime(filtstr)
+        co_regrid[t] = vertical_regrid(pressure_model_regrid.sel(time=obs_day).values.squeeze(), 
+                                       co_model_regrid.sel(time=obs_day).values.squeeze(), 
+                                       obs_data['pressure'][t].values)
     
     # apply AK
     ## log apriori and model data
@@ -98,7 +158,7 @@ def mopitt_l3_pairing(model_data,obs_data,co_ppbv_varname):
     log_mod = np.log10(co_regrid)
     diff_arr = log_mod-log_ap
     ## smooth/apply ak
-    smoothed = obs_data['apriori_col'] + (obs_data['ak_col']*diff_arr).sum(dim='alt')
+    smoothed = obs_data['apriori_col'] + (obs_data['ak_col']*diff_arr).sum(dim='alt', min_count=1)
     
     # Add variable name to smoothed model dataarray, combine with obs_data
     smoothed = smoothed.rename(co_ppbv_varname+'_column_model')
@@ -125,9 +185,8 @@ def omps_l3_daily_o3_pairing(model_data,obs_data,ozone_ppbv_varname):
         to 1x1 degree OMPS L3 data grid. Following data grid matching, take daily mean for model data.
     '''
     try:
-        import xarray as xr
         import xesmf as xe
-    except ImportError as e:
+    except ImportError:
         print('satellite_utilities: xesmf module not found')
         raise
     
@@ -137,7 +196,7 @@ def omps_l3_daily_o3_pairing(model_data,obs_data,ozone_ppbv_varname):
     column = (du_fac*(model_data['dp_pa']/100.)*model_data[ozone_ppbv_varname]).sum('z')
     
     # initialize regrid and apply to column data
-    grid_adjust = xe.Regridder(model_data[['latitude','longitude']],obs_data[['latitude','longitude']],'bilinear')
+    grid_adjust = xe.Regridder(model_data[['latitude','longitude']],obs_data[['latitude','longitude']],'bilinear',periodic=True)
     mod_col_obsgrid = grid_adjust(column)
     # Aggregate time-step to daily means
     daily_mean = mod_col_obsgrid.resample(time='1D').mean()
@@ -156,13 +215,12 @@ def space_and_time_pairing(model_data,obs_data,pair_variables):
     '''
     try:
         import xesmf as xe
-    except ImportError as e:
+    except ImportError:
         print('satellite_utilities: xesmf module not found')
         raise
     mod_nf,mod_nz,mod_nx,mod_ny = model_data[pair_variables[0]].shape # assumes model data is structured (time,z,lon,lat). lon/lat dimension order likely unimportant
-    obs_nz = obs_data['pressure'].shape # assumes 1d pressure field in observation set
-    obs_nx,obs_ny = obs_data['longitude'].shape # assumes 2d lat/lon fields in observation ser
-    
+    # obs_nz = obs_data['pressure'].shape # assumes 1d pressure field in observation set
+    obs_nx,obs_ny = obs_data['longitude'].shape # assumes 2d lat/lon fields in observation set
     # initialize dictionary and arrays for interpolated model data
     ds = {i:np.zeros((mod_nz,obs_nx,obs_ny)) for i in pair_variables}
     
@@ -215,8 +273,6 @@ def space_and_time_pairing(model_data,obs_data,pair_variables):
 
 def omps_nm_pairing(model_data,obs_data,ozone_ppbv_varname):
     'Pairs model ozone mixing ratio with OMPS nadir mapper retrievals. Calculates column without applying apriori'
-    import xarray as xr
-    import pandas as pd
  
     print('pairing without applying averaging kernel')
 
@@ -225,11 +281,11 @@ def omps_nm_pairing(model_data,obs_data,ozone_ppbv_varname):
 
     
     du_fac = 1.0e-5*6.023e23/28.97/9.8/2.687e19 # conversion factor; moves model from ppbv to dobson
-    pair_variables = ['dp_pa',ozone_ppbv_varname]
+    pair_variables = ['dp_pa',ozone_ppbv_varname[0]]
     paired_ds = space_and_time_pairing(model_data,obs_data,pair_variables)
     
     # calculate ozone column, no averaging kernel or apriori applied.
-    col = np.nansum(du_fac*(paired_ds['dp_pa']/100.)*paired_ds['o3vmr'],axis=0) # new dimensions will be (satellite_x, satellite_y)
+    col = np.nansum(du_fac*(paired_ds['dp_pa']/100.)*paired_ds[ozone_ppbv_varname[0]],axis=0) # new dimensions will be (satellite_x, satellite_y)
     ds = xr.Dataset({ozone_ppbv_varname[0]: (['time','y'],col),
                      'ozone_column':(['time','y'],obs_data.ozone_column.values)
                                },
@@ -245,11 +301,9 @@ def omps_nm_pairing(model_data,obs_data,ozone_ppbv_varname):
 
 def omps_nm_pairing_apriori(model_data,obs_data,ozone_ppbv_varname):
     'Pairs model ozone mixing ratio data with OMPS nm. Applies satellite apriori column to model observations.'
-    import xarray as xr
-    import pandas as pd
     try:
         import xesmf as xe
-    except ImportError as e:
+    except ImportError:
         print('satellite_utilities: xesmf module not found')
         raise
 
@@ -260,7 +314,7 @@ def omps_nm_pairing_apriori(model_data,obs_data,ozone_ppbv_varname):
     # Grab necessary shape information
     nf,nz_m,nx_m,ny_m = model_data[ozone_ppbv_varname[0]].shape
     nx,ny = obs_data.ozone_column.shape
-    ## initialize intermediates for use in calcluating column
+    ## initialize intermediates for use in calculating column
     pressure_temp = np.zeros((nz_m,nx,ny))
     ozone_temp = np.zeros((nz_m,nx,ny))
     sfc = np.zeros((nx,ny))

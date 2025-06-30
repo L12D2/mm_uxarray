@@ -1,12 +1,12 @@
 MELODIES MONET
 ==============
 
-**MELODIES MONET** is a joint project between NCAR and NOAA to develop a 
+**MELODIES MONET** is a joint project between NSF NCAR and NOAA to develop a 
 modular framework that integrates existing and future diverse atmospheric 
 chemistry observational datasets with chemistry model results for the 
 evaluation of air quality and atmospheric composition. MELODIES MONET combines 
 the Model EvaLuation using Observations, DIagnostics and Experiments Software 
-(MELODIES) project at NCAR with the Model and ObservatioN Evaluation Toolkit 
+(MELODIES) project at NSF NCAR with the Model and ObservatioN Evaluation Toolkit 
 (MONET) project at NOAA to develop a python diagnostic package that is open 
 source, generic, portable, and model-agnostic. Overall, the project provides a 
 framework for evaluating a wide range of models in a more consistent manner. 
@@ -23,21 +23,45 @@ MONETIO please refer to:
 - https://monet-arl.readthedocs.io
 - https://monetio.readthedocs.io
 
-
-.. warning::
-   MELODIES MONET is currently under development. The code is public to 
-   encourage collaboration amongst the community. Do not publish results using 
-   MELODIES MONET without consulting the development team.
-   
 .. note::
    Please cite the following to acknowledge use of MELODIES MONET
 
-   - Baker, Barry; Pan, Li. 2017. “Overview of the Model and Observation Evaluation Toolkit (MONET) Version 1.0 for Evaluating Atmospheric Transport Models.” Atmosphere 8, no. 11: 210
+   - Baker, B. and Pan, L.: Overview of the Model and Observation Evaluation 
+     Toolkit (MONET) Version 1.0 for Evaluating Atmospheric Transport Models, Atmosphere, 8, 
+     no. 11, 210, https://doi.org/10.3390/atmos8110210, 2017.
 
-   - MELODIES - TBD
+   - Two MELODIES MONET development papers are currently in preparation. We will 
+     update this list when they are available.
+
+Funding
+-------
+
+Funding for MELODIES MONET has been provided by NSF NCAR, NOAA ARL, NOAA CSL, 
+NOAA GSL, and the following:
+
+* This material is also based upon work supported by the NSF National Center
+  for Atmospheric Research, which is a major facility sponsored by the U.S.
+  National Science Foundation under Cooperative Agreement No. 1852977
+
+* This work has been partly supported by the NOAA Cooperative Agreement with
+  CIRES (grant nos. NA17OAR4320101 and NA22OAR4320151)
+
+* NSF Earthcube Award Number 2026924 (2020-2024)
+
+* Public Law 117-43 Disaster Relief Supplemental Appropriations Act 
+  signed 30 September 2021 including $55M (ORF) related to the consequences 
+  of hurricanes and wildfires in calendar years 2020 and 2021
+
+* Funding for this project was partially provided by the Bi-Partisan
+  Infrastructure Law (BIL)
+
+* Colorado Air Quality Enterprise (AQE) grant #FEDA 2025*0171
+
+
+Table of Contents
+=================
 
 .. toctree::
-   :hidden:
    :maxdepth: 4
    :caption: User's Guide
 
@@ -49,9 +73,9 @@ MONETIO please refer to:
    users_guide/supported_stats
    users_guide/time_chunking
    users_guide/gridded_datasets
+   users_guide/region_selection
 
 .. toctree::
-   :hidden:
    :maxdepth: 4
    :caption: Getting Started
 
@@ -59,19 +83,19 @@ MONETIO please refer to:
    getting_started/software_architecture
    getting_started/downloading_obs
    getting_started/how_to_run
+   getting_started/tutorials
+   getting_started/new_to_python
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 4
    :caption: Contribute
    
    develop/contribute
-   develop/other_resources
    develop/development_team
    develop/developers_guide
    develop/datasets
 
 .. toctree::
-   :hidden:
    :maxdepth: 4
    :caption: Examples
 
@@ -86,18 +110,18 @@ MONETIO please refer to:
    examples/read_paired_data
    examples/aircraft_pairing
    examples/AEROMMA_UFS-AQM_Plots
-   
+   examples/ufs-aqm-gml-ozonesonde
+
 .. toctree::
-   :hidden:
    :maxdepth: 4
    :caption: Current Applications
 
    applications/publications
    applications/forecasts
+   applications/other_tools
 
 .. toctree::
-   :hidden:
-   :maxdepth: 1
+   :maxdepth: 4
    :caption: Help and Reference
 
    api

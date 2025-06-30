@@ -1,8 +1,6 @@
-# Copyright (C) 2022 National Center for Atmospheric Research and National Oceanic and Atmospheric Administration
 # SPDX-License-Identifier: Apache-2.0
 #
 import os
-import pytest
 from datetime import datetime
 
 from melodies_monet.util import analysis_util

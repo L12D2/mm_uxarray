@@ -2,7 +2,7 @@
 # Any key that is specific for a plot type will begin with ts for timeseries, ty for taylor
 # Opt: Specifying the variable or variable group is optional
 # For now all plots except time series average over the analysis window. 
-# Seting axis values - If set_axis = True in data_proc section of each plot_grp the yaxis for the plot will be set based on the values specified in the obs section for each variable. If set_axis is set to False, then defaults will be used. 'vmin_plot' and 'vmax_plot' are needed for 'timeseries', 'spatial_overlay', and 'boxplot'. 'vdiff_plot' is needed for 'spatial_bias' plots and'ty_scale' is needed for 'taylor' plots. 'nlevels' or the number of levels used in the contour plot can also optionally be provided for spatial_overlay plot. If set_axis = True and the proper limits are not provided in the obs section, a warning will print, and the plot will be created using the default limits.
+# Setting axis values - If set_axis = True in data_proc section of each plot_grp the yaxis for the plot will be set based on the values specified in the obs section for each variable. If set_axis is set to False, then defaults will be used. 'vmin_plot' and 'vmax_plot' are needed for 'timeseries', 'spatial_overlay', and 'boxplot'. 'vdiff_plot' is needed for 'spatial_bias' plots and'ty_scale' is needed for 'taylor' plots. 'nlevels' or the number of levels used in the contour plot can also optionally be provided for spatial_overlay plot. If set_axis = True and the proper limits are not provided in the obs section, a warning will print, and the plot will be created using the default limits.
 analysis:
   start_time: '2023-06-27-00:00:00' #UTC
   end_time: '2023-06-28-23:59:00' #UTC
@@ -12,8 +12,8 @@ analysis:
       paired:
           method: 'netcdf' # 'netcdf' or 'pkl'
           filenames: {'aeromma_ufsaqm':['example:ufsaqm:merge_0627_L1',
-          'example:ufsaqm:merge_0627_L2',
-          'example:ufsaqm:merge_0628_L1']} # example for netcdf method. Uses dict of form {group1: str or iterable of filenames, group2:...}  Any wildcards will be expanded
+          'example:ufsaqm:merge_0627_L2']} # example for netcdf method. Uses dict of form {group1: str or iterable of filenames, group2:...}  Any wildcards will be expanded
+          # If you like, you may add 'example:ufsaqm:merge_0628_L1' to the list above to expand the analysis to include one more day. 
           # filenames: {'airnow_wrfchem_v4.2':['0904_airnow_wrfchem_v4.2.nc4','0905_airnow_wrfchem_v4.2.nc4']} # example for netcdf method. Uses dict of form {group1: str or iterable of filenames, group2:...}
           # filenames: ['0904.pkl','0905.pkl'] # example for pkl method, uses str or iterable of filenames
       # models:
@@ -21,7 +21,7 @@ analysis:
 model:
   ufsaqm: # model label
     files: example:ufsaqm:model_data
-    mod_type: 'rrfs'
+    mod_type: 'ufs'
     radius_of_influence: 19500 #meters
     mapping: #model species name : obs species name
       aeromma:
@@ -108,7 +108,7 @@ plots:
       linewidth: 2.0
       markersize: 5.
     text_kwargs: #Opt
-      fontsize: 18.
+      fontsize: 24.
     domain_type: ['all'] #List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.) 
     domain_name: ['Los Angeles'] #List of domain names. If domain_type = all domain_name is used in plot title.
     data: ['aeromma_ufsaqm'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
@@ -143,7 +143,7 @@ plots:
       linewidth: 4.0
       markersize: 10.
     text_kwargs:  # Opt
-      fontsize: 18.
+      fontsize: 36.
     domain_type: ['all']  # List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.)
     domain_name: ['Los Angeles']  # List of domain names. If domain_type = all, domain_name is used in plot title.
     data: ['aeromma_ufsaqm']  # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
@@ -163,7 +163,7 @@ plots:
     fig_kwargs:
       figsize: [10, 8]
     text_kwargs:
-      fontsize: 25.
+      fontsize: 24.
     domain_type: ['all']
     domain_name: ['Los Angeles']
     data: ['aeromma_ufsaqm']
@@ -178,7 +178,7 @@ plots:
       linewidth: 4.0
       markersize: 10.
     text_kwargs:
-      fontsize: 18.
+      fontsize: 24.
     domain_type: ['all']
     domain_name: ['Los Angeles']
     data: ['aeromma_ufsaqm']
@@ -226,7 +226,7 @@ plots:
     fig_kwargs: #Opt to define figure options
       figsize: [8, 6] # figure size 
     text_kwargs: #Opt
-      fontsize: 20.
+      fontsize: 24.
     domain_type: ['all'] #List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.) 
     domain_name: ['Los Angeles'] #List of domain names. If domain_type = all domain_name is used in plot title.
     data: ['aeromma_ufsaqm'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label

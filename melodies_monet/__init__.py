@@ -1,4 +1,3 @@
-# Copyright (C) 2022 National Center for Atmospheric Research and National Oceanic and Atmospheric Administration
 # SPDX-License-Identifier: Apache-2.0
 #
 """
@@ -6,7 +5,7 @@ MELODIES MONET
 """
 import sys
 
-__version__ = "0.1"
+__version__ = "1.0"
 
 _submodules = [
     "driver",
@@ -20,7 +19,7 @@ __all__ = [__version__] + _submodules
 
 
 if sys.version_info < (3, 7):
-    from . import driver, plots, stats, util, tutorial
+    from . import driver, plots, stats, util, tutorial  # noqa: F401
 
 else:
     # Lazy imports

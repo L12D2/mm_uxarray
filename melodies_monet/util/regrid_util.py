@@ -1,7 +1,5 @@
-# Copyright (C) 2022 National Center for Atmospheric Research and National Oceanic and Atmospheric Administration
 # SPDX-License-Identifier: Apache-2.0
 #
-
 """
 file: regrid_util.py
 """
@@ -21,7 +19,7 @@ def setup_regridder(config, config_group='obs', target_grid=None):
     """
     try:
         import xesmf as xe
-    except ImportError as e:
+    except ImportError:
         print('regrid_util: xesmf module not found')
         raise
 

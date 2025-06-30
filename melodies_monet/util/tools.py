@@ -1,4 +1,3 @@
-# Copyright (C) 2022 National Center for Atmospheric Research and National Oceanic and Atmospheric Administration
 # SPDX-License-Identifier: Apache-2.0
 #
 from __future__ import division
@@ -6,9 +5,13 @@ from __future__ import division
 from builtins import range
 
 import numpy as np
+import xarray as xr
 
 __author__ = 'barry'
 
+
+R = 8.31446261815324  # m3 * Pa / K / mol
+N_A = 6.02214076e23
 
 def search_listinlist(array1, array2):
     # find intersections
@@ -104,11 +107,11 @@ def get_relhum(temp, press, vap):
 
 
 def long_to_wide(df):
-    from pandas import Series, merge
+    from pandas import merge
     w = df.pivot_table(values='obs',
                        index=['time', 'siteid'],
                        columns='variable').reset_index()
-    cols = Series(df.columns)
+    # cols = df.columns
     g = df.groupby('variable')
     for name, group in g:
         w[name + '_unit'] = group.units.unique()[0]
@@ -277,7 +280,6 @@ def get_epa_region_df(df):
 
 def resample_stratify(da, levels, vertical, axis=1,interpolation='linear',extrapolation='nan'):
     import stratify
-    import xarray as xr
 
     result = stratify.interpolate(levels, vertical.chunk().data, da.chunk().data, axis=axis,
                                  interpolation = interpolation,extrapolation = extrapolation)
@@ -294,17 +296,23 @@ def resample_stratify(da, levels, vertical, axis=1,interpolation='linear',extrap
     return out
 
 def vert_interp(ds_model,df_obs,var_name_list):
-    import xarray as xr
-    from pandas import merge_asof, Series
+    from pandas import merge_asof
+
+    ds_model['pressure_model_nan'] = ds_model['pressure_model'].copy()
+    var_name_list.append('pressure_model_nan')
 
     var_out_list = []
     for var_name in var_name_list:
         if var_name == 'pressure_model':
             out = resample_stratify(ds_model[var_name],sorted(ds_model.pressure_obs.squeeze().values,reverse=True),
                                       ds_model['pressure_model'],axis=1,
+                                      interpolation='linear',extrapolation='linear')
+            #Use linear extrapolation for the pressure_model so that later these will pair correctly with pressure_obs.
+        elif var_name == 'pressure_model_nan':
+            out = resample_stratify(ds_model[var_name],sorted(ds_model.pressure_obs.squeeze().values,reverse=True),
+                                      ds_model['pressure_model'],axis=1,
                                       interpolation='linear',extrapolation='nan')
-            #Use extrapolation nan for the pressure so that later you can assign the nan values to the pressure_obs value 
-            #instead of the midpoint of the edge model cells. This is needed for the pairing later on.
+            #Keep track of the extrapolation points with a NaN so that can print out notes and warnings for users.
         else:
             out = resample_stratify(ds_model[var_name],sorted(ds_model.pressure_obs.squeeze().values,reverse=True),
                                   ds_model['pressure_model'],axis=1,
@@ -313,8 +321,14 @@ def vert_interp(ds_model,df_obs,var_name_list):
         var_out_list.append(out)
 
     df_model = xr.merge(var_out_list).to_dataframe().reset_index()
-    df_model.fillna({'pressure_model':df_model.pressure_obs},inplace=True)
-    df_model.drop(labels=['x','y','z','pressure_obs','time_obs'], axis=1, inplace=True)
+    for x in df_model.x.unique():
+        if df_model[df_model.x == x].pressure_obs.unique() > df_model[df_model.x == x].pressure_model_nan.max():
+            print(f"Note: Point {x!r}, is below the mid-point of the lowest model level and nearest neighbor extrapolation",
+                 "occurs for vertical pairing.")
+        elif df_model[df_model.x == x].pressure_obs.unique() < df_model[df_model.x == x].pressure_model_nan.min():
+            print(f"Warning: Point {x!r}, is above the mid-point of the highest model level and nearest neighbor extrapolation", 
+            "occurs for vertical pairing. Extrapolating beyond the model top is not recommended. Proceed with caution.")
+    df_model.drop(labels=['x','y','z','pressure_obs','pressure_model_nan','time_obs'], axis=1, inplace=True)
     df_model.rename(columns={'pressure_model':'pressure_obs'}, inplace=True)
 
     final_df_model = merge_asof(df_obs, df_model, 
@@ -324,8 +338,7 @@ def vert_interp(ds_model,df_obs,var_name_list):
     return final_df_model
 
 def mobile_and_ground_pair(ds_model,df_obs, var_name_list):
-    import xarray as xr
-    from pandas import merge_asof, Series
+    from pandas import merge_asof
     
     var_out_list = []
     # Extract just the surface level data from correct model variables
@@ -346,8 +359,8 @@ def mobile_and_ground_pair(ds_model,df_obs, var_name_list):
     df_model.drop(labels=['x','y','time_obs'], axis=1, inplace=True)
 
     final_df_model = merge_asof(df_obs, df_model, 
-                            by=['latitude', 'longitude'], 
-                            on='time', direction='nearest')
+                            by=['latitude', 'longitude'],
+                            on='time', direction='nearest', suffixes=('', '_new'))
 
     return final_df_model
 
@@ -360,7 +373,7 @@ def find_obs_time_bounds(files=[],time_var=None):
         str or list of str containing filenames that should be read.
         
     time_var : str
-        Optional, variable name that should be assumed to be time when reading aircaft csv files.
+        Optional, variable name that should be assumed to be time when reading aircraft csv files.
 
     Returns
     -------
@@ -370,7 +383,6 @@ def find_obs_time_bounds(files=[],time_var=None):
     """
     import os 
     import monetio as mio
-    import xarray as xr
     
     if isinstance(files,str):
         files = [files]
@@ -469,12 +481,12 @@ def convert_std_to_amb_ams(ds,convert_vars=[],temp_var=None,pres_var=None):
     # Units of pres_var must be Pa 
     
     #So I just need to convert the obs from std to amb.
-    Losch = 2.69e25 # loschmidt's number
+    # Losch = 2.69e25 # loschmidt's number
     #I checked the more detailed icart files
     #273 K, 1 ATM (101325 Pa)
-    std_ams = 101325.*6.02214e23/(8.314472*273.)
+    std_ams = 101325.*N_A/(R*273.)
     #use pressure_obs now, which is in pa
-    Airnum = ds[pres_var]*6.02214e23/(8.314472*ds[temp_var])
+    Airnum = ds[pres_var]*N_A/(R*ds[temp_var])
     
     # amb to std = Losch / Airnum
     convert_std_to_amb_ams = Airnum/std_ams
@@ -490,11 +502,11 @@ def convert_std_to_amb_bc(ds,convert_vars=[],temp_var=None,pres_var=None):
     # Units of pres_var must be Pa 
     
     #So I just need to convert the obs from std to amb.
-    Losch = 2.69e25 # loschmidt's number
+    # Losch = 2.69e25 # loschmidt's number
     #1013 mb, 273 K (101300 Pa)
-    std_bc = 101300.*6.02214e23/(8.314472*273.)
+    std_bc = 101300.*N_A/(R*273.)
     #use pressure_obs now, which is in pa
-    Airnum = ds[pres_var]*6.02214e23/(8.314472*ds[temp_var])
+    Airnum = ds[pres_var]*N_A/(R*ds[temp_var])
     
     # amb to std = Losch / Airnum
     convert_std_to_amb_bc = Airnum/std_bc
@@ -502,3 +514,81 @@ def convert_std_to_amb_bc(ds,convert_vars=[],temp_var=None,pres_var=None):
     for var in convert_vars:
         ds[var] = ds[var]*convert_std_to_amb_bc
 
+
+def calc_partialcolumn(modobj, var="NO2"):
+    """Calculates the partial column of a species from its concentration
+    within a gridcell.
+
+    Parameters
+    ----------
+    modobj : xr.Dataset
+        Model data
+    var : str
+        variable to calculate the partial column from
+
+    Returns
+    -------
+    xr.DataArray
+        DataArray containing the partial column of the species.
+    """
+    ppbv2molmol = 1e-9
+    m2_to_cm2 = 1e4
+    fac_units = ppbv2molmol * N_A / m2_to_cm2
+    partial_col = (
+        modobj[var]
+        * modobj["pres_pa_mid"]
+        * modobj["dz_m"]
+        * fac_units
+        / (R * modobj["temperature_k"])
+    )
+    partial_col.attrs = {"units": "molecules/cm2", "long_name": f"{var} partial column"}
+    return partial_col
+
+
+def calc_totalcolumn(modobj, var="NO2"):
+    """Calculates the total column of a species from its concentration.
+
+    Parameters
+    ----------
+    modobj : xr.Dataset
+        Model data
+    var : str
+        variable to calculate the total column from
+
+    Returns
+    -------
+    xr.DataArray
+        DataArray containing the total column of the species.
+    """
+    data = calc_partialcolumn(modobj, var)
+    try:
+        data = data.where(modobj['pres_pa_mid'] <= modobj['surfpres_pa'])
+    except KeyError:
+        pass
+    total_col = data.sum(dim='z', keep_attrs=True)
+    total_col.attrs = {"units": "molecules/cm2", "long_name": f"{var} total column"}
+    return total_col
+
+
+def calc_geolocaltime(modobj):
+    """Calculates the geographic local time based on the longitude.
+
+    Parameters
+    ----------
+    modobj : xr.Dataset
+        Model data
+
+    Returns
+    -------
+    xr.DataArray
+        DataArray containing the local time based on longitude.
+    """
+    # Make sure that lon is in the range [-180, 180]
+    # This should be guaranteed by the reader, and it isn't needed,
+    # but it is very cheap to redo and should make us be safer.
+
+    hrs2ms = 3600_000
+    timedelta = (modobj["longitude"].values * hrs2ms / 15).astype('timedelta64[ms]')
+    localtime = modobj["time"] + timedelta
+    localtime.attrs['description'] = 'Geographic local time, based on longitude'
+    return localtime

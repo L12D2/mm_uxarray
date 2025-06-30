@@ -1,15 +1,11 @@
-# Copyright (C) 2022 National Center for Atmospheric Research and National Oceanic and Atmospheric Administration
 # SPDX-License-Identifier: Apache-2.0
 #
 #Code to create plots for satellite observations
 # Copied from surfplots and altered to use xarray syntax instead of pandas
 
-import os
-import monetio as mio
 import monet as monet
 import seaborn as sns
 from monet.util.tools import calc_8hr_rolling_max, calc_24hr_ave
-import xarray as xr
 import pandas as pd
 import numpy as np
 import cartopy.crs as ccrs
@@ -126,7 +122,7 @@ def map_projection(f):
         else:
             raise NotImplementedError('WRFChem projection not supported. Please add to surfplots.py')         
     #Need to add the projections you want to use for the other models here.        
-    elif f.model.lower() == 'rrfs':
+    elif f.model.lower() in ('rrfs', 'ufs'):
         proj = ccrs.LambertConformal(
             central_longitude=f.obj.cen_lon, central_latitude=f.obj.cen_lat)
     elif f.model.lower() in ['cesm_fv','cesm_se','raqms']:
@@ -186,7 +182,7 @@ def make_timeseries(df, df_reg=None,column=None, label=None, ax=None, avg_window
         same plot
         
     """
-    if debug == False:
+    if debug is False:
         plt.ioff()
     #First define items for all plots
     #set default text size
@@ -319,7 +315,7 @@ def make_taylor(df,df_reg=None, column_o=None, label_o='Obs', column_m=None, lab
     """
     nan_ind = ((~np.isnan(df[column_o].values))&(~np.isnan(df[column_m].values)))
     #First define items for all plots
-    if debug == False:
+    if debug is False:
         plt.ioff()
         
     #set default text size
@@ -428,7 +424,7 @@ def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
         spatial overlay plot
         
     """
-    if debug == False:
+    if debug is False:
         plt.ioff()
         
     def_map = dict(states=True,figsize=[15, 8])
@@ -462,7 +458,7 @@ def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
         lonmax=-60.0
         title_add = domain_name + ': '
     elif domain_type == 'epa_region' and domain_name is not None:
-        latmin,lonmin,latmax,lonmax,acro = get_epa_bounds(index=None,acronym=domain_name)
+        latmin,lonmin,latmax,lonmax,_ = get_epa_bounds(index=None,acronym=domain_name)
         title_add = 'EPA Region ' + domain_name + ': '
     else:
         latmin= math.floor(min(df.latitude))
@@ -483,11 +479,11 @@ def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
     #With pcolormesh, a Warning shows because nearest interpolation may not work for non-monotonically increasing regions.
     #Because I do not want to pull in the edges of the lat lon for every model I switch to contourf.
     #First determine colorbar, so can use the same for both contourf and scatter
-    if vmin == None and vmax == None:
+    if vmin is None and vmax is None:
         vmin = np.min((vmodel_mean.quantile(0.01), df_mean[column_o].quantile(0.01)))
         vmax = np.max((vmodel_mean.quantile(0.99), df_mean[column_o].quantile(0.99)))
         
-    if nlevels == None:
+    if nlevels is None:
         nlevels = 21
     
     clevel = np.linspace(vmin,vmax,nlevels)
@@ -524,7 +520,7 @@ def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
     cax.tick_params(labelsize=text_kwargs['fontsize']*0.8,length=10.0,width=2.0,grid_linewidth=2.0)    
     
     #plt.tight_layout(pad=0)
-    savefig(outname + '.png',loc=4, logo_height=100, decorate=True, bbox_inches='tight', dpi=150)
+    savefig(outname + '.png',loc=4, logo_height=100, bbox_inches='tight', dpi=150)
     return ax
     
 def calculate_boxplot(df, df_reg=None,column=None, label=None, plot_dict=None, comb_bx = None, label_bx = None):
@@ -615,7 +611,7 @@ def make_boxplot(comb_bx, label_bx, ylabel = None, vmin = None, vmax = None, out
         box plot
         
     """
-    if debug == False:
+    if debug is False:
         plt.ioff()
     #First define items for all plots
     #set default text size
@@ -671,10 +667,10 @@ def make_boxplot(comb_bx, label_bx, ylabel = None, vmin = None, vmax = None, out
         ax.set_ylim(ymin = vmin, ymax = vmax)
     
     plt.tight_layout()
-    savefig(outname + '.png',loc=4, logo_height=100, decorate=True, bbox_inches='tight', dpi=200)
+    savefig(outname + '.png',loc=4, logo_height=100, bbox_inches='tight', dpi=200)
     
 def make_spatial_bias_gridded(df, column_o=None, label_o=None, column_m=None, 
-                      label_m=None, ylabel = None, vmin=None,
+                      label_m=None, ylabel = None, vmin=None, vdiff=None,
                       vmax = None, nlevels = None, proj = None, outname = 'plot', 
                       domain_type=None, domain_name=None, fig_dict=None, 
                       text_dict=None,debug=False):
@@ -683,7 +679,7 @@ def make_spatial_bias_gridded(df, column_o=None, label_o=None, column_m=None,
         For data in swath format, overplots all differences
         For data on regular grid, mean difference.
     """
-    if debug == False:
+    if debug is False:
         plt.ioff()
         
     def_map = dict(states=True,figsize=[15, 8])
@@ -718,7 +714,7 @@ def make_spatial_bias_gridded(df, column_o=None, label_o=None, column_m=None,
         lonmax=-60.0
         title_add = domain_name + ': '
     elif domain_type == 'epa_region' and domain_name is not None:
-        latmin,lonmin,latmax,lonmax,acro = get_epa_bounds(index=None,acronym=domain_name)
+        latmin,lonmin,latmax,lonmax,_ = get_epa_bounds(index=None,acronym=domain_name)
         title_add = 'EPA Region ' + domain_name + ': '
     else:
         latmin= -90
@@ -737,12 +733,15 @@ def make_spatial_bias_gridded(df, column_o=None, label_o=None, column_m=None,
         map_kwargs['crs'] = proj
     
     #First determine colorbar
-    if vmin == None and vmax == None:
+    if vmin is None and vmax is None and vdiff is None:
         #vmin = vmodel_mean.quantile(0.01)
         vmax = np.max((np.abs(diff_mod_min_obs.quantile(0.99)),np.abs(diff_mod_min_obs.quantile(0.01))))
         vmin = -vmax
+    if vdiff is not None:
+        vmax = np.float64(vdiff)
+        vmin = -np.float64(vdiff)
         
-    if nlevels == None:
+    if nlevels is None:
         nlevels = 21
     print(vmin,vmax)
     clevel = np.linspace(vmin,vmax,nlevels)
@@ -750,9 +749,12 @@ def make_spatial_bias_gridded(df, column_o=None, label_o=None, column_m=None,
     norm = mpl.colors.BoundaryNorm(clevel, ncolors=cmap.N, clip=False)
         
     #I add extend='both' here because the colorbar is setup to plot the values outside the range
-    ax = monet.plots.mapgen.draw_map(crs=map_kwargs['crs'],extent=map_kwargs['extent'])
+    states = fig_dict.get('states', False)
+    counties = fig_dict.get('counties', False)
+    ax = monet.plots.mapgen.draw_map(crs=map_kwargs['crs'],extent=map_kwargs['extent'], states=states, counties=counties)
     # draw scatter plot of model and satellite differences
-    c = ax.axes.scatter(df.longitude,df.latitude,c=diff_mod_min_obs,cmap=cmap,s=2,norm=norm)
+    markersize = fig_dict.get('markersize', 2)
+    c = ax.axes.scatter(df.longitude,df.latitude,c=diff_mod_min_obs,cmap=cmap,s=markersize,norm=norm)
     plt.gcf().canvas.draw() 
     plt.tight_layout(pad=0)
     plt.title(title_add + label_m + ' - ' + label_o,fontweight='bold',**text_kwargs)
@@ -761,7 +763,7 @@ def make_spatial_bias_gridded(df, column_o=None, label_o=None, column_m=None,
     #Uncomment these lines if you update above just to verify colorbars are identical.
     #Also specify plot above scatter = ax.axes.scatter etc.
     #cbar = ax.figure.get_axes()[1] 
-    plt.colorbar(c,ax=ax,extend='both')
+    plt.colorbar(c,ax=ax,extend='both',**cbar_kwargs)
     
     #Update colorbar
     f = plt.gcf()
@@ -773,9 +775,9 @@ def make_spatial_bias_gridded(df, column_o=None, label_o=None, column_m=None,
     position_m = model_ax.get_position()
     position_c = cax.get_position()
     cax.set_position([position_c.x0, position_m.y0, position_c.x1 - position_c.x0, (position_m.y1-position_m.y0)*1.1])
-    cax.set_ylabel('$\Delta$'+ylabel,fontweight='bold',**text_kwargs)
+    cax.set_ylabel(r'$\Delta$'+ylabel,fontweight='bold',**text_kwargs)
     cax.tick_params(labelsize=text_kwargs['fontsize']*0.8,length=10.0,width=2.0,grid_linewidth=2.0)    
     
     #plt.tight_layout(pad=0)
-    savefig(outname + '.png',loc=4, logo_height=100, decorate=True, bbox_inches='tight', dpi=150)
+    savefig(outname + '.png',loc=4, logo_height=100, bbox_inches='tight', dpi=150)
     return ax    

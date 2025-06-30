@@ -17,7 +17,7 @@ analysis:
 model:
   cam-chem-se: # model label to be shown on plots
     files: example:camchem:se
-    mod_type: 'cesm_se' # defines model type to tell how to process in the driver choices: camchem, wrfchem, cmaq, rrfs, gsdchem
+    mod_type: 'cesm_se' # defines model type to tell how to process in the driver choices: camchem, wrfchem, cmaq, ufs, gsdchem
     scrip_file: example:camchem:se_scrip
     radius_of_influence: 18000 #meters: horizontal resolution * 1.5
     mapping: #model species name : obs species name
@@ -152,4 +152,4 @@ stats:
   output_table: False #Always outputs a .txt file. Optional to also output as a table.
   domain_type: ['all','epa_region'] #List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.) 
   domain_name: ['CONUS','R1'] #List of domain names. If domain_type = all domain_name is used in plot title.
-  data: ['airnow_cesm_se'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
+  data: ['airnow_cam-chem-se'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label

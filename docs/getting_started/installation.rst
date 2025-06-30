@@ -18,6 +18,7 @@ Optional dependencies
 - ``typer`` (to use the :doc:`/cli`;
   add ``rich`` `for <https://typer.tiangolo.com/release-notes/#060>`__ fancy tracebacks and ``--help``)
 - ``pooch`` (to enable automatic downloading of :doc:`tutorial datasets </examples/tutorial-data>`)
+- ``regionmask`` (`for complex region masking support <https://regionmask.readthedocs.io/en/stable/>`__; can read shapefiles, geojson, arbitrary polygons and predefined regions.)
 
 Incompatibilities
 -----------------
@@ -37,7 +38,7 @@ Option 1) Using Conda
 We have recently created a conda-forge release of MELODIES MONET to make installation very simple 
 with just 1 line of code below::
 
-    $ conda create --name melodies-monet -y -c conda-forge python=3.9 melodies-monet wrf-python jupyterlab
+    $ conda create --name melodies-monet -y -c conda-forge python=3.11 melodies-monet wrf-python jupyterlab
 
 .. note::
    Currently, the wrf-python conda package is not compatible with Apple Silicon (Apple machines using Intel should be fine). If you need to run the WRF-Chem reader and only have access to a machine using Apple Silicon, you can try compiling it from source code from the official repos.
@@ -50,7 +51,7 @@ conda-forge releases of MONET/MONETIO.
 
 First create and activate a conda environment::
 
-    $ conda create --name melodies-monet python=3.9
+    $ conda create --name melodies-monet python=3.11
     $ conda activate melodies-monet
 
 Add dependencies from conda-forge::
@@ -59,7 +60,7 @@ Add dependencies from conda-forge::
    
 Now, install the stable branch of MELODIES MONET to the environment::
 
-    $ pip install --no-deps https://github.com/NOAA-CSL/MELODIES-MONET/archive/main.zip
+    $ pip install --no-deps https://github.com/NCAR/MELODIES-MONET/archive/main.zip
 
 
 .. note::
@@ -72,5 +73,5 @@ Now, install the stable branch of MELODIES MONET to the environment::
    that include a record
    of all the dependencies (direct and indirect) are available via the GitHub:
 
-   - `NCAR Casper environment.yml <https://github.com/NOAA-CSL/MELODIES-MONET/tree/develop/python_env_ymls/casper>`__
-   - `NOAA Hera environment.yml <https://github.com/NOAA-CSL/MELODIES-MONET/tree/develop/python_env_ymls/hera>`__
+   - `NCAR Casper environment.yml <https://github.com/NCAR/MELODIES-MONET/tree/develop/python_env_ymls/casper>`__
+   - `NOAA Hera environment.yml <https://github.com/NCAR/MELODIES-MONET/tree/develop/python_env_ymls/hera>`__

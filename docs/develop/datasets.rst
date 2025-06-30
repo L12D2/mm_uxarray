@@ -4,12 +4,87 @@ Adding New Datasets
 Observations
 ------------
 
-Examples for how to read in data from Aeronet, AirNow, and Improve are in the
-``examples/process_obs`` folder in the MELODIES MONET repository
-`on GitHub <https://github.com/NOAA-CSL/MELODIES-MONET>`__.
-Use these examples as reference in order to add new surface observational datasets.
+Surface
+^^^^^^^
 
-Instructions for reading in aircraft and satellite observations are under development. 
+The MELODIES MONET tool has a :doc:`/cli` that can be used to download and create 
+MELODIES MONET-ready datasets for: AirNow, AERONET, AQS, ISH, ISH-Lite, and OpenAQ. 
+New surface observational datasets formally added to MELODIES MONET should be added 
+to this Command Line Interface.
+
+If you are interested in converting a new observational dataset to our netCDF format
+on your own for testing within MELODIES MONET, please see the notes below.
+
+* The dataset should have these dimensions (in this order):
+
+  - ``time``
+  - ``y`` (an optional singleton dimension, included for consistency with
+    model surface datasets)
+  - ``x`` (the site dimension)
+
+* The dataset should have these coordinate variables:
+
+  - ``time`` (UTC time, as timezone-naive ``datetime64`` format in xarray; ``time`` dim)
+  - ``siteid`` (unique site identifier, as string; ``x`` dim)
+  - ``latitude`` (site latitude, in degrees; ``x`` dim)
+  - ``longitude`` (site longitude, in degrees; ``x`` dim)
+
+* This variable is required for regulatory metrics,
+  and can be optionally used for time series plots.
+  Otherwise, you might omit it:
+
+  - ``time_local`` (local time,
+    usually local standard time, not including daylight savings,
+    as timezone-naive ``datetime64`` format in xarray;
+    note that this varies in both the ``time`` and ``x`` dimensions)
+
+* It's good practice to include ``units`` attributes for your data variables,
+  though this is not strictly required.
+  Similarly, you may wish to include ``long_name``\ s.
+
+* Site metadata variables (e.g. site name, site elevation, EPA region, etc.)
+  should ideally be stored as varying only in the ``x`` dimension, to save space.
+
+* If you have sub-hourly data, you may want to aggregate it to hourly,
+  especially if different sites have different time resolutions.
+
+Example abbreviated xarray representation for AirNow
+demonstrating these qualities:
+
+.. code-block:: text
+
+   <xarray.Dataset>
+   Dimensions:     (time: 289, y: 1, x: 2231)
+   Coordinates:
+     * time        (time) datetime64[ns] 2023-04-04 ... 2023-04-16
+       siteid      (x) <U12 ...
+       latitude    (x) float64 ...
+       longitude   (x) float64 ...
+   Dimensions without coordinates: y, x
+   Data variables:
+       NO2         (time, y, x) float64 ...
+       time_local  (time, y, x) datetime64[ns] ...
+       epa_region  (y, x) <U5 ...
+
+You can examine the ``get_*`` functions in the :doc:`/cli`
+(``melodies_monet/_cli.py``) for examples of converting observational datasets
+in pandas DataFrame format to xarray Dataset format.
+
+Aircraft, Sonde, Mobile, and Ground Campaign Data
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+New aircraft, sonde, mobile, and ground campaign datasets should work in the tool with no changes as long 
+as the data format is NetCDF, ICARTT, or CSV. We are constantly working to generalize our code. If an issue 
+arises, please post `on GitHub Issues <https://github.com/NCAR/MELODIES-MONET/issues>`__.
+
+Satellite
+^^^^^^^^^
+Examples for reading satellite datasets can be
+found in the ``monetio/sat`` folder in the MONETIO repository
+`on GitHub <https://github.com/noaa-oar-arl/monetio>`__.
+While a part of the MONETIO repository,
+the private MELODIES MONET readers are designated with prefix ``_`` 
+and suffix ``_mm``.
 
 Models
 ------
@@ -18,7 +93,8 @@ found in the ``monetio/models`` folder in the MONETIO repository
 `on GitHub <https://github.com/noaa-oar-arl/monetio>`__.
 These include e.g., _cesm_fv_mm.py, _cmaq_mm.py, and _wrfchem_mm.py.
 While a part of the MONETIO repository,
-the private MELODIES MONET readers are designated with prefix ``_mm``.
+the private MELODIES MONET readers are designated with prefix ``_`` 
+and suffix ``_mm``.
 
 Support for additional models is also under developed.
 

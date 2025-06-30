@@ -1,4 +1,3 @@
-# Copyright (C) 2022 National Center for Atmospheric Research and National Oceanic and Atmospheric Administration 
 # SPDX-License-Identifier: Apache-2.0
 #
 """
@@ -11,9 +10,8 @@ import xarray as xr
 import pandas as pd
 import numpy as np
 import datetime
+import warnings
 
-
-from .util import write_util
 
 __all__ = (
     "pair",
@@ -124,6 +122,7 @@ class observation:
         self.variable_summing = None
         self.resample = None
         self.time_var = None
+        self.regrid_method = None
 
     def __repr__(self):
         return (
@@ -133,9 +132,12 @@ class observation:
             f"    file={self.file!r},\n"
             f"    obj={repr(self.obj) if self.obj is None else '...'},\n"
             f"    type={self.type!r},\n"
-            f"    type={self.data_proc!r},\n"
+            f"    sat_type={self.sat_type!r},\n"
+            f"    data_proc={self.data_proc!r},\n"
             f"    variable_dict={self.variable_dict!r},\n"
             f"    resample={self.resample!r},\n"
+            f"    time_var={self.time_var!r},\n"
+            f"    regrid_method={self.regrid_method!r},\n"
             ")"
         )
 
@@ -144,7 +146,7 @@ class observation:
         and apply mask and scaling.
 
         Parameters
-        __________
+        ----------
         time_interval (optional, default None) : [pandas.Timestamp, pandas.Timestamp]
             If not None, restrict obs to datetime range spanned by time interval [start, end].
 
@@ -156,51 +158,34 @@ class observation:
         from numpy import sort
         
         from . import tutorial
-        from .util import analysis_util
-        from .util import read_grid_util
 
-        time_chunking_with_gridded_data \
-            = 'time_chunking_with_gridded_data' in control_dict['analysis'].keys() \
-                and control_dict['analysis']['time_chunking_with_gridded_data']
-
-        if time_chunking_with_gridded_data:
-            date_str = time_interval[0].strftime('%Y-%m-%b-%d-%j')
-            print('obs time chunk %s' % date_str)
-            obs_vars = analysis_util.get_obs_vars(control_dict)
-            print(obs_vars)
-            obs_datasets, filenames = read_grid_util.read_grid_obs(
-                control_dict, obs_vars, date_str, obs=self.obs)
-            print(filenames)
-            self.obj = obs_datasets[self.obs]
-
+        if self.file.startswith("example:"):
+            example_id = ":".join(s.strip() for s in self.file.split(":")[1:])
+            files = [tutorial.fetch_example(example_id)]
         else:
-            if self.file.startswith("example:"):
-                example_id = ":".join(s.strip() for s in self.file.split(":")[1:])
-                files = [tutorial.fetch_example(example_id)]
-            else:
-                files = sort(glob(self.file))
+            files = sort(glob(self.file))
 
-            assert len(files) >= 1, "need at least one"
+        assert len(files) >= 1, "need at least one"
 
-            _, extension = os.path.splitext(files[0])
-            try:
-                if extension in {'.nc', '.ncf', '.netcdf', '.nc4'}:
-                    if len(files) > 1:
-                        self.obj = xr.open_mfdataset(files)
-                    else:
-                        self.obj = xr.open_dataset(files[0])
-                elif extension in ['.ict', '.icartt']:
-                    assert len(files) == 1, "monetio.icartt.add_data can only read one file"
-                    self.obj = mio.icartt.add_data(files[0])
-                elif extension in ['.csv']:
-                    from .util.read_util import read_aircraft_obs_csv
-                    assert len(files) == 1, "MELODIES-MONET can only read one csv file"
-                    self.obj = read_aircraft_obs_csv(filename=files[0],time_var=self.time_var)
+        _, extension = os.path.splitext(files[0])
+        try:
+            if extension in {'.nc', '.ncf', '.netcdf', '.nc4'}:
+                if len(files) > 1:
+                    self.obj = xr.open_mfdataset(files)
                 else:
-                    raise ValueError(f'extension {extension!r} currently unsupported')
-            except Exception as e:
-                print('something happened opening file:', e)
-                return
+                    self.obj = xr.open_dataset(files[0])
+            elif extension in ['.ict', '.icartt']:
+                assert len(files) == 1, "monetio.icartt.add_data can only read one file"
+                self.obj = mio.icartt.add_data(files[0])
+            elif extension in ['.csv']:
+                from .util.read_util import read_aircraft_obs_csv
+                assert len(files) == 1, "MELODIES-MONET can only read one csv file"
+                self.obj = read_aircraft_obs_csv(filename=files[0],time_var=self.time_var)
+            else:
+                raise ValueError(f'extension {extension!r} currently unsupported')
+        except Exception as e:
+            print('something happened opening file:', e)
+            return
         
         self.add_coordinates_ground() # If ground site then add coordinates based on yaml if necessary
         self.mask_and_scale()  # mask and scale values from the control values
@@ -224,7 +209,7 @@ class observation:
                 self.obj['latitude'] = xr.ones_like(self.obj['time'],dtype=np.float64)*self.ground_coordinate['latitude']
                 self.obj['longitude'] = xr.ones_like(self.obj['time'],dtype=np.float64)*self.ground_coordinate['longitude']
             elif self.ground_coordinate and ~isinstance(self.ground_coordinate,dict): 
-                raise TypeError(f'The ground_coordinate option must be specified as a dict with keys latitude and longitude.')
+                raise TypeError('The ground_coordinate option must be specified as a dict with keys latitude and longitude.')
 
     def rename_vars(self):
         """Rename any variables in observation with rename set.
@@ -234,6 +219,10 @@ class observation:
         None
         """
         data_vars = self.obj.data_vars
+        # For xarray datasets using data_vars does not grab names of coordinates
+        if isinstance(self.obj,xr.Dataset):
+            data_vars = list(self.obj.data_vars) + list(self.obj.coords)
+        
         if self.variable_dict is not None:
             for v in data_vars:
                 if v in self.variable_dict:
@@ -250,7 +239,7 @@ class observation:
         dataset read in from the associated file (self.file) by the satellite file reader
 
         Parameters
-        __________
+        ----------
         time_interval (optional, default None) : [pandas.Timestamp, pandas.Timestamp]
             If not None, restrict obs to datetime range spanned by time interval [start, end].
 
@@ -259,7 +248,7 @@ class observation:
         None
         """
         from .util import time_interval_subset as tsub
-        
+        from glob import glob
         try:
             if self.sat_type == 'omps_l3':
                 print('Reading OMPS L3')
@@ -268,7 +257,8 @@ class observation:
                 print('Reading OMPS_NM')
                 if time_interval is not None:
                     flst = tsub.subset_OMPS_l2(self.file,time_interval)
-                else: flst = self.file
+                else:
+                    flst = self.file
 
                 self.obj = mio.sat._omps_nadir_mm.read_OMPS_nm(flst)
 
@@ -276,7 +266,7 @@ class observation:
                 self.obj = self.obj.swap_dims({'x':'time'}) # indexing needs
                 self.obj = self.obj.sortby('time') # enforce time in order. 
                 # restrict observation data to time_interval if using
-                # additional development to deal with files crossing intervals needed (eg situtations where orbit start at 23hrs, ends next day).
+                # additional development to deal with files crossing intervals needed (eg situations where orbit start at 23hrs, ends next day).
                 if time_interval is not None:
                     self.obj = self.obj.sel(time=slice(time_interval[0],time_interval[-1]))
 
@@ -284,9 +274,17 @@ class observation:
                 print('Reading MOPITT')
                 if time_interval is not None:
                     flst = tsub.subset_mopitt_l3(self.file,time_interval)
-                else: flst = self.file
+                else:
+                    flst = self.file
                 self.obj = mio.sat._mopitt_l3_mm.open_dataset(flst, ['column','pressure_surf','apriori_col',
                                                                           'apriori_surf','apriori_prof','ak_col'])
+
+                # Determine if monthly or daily product and set as attribute
+                if any(mtype in glob(self.file)[0] for mtype in ('MOP03JM','MOP03NM','MOP03TM')):
+                    self.obj.attrs['monthly'] = True
+                else:
+                    self.obj.attrs['monthly'] = False
+                            
             elif self.sat_type == 'modis_l2':
                 # from monetio import modis_l2
                 print('Reading MODIS L2')
@@ -301,6 +299,10 @@ class observation:
                 #from monetio import tropomi_l2_no2
                 print('Reading TROPOMI L2 NO2')
                 self.obj = mio.sat._tropomi_l2_no2_mm.read_trpdataset(
+                    self.file, self.variable_dict, debug=self.debug)
+            elif "tempo_l2" in self.sat_type:
+                print('Reading TEMPO L2')
+                self.obj = mio.sat._tempo_l2_no2_mm.open_dataset(
                     self.file, self.variable_dict, debug=self.debug)
             else:
                 print('file reader not implemented for {} observation'.format(self.sat_type))
@@ -397,6 +399,8 @@ class observation:
                         print('The variable name, {}, already exists and cannot be created with variable_summing.'.format(var_new))
                         raise ValueError
                     var_new_info = self.variable_summing[var_new]
+                    if self.variable_dict is None:
+                        self.variable_dict = {}
                     self.variable_dict[var_new] = var_new_info
                     for i,var in enumerate(var_new_info['vars']):
                         if i ==0:
@@ -439,7 +443,7 @@ class model:
     def __init__(self):
         """Initialize a :class:`model` object."""
         self.model = None
-        self.apply_ak = False
+        self.is_global = False
         self.radius_of_influence = None
         self.mod_kwargs = {}
         self.file_str = None
@@ -462,12 +466,14 @@ class model:
         return (
             f"{type(self).__name__}(\n"
             f"    model={self.model!r},\n"
+            f"    is_global={self.is_global!r},\n"
             f"    radius_of_influence={self.radius_of_influence!r},\n"
             f"    mod_kwargs={self.mod_kwargs!r},\n"
             f"    file_str={self.file_str!r},\n"
             f"    label={self.label!r},\n"
             f"    obj={repr(self.obj) if self.obj is None else '...'},\n"
             f"    mapping={self.mapping!r},\n"
+            f"    variable_dict={self.variable_dict!r},\n"
             f"    label={self.label!r},\n"
             "    ...\n"
             ")"
@@ -509,13 +515,13 @@ class model:
         """Open the model files, store data in :class:`model` instance attributes,
         and apply mask and scaling.
         
-        Models supported are cmaq, wrfchem, rrfs, and gsdchem.
+        Models supported are cmaq, wrfchem, ufs (rrfs is deprecated), and gsdchem.
         If a model is not supported, MELODIES-MONET will try to open 
         the model data using a generic reader. If you wish to include new 
         models, add the new model option to this module.
 
         Parameters
-        __________
+        ----------
         time_interval (optional, default None) : [pandas.Timestamp, pandas.Timestamp]
             If not None, restrict models to datetime range spanned by time interval [start, end].
 
@@ -524,15 +530,8 @@ class model:
         None
         """
         from .util import time_interval_subset as tsub
-        from .util import analysis_util
-        from .util import read_grid_util
-        from .util import regrid_util
 
         print(self.model.lower())
-
-        time_chunking_with_gridded_data \
-            = 'time_chunking_with_gridded_data' in control_dict['analysis'].keys() \
-                and control_dict['analysis']['time_chunking_with_gridded_data']
 
         self.glob_files()
         # Calculate species to input into MONET, so works for all mechanisms in wrfchem
@@ -542,7 +541,7 @@ class model:
             vars_for_summing  = []
             for var in self.variable_summing.keys():
                 vars_for_summing= vars_for_summing + self.variable_summing[var]['vars']
-        list_input_var = []
+        list_input_var = list(self.variable_dict.keys()) if self.variable_dict is not None else []
         for obs_map in self.mapping:
             if self.variable_summing is not None:
                 list_input_var = list_input_var + list(set(self.mapping[obs_map].keys()).union(set(vars_for_summing)) - set(self.variable_summing.keys()) - set(list_input_var) )
@@ -550,80 +549,90 @@ class model:
                 list_input_var = list_input_var + list(set(self.mapping[obs_map].keys()) - set(list_input_var))
         #Only certain models need this option for speeding up i/o.
 
-        if time_chunking_with_gridded_data:
-            date_str = time_interval[0].strftime('%Y-%m-%b-%d-%j')
-            print('model time chunk %s' % date_str)
-            model_datasets, filenames = read_grid_util.read_grid_models(
-                control_dict, date_str, model=self.label)
-            print(filenames)
-            self.obj = model_datasets[self.label]
-        else:
-            if 'cmaq' in self.model.lower():
-                print('**** Reading CMAQ model output...')
-                self.mod_kwargs.update({'var_list' : list_input_var})
-                if self.files_vert is not None:
-                    self.mod_kwargs.update({'fname_vert' : self.files_vert})
-                if self.files_surf is not None:
-                    self.mod_kwargs.update({'fname_surf' : self.files_surf})
-                if len(self.files) > 1:
-                    self.mod_kwargs.update({'concatenate_forecasts' : True})
-                self.obj = mio.models._cmaq_mm.open_mfdataset(self.files,**self.mod_kwargs)
-            elif 'wrfchem' in self.model.lower():
-                print('**** Reading WRF-Chem model output...')
-                self.mod_kwargs.update({'var_list' : list_input_var})
-                self.obj = mio.models._wrfchem_mm.open_mfdataset(self.files,**self.mod_kwargs)
-            elif 'rrfs' in self.model.lower():
-                print('**** Reading RRFS-CMAQ model output...')
-                if self.files_pm25 is not None:
-                    self.mod_kwargs.update({'fname_pm25' : self.files_pm25})
-                self.mod_kwargs.update({'var_list' : list_input_var})
-                self.obj = mio.models._rrfs_cmaq_mm.open_mfdataset(self.files,**self.mod_kwargs)
-            elif 'gsdchem' in self.model.lower():
-                print('**** Reading GSD-Chem model output...')
-                if len(self.files) > 1:
-                    self.obj = mio.fv3chem.open_mfdataset(self.files,**self.mod_kwargs)
-                else:
-                    self.obj = mio.fv3chem.open_dataset(self.files,**self.mod_kwargs)
-            elif 'cesm_fv' in self.model.lower():
-                print('**** Reading CESM FV model output...')
-                self.mod_kwargs.update({'var_list' : list_input_var})
-                self.obj = mio.models._cesm_fv_mm.open_mfdataset(self.files,**self.mod_kwargs)
-            # CAM-chem-SE grid or MUSICAv0
-            elif 'cesm_se' in self.model.lower(): 
-                print('**** Reading CESM SE model output...')
-                self.mod_kwargs.update({'var_list' : list_input_var})
-                if self.scrip_file.startswith("example:"):
-                    from . import tutorial
-                    example_id = ":".join(s.strip() for s in self.scrip_file.split(":")[1:])
-                    self.scrip_file = tutorial.fetch_example(example_id)
-                self.mod_kwargs.update({'scrip_file' : self.scrip_file})            
-                self.obj = mio.models._cesm_se_mm.open_mfdataset(self.files,**self.mod_kwargs)
-                #self.obj, self.obj_scrip = read_cesm_se.open_mfdataset(self.files,**self.mod_kwargs)
-                #self.obj.monet.scrip = self.obj_scrip      
-            elif "camx" in self.model.lower():
-                self.mod_kwargs.update({"var_list": list_input_var})
-                self.mod_kwargs.update({"surf_only": control_dict['model'][self.label].get('surf_only', False)})
-                self.mod_kwargs.update({"fname_met_3D": control_dict['model'][self.label].get('files_vert', None)})
-                self.mod_kwargs.update({"fname_met_2D": control_dict['model'][self.label].get('files_met_surf', None)})
-                self.obj = mio.models._camx_mm.open_mfdataset(self.files, **self.mod_kwargs)
-            elif 'raqms' in self.model.lower():
-                if time_interval is not None:
-                    # fill filelist with subset
-                    print('subsetting model files to interval')
-                    file_list = tsub.subset_model_filelist(self.files,'%m_%d_%Y_%HZ','6H',time_interval)
-                else:
-                    file_list = self.files
-                if len(file_list) > 1:
-                    self.obj = mio.models.raqms.open_mfdataset(file_list,**self.mod_kwargs)
-                else:
-                    self.obj = mio.models.raqms.open_dataset(file_list)
+        # Remove standardized variable names that user may have requested to pair on or output in MM
+        # as they will be added anyway and here would cause [var_list] to fail in the below model readers.
+        for vn in ["temperature_k", "pres_pa_mid"]:
+            if vn in list_input_var:
+                list_input_var.remove(vn)
 
+        if 'cmaq' in self.model.lower():
+            print('**** Reading CMAQ model output...')
+            self.mod_kwargs.update({'var_list' : list_input_var})
+            if self.files_vert is not None:
+                self.mod_kwargs.update({'fname_vert' : self.files_vert})
+            if self.files_surf is not None:
+                self.mod_kwargs.update({'fname_surf' : self.files_surf})
+            if len(self.files) > 1:
+                self.mod_kwargs.update({'concatenate_forecasts' : True})
+            self.obj = mio.models._cmaq_mm.open_mfdataset(self.files,**self.mod_kwargs)
+        elif 'wrfchem' in self.model.lower():
+            print('**** Reading WRF-Chem model output...')
+            self.mod_kwargs.update({'var_list' : list_input_var})
+            self.obj = mio.models._wrfchem_mm.open_mfdataset(self.files,**self.mod_kwargs)
+        elif any([mod_type in self.model.lower() for mod_type in ('ufs', 'rrfs')]):
+            print('**** Reading UFS-AQM model output...')
+            if 'rrfs' in self.model.lower():
+                warnings.warn("mod_type: 'rrfs' is deprecated. use 'ufs'." , DeprecationWarning)
+            if self.files_pm25 is not None:
+                self.mod_kwargs.update({'fname_pm25' : self.files_pm25})
+            self.mod_kwargs.update({'var_list' : list_input_var})
+            if hasattr(mio.models, 'ufs'):
+                loader = mio.models.ufs.open_mfdataset
             else:
-                print('**** Reading Unspecified model output. Take Caution...')
-                if len(self.files) > 1:
-                    self.obj = xr.open_mfdataset(self.files,**self.mod_kwargs)
-                else:
-                    self.obj = xr.open_dataset(self.files[0],**self.mod_kwargs)
+                warnings.warn(
+                    "usage of _rrfs_cmaq_mm is deprecated, use models.ufs.open_mf_dataset",
+                    DeprecationWarning)
+                loader = mio.models._rrfs_cmaq_mm.open_mfdataset
+            self.obj = loader(self.files,**self.mod_kwargs)
+        elif 'gsdchem' in self.model.lower():
+            print('**** Reading GSD-Chem model output...')
+            if len(self.files) > 1:
+                self.obj = mio.fv3chem.open_mfdataset(self.files,**self.mod_kwargs)
+            else:
+                self.obj = mio.fv3chem.open_dataset(self.files,**self.mod_kwargs)
+        elif 'cesm_fv' in self.model.lower():
+            print('**** Reading CESM FV model output...')
+            self.mod_kwargs.update({'var_list' : list_input_var})
+            self.obj = mio.models._cesm_fv_mm.open_mfdataset(self.files,**self.mod_kwargs)
+        # CAM-chem-SE grid or MUSICAv0
+        elif 'cesm_se' in self.model.lower(): 
+            print('**** Reading CESM SE model output...')
+            self.mod_kwargs.update({'var_list' : list_input_var})
+            if self.scrip_file.startswith("example:"):
+                from . import tutorial
+                example_id = ":".join(s.strip() for s in self.scrip_file.split(":")[1:])
+                self.scrip_file = tutorial.fetch_example(example_id)
+            self.mod_kwargs.update({'scrip_file' : self.scrip_file})            
+            self.obj = mio.models._cesm_se_mm.open_mfdataset(self.files,**self.mod_kwargs)
+            #self.obj, self.obj_scrip = read_cesm_se.open_mfdataset(self.files,**self.mod_kwargs)
+            #self.obj.monet.scrip = self.obj_scrip      
+        elif "camx" in self.model.lower():
+            self.mod_kwargs.update({"var_list": list_input_var})
+            self.mod_kwargs.update({"surf_only": control_dict['model'][self.label].get('surf_only', False)})
+            self.mod_kwargs.update({"fname_met_3D": control_dict['model'][self.label].get('files_vert', None)})
+            self.mod_kwargs.update({"fname_met_2D": control_dict['model'][self.label].get('files_met_surf', None)})
+            self.obj = mio.models._camx_mm.open_mfdataset(self.files, **self.mod_kwargs)
+        elif 'raqms' in self.model.lower():
+            self.mod_kwargs.update({'var_list': list_input_var})
+            if time_interval is not None:
+                # fill filelist with subset
+                print('subsetting model files to interval')
+                file_list = tsub.subset_model_filelist(self.files,'%m_%d_%Y_%HZ','6H',time_interval)
+            else:
+                file_list = self.files
+            if len(file_list) > 1:
+                self.obj = mio.models.raqms.open_mfdataset(file_list,**self.mod_kwargs)
+            else:
+                self.obj = mio.models.raqms.open_dataset(file_list)
+            if 'ptrop' in self.obj and 'pres_pa_trop' not in self.obj:
+                self.obj = self.obj.rename({'ptrop':'pres_pa_trop'})
+
+        else:
+            print('**** Reading Unspecified model output. Take Caution...')
+            if len(self.files) > 1:
+                self.obj = xr.open_mfdataset(self.files,**self.mod_kwargs)
+            else:
+                self.obj = xr.open_dataset(self.files[0],**self.mod_kwargs)
         self.mask_and_scale()
         self.rename_vars() # rename any variables as necessary 
         self.sum_variables()
@@ -669,10 +678,7 @@ class model:
                             self.obj[v].data += scale
                         elif d['unit_scale_method'] == '-':
                             self.obj[v].data += -1 * scale
-                    if self.obj[v].units == 'ppv':
-                        print('changing units for {}'.format(v))
-                        self.obj[v].values *= 1e9
-                        self.obj[v].attrs['units'] = 'ppbv'        
+    
     def sum_variables(self):
         """Sum any variables noted that should be summed to create new variables.
         This occurs after any unit scaling.
@@ -689,6 +695,8 @@ class model:
                         print('The variable name, {}, already exists and cannot be created with variable_summing.'.format(var_new))
                         raise ValueError
                     var_new_info = self.variable_summing[var_new]
+                    if self.variable_dict is None:
+                        self.variable_dict = {}
                     self.variable_dict[var_new] = var_new_info
                     for i,var in enumerate(var_new_info['vars']):
                         if i ==0:
@@ -728,7 +736,6 @@ class analysis:
         self.debug = False
         self.save = None
         self.read = None
-        self.time_chunking_with_gridded_data = False  # Default to False
         self.regrid = False  # Default to False
         self.target_grid = None
         self.obs_regridders = None
@@ -738,6 +745,10 @@ class analysis:
         self.obs_gridded_data = {}
         self.obs_gridded_count = {}
         self.obs_gridded_dataset = None
+        self.add_logo = True
+        """bool, default=True : Add the MELODIES MONET logo to the plots."""
+        self.pairing_kwargs = {}
+
 
     def __repr__(self):
         return (
@@ -757,8 +768,10 @@ class analysis:
             f"    debug={self.debug!r},\n"
             f"    save={self.save!r},\n"
             f"    read={self.read!r},\n"
+            f"    regrid={self.regrid!r},\n"
             ")"
         )
+
     def read_control(self, control=None):
         """Read the input yaml file,
         updating various :class:`analysis` instance attributes.
@@ -809,10 +822,9 @@ class analysis:
             self.save = self.control_dict['analysis']['save']
         if 'read' in self.control_dict['analysis'].keys():
             self.read = self.control_dict['analysis']['read']
+        if 'add_logo' in self.control_dict['analysis'].keys():
+            self.add_logo = self.control_dict['analysis']['add_logo']
 
-        # set time_chunking_with_gridded_data option, regrid option, and target_grid
-        if 'time_chunking_with_gridded_data' in self.control_dict['analysis'].keys():
-            self.time_chunking_with_gridded_data = self.control_dict['analysis']['time_chunking_with_gridded_data']
         if 'regrid' in self.control_dict['analysis'].keys():
             self.regrid = self.control_dict['analysis']['regrid']
         if 'target_grid' in self.control_dict['analysis'].keys():
@@ -832,6 +844,10 @@ class analysis:
                 = [[time_stamps[n], time_stamps[n+1]]
                     for n in range(len(time_stamps)-1)]
         
+        # specific arguments for pairing options
+        if 'pairing_kwargs' in self.control_dict['analysis'].keys():
+            self.pairing_kwargs = self.control_dict['analysis']['pairing_kwargs']
+            
         # Enable Dask progress bars? (default: false)
         enable_dask_progress_bars = self.control_dict["analysis"].get(
             "enable_dask_progress_bars", False)
@@ -917,7 +933,7 @@ class analysis:
         object for each of them, populating the :attr:`models` dict.
 
         Parameters
-        __________
+        ----------
         time_interval (optional, default None) : [pandas.Timestamp, pandas.Timestamp]
             If not None, restrict models to datetime range spanned by time interval [start, end].
         load_files (optional, default True): boolean
@@ -934,8 +950,8 @@ class analysis:
                 # this is the model type (ie cmaq, rapchem, gsdchem etc)
                 m.model = self.control_dict['model'][mod]['mod_type']
                 # set the model label in the dictionary and model class instance
-                if "apply_ak" in self.control_dict['model'][mod].keys():
-                    m.apply_ak = self.control_dict['model'][mod]['apply_ak']
+                if "is_global" in self.control_dict['model'][mod].keys():
+                    m.is_global = self.control_dict['model'][mod]['is_global']
                 if 'radius_of_influence' in self.control_dict['model'][mod].keys():
                     m.radius_of_influence = self.control_dict['model'][mod]['radius_of_influence']
                 else:
@@ -1010,7 +1026,7 @@ class analysis:
         populating the :attr:`obs` dict.
 
         Parameters
-        __________
+        ----------
         time_interval (optional, default None) : [pandas.Timestamp, pandas.Timestamp]
             If not None, restrict obs to datetime range spanned by time interval [start, end].
         load_files (optional, default True): boolean
@@ -1020,10 +1036,6 @@ class analysis:
         -------
         None
         """
-        from .util import analysis_util
-        from .util import read_grid_util
-        from .util import regrid_util
-
         if 'obs' in self.control_dict:
             for obs in self.control_dict['obs']:
                 o = observation()
@@ -1143,7 +1155,7 @@ class analysis:
         populating the :attr:`paired` dict.
 
         Parameters
-        __________
+        ----------
         time_interval (optional, default None) : [pandas.Timestamp, pandas.Timestamp]
             If not None, restrict pairing to datetime range spanned by time interval [start, end].
 
@@ -1152,7 +1164,6 @@ class analysis:
         -------
         None
         """
-        pairs = {}  # TODO: unused
         print('1, in pair data')
         for model_label in self.models:
             mod = self.models[model_label]
@@ -1267,7 +1278,52 @@ class analysis:
                     label = "{}_{}".format(p.obs, p.model)
                     self.paired[label] = p
                     # write_util.write_ncf(p.obj,p.filename) # write out to file
-                
+
+                elif obs.obs_type.lower() == 'sonde':
+                    from .util.tools import vert_interp
+                    # convert this to pandas dataframe unless already done because second time paired this obs
+                    if not isinstance(obs.obj, pd.DataFrame):
+                        obs.obj = obs.obj.to_dataframe()
+                    #drop any variables where coords NaN
+                    obs.obj = obs.obj.reset_index().dropna(subset=['pressure_obs','latitude','longitude']).set_index('time')
+ 
+                    import datetime 
+                    plot_dict_sonde = self.control_dict['plots']
+                    for grp_sonde, grp_dict_sonde in plot_dict_sonde.items():
+                        plot_type_sonde = grp_dict_sonde['type']
+                        plot_sonde_type_list_all = ['vertical_single_date','vertical_boxplot_os','density_scatter_plot_os']
+                        if plot_type_sonde in plot_sonde_type_list_all:
+                           station_name_sonde = grp_dict_sonde['station_name']
+                           cds_sonde = grp_dict_sonde['compare_date_single']
+                           obs.obj=obs.obj.loc[obs.obj['station']==station_name_sonde[0]]
+                           obs.obj=obs.obj.loc[datetime.datetime(
+                               cds_sonde[0],cds_sonde[1],cds_sonde[2],cds_sonde[3],cds_sonde[4],cds_sonde[5])]
+                           break
+                   
+                    # do the facy trick to convert to get something useful for MONET
+                    # this converts to dimensions of x and y
+                    # you may want to make pressure / msl a coordinate too
+                    new_ds_obs = obs.obj.rename_axis('time_obs').reset_index().monet._df_to_da().set_coords(['time_obs','pressure_obs'])
+                    #Nearest neighbor approach to find closest grid cell to each point.
+                    ds_model = m.util.combinetool.combine_da_to_da(model_obj,new_ds_obs,merge=False)
+                    #Interpolate based on time in the observations
+                    ds_model = ds_model.interp(time=ds_model.time_obs.squeeze())
+                    paired_data = vert_interp(ds_model,obs.obj,keys+mod_vars)
+                    print('In pair function, After pairing: ', paired_data)
+                    # this outputs as a pandas dataframe.  Convert this to xarray obj
+                    p = pair()
+                    p.type = 'sonde'
+                    p.radius_of_influence = None
+                    p.obs = obs.label
+                    p.model = mod.label
+                    p.model_vars = keys
+                    p.obs_vars = obs_vars
+                    p.filename = '{}_{}.nc'.format(p.obs, p.model)
+                    p.obj = paired_data.set_index('time').to_xarray().expand_dims('x').transpose('time','x')
+                    label = "{}_{}".format(p.obs, p.model)
+                    self.paired[label] = p
+
+                    # write_util.write_ncf(p.obj,p.filename) # write out to file 
                 # If mobile surface data or single ground site surface data
                 elif obs.obs_type.lower() == 'mobile' or obs.obs_type.lower() == 'ground':
                     from .util.tools import mobile_and_ground_pair
@@ -1309,6 +1365,12 @@ class analysis:
                 # TODO: add other network types / data types where (ie flight, satellite etc)
                 # if sat_swath_clm (satellite l2 column products)
                 elif obs.obs_type.lower() == 'sat_swath_clm':
+                    # grab kwargs for pairing. Use default if not specified
+                    pairing_kws = {'apply_ak':True,'mod_to_overpass':False}
+                    for key in self.pairing_kwargs.get(obs.obs_type.lower(), {}):
+                        pairing_kws[key] = self.pairing_kwargs[obs.obs_type.lower()][key]
+                    if 'apply_ak' not in self.pairing_kwargs.get(obs.obs_type.lower(), {}):
+                        print('WARNING: The satellite pairing option apply_ak is being set to True because it was not specified in the YAML. Pairing will fail if there is no AK available.')
                     
                     if obs.sat_type == 'omps_nm':
                         
@@ -1319,7 +1381,7 @@ class analysis:
                         if 'time' in obs.obj.dims:
                             obs.obj = obs.obj.sel(time=slice(self.start_time,self.end_time))
                             obs.obj = obs.obj.swap_dims({'time':'x'})
-                        if mod.apply_ak == True:
+                        if pairing_kws['apply_ak'] is True:
                             model_obj = mod.obj[keys+['pres_pa_mid','surfpres_pa']]
                             
                             paired_data = sutil.omps_nm_pairing_apriori(model_obj,obs.obj,keys)
@@ -1327,7 +1389,7 @@ class analysis:
                             model_obj = mod.obj[keys+['dp_pa']]
                             paired_data = sutil.omps_nm_pairing(model_obj,obs.obj,keys)
 
-                        paired_data = paired_data.where((paired_data.o3vmr > 0))
+                        paired_data = paired_data.where(paired_data.ozone_column.notnull())
                         p = pair()
                         p.type = obs.obs_type
                         p.obs = obs.label
@@ -1339,26 +1401,38 @@ class analysis:
                         self.paired[label] = p
 
                     if obs.sat_type == 'tropomi_l2_no2':
-                        from .util import sat_l2_swath_utility as sutil
-                        from .util import cal_mod_no2col as mutil
+                        from .util import sat_l2_swath_utility as no2util
+                        from .util import satellite_utilities as sutil
 
                         # calculate model no2 trop. columns. M.Li
                         # to fix the "time" duplicate error
                         model_obj = mod.obj
-                        model_obj = model_obj.rename_dims({'time':'t'})
-                        model_obj = mutil.cal_model_no2columns(model_obj)
-                        #obs_dat = obs.obj.sel(time=slice(self.start_time.date(),self.end_time.date())).copy()
+                        i_no2_varname = [i for i,x in enumerate(obs_vars) if x == 'nitrogendioxide_tropospheric_column']
+                        if len(i_no2_varname) > 1:
+                            print('The TROPOMI NO2 variable is matched to more than one model variable.')
+                            print('Pairing is being done for model variable: '+keys[i_no2_varname[0]])
+                        no2_varname = keys[i_no2_varname[0]]
 
-                        if mod.apply_ak == True:
-                            paired_data = sutil.trp_interp_swatogrd_ak(obs.obj, model_obj)
+                        if pairing_kws['mod_to_overpass']:
+                            print('sampling model to 13:30 local overpass time')
+                            overpass_datetime = pd.date_range(self.start_time.replace(hour=13,minute=30),
+                                                              self.end_time.replace(hour=13,minute=30),freq='D')
+                            model_obj = sutil.mod_to_overpasstime(model_obj,overpass_datetime,partial_col=no2_varname)
+                            # enforce dimension order is time, z, y, x
+                            model_obj = model_obj.transpose('time','z','y','x',...)
                         else:
-                            paired_data = sutil.trp_interp_swatogrd(obs.obj, model_obj)
+                            print('Warning: The pairing_kwarg mod_to_overpass is False.')
+                            print('Pairing will proceed assuming that the model data is already at overpass time.')
+                            from .util.tools import calc_partialcolumn
+                            model_obj[f'{no2_varname}_col'] = calc_partialcolumn(model_obj,var=no2_varname)
+                        if pairing_kws['apply_ak'] is True:
+                            paired_data = no2util.trp_interp_swatogrd_ak(obs.obj, model_obj,no2varname=no2_varname)
+                        else:
+                            paired_data = no2util.trp_interp_swatogrd(obs.obj, model_obj, no2varname=no2_varname)
 
-                        self.models[model_label].obj = model_obj
 
                         p = pair()
 
-                        paired_data = paired_data.reset_index("y") # for saving
                         paired_data_cp = paired_data.sel(time=slice(self.start_time.date(),self.end_time.date())).copy()
 
                         p.type = obs.obs_type
@@ -1370,9 +1444,56 @@ class analysis:
                         label = '{}_{}'.format(p.obs,p.model)
 
                         self.paired[label] = p
+
+                    if 'tempo_l2' in obs.sat_type:
+                        from .util import sat_l2_swath_utility_tempo as sutil
+
+                        if obs.sat_type == 'tempo_l2_no2':
+                            sat_sp = 'NO2'
+                            sp = 'vertical_column_troposphere'
+                            key = "tempo_l2_no2"
+                        elif obs.sat_type == 'tempo_l2_hcho':
+                            sat_sp = 'HCHO'
+                            sp = 'vertical_column'
+                            key = "tempo_l2_hcho"
+                        else:
+                            raise KeyError(f" You asked for {obs.sat_type}. "
+                                           + "Only NO2 and HCHO L2 data have been implemented")
+                        mod_sp = [
+                            k_sp for k_sp, v in mod.mapping[key].items() if v == sp
+                        ]
+
+                        regrid_method = obs.regrid_method if obs.regrid_method is not None else "bilinear"
+                        paired_data_atswath = sutil.regrid_and_apply_weights(
+                            obs.obj, mod.obj, species=mod_sp, method=regrid_method, tempo_sp=sat_sp
+                        )
+                        paired_data_atgrid = sutil.back_to_modgrid_multiscan(
+                            paired_data_atswath, model_obj, method=regrid_method
+                        )
+
+                        p = pair()
+
+                        paired_data = paired_data_atgrid.sel(time=slice(self.start_time, self.end_time))
+
+                        p.type = obs.obs_type
+                        p.obs = obs.label
+                        p.model = mod.label
+                        p.model_vars = keys
+                        p.obs_vars = obs_vars
+                        p.obj = paired_data
+                        label = "{}_{}".format(p.obs,p.model)
+                        p.filename = "{}.nc".format(label)
+
+                        self.paired[label] = p
                         
                 # if sat_grid_clm (satellite l3 column products)
                 elif obs.obs_type.lower() == 'sat_grid_clm':
+                    # grab kwargs for pairing. Use default if not specified
+                    pairing_kws = {'apply_ak':True,'mod_to_overpass':False}
+                    for key in self.pairing_kwargs.get(obs.obs_type.lower(), {}):
+                        pairing_kws[key] = self.pairing_kwargs[obs.obs_type.lower()][key]
+                    if 'apply_ak' not in self.pairing_kwargs[obs.obs_type.lower()]:
+                        print('WARNING: The satellite pairing option apply_ak is being set to True because it was not specified in the YAML. Pairing will fail if there is no AK available.')
                     if len(keys) > 1: 
                         print('Caution: More than 1 variable is included in mapping keys.')
                         print('Pairing code is calculating a column for {}'.format(keys[0])) 
@@ -1395,13 +1516,21 @@ class analysis:
 
                     elif obs.sat_type == 'mopitt_l3':
                         from .util import satellite_utilities as sutil
-                        if mod.apply_ak: 
+                        
+                        if pairing_kws['apply_ak']: 
                             model_obj = mod.obj[keys+['pres_pa_mid']]
+                            
+                            # Sample model to observation overpass time
+                            if pairing_kws['mod_to_overpass']:
+                                print('sampling model to 10:30 local overpass time')
+                                overpass_datetime = pd.date_range(self.start_time.replace(hour=10,minute=30),
+                                                                  self.end_time.replace(hour=10,minute=30),freq='D')
+                                model_obj = sutil.mod_to_overpasstime(model_obj,overpass_datetime)
                             # trim to only data within analysis window, as averaging kernels can't be applied outside it
-                            obs_dat = obs.obj.sel(time=slice(self.start_time.date(),self.end_time.date()))#.copy()
-                            model_obj = model_obj.sel(time=slice(self.start_time.date(),self.end_time.date()))#.copy()
+                            obs_dat = obs.obj.sel(time=slice(self.start_time.date(),self.end_time.date()))
+                            model_obj = model_obj.sel(time=slice(self.start_time.date(),self.end_time.date()))
                             # interpolate model to observation, calculate column with averaging kernels applied
-                            paired = sutil.mopitt_l3_pairing(model_obj,obs_dat,keys[0])
+                            paired = sutil.mopitt_l3_pairing(model_obj,obs_dat,keys[0],global_model=mod.is_global)
                             p = pair()
                             p.type = obs.obs_type
                             p.obs = obs.label
@@ -1444,7 +1573,8 @@ class analysis:
         None
         """
         
-        from .util.tools import resample_stratify, get_epa_region_bounds, get_giorgi_region_bounds
+        from .util.tools import resample_stratify
+        from .util.region_select import select_region
         import matplotlib.pyplot as plt
         pair_keys = list(self.paired.keys())
         if self.paired[pair_keys[0]].type.lower() in ['sat_grid_clm','sat_swath_clm']:
@@ -1452,6 +1582,10 @@ class analysis:
         else: 
             from .plots import surfplots as splots, savefig
             from .plots import aircraftplots as airplots
+            from .plots import sonde_plots as sondeplots
+        from .plots import xarray_plots as xrplots
+        if not self.add_logo:
+            savefig.keywords.update(decorate=False)
 
         # Disable figure count warning
         initial_max_fig = plt.rcParams["figure.max_open_warning"]
@@ -1486,8 +1620,22 @@ class analysis:
                 region_name = grp_dict['region_name'] 
                 region_list = grp_dict['region_list']
                 model_name_list = grp_dict['model_name_list']     
-            
 
+            #read-in special settings for ozone sonde related plots
+            if plot_type in {'vertical_single_date', 'vertical_boxplot_os', 'density_scatter_plot_os'}:
+                altitude_range = grp_dict['altitude_range']
+                altitude_method = grp_dict['altitude_method']
+                station_name = grp_dict['station_name']
+                monet_logo_position = grp_dict['monet_logo_position']
+                cds = grp_dict['compare_date_single']
+                release_time= datetime.datetime(cds[0],cds[1],cds[2],cds[3],cds[4],cds[5])
+
+                if plot_type == 'vertical_boxplot_os':
+                    altitude_threshold_list = grp_dict['altitude_threshold_list']
+                elif plot_type == 'density_scatter_plot_os':
+                    cmap_method = grp_dict['cmap_method']
+                    model_name_list = grp_dict['model_name_list']
+                
             #read-in special settings for scorecard
             if plot_type == 'scorecard':
                 region_list = grp_dict['region_list']
@@ -1502,24 +1650,32 @@ class analysis:
                 threshold_list = grp_dict['threshold_list']
                 score_name = grp_dict['score_name']
                 model_name_list = grp_dict['model_name_list']
+                threshold_tick_style = grp_dict.get('threshold_tick_style',None)
 
             # first get the observational obs labels
-            pair1 = self.paired[list(self.paired.keys())[0]]
-            obs_vars = pair1.obs_vars
-            obs_type = pair1.type
+
+            obs_vars = []
+            for pair_label in pair_labels:
+                obs_vars.extend(self.paired[pair_label].obs_vars)
+            # Guarantee uniqueness of obs_vars, without altering order
+            obs_vars = list(dict.fromkeys(obs_vars))
+
             # loop through obs variables
             for obsvar in obs_vars:
                 # Loop also over the domain types. So can easily create several overview and zoomed in plots.
-                domain_types = grp_dict['domain_type']
-                domain_names = grp_dict['domain_name']
+                domain_types = grp_dict.get('domain_type', [None])
+                domain_names = grp_dict.get('domain_name', [None])
+                domain_infos = grp_dict.get('domain_info', {})
+                # Use only pair_labels containing obs_var
+                pair_labels_obsvar = [p for p in pair_labels if obsvar in self.paired[p].obs_vars]
                 for domain in range(len(domain_types)):
                     domain_type = domain_types[domain]
                     domain_name = domain_names[domain]
-
-                    # Then loop through each of the pairs to add to the plot.
-                    for p_index, p_label in enumerate(pair_labels):
+                    domain_info = domain_infos.get(domain_name, None)
+                    for p_index, p_label in enumerate(pair_labels_obsvar):
                         p = self.paired[p_label]
-                        
+                        obs_type = p.type
+
                         # find the pair model label that matches the obs var
                         index = p.obs_vars.index(obsvar)
                         modvar = p.model_vars[index]
@@ -1528,31 +1684,32 @@ class analysis:
                         if obsvar == modvar:
                             modvar = modvar + '_new'
 
-                        # Adjust the modvar for satelitte no2 trop. column paring. M.Li
+                        # Adjust the modvar for satellite no2 trop. column paring. M.Li
                         if obsvar == 'nitrogendioxide_tropospheric_column':
                             modvar = modvar + 'trpcol'
                             
                         # for pt_sfc data, convert to pandas dataframe, format, and trim
-                        if obs_type in ["sat_swath_sfc", "sat_swath_clm", 
-                                                                        "sat_grid_sfc", "sat_grid_clm", 
-                                                                        "sat_swath_prof"]:
+                        # Query selected points if applicable
+                        if domain_type != 'all':
+                            p_region = select_region(p.obj, domain_type, domain_name, domain_info)
+                        else:
+                            p_region = p.obj
+
+                        
+                        if obs_type in ["sat_swath_sfc", "sat_swath_clm", "sat_grid_sfc",
+                                        "sat_grid_clm", "sat_swath_prof"]:
                              # convert index to time; setup for sat_swath_clm
                             
-                            if 'time' not in p.obj.dims and obs_type == 'sat_swath_clm':
-                                
-                                pairdf_all = p.obj.swap_dims({'x':'time'})
-                            # squash lat/lon dimensions into single dimension
-                            ## 2024-03 MEB rechecking necessity of this.
-                            #elif obs_type == 'sat_grid_clm':
-                            #    pairdf_all = p.obj.stack(ll=['x','y'])
-                            #    pairdf_all = pairdf_all.rename_dims({'ll':'y'})
+                            if 'time' not in p_region.dims and obs_type == 'sat_swath_clm':
+                                pairdf_all = p_region.swap_dims({'x':'time'})
+
                             else:
-                                pairdf_all = p.obj
+                                pairdf_all = p_region
                             # Select only the analysis time window.
                             pairdf_all = pairdf_all.sel(time=slice(self.start_time,self.end_time))
                         else:
                             # convert to dataframe
-                            pairdf_all = p.obj.to_dataframe(dim_order=["time", "x"])
+                            pairdf_all = p_region.to_dataframe(dim_order=["time", "x"])
                             # Select only the analysis time window.
                             pairdf_all = pairdf_all.loc[self.start_time : self.end_time]
                             
@@ -1581,7 +1738,7 @@ class analysis:
                             text_dict = None
 
                         # Read in some plotting specifications stored with observations.
-                        if self.obs[p.obs].variable_dict is not None:
+                        if p.obs in self.obs and self.obs[p.obs].variable_dict is not None:
                             if obsvar in self.obs[p.obs].variable_dict.keys():
                                 obs_plot_dict = self.obs[p.obs].variable_dict[obsvar].copy()
                             else:
@@ -1596,7 +1753,7 @@ class analysis:
                             use_ylabel = None
 
                         # Determine if set axis values or use defaults
-                        if grp_dict['data_proc']['set_axis'] == True:
+                        if grp_dict['data_proc'].get('set_axis', False):
                             if obs_plot_dict:  # Is not null
                                 set_yaxis = True
                             else:
@@ -1616,30 +1773,6 @@ class analysis:
                         # Determine outname
                         outname = "{}.{}.{}.{}.{}.{}.{}".format(grp, plot_type, obsvar, startdatename, enddatename, domain_type, domain_name)
 
-                        # Query selected points if applicable
-                        if domain_type != 'all':
-                            if domain_type.startswith("auto-region"):
-                                _, auto_region_id = domain_type.split(":")
-                                if auto_region_id == 'epa':
-                                    bounds = get_epa_region_bounds(acronym=domain_name)
-                                elif auto_region_id == 'giorgi':
-                                    bounds = get_giorgi_region_bounds(acronym=domain_name)
-                                else:
-                                    raise ValueError(
-                                        "Currently, region selections whithout a domain query have only "
-                                        "been implemented for Giorgi and EPA regions. You asked for "
-                                        f"{domain_type!r}. Soon, arbitrary rectangular boxes, US states and "
-                                        "others will be included."
-                                    )
-                                pairdf_all = pairdf_all.loc[
-                                                (pairdf_all["latitude"] > bounds[0])
-                                                & (pairdf_all["longitude"] > bounds[1])
-                                                & (pairdf_all["latitude"] < bounds[2])
-                                                & (pairdf_all["longitude"] < bounds[3])
-                                             ]
-                            else:
-                                pairdf_all.query(domain_type + ' == ' + '"' + domain_name + '"', inplace=True)
-                        
                         # Query with filter options
                         if 'filter_dict' in grp_dict['data_proc'] and 'filter_string' in grp_dict['data_proc']:
                             raise Exception("""For plot group: {}, only one of filter_dict and filter_string can be specified.""".format(grp))
@@ -1681,17 +1814,18 @@ class analysis:
                             pairdf_all = pairdf_all.loc[pairdf_all[grp_var].isin(grp_select[grp_var].values)]
 
                         # Drop NaNs if using pandas 
-                        if obs_type in ['pt_sfc','aircraft','mobile','ground']:
-                            if grp_dict['data_proc']['rem_obs_nan'] == True:
+                        if obs_type in ['pt_sfc','aircraft','mobile','ground','sonde']: 
+                            if grp_dict['data_proc']['rem_obs_nan'] is True:
                                 # I removed drop=True in reset_index in order to keep 'time' as a column.
                                 pairdf = pairdf_all.reset_index().dropna(subset=[modvar, obsvar])
                             else:
                                 pairdf = pairdf_all.reset_index().dropna(subset=[modvar])
-                        elif obs_type in  ["sat_swath_sfc", "sat_swath_clm", 
-                                                                        "sat_grid_sfc", "sat_grid_clm", 
-                                                                        "sat_swath_prof"]: 
+                        elif obs_type in ["sat_swath_sfc", "sat_swath_clm", 
+                                          "sat_grid_sfc", "sat_grid_clm", 
+                                          "sat_swath_prof"]: 
                             # xarray doesn't need nan drop because its math operations seem to ignore nans
-                            pairdf = pairdf_all
+                            # MEB (10/9/24): Add statement to ensure model and obs variables have nans at the same place
+                            pairdf = pairdf_all.where(pairdf_all[obsvar].notnull() & pairdf_all[modvar].notnull())
 
                         else:
                             print('Warning: set rem_obs_nan = True for regulatory metrics') 
@@ -1749,8 +1883,8 @@ class analysis:
                             outname = self.output_dir + '/' + outname  # Extra / just in case.
 
                         # Types of plots
-                        if plot_type.lower() == 'timeseries':
-                            if set_yaxis == True:
+                        if plot_type.lower() == 'timeseries' or plot_type.lower() == 'diurnal':
+                            if set_yaxis is True:
                                 if all(k in obs_plot_dict for k in ('vmin_plot', 'vmax_plot')):
                                     vmin = obs_plot_dict['vmin_plot']
                                     vmax = obs_plot_dict['vmax_plot']
@@ -1775,7 +1909,7 @@ class analysis:
 
                             #Steps needed to subset paired df if secondary y-axis (altitude_variable) limits are provided, 
                             #ELSE: make_timeseries from surfaceplots.py plots the whole df by default
-                            #Edit below to accomodate 'ground' or 'mobile' where altitude_yax2 is not needed for timeseries
+                            #Edit below to accommodate 'ground' or 'mobile' where altitude_yax2 is not needed for timeseries
                             altitude_yax2 = grp_dict['data_proc'].get('altitude_yax2', {})
 
                             # Extract vmin_y2 and vmax_y2 from filter_dict
@@ -1801,6 +1935,7 @@ class analysis:
                             else:
                                 vmin_y2 = vmax_y2 = None
                             
+
                                 
                             # Check if filter_criteria exists and is not None (Subset the data based on filter criteria if provided)
                             if filter_criteria:
@@ -1811,42 +1946,51 @@ class analysis:
                                     if operation == "between" and isinstance(value, list) and len(value) == 2:
                                         pairdf = pairdf[pairdf[column].between(vmin_y2, vmax_y2)]
                             
-                            # Now proceed wit plotting, call the make_timeseries function with the subsetted pairdf (if vmin2 and vmax2 are not nOne) otherwise whole df                                 
+                            # Now proceed with plotting, call the make_timeseries function with the subsetted pairdf (if vmin2 and vmax2 are not nOne) otherwise whole df                                 
+                            if self.obs[p.obs].sat_type is not None and self.obs[p.obs].sat_type.startswith("tempo_l2"):
+                                if plot_type.lower() == 'timeseries':
+                                    make_timeseries = xrplots.make_timeseries
+                                else:
+                                    make_timeseries = xrplots.make_diurnal_cycle
+                                plot_kwargs = {'dset': pairdf, 'varname': obsvar}
+                            else:
+                                if plot_type.lower() == "timeseries":
+                                    make_timeseries = splots.make_timeseries
+                                else:
+                                    make_timeseries = splots.make_diurnal_cycle
+                                plot_kwargs = {
+                                    'df': pairdf, 'df_reg': pairdf_reg, 'column': obsvar
+                                }
+                            settings = grp_dict.get('settings', {})
+                            plot_kwargs = {
+                                **plot_kwargs,
+                                **{
+                                    'label':p.obs,
+                                    'avg_window': a_w,
+                                    'ylabel': use_ylabel,
+                                    'vmin':vmin,
+                                    'vmax':vmax,
+                                    'domain_type': domain_type,
+                                    'domain_name': domain_name,
+                                    'plot_dict': obs_dict,
+                                    'fig_dict': fig_dict,
+                                    'text_dict': text_dict,
+                                    'debug': self.debug,
+                                },
+                                **settings
+                            }
                             if p_index == 0:
                                 # First plot the observations.
-                                ax = splots.make_timeseries(
-                                    pairdf,
-                                    pairdf_reg,
-                                    column=obsvar,
-                                    label=p.obs,
-                                    avg_window=a_w,
-                                    ylabel=use_ylabel,
-                                    vmin=vmin,
-                                    vmax=vmax,
-                                    domain_type=domain_type,
-                                    domain_name=domain_name,
-                                    plot_dict=obs_dict,
-                                    fig_dict=fig_dict,
-                                    text_dict=text_dict,
-                                    debug=self.debug
-                                )
+                                ax = make_timeseries(**plot_kwargs)
                             # For all p_index plot the model.
-                            ax = splots.make_timeseries(
-                                pairdf,
-                                pairdf_reg,
-                                column=modvar,
-                                label=p.model,
-                                ax=ax,
-                                avg_window=a_w,
-                                ylabel=use_ylabel,
-                                vmin=vmin,
-                                vmax=vmax,
-                                domain_type=domain_type,
-                                domain_name=domain_name,
-                                plot_dict=plot_dict,
-                                text_dict=text_dict,
-                                debug=self.debug
-                            )
+                            if self.obs[p.obs].sat_type is not None and self.obs[p.obs].sat_type.startswith("tempo_l2"):
+                                plot_kwargs['varname']=modvar
+                            else:
+                                plot_kwargs['column']=modvar
+                            plot_kwargs['label'] = p.model
+                            plot_kwargs['plot_dict'] = plot_dict
+                            plot_kwargs['ax'] = ax
+                            ax = make_timeseries(**plot_kwargs)
 
                             # Extract text_kwargs from the appropriate plot group
                             text_kwargs = grp_dict.get('text_kwargs', {'fontsize': 20})  # Default to fontsize 20 if not defined                            
@@ -1874,9 +2018,6 @@ class analysis:
                                   ##  ax = airplots.add_yax2_altitude(ax, pairdf, altitude_variable, altitude_ticks, text_kwargs)
                                 ##savefig(outname + '.png', logo_height=150)
                                 ##del (ax, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict) #Clear axis for next plot.
-                        
-
-
 
                         elif plot_type.lower() == 'curtain':
                             # Set cmin and cmax from obs_plot_dict for colorbar limits
@@ -2022,7 +2163,7 @@ class analysis:
                                 
                         #qzr++ Added vertprofile plotype for aircraft vs model comparisons         
                         elif plot_type.lower() == 'vertprofile':
-                            if set_yaxis == True:
+                            if set_yaxis is True:
                                 if all(k in obs_plot_dict for k in ('vmin_plot', 'vmax_plot')):
                                     vmin = obs_plot_dict['vmin_plot']
                                     vmax = obs_plot_dict['vmax_plot']
@@ -2079,12 +2220,103 @@ class analysis:
                             
                             # At the end save the plot.
                             if p_index == len(pair_labels) - 1:
-                                savefig(outname + '.png', logo_height=150)
+                                savefig(outname + '.png', logo_height=250)
                                 del (ax, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict) # Clear axis for next plot.
 
-                        
+                        elif plot_type.lower() == 'vertical_single_date':
+                            #to use vmin, vmax from obs in yaml
+                            if set_yaxis is True:
+                                if all(k in obs_plot_dict for k in ('vmin_plot','vmax_plot')):
+                                    vmin = obs_plot_dict['vmin_plot']
+                                    vmax = obs_plot_dict['vmax_plot']
+                                else:
+                                    print('warning: vmin_plot and vmax_plot not specified for '+obsvar+',so default used.')
+                                    vmin = None
+                                    vmax = None
+                            else:
+                                vmin = None
+                                vmax = None
+                            #begin plotting
+                            if p_index ==0:
+                                comb_bx, label_bx = splots.calculate_boxplot(pairdf, pairdf_reg, column=obsvar, label=p.obs, plot_dict=obs_dict)
+                            comb_bx, label_bx = splots.calculate_boxplot(pairdf, pairdf_reg, column=modvar, label=p.model, plot_dict=plot_dict, comb_bx = comb_bx, label_bx = label_bx)
+                            if p_index == len(pair_labels) - 1:
+                                sondeplots.make_vertical_single_date(pairdf,
+                                                                      comb_bx,
+                                                                      altitude_range=altitude_range,
+                                                                      altitude_method=altitude_method,
+                                                                      vmin=vmin,
+                                                                      vmax=vmax,
+                                                                      station_name=station_name,
+                                                                      release_time=release_time,
+                                                                      label_bx=label_bx,
+                                                                      fig_dict=fig_dict,
+                                                                      text_dict=text_dict
+                                                                      )
+                                #save plot
+                                plt.tight_layout()
+                                savefig(outname+".png", loc=monet_logo_position[0], logo_height=100, dpi=300)
 
-                        
+                                del (comb_bx,label_bx,fig_dict, plot_dict, text_dict, obs_dict,obs_plot_dict)
+
+                        elif plot_type.lower() == 'vertical_boxplot_os':
+                            #to use vmin, vmax from obs in yaml
+                            if set_yaxis is True:
+                                if all(k in obs_plot_dict for k in ('vmin_plot','vmax_plot')):
+                                    vmin = obs_plot_dict['vmin_plot']
+                                    vmax = obs_plot_dict['vmax_plot']
+                                else:
+                                    print('warning: vmin_plot and vmax_plot not specified for '+obsvar+',so default used.')
+                                    vmin=None
+                                    vmax=None
+                            else:
+                                vmin=None
+                                vmax=None
+                            #begin plotting
+                            if p_index ==0:
+                                comb_bx, label_bx = splots.calculate_boxplot(pairdf, pairdf_reg, column=obsvar, label=p.obs, plot_dict=obs_dict)
+                            comb_bx, label_bx = splots.calculate_boxplot(pairdf, pairdf_reg, column=modvar, label=p.model, plot_dict=plot_dict, comb_bx = comb_bx, label_bx = label_bx)
+
+                            if p_index == len(pair_labels) - 1:
+                                sondeplots.make_vertical_boxplot_os(pairdf,
+                                                                     comb_bx,
+                                                                     label_bx=label_bx,
+                                                                     altitude_range=altitude_range,
+                                                                     altitude_method=altitude_method,
+                                                                     vmin=vmin,
+                                                                     vmax=vmax,
+                                                                     altitude_threshold_list=altitude_threshold_list,
+                                                                     station_name=station_name,
+                                                                     release_time=release_time,
+                                                                     fig_dict=fig_dict,
+                                                                     text_dict=text_dict)
+                                #save plot
+                                plt.tight_layout()
+                                savefig(outname+".png", loc=monet_logo_position[0], logo_height=100, dpi=300)
+                                del (comb_bx,label_bx,fig_dict, plot_dict, text_dict, obs_dict,obs_plot_dict)
+
+                        elif plot_type.lower() == 'density_scatter_plot_os':
+                            #to use vmin, vmax from obs in yaml
+                            if set_yaxis is True:
+                                if all(k in obs_plot_dict for k in ('vmin_plot','vmax_plot')):
+                                    vmin = obs_plot_dict['vmin_plot']
+                                    vmax = obs_plot_dict['vmax_plot']
+                                else:
+                                    print('warning: vmin_plot and vmax_plot not specified for '+obsvar+',so default used.')
+                                    vmin=None
+                                    vmax=None
+                            else:
+                                vmin=None
+                                vmax=None
+
+                            #begin plotting
+                            plt.figure()
+                            sondeplots.density_scatter_plot_os(pairdf,altitude_range,vmin,vmax,station_name,altitude_method,cmap_method,modvar,obsvar)
+                            plt.title('Scatter plot for '+model_name_list[0]+' vs. '+model_name_list[p_index+1]+'\nat '+str(station_name[0])+' on '+str(release_time)+' UTC',fontsize=15)
+                            plt.tight_layout()
+                            savefig(outname+"."+p_label+"."+"-".join(altitude_method[0].split())+".png", loc=monet_logo_position[0], logo_height=100, dpi=300)
+                            del (pairdf)
+                            
                         elif plot_type.lower() == 'violin':
                             if set_yaxis:
                                 if all(k in obs_plot_dict for k in ('vmin_plot', 'vmax_plot')):
@@ -2184,7 +2416,7 @@ class analysis:
                             obs_label = p.obs
                             
                             try:
-                                mapping = self.control_dict['model'][model_label]['mapping'][obs_label]
+                                _ = self.control_dict['model'][model_label]['mapping'][obs_label]
                             except KeyError:
                                 print(f"Error: Mapping not found for model label '{model_label}' with observation label '{obs_label}' in scatter_density plot")
                                 continue  # Skip this iteration if mapping is not found
@@ -2238,12 +2470,14 @@ class analysis:
                             
                         elif plot_type.lower() == 'boxplot':
                             # squeeze the xarray for boxplot, M.Li
-                            if obs_type in  ["sat_swath_sfc", "sat_swath_clm", "sat_grid_sfc", "sat_grid_clm", "sat_swath_prof"]:
+                            if obs_type in ["sat_swath_sfc", "sat_swath_clm",
+                                            "sat_grid_sfc", "sat_grid_clm",
+                                            "sat_swath_prof"]:
                                 pairdf_sel = pairdf.squeeze()
                             else: 
                                 pairdf_sel = pairdf
 
-                            if set_yaxis == True:
+                            if set_yaxis is True:
                                 if all(k in obs_plot_dict for k in ('vmin_plot', 'vmax_plot')):
                                     vmin = obs_plot_dict['vmin_plot']
                                     vmax = obs_plot_dict['vmax_plot']
@@ -2282,7 +2516,7 @@ class analysis:
                                 del (comb_bx, label_bx, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict)   
                         
                         elif plot_type.lower() == 'multi_boxplot':
-                            if set_yaxis == True:
+                            if set_yaxis is True:
                                 if all(k in obs_plot_dict for k in ('vmin_plot', 'vmax_plot')):
                                     vmin = obs_plot_dict['vmin_plot']
                                     vmax = obs_plot_dict['vmax_plot']
@@ -2384,7 +2618,8 @@ class analysis:
                             print(p_index,np.shape(comb_bx))
                             if p_index == len(pair_labels) - 1:
                                 print('final',p_index, len(pair_labels) - 1)
-                                splots.Plot_CSI(score_name_input=score_name,
+                                splots.Plot_CSI(column=obsvar,
+                                                score_name_input=score_name,
                                                 threshold_list_input=threshold_list, 
                                                 comb_bx_input=comb_bx,
                                                 plot_dict=plot_dict,
@@ -2392,7 +2627,8 @@ class analysis:
                                                 text_dict=text_dict,
                                                 domain_type=domain_type,
                                                 domain_name=domain_name,
-                                                model_name_list=model_name_list)
+                                                model_name_list=model_name_list,
+                                                threshold_tick_style=threshold_tick_style)
                                 #save figure
                                 plt.tight_layout()
                                 savefig(outname +'.'+score_name+'.png', loc=1, logo_height=100) 
@@ -2402,50 +2638,54 @@ class analysis:
 
 
                         elif plot_type.lower() == 'taylor':
-                            if set_yaxis == True:
+                            if self.obs[p.obs].sat_type is not None and self.obs[p.obs].sat_type.startswith("tempo_l2"):
+                                make_taylor = xrplots.make_taylor
+                                plot_kwargs = {
+                                    'dset': pairdf,
+                                    'varname_o': obsvar,
+                                    'varname_m': modvar,
+                                    'normalize': True,
+                                }
+                            else:
+                                make_taylor = splots.make_taylor
+                                plot_kwargs = {
+                                    'df': pairdf,
+                                    'column_o': obsvar,
+                                    'column_m': modvar,
+                                }
+                            plot_kwargs = {
+                                **plot_kwargs,
+                                **{
+                                    'label_o': p.obs,
+                                    'label_m': p.model,
+                                    'ylabel': use_ylabel,
+                                    'domain_type': domain_type,
+                                    'domain_name': domain_name,
+                                    'plot_dict': plot_dict,
+                                    'fig_dict': fig_dict,
+                                    'text_dict': text_dict,
+                                    'debug': self.debug,
+                                }
+                            }
+
+                            if set_yaxis is True:
                                 if 'ty_scale' in obs_plot_dict.keys():
-                                    ty_scale = obs_plot_dict['ty_scale']
+                                    plot_kwargs["ty_scale"] = obs_plot_dict['ty_scale']
                                 else:
                                     print('Warning: ty_scale not specified for ' + obsvar + ', so default used.')
-                                    ty_scale = 1.5  # Use default
+                                    plot_kwargs["ty_scale"] = 1.5  # Use default
                             else:
-                                ty_scale = 1.5  # Use default
+                                plot_kwargs["ty_scale"] = 1.5  # Use default
+                            try: 
+                                plot_kwargs["ty_scale"] = grp_dict["data_proc"].get("ty_scale", 1.5)
+                            except KeyError:
+                                plot_kwargs["ty_scale"]=2
                             if p_index == 0:
                                 # Plot initial obs/model
-                                dia = splots.make_taylor(
-                                    pairdf,
-                                    pairdf_reg,
-                                    column_o=obsvar,
-                                    label_o=p.obs,
-                                    column_m=modvar,
-                                    label_m=p.model,
-                                    ylabel=use_ylabel,
-                                    ty_scale=ty_scale,
-                                    domain_type=domain_type,
-                                    domain_name=domain_name,
-                                    plot_dict=plot_dict,
-                                    fig_dict=fig_dict,
-                                    text_dict=text_dict,
-                                    debug=self.debug
-                                )
+                                dia = make_taylor(**plot_kwargs)
                             else:
                                 # For the rest, plot on top of dia
-                                dia = splots.make_taylor(
-                                    pairdf,
-                                    pairdf_reg,
-                                    column_o=obsvar,
-                                    label_o=p.obs,
-                                    column_m=modvar,
-                                    label_m=p.model,
-                                    dia=dia,
-                                    ylabel=use_ylabel,
-                                    ty_scale=ty_scale,
-                                    domain_type=domain_type,
-                                    domain_name=domain_name,
-                                    plot_dict=plot_dict,
-                                    text_dict=text_dict,
-                                    debug=self.debug
-                                )
+                                dia = make_taylor(dia=dia, **plot_kwargs)
                             # At the end save the plot.
                             if p_index == len(pair_labels) - 1:
                                 savefig(outname + '.png', logo_height=70)
@@ -2455,7 +2695,7 @@ class analysis:
                         
                         
                         elif plot_type.lower() == 'spatial_bias':
-                            if set_yaxis == True:
+                            if set_yaxis is True:
                                 if 'vdiff_plot' in obs_plot_dict.keys():
                                     vdiff = obs_plot_dict['vdiff_plot']
                                 else:
@@ -2483,25 +2723,64 @@ class analysis:
                                 debug=self.debug
                             )
                         elif plot_type.lower() == 'gridded_spatial_bias':
-                            splots.make_spatial_bias_gridded(
-                                p.obj,
-                                column_o=obsvar,
-                                label_o=p.obs,
-                                column_m=modvar,
-                                label_m=p.model,
-                                ylabel=use_ylabel,
-                                #vdiff=vdiff,
-                                outname=outname,
-                                domain_type=domain_type,
-                                domain_name=domain_name,
-                                fig_dict=fig_dict,
-                                text_dict=text_dict,
-                                debug=self.debug
-                                )    
+                            outname = "{}.{}".format(outname, p_label)
+                            if self.obs[p.obs].sat_type is not None and self.obs[p.obs].sat_type.startswith("tempo_l2"):
+                                make_spatial_bias_gridded = xrplots.make_spatial_bias_gridded
+                                plot_kwargs = {
+                                    'dset': pairdf, 'varname_o': obsvar, 'varname_m': modvar,
+                                }
+                            else:
+                                make_spatial_bias_gridded = splots.make_spatial_bias_gridded
+                                plot_kwargs = {'df': pairdf, 'column_o': obsvar, 'column_m': modvar}
+
+                            plot_kwargs = {
+                                **plot_kwargs,
+                                **{
+                                    "label_o": p.obs,
+                                    "label_m": p.model,
+                                    "ylabel": use_ylabel,
+                                    "outname": outname,
+                                    "domain_type": domain_type,
+                                    "domain_name": domain_name,
+                                    "vdiff": grp_dict["data_proc"].get("vdiff", None),
+                                    "vmax": grp_dict["data_proc"].get("vmax", None),
+                                    "vmin": grp_dict["data_proc"].get("vmin", None),
+                                    "nlevels": grp_dict["data_proc"].get("nlevels", None),
+                                    "fig_dict": fig_dict,
+                                    "text_dict": text_dict,
+                                    "debug": self.debug
+                                }
+                            }
+                            make_spatial_bias_gridded(**plot_kwargs)
                             del (fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict) #Clear info for next plot.
+                        elif plot_type.lower() == 'spatial_dist':
+                            outname = "{}.{}".format(outname, p.obs)
+                            plot_kwargs = {
+                                "dset": pairdf,
+                                "varname": obsvar,
+                                "outname": outname,
+                                "label": p.obs,
+                                "ylabel": use_ylabel,
+                                "domain_type": domain_type,
+                                "domain_name": domain_name,
+                                "vmax": grp_dict["data_proc"].get("vmax", None),
+                                "vmin": grp_dict["data_proc"].get("vmin", None),
+                                "fig_dict": fig_dict,
+                                "text_dict": text_dict,
+                                "debug": self.debug,
+                            }
+                            if isinstance(plot_kwargs["vmax"], str):
+                                plot_kwargs["vmax"] = float(plot_kwargs["vmax"])
+                            if isinstance(plot_kwargs["vmin"], str):
+                                plot_kwargs["vmin"] = float(plot_kwargs["vmin"])
+                            xrplots.make_spatial_dist(**plot_kwargs)
+                            plot_kwargs["varname"] = modvar
+                            plot_kwargs["label"] = p.model
+                            plot_kwargs["outname"] = outname.replace(p.obs, p.model)
+                            xrplots.make_spatial_dist(**plot_kwargs)
                         elif plot_type.lower() == 'spatial_bias_exceedance':
                             if cal_reg:
-                                if set_yaxis == True:
+                                if set_yaxis is True:
                                     if 'vdiff_reg_plot' in obs_plot_dict.keys():
                                         vdiff = obs_plot_dict['vdiff_reg_plot']
                                     else:
@@ -2532,7 +2811,7 @@ class analysis:
                                 print('Warning: spatial_bias_exceedance plot only works when regulatory=True.')
                         # JianHe: need updates to include regulatory option for overlay plots
                         elif plot_type.lower() == 'spatial_overlay':
-                            if set_yaxis == True:
+                            if set_yaxis is True:
                                 if all(k in obs_plot_dict for k in ('vmin_plot', 'vmax_plot', 'nlevels_plot')):
                                     vmin = obs_plot_dict['vmin_plot']
                                     vmax = obs_plot_dict['vmax_plot']
@@ -2562,6 +2841,8 @@ class analysis:
                                     vmodel = self.models[p.model].obj.loc[dict(time=slice(self.start_time, self.end_time))]
                             except KeyError as e:
                                 raise Exception("MONET requires an altitude dimension named 'z'") from e
+                            if grp_dict.get('data_proc', {}).get('crop_model', False) and domain_name != all:
+                                vmodel = select_region(vmodel, domain_type, domain_name, domain_info)
 
                             # Determine proj to use for spatial plots
                             proj = splots.map_projection(self.models[p.model])
@@ -2613,6 +2894,7 @@ class analysis:
         """
         from .stats import proc_stats as proc_stats
         from .plots import surfplots as splots
+        from .util.region_select import select_region
 
         # first get the stats dictionary from the yaml file
         stat_dict = self.control_dict['stats']
@@ -2652,9 +2934,11 @@ class analysis:
             # Loop also over the domain types.
             domain_types = stat_dict['domain_type']
             domain_names = stat_dict['domain_name']
+            domain_infos = stat_dict.get('domain_info', {})
             for domain in range(len(domain_types)):
                 domain_type = domain_types[domain]
                 domain_name = domain_names[domain]
+                domain_info = domain_infos.get(domain_name, None)
 
                 # The tables and text files will be output at this step in loop.
                 # Create an empty pandas dataarray.
@@ -2706,23 +2990,19 @@ class analysis:
                         # for satellite no2 trop. columns paired data, M.Li
                         if obsvar == 'nitrogendioxide_tropospheric_column':
                             modvar = modvar + 'trpcol' 
-
-                        # convert to dataframe
-                        # handle different dimensios, M.Li
-                        if ('y' in p.obj.dims) and ('x' in p.obj.dims):
-                            pairdf_all = p.obj.to_dataframe(dim_order=["x", "y"])
-                        elif ('y' in p.obj.dims) and ('time' in p.obj.dims):
-                            pairdf_all = p.obj.to_dataframe(dim_order=["time", "y"])
+                        
+                        # Query selected points if applicable
+                        if domain_type != 'all':
+                            p_region = select_region(p.obj, domain_type, domain_name, domain_info)
                         else:
-                            pairdf_all = p.obj.to_dataframe(dim_order=["time", "x"])
+                            p_region = p.obj
+
+                        dim_order = [dim for dim in ["time", "y", "x"] if dim in p_region.dims]
+                        pairdf_all = p_region.to_dataframe(dim_order=dim_order)
 
                         # Select only the analysis time window.
                         pairdf_all = pairdf_all.loc[self.start_time : self.end_time]
 
-                        # Query selected points if applicable
-                        if domain_type != 'all':
-                            pairdf_all.query(domain_type + ' == ' + '"' + domain_name + '"', inplace=True)
-                        
                         # Query with filter options
                         if 'data_proc' in stat_dict:
                             if 'filter_dict' in stat_dict['data_proc'] and 'filter_string' in stat_dict['data_proc']:
@@ -2823,7 +3103,7 @@ class analysis:
                 df_o_d = df_o_d.round(round_output)
                 df_o_d.to_csv(path_or_buf=outname + '.csv', index=False)
 
-                if stat_dict['output_table'] == True:
+                if stat_dict['output_table'] is True:
                     # Output as a table graphic too.
                     # Change to use the name with full spaces.
                     df_o_d['Stat_FullName'] = stat_fullname_s
