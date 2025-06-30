@@ -17,7 +17,7 @@
 
 analysis:
   start_time: "2017-07-01-00:00:00" # UTC
-  end_time: "2017-07-02-00:00:00" # UTC
+  end_time: "2017-07-03-00:00:00" # UTC
   output_dir: ./output/airnow_ufschem # relative to the program using this control file
   #   Currently, the directory must exist or plot saving will error and fail.
   debug: True
@@ -39,9 +39,6 @@ model:
         u_comp: "ugrd"  
         v_comp: "vgrd" 
       winddir: 
-        u_comp: "ugrd" 
-        v_comp: "vgrd" 
-      wind_barb:
         u_comp: "ugrd" 
         v_comp: "vgrd" 
       
@@ -84,7 +81,7 @@ obs:
         vmin_plot: 15.0
         # ^ optional; Min for y-axis during plotting.
         #   To apply to a plot, change restrict_yaxis = True.
-        vmax_plot: 60
+        vmax_plot: 100
         # ^ optional; Max for y-axis during plotting.
         #   To apply to a plot, change restrict_yaxis = True.
         vdiff_plot: 20.0

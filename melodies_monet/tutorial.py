@@ -44,8 +44,8 @@ _examples = {
             "sha256:67da806bcdca90289147254a3fa63a746b8a63ef973a497d0b47c789d48291c2",
         ),
         "2017-07": (
-            "example_observation_data/surface/AirNow_20170701_20170704.nc",
-            "sha256:5f48c4c7063859cd603f5a04c3074b12dc6849a07d120e2c6510dcc170309293",
+            "example_observation_data/surface/AirNow_20170701_20170703.nc",
+            "sha256:b924c66424b7f0f663eca946273fe8b6ce43953f5e97fd00564e0720f9b074fe",
         )
     },
     "camchem": {
@@ -135,13 +135,13 @@ _examples = {
     "ish": {
         "2017-07" : (
             "example_observation_data/surface/ISH_20170701_20170703.nc",
-            "sha256:26aad8d1d00d724d35b36d508ff11855b01c7d4a0955a757bd59d7ab3dbb67d3",
+            "sha256:beb7d5965728f07959ede6406b670b0b87fb15b99c27dfa561f105d48f81dd65",
         ),
     },
     "ish-lite": {
         "2017-07" : (
             "example_observation_data/surface/ISH-Lite_20170701_20170703.nc",
-            "sha256:3617501a3d7e97c0aade3855b1fa2a5d76aa2407474ca9a013cc8a3b186265e0",
+            "sha256:d2f86bbf56fb1049db90cd1fc520d032f988f5f668edf2018ffd34e67ed9c310",
         ),
     },
 }
