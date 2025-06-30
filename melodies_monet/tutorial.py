@@ -136,13 +136,13 @@ _examples = {
         "2017-07" : (
             "example_observation_data/surface/ISH_20170701_20170703.nc",
             "sha256:beb7d5965728f07959ede6406b670b0b87fb15b99c27dfa561f105d48f81dd65",
-        ),
+        )
     },
     "ish-lite": {
         "2017-07" : (
             "example_observation_data/surface/ISH-Lite_20170701_20170703.nc",
             "sha256:d2f86bbf56fb1049db90cd1fc520d032f988f5f668edf2018ffd34e67ed9c310",
-        ),
+        )
     },
 }
 """Files to fetch for a certain example, paths relative to the FTP site."""
