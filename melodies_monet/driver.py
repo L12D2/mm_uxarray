@@ -559,15 +559,7 @@ class model:
                 list_input_var = list_input_var + list(set(self.mapping[obs_map].keys()).union(set(vars_for_summing)) - set(self.variable_summing.keys()) - set(list_input_var) )
             else:
                 list_input_var = list_input_var + list(set(self.mapping[obs_map].keys()) - set(list_input_var))
-        #Only certain models need this option for speeding up i/o.
-            
-        # for v in self.extra_calc.values():
-        #     if v is None:
-        #         continue
-        #     for input_var in v.values():
-        #         if input_var not in list_input_var:
-        #             list_input_var.append(input_var)
-        #     print("THIS:",list_input_var)  
+        #Only certain models need this option for speeding up i/o. 
 
         # Remove standardized variable names that user may have requested to pair on or output in MM
         # as they will be added anyway and here would cause [var_list] to fail in the below model readers.
@@ -2340,39 +2332,45 @@ class analysis:
                             # this fix should work for ISH and ISH-Lite
                             
                             rename_dict = {}
-                            print("pairdf before:", pairdf.columns)
+                            #print("pairdf before:", pairdf.columns)
                             for col in pairdf.columns:
                                 if col == "wdir":
                                     rename_dict[col] = "WD"
-                                elif col == "winddir":
+                                if col == "winddir":
                                     rename_dict[col] = "winddir"
-                                elif col == "wd":
+                                if col == "wd":
                                     rename_dict[col] = "WD"
                             #print("Renaming columns:", rename_dict)
 
                             pairdf = pairdf.rename(columns=rename_dict)
                             #print("pairdf after:", pairdf.columns)
-
                             # probably need to throw in some sort of error message here so we can update this renaming dict. 
-                            # Rename columns
-                            # somewhere the -1 for the wdir arent being replaced with NaN which results in the most common winddir being -1.0
-                            # will have to figure out how to do this in the surfplots rather than the driver. 
-                            pairdf.replace(-1, np.nan, inplace=True)
-                            #print(pairdf)
-                            rose_df = pairdf.reset_index().dropna(subset=["WD", "winddir"], axis=0)
-
-                            wd_mode = rose_df["WD"].mode()
-                            winddir_mode = rose_df["winddir"].mode()
                             
+                            # handle calm winds.
+                            # possible wind names
+                            calm_wind_var = ["wspd", "windspeed", "ws", "WS", "WSPD"]
+                            
+                            # identify existing col names
+                            existing_cols = [col for col in calm_wind_var if col in pairdf.columns]
+                            
+                            # Create calm wind speed filter.
+                            # calm winds could be anything less than 1m/s. using 0.02 m/s since others have done so. 
+                            if existing_cols:
+                                calm_mask = (pairdf[existing_cols] <= 0.02).any(axis=1)
+                                pairdf = pairdf[~calm_mask]
+                            
+                            # drop rows where wd and winddir are missing. obsvar and modvar nan occurs above. 
+                            rose_df = pairdf.dropna(subset=["WD", "winddir"], how='all').reset_index(drop=True)
+                            #rose_df = pairdf.reset_index().dropna(subset=["WD", "winddir"], axis=0)
+                            
+                            # debug stuff
+                            #print(len(rose_df))
+                            #wd_mode = rose_df["WD"].mode()
+                            #winddir_mode = rose_df["winddir"].mode()
                             #print("type of wd:", pairdf["WD"].dtype)
                             #print("wd", wd_mode)
                             #print("winddir", winddir_mode)
-
-                            #print(pairdf["WD"].unique())
-                            #print(pairdf["winddir"].unique())
                             
-                            #print(rose_df)
-                            #print(len(rose_df)) 
                             # WD and winddir are not optional
                             # user can change out obsvar and modvar to create pollution rose. 
                             splots.make_rose_plot(
@@ -2387,9 +2385,7 @@ class analysis:
                                 fig_dict=fig_dict,
                                 text_dict=text_dict,
                                 debug=self.debug)
-                
-                            #savefig(outname + '.png', logo_height=250)
-                
+                                
                             #Clear info for next plot.
                             del (fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict)
                             

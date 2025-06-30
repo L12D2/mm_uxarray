@@ -17,7 +17,7 @@
 
 analysis:
   start_time: "2017-07-01-00:00:00" # UTC
-  end_time: "2017-07-02-00:00:00" # UTC
+  end_time: "2017-07-03-00:00:00" # UTC
   output_dir: ./output/ish_ufschem  # relative to the program using this control file
   #   Currently, the directory must exist or plot saving will error and fail.
   debug: True
@@ -98,12 +98,12 @@ obs:
         vmax_plot: 12
         vdiff_plot: 4
         nlevels_plot: 18
-      wd: 
+      wdir: 
         nan_value: -1.0
         ylabel_plot: "Wind Direction (deg)"
         xlabel_plot: "Wind Direction (deg)"
         vmin_plot: 0
-        vmax_plot: 20
+        vmax_plot: 370
         vdiff_plot: 4
         nlevels_plot: 18
       dpt:
