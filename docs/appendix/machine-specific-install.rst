@@ -34,12 +34,10 @@ Otherwise, follow the :ref:`user install instructions <user-install-instructions
    Make sure to install as well `ipykernel`, which will let you select your newly installed MELODIES MONET
    environment in the JupyterHub
    
-   If you are uncertain whether you have it, run
-      ```
-      module load conda/latest
-      conda activate melodies-monet
-      conda install -c conda-forge ipykernel
-      ```
+   If you are uncertain whether you have it, run::
+      $ module load conda/latest
+      $ conda activate melodies-monet
+      $ conda install -c conda-forge ipykernel
 
    Now, when opening the JupyterHub, you should be able to select the melodies-monet kernel you created.
 
@@ -127,7 +125,5 @@ environment for running and developing MELODIES MONET.
         $ conda install -c conda-forge esmf
         $ conda install -c conda-forge monet
         $ conda install -c conda-forge monetio    
-
-.. [#ncar_jhub_kernel] Maintained by NCAR CISL and members of the MELODIES MONET development team.
 
 .. [#hera_no_pypi] Recent as of 12-Apr-2022. See :issue:`79`.
