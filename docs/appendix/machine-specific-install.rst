@@ -9,8 +9,7 @@ on the NCAR HPC, Derecho/Casper.
 
 **Personal conda environment**
 
-Another option is to use conda to create your own MELODIES MONET installation
-in a conda environment.
+Use conda to create your own MELODIES MONET installation in a conda environment.
 This creates a "stand-alone" instance 
 of interdependent packages that will not interfere with your access to the main 
 installation of Python on the system.
@@ -30,14 +29,15 @@ Otherwise, follow the :ref:`user install instructions <user-install-instructions
 
 .. note::
    The easiest way of using MELODIES-MONET in Casper/Derecho is by using
-   `NSF-NCAR's JupyterHub <https://jupyterhub.hpc.ucar.edu/>`__
-   Make sure to install as well `ipykernel`, which will let you select your newly installed MELODIES MONET
+   `NSF-NCAR's JupyterHub <https://jupyterhub.hpc.ucar.edu/>`__.
+   Make sure to install `ipykernel`, which will let you select your newly installed MELODIES MONET
    environment in the JupyterHub
    
    If you are uncertain whether you have it, run::
-      $ module load conda/latest
-      $ conda activate melodies-monet
-      $ conda install -c conda-forge ipykernel
+
+       $ module load conda/latest
+       $ conda activate melodies-monet
+       $ conda install -c conda-forge ipykernel
 
    Now, when opening the JupyterHub, you should be able to select the melodies-monet kernel you created.
 
