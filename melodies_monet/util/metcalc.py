@@ -1,18 +1,36 @@
+
+"""
+This file calculates a number of meteorological variables. For hydrometeorological variables, 
+variables including dewpoint and relative humidity are not universally provided by the obs. 
+For models, wind speed is usually not directly provided. 
+
+This script calculates all of them in one place. 
+
+Users can calculate variables directly from the observations by using the extra_calc dictionary. Potential 
+temperature is the only variable with this supported capability. 
+
+See: control_aircraft_looping_AEROMMA_UFSAQM.yaml
+
+Author: Liam Thompson
+"""
+
 # will need to make this an optional dependency if we proceed in using this. 
 import metpy
 
 # import specific metpy libraries needed for each calculation
 from metpy.calc import dewpoint_from_specific_humidity
 from metpy.calc import relative_humidity_from_specific_humidity
-# if we want to add a standard hydrometeorological comparison (e.g. Dewpoint), we need 
-# to append the observations. E.g. in the airnow we only have Relative humidity. 
-# metpy has an option to do dewpoint from RELH iirc. 
+from metpy.calc import potential_temperature
 from metpy.calc import wind_speed
 
-# addl libraries to make the world go round
+# if future iterations want to calc dewpoint/relh on the observations, this can be done with other metpy
+# libraries. 
+
+# addtl libraries to make the world go round
 from metpy.units import units
 import numpy as np
 import pandas as pd
+import xarray as xr
 
 # calc dewpoint 
 def dewpoint(obj, varmap = None, output_key = "dewpoint"):
@@ -30,23 +48,42 @@ def dewpoint(obj, varmap = None, output_key = "dewpoint"):
 
     dpt_np = dpt.astype("float64").values
 
-    # add this to obj
-    if hasattr(obj, "coords") and hasattr(obj, "dims"):  
-        obj[output_key] = (obj[pressure_key].dims, dpt_np)
+    # DEBUG
+    # make sure this is generic enough
+    # print("pressure dims:", pressure.dims)
+    # print("specific_hum dims:", specific_hum.dims)
+    # print("dpt_np shape:", dpt_np.shape)
+
+    # fix is needed in order to work with vert plots. Check dimensions before proceeding. 
+    if hasattr(obj, "coords") and hasattr(obj, "dims"):
+        # Use pressure dims if number of dims matches dpt_np
+        if len(pressure.dims) == dpt_np.ndim:
+            dims_to_use = pressure.dims
+        # use 4d case for vert plots
+        elif len(specific_hum.dims) == dpt_np.ndim:
+            dims_to_use = specific_hum.dims
+        else:
+            raise ValueError(
+                f"No matching dims for output: pressure.dims={pressure.dims}, "
+                f"specific_hum.dims={specific_hum.dims}, dpt_np.shape={dpt_np.shape}"
+            )
+
+        obj[output_key] = (dims_to_use, dpt_np)
         obj[output_key].attrs["units"] = "K"
         return obj
+        
     elif isinstance(obj, dict):
         obj[output_key] = dpt_np
         return obj
     else:
         return dpt_np
-
+        
 # calc relative humidity
-def relh(obj, varmap = None, output_key = "rel_hum"):
-    # grab variable names from the yaml 
+def relh(obj, varmap=None, output_key="rel_hum"):
+    # grab variable names from the yaml or fall back to defaults
     pressure_key = varmap["pressure"] if varmap and "pressure" in varmap else "surfpres_pa"
     specific_hum_key = varmap["specific_hum"] if varmap and "specific_hum" in varmap else "specific_hum"
-    temperature_key = varmap["temperature"] if varmap and "pressure" in varmap else "temperature_k"
+    temperature_key = varmap["temperature"] if varmap and "temperature" in varmap else "temperature_k"
 
     pressure = obj[pressure_key]
     specific_hum = obj[specific_hum_key]
@@ -60,17 +97,41 @@ def relh(obj, varmap = None, output_key = "rel_hum"):
 
     rlh_np = rlh.astype("float64").values
 
-    # add this to obj
+    # Set any value above 100% to NaN
+    # I think this happens because the divisions by 0 
+    # (e.g. very tinyyyyyy numbers once you get high enough in the atmos) 
+    # are handled  weirdly in the metpy library. 
+    rlh_np = np.where(rlh_np > 100, np.nan, rlh_np)
+
+    # DEBUG
+    # print("pressure dims:", pressure.dims)
+    # print("specific_hum dims:", specific_hum.dims)
+    # print("temperature dims:", temperature.dims, temperature.shape)
+    # print("rlh_np shape:", rlh_np.shape)
+
+    # fix is needed in order to work with vert plots. Check dimensions before proceeding. 
     if hasattr(obj, "coords") and hasattr(obj, "dims"): 
-        obj[output_key] = (obj[pressure_key].dims, rlh_np)
-        obj[output_key].attrs["units"] = "K"
+        dims_to_use = list(specific_hum.dims)
+        if rlh_np.shape != specific_hum.shape:
+            try:
+                axes_needed = [rlh_np.shape.index(s) for s in specific_hum.shape]
+                rlh_np = np.transpose(rlh_np, axes_needed)
+                #print("Transposed rlh_np shape:", rlh_np.shape)
+            except Exception as e:
+                #print("Error transposing rlh_np:", e)
+                raise ValueError(
+                    f"Could not align output shape {rlh_np.shape} to input shape {specific_hum.shape}; "
+                    "please check dimension alignment."
+                )
+        obj[output_key] = (dims_to_use, rlh_np)
+        obj[output_key].attrs["units"] = "%"
         return obj
     elif isinstance(obj, dict):
         obj[output_key] = rlh_np
         return obj
     else:
         return rlh_np
-
+        
 # calc windspeed
 def wspd(obj, varmap = None, output_key = "windspeed"):
     # grab variable names from the yaml 
@@ -86,10 +147,27 @@ def wspd(obj, varmap = None, output_key = "windspeed"):
         )).metpy.convert_units("m/s")
 
     wspd_np = wspd.astype("float64").values
-    
-    # add this to obj
-    if hasattr(obj, "coords") and hasattr(obj, "dims"):  
-        obj[output_key] = (u.dims, wspd_np)
+
+    # DEBUG
+    # print("u dims:", u.dims)
+    # print("v dims:", v.dims)
+    # print("wspd_np shape:", wspd_np.shape)
+
+    # fix is needed in order to work with vert plots. Check dimensions before proceeding. 
+    if hasattr(obj, "coords") and hasattr(obj, "dims"): 
+        dims_to_use = list(u.dims)
+        if wspd_np.shape != u.shape:
+            try:
+                axes_needed = [wspd_np.shape.index(s) for s in u.shape]
+                wspd_np = np.transpose(wspd_np, axes_needed)
+                #print("Transposed wspd_np shape:", wspd_np.shape)
+            except Exception as e:
+                print("Error transposing wspd_np:", e)
+                raise ValueError(
+                    f"Could not align output shape {wspd_np.shape} to input shape {u.shape}; "
+                    "please check dimension alignment."
+                )
+        obj[output_key] = (dims_to_use, wspd_np)
         obj[output_key].attrs["units"] = "m/s"
         return obj
     elif isinstance(obj, dict):
@@ -108,19 +186,122 @@ def wdir(obj, varmap = None, output_key = "winddir"):
     v = obj[v_key]
 
     # metpy version of this is throwing in weird dimensions so calc by hand
-    wdr_rad = np.arctan2(-v, -u)
-    wdr_deg = np.degrees(wdr_rad)
+    # wdr_rad = np.arctan2(-v, -u)
+    wdr_rad = np.arctan2(u, v)
+    #wdr_deg = np.degrees(wdr_rad)
+    wdr_deg = (np.degrees(wdr_rad) + 180)
     winddir = wdr_deg % 360
     #print(winddir)
-    
-    # Add this to obj
+    winddir_np = winddir.astype("float64").values
+
     if hasattr(obj, "coords") and hasattr(obj, "dims"):  
-        obj[output_key] = (u.dims, winddir.values)
+        dims_to_use = list(u.dims)
+        if winddir_np.shape != u.shape:
+            try:
+                axes_needed = [winddir_np.shape.index(s) for s in u.shape]
+                winddir_np = np.transpose(winddir_np, axes_needed)
+                #print("Transposed winddir_np shape:", winddir_np.shape)
+            except Exception as e:
+                print("Error transposing winddir_np:", e)
+                raise ValueError(
+                    f"Could not align output shape {winddir_np.shape} to input shape {u.shape}; "
+                    "please check dimension alignment."
+                )
+        obj[output_key] = (dims_to_use, winddir_np)
         obj[output_key].attrs["units"] = "degrees"
         return obj
     elif isinstance(obj, dict):
-        obj[output_key] = winddir
+        obj[output_key] = winddir_np
         return obj
     else:
-        return winddir
+        return winddir_np
+
+# calc potential temperature
+def ptemp(obj, varmap=None, output_key="ptemp", default_keys=None):
+    if default_keys is None:
+        default_keys = {
+            "pressure": "pressure",
+            "temperature": "temperature"
+        }
+
+    pressure_key = varmap.get("pres", default_keys["pressure"]) if varmap else default_keys["pressure"]
+    temperature_key = varmap.get("temp", default_keys["temperature"]) if varmap else default_keys["temperature"]
+
+    pres = obj[pressure_key]
+    temp = obj[temperature_key]
+
+    ptmp = (metpy.calc.potential_temperature(
+        pres * units.Pa,
+        temp * units("K")
+    )).metpy.convert_units("K")
+
+    ptmp_np = ptmp.astype("float64").values
+
+    # need to fix some units
+    # # print the top of the boundary layer
+    # if hasattr(pres, "dims") and len(pres.dims) == 1:
+    # # Convert pressure to height if needed
+    #     print(f"Pressure range: {pres.min().values:.1f} Pa to {pres.max().values:.1f} Pa")
+
+    #     try:
+    #         # Sort pressure in descending order 
+    #         sort_idx = np.argsort(pres)[::-1]
+    #         pres_sorted = pres.values[sort_idx]
+    #         ptmp_sorted = ptmp_np[sort_idx]
         
+    #         #height = metpy.calc.pressure_to_height_std(pres_sorted * units.Pa)
+    #         height = metpy.calc.pressure_to_height_std(pres_sorted * units.Pa).to("meter")
+
+    #         print(height)
+
+    #         # pressure dec with height. need to handle. Force it. 
+    #         if height[0] > height[-1]:
+    #             height = height[::-1]
+    #             ptmp_sorted = ptmp_sorted[::-1]
+
+    #         # first derivative when slope > 1
+    #         dtheta_dz = metpy.calc.first_derivative(ptmp_sorted * units.K, x=height)
+
+    #         # threshold > 0 approximates the boundary layer. 
+    #         threshold = 0 * units("K/m") # K/m
+    #         stable_indices = np.where(dtheta_dz > threshold)[0]
+
+    #                     # debug 
+    #         # print(f"height value: {height[idx]}")
+    #         # print(f"height units: {height.units}")
+    #         # print(f"Converted height: {height[idx].to('km')}")
+                  
+    #         if stable_indices.size > 0:
+    #             idx = stable_indices[0]
+                
+    #             # Debugging height units and values
+    #             print(f"Raw height value: {height[idx]}")
+    #             print(f"Height units: {height.units}")
+    #             print(f"Converted height: {height[idx].to('km')}")
+    
+    #             print(f"dθ/dz at index {idx}, height ≈ {height[idx].to('km'):.2f}, dθ/dz ≈ {dtheta_dz[idx].to('K/km'):.4f}")
+    #         else:
+    #             print("No stable layer detected (dθ/dz > threshold)")
+    #     except Exception as e:
+    #         print(f"Could not compute dθ/dz: {e}")
+
+    if hasattr(obj, "coords") and hasattr(obj, "dims"):
+        if len(pres.dims) == ptmp_np.ndim:
+            dims_to_use = pres.dims
+        elif len(temp.dims) == ptmp_np.ndim:
+            dims_to_use = temp.dims
+        else:
+            raise ValueError(
+                f"No matching dims for output: pressure.dims={pres.dims}, "
+                f"temp.dims={temp.dims}, ptmp_np.shape={ptmp_np.shape}"
+            )
+
+        obj[output_key] = (dims_to_use, ptmp_np)
+        obj[output_key].attrs["units"] = "K"
+        return obj
+
+    elif isinstance(obj, dict):
+        obj[output_key] = ptmp_np
+        return obj
+    else:
+        return ptmp_np

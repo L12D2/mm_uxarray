@@ -641,7 +641,7 @@ def make_scatter_density_plot(df, mod_var=None, obs_var=None, ax=None, color_map
         plt.legend()
     
     # gridline option
-    if gridlines is not None:
+    if gridlines:
         ax.grid(True)
     else:
         ax.grid(False)

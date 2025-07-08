@@ -31,6 +31,11 @@ model:
     radius_of_influence: 100000 # meters
 
     extra_calc: # Add more complex calculations and their associated variables here.  
+
+    ####### Extra_calc naming example
+    # variable_calculating
+      # variable required for calculation: "variable name in model"
+      
       dewpoint:
         specific_hum: "spfh" # string of what it is in the model 
       rel_hum: 

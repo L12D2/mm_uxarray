@@ -207,22 +207,41 @@ def add_yax2_altitude(ax, pairdf, altitude_yax2, text_kwargs, vmin_y2, vmax_y2):
     ax2.plot(pairdf.index, pairdf[altitude_variable], **plot_kwargs_y2, label=ylabel2)
     
     # Set labels, ticks, and limits
-    ax2.set_ylabel(ylabel2, fontweight='bold', fontsize=text_kwargs['fontsize'], color=plot_kwargs_y2.get('color', 'g'))
-    ax2.tick_params(axis='y', labelcolor=plot_kwargs_y2.get('color', 'g'), labelsize=text_kwargs['fontsize'] * 0.8)
+    ax2.set_ylabel(ylabel2, fontweight='bold', 
+                   fontsize=text_kwargs['fontsize'], 
+                   color=plot_kwargs_y2.get('color', 'g'))
+    ax2.tick_params(axis='y', labelcolor=plot_kwargs_y2.get('color', 'g'), 
+                    labelsize=text_kwargs['fontsize'] * 0.8)
     ax2.set_ylim(vmin_y2, vmax_y2) 
     ax2.set_xlim(ax.get_xlim())
-    start_tick = max(0, vmin_y2 - altitude_ticks)
-    ax2.yaxis.set_ticks(np.arange(start_tick, vmax_y2 + altitude_ticks + 1, altitude_ticks))
 
+    #print(vmin_y2)
+    #print(vmax_y2)
+    
+    #start_tick = max(0, vmin_y2 - altitude_ticks)
+    #ax2.yaxis.set_ticks(np.arange(start_tick, vmax_y2 + altitude_ticks + 1, altitude_ticks))
+    #tick_values = np.arange(start_tick, vmax_y2 + altitude_ticks + 1, altitude_ticks)
+
+    # flip the axis is pressure is there. 
+    if altitude_variable == "pressure_obs":
+        ax2.set_ylim(vmax_y2, vmin_y2)
+
+        # Flip the primary x axis as well for pressure 
+        ax.invert_yaxis()
+    else:
+        start_tick = max(0, vmin_y2 - altitude_ticks)
+        tick_values = np.arange(start_tick, vmax_y2 + altitude_ticks + 1, altitude_ticks)
+        ax2.set_ylim(vmin_y2, vmax_y2)
+        ax2.yaxis.set_ticks(tick_values)
+        
     # Extract the current legend and add a custom legend for the altitude line
     lines, labels = ax.get_legend_handles_labels()
     lines.append(ax2.get_lines()[0])
     labels.append(ylabel2)
-    ax.legend(lines, labels, frameon=False, fontsize=text_kwargs['fontsize'], bbox_to_anchor=(1.15, 0.9), loc='center left')
-
+    ax.legend(lines, labels, frameon=False, fontsize=text_kwargs['fontsize'], 
+              bbox_to_anchor=(1.15, 0.9), loc='center left')
+        
     return ax
-
-
 
 
 ###NEW curtain plot qzr++  (NEW CURTAIN model plot with model overlay, shared x-axis 
@@ -424,10 +443,15 @@ def make_curtain_plot(time, altitude, model_data_2d, obs_pressure, pairdf, mod_v
 
 
 ####NEW vertprofile has option for both shading (for interquartile range) or box (interquartile range)-whisker (10th-90th percentile bounds) (qzr++)
-def make_vertprofile(df, column=None, label=None, ax=None, bins=None, altitude_variable=None, ylabel=None,
+def make_vertprofile(df, column=None, label=None, ax=None, 
+                     bins=None, 
+                     ylabel = None,
+                     gridlines = None,
+                     altitude_variable=None, #ylabel=None,
                      vmin=None, vmax=None, 
                      domain_type=None, domain_name=None,
                      plot_dict=None, fig_dict=None, text_dict=None, debug=False, interquartile_style=None):
+    
     """Creates altitude profile plot.
     
     Parameters
@@ -482,17 +506,13 @@ def make_vertprofile(df, column=None, label=None, ax=None, bins=None, altitude_v
     else:
         text_kwargs = def_text
     
-    # Set ylabel to column if not specified
-    if ylabel is None:
-        ylabel = column
     if label is not None:
         plot_dict['label'] = label
     if vmin is not None and vmax is not None:
         plot_dict['ylim'] = [vmin, vmax]
+        
     # Scale the fontsize for the x and y labels by the text_kwargs
     plot_dict['fontsize'] = text_kwargs['fontsize'] * 0.8
-
-      
                          
     # Then, if no plot has been created yet, create a plot and plot the obs
     if ax is None: 
@@ -511,8 +531,10 @@ def make_vertprofile(df, column=None, label=None, ax=None, bins=None, altitude_v
        
         # Bin the altitude variable and calculate median and interquartiles
         altitude_bins = pd.cut(df[altitude_variable], bins=bins)
+        
         # Calculate the midpoints of the altitude bins
         bin_midpoints = altitude_bins.apply(lambda x: x.mid)
+        
         # Convert bin_midpoints to a column in the DataFrame
         df['bin_midpoints'] = bin_midpoints
         median = df.groupby(altitude_bins, observed=True)[column].median(numeric_only=True)
@@ -715,166 +737,188 @@ def make_vertprofile(df, column=None, label=None, ax=None, bins=None, altitude_v
     if interquartile_style == 'box':
         # Add text to legend (adjust the x and y coordinates to place the text below the legend)
         plt.text(1.12, 0.7, 'Bounds of box: Interquartile range\nWhiskers: 10th and 90th percentiles', transform=ax.transAxes, fontsize=text_kwargs['fontsize']*0.8)
+        
     # Apply the custom formatter to the y-axis (round off y-axis tick labels if after decimal its just zero)
     ax.yaxis.set_major_formatter(FuncFormatter(custom_yaxis_formatter))                     
+    
     # Set parameters for all plots
-    ax.set_ylabel('Altitude (m)', fontweight='bold', **text_kwargs) 
-    ax.set_xlabel(ylabel, fontweight='bold', **text_kwargs) 
+    ax.set_xlabel(column, fontweight='bold', **text_kwargs) 
+    
+    if ylabel is not None:
+        ax.set_ylabel(ylabel, fontweight='bold', **text_kwargs)
+    else: 
+        ax.set_ylabel("Unspecified ylabel in yaml", fontweight='bold', **text_kwargs)
+
+    if gridlines is not None:
+        ax.grid(True)
+    else:
+        ax.grid(False)
+        
     ax.legend(frameon=False,fontsize=text_kwargs['fontsize']*0.8)
     ax.tick_params(axis='both',length=10.0,direction='inout')
-    ax.tick_params(axis='both',which='minor',length=5.0,direction='out')
-    #Adjust label position                         
+    ax.tick_params(axis='both',which='minor',length=5.0,direction='out')                        
     ax.legend(frameon=False, fontsize=text_kwargs['fontsize']*0.8, bbox_to_anchor=(1.1, 0.9), loc='center left')
-
+    
     if domain_type is not None and domain_name is not None:
         if domain_type == 'epa_region':
             ax.set_title('EPA Region ' + domain_name,fontweight='bold',**text_kwargs)
         else:
             ax.set_title(domain_name,fontweight='bold',**text_kwargs)         
                 
-    breakpoint() #debug
+    #breakpoint() #debug
+    # invert the yaxis for pressure to be on bottom
+    # function is called multiple times so this should ensure high to low pressure yax setting
+    # is respected. 
+    if altitude_variable == "pressure_obs":
+        y0, y1 = ax.get_ylim()
+        if y0 < y1:
+            ax.invert_yaxis()
                          
     return ax
 
-
-##NEW Scatter Density Plot for model obs pairs (matplotlib scatter plot if fill=False or seaborn kde sactter density plot if fill= True)
-def make_scatter_density_plot(df, mod_var=None, obs_var=None, ax=None, color_map='viridis', xlabel=None, ylabel=None, title=None, fill=False, vmin_x=None, vmax_x=None, vmin_y=None, vmax_y=None, outname='plot', gridlines = False, **kwargs):
+# ##NEW Scatter Density Plot for model obs pairs (matplotlib scatter plot if fill=False or seaborn kde sactter density plot if fill= True)
+# def make_scatter_density_plot(df, mod_var=None, obs_var=None, ax=None, color_map='viridis', xlabel=None, ylabel=None, title=None, fill=False, vmin_x=None, vmax_x=None, vmin_y=None, vmax_y=None, outname='plot', gridlines = False, **kwargs):
     
-    """  
-    Creates a scatter density plot for the specified column (variable) in the paired DataFrame (df).
+#     """  
+#     Creates a scatter density plot for the specified column (variable) in the paired DataFrame (df).
 
-    Parameters
-    --------
+#     Parameters
+#     --------
 
-    df: dataframe
-        Paired DataFrame containing the model and observation data to plot
-    obs_var: str
-        obs variable name in mapped pairs
-    mod_var: str
-        model variable name in mapped pairs
-    ax: Matplotlib axis from a previous occurrence to overlay obs and model results on the same plot
-    color_map: str
-        Colormap for the density (optional)
-    xlabel: str
-        Label for the x-axis (optional)
-    ylabel: str
-        Label for the y-axis (optional)
-    title: str
-        Title for the plot (optional)
-    fill: bool
-        Fill set to True for seaborn kde plot
-    outname : str
-        File location and name of plot.
-    **kwargs: dict 
-        Additional keyword arguments for customization
-    gridlines : boolean
-        Draws background gridlines
-    Returns
-    -------
-    ax : ax
-        Matplotlib ax such that driver.py can iterate to overlay multiple models on the same plot.
-    """
+#     df: dataframe
+#         Paired DataFrame containing the model and observation data to plot
+#     obs_var: str
+#         obs variable name in mapped pairs
+#     mod_var: str
+#         model variable name in mapped pairs
+#     ax: Matplotlib axis from a previous occurrence to overlay obs and model results on the same plot
+#     color_map: str
+#         Colormap for the density (optional)
+#     xlabel: str
+#         Label for the x-axis (optional)
+#     ylabel: str
+#         Label for the y-axis (optional)
+#     title: str
+#         Title for the plot (optional)
+#     fill: bool
+#         Fill set to True for seaborn kde plot
+#     outname : str
+#         File location and name of plot.
+#     **kwargs: dict 
+#         Additional keyword arguments for customization
+#     gridlines : boolean
+#         Draws background gridlines
+#     Returns
+#     -------
+#     ax : ax
+#         Matplotlib ax such that driver.py can iterate to overlay multiple models on the same plot.
+#     """
 
-    # Create a custom colormap based on color_map options in yaml or just use default colormap id color_map is just a string (e.g. viridis)
-    # Determine the normalization based on vcenter
-    vcenter = kwargs.get('vcenter', None)
+#     # Create a custom colormap based on color_map options in yaml or just use default colormap id color_map is just a string (e.g. viridis)
+#     # Determine the normalization based on vcenter
+#     vcenter = kwargs.get('vcenter', None)
     
-    if vcenter is not None:
-        norm = TwoSlopeNorm(vcenter=vcenter, vmin=vmin_x, vmax=vmax_x)
-    else:
-        norm = None  # This means we'll use a default linear normalization
+#     if vcenter is not None:
+#         norm = TwoSlopeNorm(vcenter=vcenter, vmin=vmin_x, vmax=vmax_x)
+#     else:
+#         norm = None  # This means we'll use a default linear normalization
 
-    extensions = kwargs.get('extensions', None)  # Extract extensions for the colorbar
+#     extensions = kwargs.get('extensions', None)  # Extract extensions for the colorbar
     
-    # Check if the color_map key from the YAML file provides a dictionary 
-    # (indicating a custom colormap) or just a string (indicating a built-in colormap like 'magma', 'viridis' etc.).
-    color_map_config = color_map
+#     # Check if the color_map key from the YAML file provides a dictionary 
+#     # (indicating a custom colormap) or just a string (indicating a built-in colormap like 'magma', 'viridis' etc.).
+#     color_map_config = color_map
 
-    #print(f"Color Map Config: {color_map_config}") #Debugging
+#     #print(f"Color Map Config: {color_map_config}") #Debugging
     
-    if isinstance(color_map_config, dict):
-        colors = color_map_config['colors']
-        over = color_map_config.get('over', None)
-        under = color_map_config.get('under', None)
+#     if isinstance(color_map_config, dict):
+#         colors = color_map_config['colors']
+#         over = color_map_config.get('over', None)
+#         under = color_map_config.get('under', None)
         
-        cmap = (mpl.colors.ListedColormap(colors)
-                .with_extremes(over=over, under=under))
-    else:
-        cmap = plt.get_cmap(color_map_config)
+#         cmap = (mpl.colors.ListedColormap(colors)
+#                 .with_extremes(over=over, under=under))
+#     else:
+#         cmap = plt.get_cmap(color_map_config)
 
-    # Debug print statement to check the colormap configuration
-    #print(f"Using colormap: {cmap}") #Debugging
+#     # Debug print statement to check the colormap configuration
+#     #print(f"Using colormap: {cmap}") #Debugging
 
-    if isinstance(cmap, mpl.colors.ListedColormap):
-        cmap = LinearSegmentedColormap.from_list("custom", cmap.colors)
+#     if isinstance(cmap, mpl.colors.ListedColormap):
+#         cmap = LinearSegmentedColormap.from_list("custom", cmap.colors)
 
 
-    # Check if 'ax' is None and create a new subplot if needed
-    if ax is None:
-        fig, ax = plt.subplots()
+#     # Check if 'ax' is None and create a new subplot if needed
+#     if ax is None:
+#         fig, ax = plt.subplots()
         
-    x_data = df[mod_var]
-    y_data = df[obs_var]
+#     x_data = df[mod_var]
+#     y_data = df[obs_var]
 
-    if fill:  # For KDE plot
-        #print("Generating KDE plot...")
+#     if fill:  # For KDE plot
+#         #print("Generating KDE plot...")
     
-        # Check the type of the colormap and set Seaborn's palette accordingly
-        if isinstance(cmap, mpl.colors.ListedColormap):
-            sns.set_palette(cmap.colors)
-        elif isinstance(cmap, mpl.colors.LinearSegmentedColormap):
-            # If it's a LinearSegmentedColormap, extract N colors from the colormap
-            N = 256
-            sns.set_palette([cmap(i) for i in range(N)])
+#         # Check the type of the colormap and set Seaborn's palette accordingly
+#         if isinstance(cmap, mpl.colors.ListedColormap):
+#             sns.set_palette(cmap.colors)
+#         elif isinstance(cmap, mpl.colors.LinearSegmentedColormap):
+#             # If it's a LinearSegmentedColormap, extract N colors from the colormap
+#             N = 256
+#             sns.set_palette([cmap(i) for i in range(N)])
     
-        # Create the KDE fill plot using seaborn
-        plot = sns.kdeplot(x=x_data.dropna(), y=y_data.dropna(), cmap=cmap, norm=norm, fill=True, ax=ax, 
-                           **{k: v for k, v in kwargs.items() if k in sns.kdeplot.__code__.co_varnames})
-        colorbar_label = 'Density'
+#         # Create the KDE fill plot using seaborn
+#         plot = sns.kdeplot(x=x_data.dropna(), y=y_data.dropna(), cmap=cmap, norm=norm, fill=True, ax=ax, 
+#                            **{k: v for k, v in kwargs.items() if k in sns.kdeplot.__code__.co_varnames})
+#         colorbar_label = 'Density'
         
-        # Get the QuadMesh object from the Axes for the colorbar and explicitly set its colormap
-        mappable = ax.collections[0]
-        mappable.set_cmap(cmap)
+#         # Get the QuadMesh object from the Axes for the colorbar and explicitly set its colormap
+#         mappable = ax.collections[0]
+#         mappable.set_cmap(cmap)
         
-    else:  # For scatter plot using matplotlib
-        #print("Generating scatter plot...")
-        plot = plt.scatter(x_data, y_data, c=y_data, cmap=cmap, norm=norm, marker='o', 
-                           **{k: v for k, v in kwargs.items() if k in plt.scatter.__code__.co_varnames})
-        units = ylabel[ylabel.find("(")+1: ylabel.find(")")]
-        colorbar_label = units  # Units for scatter plot
-        mappable = plot
+#     else:  # For scatter plot using matplotlib
+#         #print("Generating scatter plot...")
+#         plot = plt.scatter(x_data, y_data, c=y_data, cmap=cmap, norm=norm, marker='o', 
+#                            **{k: v for k, v in kwargs.items() if k in plt.scatter.__code__.co_varnames})
+#         units = ylabel[ylabel.find("(")+1: ylabel.find(")")]
+#         colorbar_label = units  # Units for scatter plot
+#         mappable = plot
+
+#     # gridline option
+#     if gridlines is not None:
+#         plt.grid(True)
+#     else:
+#         plt.grid(False)
+        
+#     # Set plot labels and titles
+#     if xlabel:
+#         plt.xlabel(xlabel, fontweight='bold')
+#     if ylabel:
+#         plt.ylabel(ylabel, fontweight='bold')
+#     if title:
+#         plt.title(title, fontweight='bold')
+#     if vmin_x is not None:
+#         plt.xlim(left=vmin_x)
+#     if vmax_x is not None:
+#         plt.xlim(right=vmax_x)
+#     if vmin_y is not None:
+#         plt.ylim(bottom=vmin_y)
+#     if vmax_y is not None:
+#         plt.ylim(top=vmax_y)
 
     
-    # Set plot labels and titles
-    if xlabel:
-        plt.xlabel(xlabel, fontweight='bold')
-    if ylabel:
-        plt.ylabel(ylabel, fontweight='bold')
-    if title:
-        plt.title(title, fontweight='bold')
-    if vmin_x is not None:
-        plt.xlim(left=vmin_x)
-    if vmax_x is not None:
-        plt.xlim(right=vmax_x)
-    if vmin_y is not None:
-        plt.ylim(bottom=vmin_y)
-    if vmax_y is not None:
-        plt.ylim(top=vmax_y)
+#     # Handle the colorbar using the mappable object
+#     if extensions:
+#         cbar = plt.colorbar(mappable, extend='both', ax=ax)  # Extends the colorbar at both ends
+#     else:
+#         cbar = plt.colorbar(mappable, ax=ax)
+#     cbar.set_label(colorbar_label)
 
-    
-    # Handle the colorbar using the mappable object
-    if extensions:
-        cbar = plt.colorbar(mappable, extend='both', ax=ax)  # Extends the colorbar at both ends
-    else:
-        cbar = plt.colorbar(mappable, ax=ax)
-    cbar.set_label(colorbar_label)
+#     # Save the scatter density plot for the current pair immediately
+#     print(f"Saving scatter density plot to {outname}...")
+#     savefig(f"{outname}", loc=4, logo_height=100, dpi=300)
+#     plt.show()
 
-    # Save the scatter density plot for the current pair immediately
-    print(f"Saving scatter density plot to {outname}...")
-    savefig(f"{outname}", loc=4, logo_height=100, dpi=300)
-    plt.show()
-
-    return ax
+#     return ax
 
 
 ##NEW Violin plot 

@@ -145,6 +145,12 @@ This section allows dewpoint, relative humidity, wind speed, and wind direction 
 calculated. Users can also specify whether their spatial overlay, spatial bias, and spatial 
 exceedance plots display wind barbs. 
 
+**NOTE:** All extra_calc calculations should be left in SI units. See example yaml files:
+   
+   * ``control_ish_lite_ufschem-example.yaml``
+   * ``control_ish_ufschem-example.yaml``
+   * ``control_ufschem-example.yaml``
+
 * **Hydrometeorology:** 
 
    * Observations will sometimes only record dewpoint or relative humidity. Hence, both options are available for
@@ -158,7 +164,7 @@ exceedance plots display wind barbs.
    * **Model relative humidity:** can be calculated with the specific humidity. Users will need to know 
      the naming convention of specific humidity in their specific model. 
 
-   * *Standardized hydrometeorological variables continue to be incorporated into MELODIES-MONET.*
+   * *Calculations for standardized hydrometeorological variables continue to be incorporated into MELODIES-MONET.*
 
 * **Wind speed and direction:**
 
@@ -174,6 +180,20 @@ exceedance plots display wind barbs.
      knowing what those components are called in their model. **NOTE: plotted wind barbs are in knots. 
      Wind speed everywhere else in the model/observations are by default m/s unless specified elsewhere in the 
      YAML options.** 
+
+* **Potential temperature:**
+
+   * **Modeled potential temperature:** is calculated using the modeled pressure and temperature. Users are responsible for
+     knowing what those components are called in their model. 
+
+   * **Observed potential temperature:** is calculated using the observed pressure and temperature. Users are responsible for
+     knowing what those components are called in their model.
+
+   * **NOTE:** Potential temperature is the only variable where model and observed calculations are supported.   
+
+* **Tropopause:**
+
+   * **Tropopause:** under development. 
 
 **apply_ak:** Removed. Instead, specify ``pairing_kwargs`` in the analysis section.
 
