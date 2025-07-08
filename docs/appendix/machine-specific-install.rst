@@ -39,7 +39,7 @@ Otherwise, follow the :ref:`user install instructions <user-install-instructions
        $ conda activate melodies-monet
        $ conda install -c conda-forge ipykernel
 
-   Now, when opening the JupyterHub, you should be able to select the melodies-monet kernel you created.
+   Now, when opening a notebook in JupyterHub, you should be able to select the melodies-monet kernel you created.
 
 
 NOAA HPC Hera
