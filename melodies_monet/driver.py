@@ -1932,7 +1932,8 @@ class analysis:
                 ylabel = grp_dict.get("ylabel", None)
                 gridlines = grp_dict.get('gridlines', None)
                 bins = grp_dict.get('bins', None)
-
+                blh_calc = grp_dict.get('blh_calc', None)
+                
             #read-in special settings for scatter density plot
             if plot_type == "scatter_density":
                 gridlines = grp_dict.get('gridlines', None)
@@ -2445,16 +2446,22 @@ class analysis:
                             #print(altitude_variable)
                             
                             # Define the bins for binning the altitude
-                            if bins is not None: 
-                                bin_settings = grp_dict.get('bins', {}).get('range', None)
-                                print(bin_settings)
+                            # more generic bin setting that can handle altitude and pressure
+                            bin_settings = grp_dict.get('bins', {}).get('range', None)
+
+                            if bin_settings and all(k in bin_settings for k in ['start', 'stop', 'step']):
+                                print(f"Using bins from YAML range: {bin_settings}")
                                 bins = list(range(
                                     int(bin_settings['start']),
                                     int(bin_settings['stop']),
                                     int(bin_settings['step'])
                                 ))
                             else:
-                                print("Specify bin ranging")
+                                print("Bin range must be specified in YAML! Defaulting to generic bin list.")
+
+                                # generic fallback option. 
+                                bins = [0, 1000, 3000, 4000, 5000, 6000]
+                                
                                 #bins = grp_dict['vertprofile_bins']
                            
                             if p_index == 0:
@@ -2465,8 +2472,8 @@ class analysis:
                                     label=p.obs,
                                     ylabel = ylabel,
                                     gridlines = gridlines,
+                                    blh_calc = blh_calc, 
                                     bins = bins,
-                                    #sonde = sonde, 
                                     altitude_variable=altitude_variable,
                                     vmin=vmin,
                                     vmax=vmax,
@@ -2486,9 +2493,9 @@ class analysis:
                                 label=p.model,
                                 ax=ax,
                                 bins=bins,
-                                #sonde = sonde,
                                 ylabel = ylabel,
                                 gridlines = gridlines,
+                                blh_calc = blh_calc,
                                 altitude_variable=altitude_variable,
                                 vmin=vmin,
                                 vmax=vmax,

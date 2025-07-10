@@ -23,7 +23,12 @@ from statannotations.Annotator import Annotator
 
 import matplotlib.dates as mdates
 
-
+# ptemp / met libraries
+from metpy.units import units
+import metpy.calc
+from scipy.ndimage import uniform_filter1d
+import metpy.constants as mconst
+from melodies_monet.util.metcalc import blayer, blh_from_richardson_bulk, bulk_richardson_number
 
 from monet.util.tools import get_epa_region_bounds as get_epa_bounds 
 import math
@@ -196,7 +201,7 @@ def add_yax2_altitude(ax, pairdf, altitude_yax2, text_kwargs, vmin_y2, vmax_y2):
         Matplotlib ax such that driver.py can iterate to overlay multiple models on the same plot.
     """
     ax2 = ax.twinx()
-    print("length of pairdf", len(pairdf))
+    #print("length of pairdf", len(pairdf))
     
     # Fetch altitude parameters from altitude_yax2
     altitude_variable = altitude_yax2['altitude_variable']
@@ -446,9 +451,9 @@ def make_curtain_plot(time, altitude, model_data_2d, obs_pressure, pairdf, mod_v
 ####NEW vertprofile has option for both shading (for interquartile range) or box (interquartile range)-whisker (10th-90th percentile bounds) (qzr++)
 def make_vertprofile(df, column=None, label=None, ax=None, 
                      bins=None, 
-                     #sonde = None,
                      ylabel = None,
                      gridlines = None,
+                     blh_calc = None,
                      altitude_variable=None, #ylabel=None,
                      vmin=None, vmax=None, 
                      domain_type=None, domain_name=None,
@@ -499,7 +504,7 @@ def make_vertprofile(df, column=None, label=None, ax=None,
     """
     if debug is False:
         plt.ioff()
-   
+    #print("vertprof df", len(df))
     # First, define items for all plots
     # Set default text size
     def_text = dict(fontsize=14)
@@ -774,7 +779,22 @@ def make_vertprofile(df, column=None, label=None, ax=None,
         y0, y1 = ax.get_ylim()
         if y0 < y1:
             ax.invert_yaxis()
-                         
+
+    # potential temperature options 
+    if blh_calc is not None:
+        print("Boundary Layer calculations are estimates...\n")
+        est_blh = blayer(df)
+        
+        # nice print output
+        for range_label, values in est_blh.items():
+            print(f"{range_label}:")
+            for method_label, val in values.items():
+                if val is not None:
+                    print(f"  {method_label}: {val.magnitude:.1f} {val.units}")
+                else:
+                    print(f"  {method_label}: —")
+            print("") 
+           
     return ax
 
 # ##NEW Scatter Density Plot for model obs pairs (matplotlib scatter plot if fill=False or seaborn kde sactter density plot if fill= True)

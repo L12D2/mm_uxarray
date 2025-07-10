@@ -461,7 +461,7 @@ def make_timeseries(df, df_reg=None, column=None, label=None, ax=None, avg_windo
     if debug is False:
         plt.ioff()
 
-    print('length of timeseriesdf', len(df))
+    #print('length of timeseriesdf', len(df))
     #First define items for all plots
     #set default text size
     def_text = dict(fontsize=14)
