@@ -789,19 +789,61 @@ class model:
                 print("Calculating model wind barbs...")
                 u_comp = self.extra_calc.get('wind_barb', {}).get("u_comp", None)
                 v_comp = self.extra_calc.get('wind_barb', {}).get("v_comp", None)         
+
+            # if "ptemp_mod" in self.extra_calc:
+            #     print("Calculating modeled potential temperature...")
+            #     from .util.metcalc import ptemp
+            
+            #     varmap = self.extra_calc["ptemp_mod"]
+            #     self.obj = ptemp(
+            #         self.obj,
+            #         varmap=varmap,
+            #         output_key="ptemp_mod",
+            #         default_keys={"pressure": "pressure_model", "temperature": "temperature_k"}
+            #     )
             
             if "ptemp_mod" in self.extra_calc:
                 print("Calculating modeled potential temperature...")
                 from .util.metcalc import ptemp
             
                 varmap = self.extra_calc["ptemp_mod"]
+
+                # if "model_height" not in self.obj:
+                #     self.obj["model_height"] = _calc_hgt(self.obj)
+
+                # Extract a single vertical column from the model field 
+                # for boundary layer calc
+                pres = self.obj[varmap.get("pres", "pressure_model")]
+                temp = self.obj[varmap.get("temp", "temperature_k")]
+
+                center_y = pres.shape[2] // 2
+                center_x = pres.shape[3] // 2
+                time_idx = 0  
+                
+                pres_column = pres[time_idx, :, center_y, center_x]
+                temp_column = temp[time_idx, :, center_y, center_x]
+
+                column_obj = {
+                    "pressure_model": pres_column,
+                    "temperature_k": temp_column
+                }
+                
+                # Create a temporary object with just this column
+                result = ptemp(
+                    column_obj,
+                    varmap={"pres": "pressure_model", 
+                            "temp": "temperature_k"},
+                    output_key="ptemp_mod"
+                )
+            
+                #Run ptemp on the extracted column
                 self.obj = ptemp(
                     self.obj,
-                    varmap=varmap,
-                    output_key="ptemp_mod",
-                    default_keys={"pressure": "pressure_model", "temperature": "temperature_k"}
+                    varmap={"pres": "pressure_model", 
+                            "temp": "temperature_k"},
+                    output_key="ptemp_mod"
                 )
-                
+    
             # uncomment once working 
             # if "wmo_tropo_mod" in self.extra_calc:
             #     print("Calculating modeled WMO tropopause...")
@@ -1421,6 +1463,8 @@ class analysis:
                     if not isinstance(obs.obj, pd.DataFrame):
                         obs.obj = obs.obj.to_dataframe()
                     
+                    print(f"Original obs shape: {obs.obj.shape}")
+                    #print(f"After dropna shape: {obs.obj.reset_index().dropna(subset['pressure_obs','latitude','longitude']).shape}")
                     # if obs.obj is None:
                     #     raise ValueError(f"obs.obj is None for {obs.label} — check that required variables were computed.")
                     # elif not isinstance(obs.obj, pd.DataFrame):
@@ -1883,10 +1927,11 @@ class analysis:
             if plot_type == "rose_plot":
                 color_map = grp_dict.get('color_map', 'viridis')
 
-            #read-in special settings for rose plot
+            #read-in special settings for vertprofile
             if plot_type == "vertprofile":
                 ylabel = grp_dict.get("ylabel", None)
                 gridlines = grp_dict.get('gridlines', None)
+                bins = grp_dict.get('bins', None)
 
             #read-in special settings for scatter density plot
             if plot_type == "scatter_density":
@@ -2382,6 +2427,7 @@ class analysis:
                                 
                         #qzr++ Added vertprofile plotype for aircraft vs model comparisons         
                         elif plot_type.lower() == 'vertprofile':
+                            
                             if set_yaxis is True:
                                 if all(k in obs_plot_dict for k in ('vmin_plot', 'vmax_plot')):
                                     vmin = obs_plot_dict['vmin_plot']
@@ -2399,7 +2445,17 @@ class analysis:
                             #print(altitude_variable)
                             
                             # Define the bins for binning the altitude
-                            bins = grp_dict['vertprofile_bins']
+                            if bins is not None: 
+                                bin_settings = grp_dict.get('bins', {}).get('range', None)
+                                print(bin_settings)
+                                bins = list(range(
+                                    int(bin_settings['start']),
+                                    int(bin_settings['stop']),
+                                    int(bin_settings['step'])
+                                ))
+                            else:
+                                print("Specify bin ranging")
+                                #bins = grp_dict['vertprofile_bins']
                            
                             if p_index == 0:
                                 # First plot the observations.
@@ -2407,9 +2463,10 @@ class analysis:
                                     pairdf,
                                     column=obsvar,
                                     label=p.obs,
-                                    bins=bins,
                                     ylabel = ylabel,
                                     gridlines = gridlines,
+                                    bins = bins,
+                                    #sonde = sonde, 
                                     altitude_variable=altitude_variable,
                                     vmin=vmin,
                                     vmax=vmax,
@@ -2429,6 +2486,7 @@ class analysis:
                                 label=p.model,
                                 ax=ax,
                                 bins=bins,
+                                #sonde = sonde,
                                 ylabel = ylabel,
                                 gridlines = gridlines,
                                 altitude_variable=altitude_variable,

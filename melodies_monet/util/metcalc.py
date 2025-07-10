@@ -226,65 +226,26 @@ def ptemp(obj, varmap=None, output_key="ptemp", default_keys=None):
 
     pressure_key = varmap.get("pres", default_keys["pressure"]) if varmap else default_keys["pressure"]
     temperature_key = varmap.get("temp", default_keys["temperature"]) if varmap else default_keys["temperature"]
-
+        
     pres = obj[pressure_key]
     temp = obj[temperature_key]
 
+    # # # the unit conversion for celsius for the obs may not be occuring till later
+    # if temp.max() < 200:
+    #     print(f"Detected {output_key} temperature likely in Celsius. Converting to Kelvin.")
+    #     temp = temp + 273.15
+    #     print(temp)
+    # else:
+    #     print("continue")
+    #     #print(f"{output_key} temp values: {temp.isel(z=slice(0, 5)).values}")
+    
     ptmp = (metpy.calc.potential_temperature(
         pres * units.Pa,
         temp * units("K")
     )).metpy.convert_units("K")
 
     ptmp_np = ptmp.astype("float64").values
-
-    # need to fix some units
-    # # print the top of the boundary layer
-    # if hasattr(pres, "dims") and len(pres.dims) == 1:
-    # # Convert pressure to height if needed
-    #     print(f"Pressure range: {pres.min().values:.1f} Pa to {pres.max().values:.1f} Pa")
-
-    #     try:
-    #         # Sort pressure in descending order 
-    #         sort_idx = np.argsort(pres)[::-1]
-    #         pres_sorted = pres.values[sort_idx]
-    #         ptmp_sorted = ptmp_np[sort_idx]
-        
-    #         #height = metpy.calc.pressure_to_height_std(pres_sorted * units.Pa)
-    #         height = metpy.calc.pressure_to_height_std(pres_sorted * units.Pa).to("meter")
-
-    #         print(height)
-
-    #         # pressure dec with height. need to handle. Force it. 
-    #         if height[0] > height[-1]:
-    #             height = height[::-1]
-    #             ptmp_sorted = ptmp_sorted[::-1]
-
-    #         # first derivative when slope > 1
-    #         dtheta_dz = metpy.calc.first_derivative(ptmp_sorted * units.K, x=height)
-
-    #         # threshold > 0 approximates the boundary layer. 
-    #         threshold = 0 * units("K/m") # K/m
-    #         stable_indices = np.where(dtheta_dz > threshold)[0]
-
-    #                     # debug 
-    #         # print(f"height value: {height[idx]}")
-    #         # print(f"height units: {height.units}")
-    #         # print(f"Converted height: {height[idx].to('km')}")
-                  
-    #         if stable_indices.size > 0:
-    #             idx = stable_indices[0]
-                
-    #             # Debugging height units and values
-    #             print(f"Raw height value: {height[idx]}")
-    #             print(f"Height units: {height.units}")
-    #             print(f"Converted height: {height[idx].to('km')}")
     
-    #             print(f"dθ/dz at index {idx}, height ≈ {height[idx].to('km'):.2f}, dθ/dz ≈ {dtheta_dz[idx].to('K/km'):.4f}")
-    #         else:
-    #             print("No stable layer detected (dθ/dz > threshold)")
-    #     except Exception as e:
-    #         print(f"Could not compute dθ/dz: {e}")
-
     if hasattr(obj, "coords") and hasattr(obj, "dims"):
         if len(pres.dims) == ptmp_np.ndim:
             dims_to_use = pres.dims
@@ -305,3 +266,4 @@ def ptemp(obj, varmap=None, output_key="ptemp", default_keys=None):
         return obj
     else:
         return ptmp_np
+
