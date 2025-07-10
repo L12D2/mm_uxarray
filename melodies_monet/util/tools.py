@@ -319,6 +319,7 @@ def vert_interp(ds_model,df_obs,var_name_list):
     from pandas import merge_asof
 
     ds_model['pressure_model_nan'] = ds_model['pressure_model'].copy()
+    #print(ds_model['pressure_model'])
     var_name_list.append('pressure_model_nan')
 
     var_out_list = []

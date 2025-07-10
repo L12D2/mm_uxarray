@@ -196,6 +196,7 @@ def add_yax2_altitude(ax, pairdf, altitude_yax2, text_kwargs, vmin_y2, vmax_y2):
         Matplotlib ax such that driver.py can iterate to overlay multiple models on the same plot.
     """
     ax2 = ax.twinx()
+    print("length of pairdf", len(pairdf))
     
     # Fetch altitude parameters from altitude_yax2
     altitude_variable = altitude_yax2['altitude_variable']
@@ -445,6 +446,7 @@ def make_curtain_plot(time, altitude, model_data_2d, obs_pressure, pairdf, mod_v
 ####NEW vertprofile has option for both shading (for interquartile range) or box (interquartile range)-whisker (10th-90th percentile bounds) (qzr++)
 def make_vertprofile(df, column=None, label=None, ax=None, 
                      bins=None, 
+                     #sonde = None,
                      ylabel = None,
                      gridlines = None,
                      altitude_variable=None, #ylabel=None,
@@ -497,7 +499,7 @@ def make_vertprofile(df, column=None, label=None, ax=None,
     """
     if debug is False:
         plt.ioff()
-    
+   
     # First, define items for all plots
     # Set default text size
     def_text = dict(fontsize=14)
@@ -513,7 +515,7 @@ def make_vertprofile(df, column=None, label=None, ax=None,
         
     # Scale the fontsize for the x and y labels by the text_kwargs
     plot_dict['fontsize'] = text_kwargs['fontsize'] * 0.8
-                         
+            
     # Then, if no plot has been created yet, create a plot and plot the obs
     if ax is None: 
         # First define the colors for the observations
@@ -557,7 +559,6 @@ def make_vertprofile(df, column=None, label=None, ax=None,
         del plot_kwargs_fillbetween['markersize']
         del plot_kwargs_fillbetween['fontsize']
 
-       
         # Copy the plot_kwargs outside the loop
         plot_kwargs_fillbox = plot_kwargs.copy()
         
@@ -758,7 +759,7 @@ def make_vertprofile(df, column=None, label=None, ax=None,
     ax.tick_params(axis='both',length=10.0,direction='inout')
     ax.tick_params(axis='both',which='minor',length=5.0,direction='out')                        
     ax.legend(frameon=False, fontsize=text_kwargs['fontsize']*0.8, bbox_to_anchor=(1.1, 0.9), loc='center left')
-    
+
     if domain_type is not None and domain_name is not None:
         if domain_type == 'epa_region':
             ax.set_title('EPA Region ' + domain_name,fontweight='bold',**text_kwargs)
