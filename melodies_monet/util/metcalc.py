@@ -627,14 +627,18 @@ def blayer(df):
 
     Addtl information that may be of use:
     https://www.weather.gov/media/zhu/ZHU_Training_Page/clouds/planetary_boundary_layer/L1-PBL.pdf
+
+    https://digital.library.unt.edu/ark:/67531/metadc740014/m2/1/high_res_d/8191.pdf
     """
 
     # pull appropriate cols from df
     ptemp_obs = df["ptemp_obs"].values * units.kelvin
     ptemp_mod = df["ptemp_mod"].values * units.kelvin
     height = df["ghght_obs"].values * units.meter
-    spfh_kgkg = df["spfh"].values * units("kg/kg")
-    mxng_ratio_kgkg = df["w"].values * units("kg/kg")
+    # spfh_kgkg = df["spfh"].values * units("kg/kg")
+    # mxng_ratio_kgkg = df["w"].values * units("kg/kg")
+    relhum_obs = df["relh_obs"].values * units("%")
+    relhum_mod = df["rel_hum"].values * units("%")
 
     u_comp = df["ugrd"].values * units.meter / units.second
     v_comp = df["vgrd"].values * units.meter / units.second
@@ -646,8 +650,10 @@ def blayer(df):
     ptemp_mod_trimmed = ptemp_mod[idxfoot:]
     u_comp_trimmed = u_comp[idxfoot:]
     v_comp_trimmed = v_comp[idxfoot:]
-    spfh_kgkg_trimmed = spfh_kgkg[idxfoot:]
-    mxng_ratio_kgkg_trimmed = mxng_ratio_kgkg[idxfoot:]
+    # spfh_kgkg_trimmed = spfh_kgkg[idxfoot:]
+    # mxng_ratio_kgkg_trimmed = mxng_ratio_kgkg[idxfoot:]
+    relhum_obs_trimmed = relhum_obs[idxfoot:]
+    relhum_mod_trimmed = relhum_mod[idxfoot:]
 
     # sort the trim
     sort_idx = np.argsort(height_trimmed)
@@ -656,8 +662,10 @@ def blayer(df):
     ptemp_mod_trimmed = ptemp_mod_trimmed[sort_idx]
     u_comp_trimmed = u_comp_trimmed[sort_idx]
     v_comp_trimmed = v_comp_trimmed[sort_idx]
-    spfh_kgkg_trimmed = spfh_kgkg_trimmed[sort_idx]
-    mxng_ratio_kgkg_trimmed = mxng_ratio_kgkg_trimmed[sort_idx]
+    # spfh_kgkg_trimmed = spfh_kgkg_trimmed[sort_idx]
+    # mxng_ratio_kgkg_trimmed = mxng_ratio_kgkg_trimmed[sort_idx]
+    relhum_obs_trimmed = relhum_obs_trimmed[sort_idx]
+    relhum_mod_trimmed = relhum_mod_trimmed[sort_idx]
 
     # provide ranges the BLH could be between
     height_ranges = [
@@ -690,8 +698,8 @@ def blayer(df):
             results[range_str] = {
                 "Observed BLH from potential temperature inversion": None,
                 "Modeled BLH from potential temperature inversion": None,
-                "Observed mixing ratio BLH": None,
-                "Modeled specific humidity BLH": None,
+                "Observed RELH BLH": None,
+                "Modeled RELH BLH": None,
                 "Observed richardson # BLH": None,
                 "Modeled richardson # BLH": None,
             }
@@ -702,8 +710,11 @@ def blayer(df):
         ptemp_mod_in_range = ptemp_mod_trimmed[in_range_indices]
         u_comp_in_range = u_comp_trimmed[in_range_indices]
         v_comp_in_range = v_comp_trimmed[in_range_indices]
-        spfh_kgkg_in_range = spfh_kgkg_trimmed[in_range_indices]
-        mxng_ratio_kgkg_in_range = mxng_ratio_kgkg_trimmed[in_range_indices]
+        # spfh_kgkg_in_range = spfh_kgkg_trimmed[in_range_indices]
+        # mxng_ratio_kgkg_in_range = mxng_ratio_kgkg_trimmed[in_range_indices]
+        relhum_obs_in_range = relhum_obs_trimmed[in_range_indices]
+        relhum_mod_in_range = relhum_mod_trimmed[in_range_indices]
+        
 
         # Potential temperature inversion method
         size = 3
@@ -731,10 +742,10 @@ def blayer(df):
         blh_mod_ptemp = detect_blh_in_range(dtheta_dz_mod, height_in_range, h_min * units.meter)
 
         # Concentration method
-        mxng_smooth_obs = pd.Series(mxng_ratio_kgkg_in_range.magnitude).rolling(
+        mxng_smooth_obs = pd.Series(relhum_obs_in_range.magnitude).rolling(
             window=size, center=True, min_periods=1
         ).mean().values * units("kg/kg")
-        spfh_smooth_mod = pd.Series(spfh_kgkg_in_range.magnitude).rolling(
+        spfh_smooth_mod = pd.Series(relhum_mod_in_range.magnitude).rolling(
             window=size, center=True, min_periods=1
         ).mean().values * units("kg/kg")
 
@@ -767,8 +778,8 @@ def blayer(df):
         results[range_str] = {
             "Observed BLH from potential temperature inversion": blh_obs_ptemp,
             "Modeled BLH from potential temperature inversion": blh_mod_ptemp,
-            "Observed mixing ratio BLH": mxng_blh_val,
-            "Modeled specific humidity BLH": spfh_blh_val,
+            "Observed RELH BLH": mxng_blh_val,
+            "Modeled RELH BLH": spfh_blh_val,
             "Observed richardson # BLH": r_blh_obs,
             "Modeled richardson # BLH": r_blh_mod,
         }
