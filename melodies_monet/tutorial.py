@@ -97,6 +97,10 @@ _examples = {
             "example_model_data/ufschem_example/2017_07_01_03_ufschemv1.nc",
             "sha256:697cde19c930d8138528c084140282e192407912c40a1f8b0cc37d80f5c7d3b7",
         ),
+        "2023-06": (
+            "example_model_data/ufschem_example/2023_06_27_29_ufschemv1.nc",
+            "sha256:697cde19c930d8138528c084140282e192407912c40a1f8b0cc37d80f5c7d3b7",
+        ),
     },
     "aeronet": {
         "2019-09": (

@@ -112,6 +112,8 @@ Table of Contents
    examples/save_paired_data
    examples/read_paired_data
    examples/aircraft_pairing
+   examples/UWyoming_UFS-CHEM_pairing_loop_read
+   examples/UWyoming_UFS-CHEM_Pairing
    examples/AEROMMA_UFS-AQM_Plots
    examples/ufs-aqm-gml-ozonesonde
 
