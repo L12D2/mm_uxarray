@@ -99,7 +99,7 @@ _examples = {
         ),
         "2023-06": (
             "example_model_data/ufschem_example/2023_06_27_29_ufschemv1.nc",
-            "sha256:697cde19c930d8138528c084140282e192407912c40a1f8b0cc37d80f5c7d3b7",
+            "sha256:9c18cac9f0f8e0763ad5a96b0af59fd9769e8ff170a42c2e4c4957531cd393a3",
         ),
     },
     "aeronet": {
@@ -140,15 +140,22 @@ _examples = {
         "2017-07" : (
             "example_observation_data/surface/ISH_20170701_20170703.nc",
             "sha256:beb7d5965728f07959ede6406b670b0b87fb15b99c27dfa561f105d48f81dd65",
-        )
+        ),
     },
     "ish-lite": {
         "2017-07" : (
             "example_observation_data/surface/ISH-Lite_20170701_20170703.nc",
             "sha256:d2f86bbf56fb1049db90cd1fc520d032f988f5f668edf2018ffd34e67ed9c310",
-        )
+        ),
+    },
+    "uwy-sonde": {
+        "2023-06" : (
+            "example_observation_data/profile/met_sonde_2023062800-72493.csv",
+            "sha256:2596246f7780c549500319851f66358734707d524dd529f405013f80ce054809",
+        ),
     },
 }
+
 """Files to fetch for a certain example, paths relative to the FTP site."""
 
 _examples_flat = {

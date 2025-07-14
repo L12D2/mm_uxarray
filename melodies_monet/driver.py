@@ -1463,7 +1463,7 @@ class analysis:
                     if not isinstance(obs.obj, pd.DataFrame):
                         obs.obj = obs.obj.to_dataframe()
                     
-                    print(f"Original obs shape: {obs.obj.shape}")
+                    #print(f"Original obs shape: {obs.obj.shape}")
                     #print(f"After dropna shape: {obs.obj.reset_index().dropna(subset['pressure_obs','latitude','longitude']).shape}")
                     # if obs.obj is None:
                     #     raise ValueError(f"obs.obj is None for {obs.label} — check that required variables were computed.")
