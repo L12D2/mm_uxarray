@@ -478,10 +478,6 @@ dataset (e.g., altitude)
 **bins:** For "vert_profile" plot only. Users input a range in which to bin and analyze the data.
 Units should be identical to the units of the altitude_variable specified above (e.g. pressure_obs (Pa) and altitude (m)). 
 
-**blh_calc:** For "vert_profile" plot only. Provides a numerical estimation of the boundary layer
-height using potential temperature inversion, richardson number, and specific humidity gradient. 
-These calculations are estimates and should be evaluated against the plotted sonde data. 
-
 For example, ::
 
     bins:
@@ -489,6 +485,10 @@ For example, ::
         start: 0 # starting value
         stop: 100001 # end value 
         step: 2000 # interval the binning should increase by 
+
+**blh_calc:** For "vert_profile" plot only. Provides a numerical estimation of the boundary layer
+height using potential temperature inversion, richardson number, and specific humidity gradient. 
+These calculations are estimates and should be evaluated against the plotted sonde data. 
 
 **color_map:** For 'scatter_density' & rose_plot plots only. Specify a default colormap in Matplotlib (e.g., 'RdBu_r'). NOTE: custom color_map is not available for rose_plot.  
 To use a custom colormap, leave color_map blank and provide the following options:
