@@ -17,10 +17,18 @@ from monet.util.tools import get_epa_region_bounds as get_epa_bounds
 from matplotlib.colors import TwoSlopeNorm, ListedColormap, LinearSegmentedColormap, Normalize
 import math
 from ..plots import savefig
-from scipy.stats import ttest_ind
-from statannotations.Annotator import Annotator
-import windrose # windrose package not found via conda.. 
-from windrose import WindroseAxes
+
+try:
+    from scipy.stats import ttest_ind
+    from statannotations.Annotator import Annotator
+    import windrose
+    from windrose import WindroseAxes
+except ImportError:
+    ttest_ind = None
+    Annotator = None
+    windrose = None
+    WindroseAxes = None
+
 
 def make_24hr_regulatory(df, col=None):
     """Calculates 24-hour averages

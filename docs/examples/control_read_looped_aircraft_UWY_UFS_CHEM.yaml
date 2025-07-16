@@ -172,7 +172,7 @@ plots:
       set_axis: False  # If set to True, add vmin_plot and vmax_plot for each variable in obs.
       interquartile_style: 'shading' # or 'box'
     altitude_variable: pressure_obs #'MSL_GPS_Altitude_YANG' #'ALTITUDE' in m or desired unit
-    bins:
+    vertprofile_bins:
       range:
         start: 0
         stop: 100001
