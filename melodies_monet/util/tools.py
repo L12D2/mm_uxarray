@@ -278,23 +278,6 @@ def get_epa_region_df(df):
         df.loc[con, 'EPA_ACRO'] = acro
     return df
 
-# def resample_stratify(da, levels, vertical, axis=1,interpolation='linear',extrapolation='nan'):
-#     import stratify
-    
-#     result = stratify.interpolate(levels, vertical.chunk().data, da.chunk().data, axis=axis,
-#                                  interpolation = interpolation,extrapolation = extrapolation)
-#     dims = da.dims
-#     out = xr.DataArray(result, dims=dims)
-#     for i in dims:
-#         if i != "z":
-#             out[i] = da[i]
-#     out.attrs = da.attrs.copy()
-#     if len(da.coords) > 0:
-#         for i in da.coords:
-#             if i != "z":
-#                 out.coords[i] = da.coords[i]
-#     return out
-
 def resample_stratify(da, levels, vertical, axis=1, interpolation='linear', extrapolation='nan'):
     import stratify
 

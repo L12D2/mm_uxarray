@@ -475,12 +475,12 @@ for csi plot, list of model names (only) user choose to set as labels.
 **altitude_variable:** For "vert_profile" plot only. Name of altitude variable in observational 
 dataset (e.g., altitude)
 
-**bins:** For "vert_profile" plot only. Users input a range in which to bin and analyze the data.
+**vertprofile_bins:** For "vert_profile" plot only. Users input a range in which to bin and analyze the data.
 Units should be identical to the units of the altitude_variable specified above (e.g. pressure_obs (Pa) and altitude (m)). 
 
 For example, ::
 
-    bins:
+    vertprofile_bins
       range: 
         start: 0 # starting value
         stop: 100001 # end value 

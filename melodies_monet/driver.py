@@ -201,12 +201,6 @@ class observation:
             return
         
         self.add_coordinates_ground() # If ground site then add coordinates based on yaml if necessary
-
-        # # Remove variables that havent been calcd yet. 
-        # if self.extra_calc is not None: 
-        #     calc_vars = set(self.extra_calc.keys())
-        #     #print("this is calc vars", calc_vars)
-        #     list_input_var = [v for v in list_input_var if v not in calc_vars]
             
         self.mask_and_scale()  # mask and scale values from the control values
         self.rename_vars() # rename any variables as necessary 
@@ -223,7 +217,6 @@ class observation:
             # If these commented out functs are wanted in the future, other metpy libraries to calc 
             # relh / dewpoint need to be used. 
 
-            
             # if "dewpoint" in self.extra_calc:
             #     print("Calculating observed Dewpoint...")
             #     from .util.metcalc import dewpoint # import functions from the util.metcalc file
@@ -251,10 +244,6 @@ class observation:
             # if "winddir" in self.extra_calc:
             #     print("Calculating observed wind direction...")
             #     from .util.metcalc import wdir
-
-            #     varmap = self.extra_calc["winddir"]
-            #     self.obj=wdir(self.obj, varmap = varmap)
-            #     #print(self.obj)     
 
             if "ptemp_obs" in self.extra_calc:
                 print("Calculating observed potential temperature...")
@@ -617,7 +606,7 @@ class model:
         """
         from .util import time_interval_subset as tsub
 
-        #print(self.model.lower())
+        print(self.model.lower())
 
         self.glob_files()
         # Calculate species to input into MONET, so works for all mechanisms in wrfchem
@@ -789,27 +778,12 @@ class model:
                 print("Calculating model wind barbs...")
                 u_comp = self.extra_calc.get('wind_barb', {}).get("u_comp", None)
                 v_comp = self.extra_calc.get('wind_barb', {}).get("v_comp", None)         
-
-            # if "ptemp_mod" in self.extra_calc:
-            #     print("Calculating modeled potential temperature...")
-            #     from .util.metcalc import ptemp
-            
-            #     varmap = self.extra_calc["ptemp_mod"]
-            #     self.obj = ptemp(
-            #         self.obj,
-            #         varmap=varmap,
-            #         output_key="ptemp_mod",
-            #         default_keys={"pressure": "pressure_model", "temperature": "temperature_k"}
-            #     )
             
             if "ptemp_mod" in self.extra_calc:
                 print("Calculating modeled potential temperature...")
                 from .util.metcalc import ptemp
             
                 varmap = self.extra_calc["ptemp_mod"]
-
-                # if "model_height" not in self.obj:
-                #     self.obj["model_height"] = _calc_hgt(self.obj)
 
                 # Extract a single vertical column from the model field 
                 # for boundary layer calc
@@ -1931,7 +1905,7 @@ class analysis:
             if plot_type == "vertprofile":
                 ylabel = grp_dict.get("ylabel", None)
                 gridlines = grp_dict.get('gridlines', None)
-                bins = grp_dict.get('bins', None)
+                vertprofile_bins = grp_dict.get('vertprofile_bins', None)
                 blh_calc = grp_dict.get('blh_calc', None)
                 
             #read-in special settings for scatter density plot
@@ -2447,11 +2421,11 @@ class analysis:
                             
                             # Define the bins for binning the altitude
                             # more generic bin setting that can handle altitude and pressure
-                            bin_settings = grp_dict.get('bins', {}).get('range', None)
+                            bin_settings = grp_dict.get('vertprofile_bins', {}).get('range', None)
 
                             if bin_settings and all(k in bin_settings for k in ['start', 'stop', 'step']):
-                                print(f"Using bins from YAML range: {bin_settings}")
-                                bins = list(range(
+                                print(f"Using vertprofile_bins from YAML range: {bin_settings}")
+                                vertprofile_bins = list(range(
                                     int(bin_settings['start']),
                                     int(bin_settings['stop']),
                                     int(bin_settings['step'])
@@ -2460,10 +2434,9 @@ class analysis:
                                 print("Bin range must be specified in YAML! Defaulting to generic bin list.")
 
                                 # generic fallback option. 
-                                bins = [0, 1000, 3000, 4000, 5000, 6000]
-                                
-                                #bins = grp_dict['vertprofile_bins']
-                           
+                                vertprofile_bins = [0, 1000, 3000, 4000, 5000, 6000]
+
+                            bins = vertprofile_bins
                             if p_index == 0:
                                 # First plot the observations.
                                 ax = airplots.make_vertprofile(
