@@ -246,15 +246,33 @@ plots:
     data_proc:
       rem_obs_nan: True
       set_axis: True
+  
+  plot_grp7:
+    type: "diurnal"
+    fig_kwargs:
+      figsize: [12, 6] 
+    default_plot_kwargs:
+      linewidth: 2.0
+      markersize: 10.
+    text_kwargs: 
+      fontsize: 24.
+    domain_type: ["all", "state_name", "epa_region"]
+    domain_name: ["CONUS", "CA", "R9"]
+    data: ["airnow_ufschem_v1"]
+    data_proc: 
+      rem_obs_nan: True
+      ts_select_time: "time_local" 
+      ts_avg_window: "h"
+      set_axis: True 
       
 stats:
   # Stats require positive numbers, so if you want to calculate temperature use Kelvin!
   # Wind direction has special calculations for AirNow if obs name is 'WD'
-  stat_list: ["MB", "MdnB", "R2", "RMSE"]
+  stat_list: ["MB", "MdnB", "R2", "RMSE", "MAE", "MSE"]
   # ^ List stats to calculate. Dictionary of definitions included
   #   in submodule `plots/proc_stats`. Only stats listed below are currently working.
   #   Full calc list:
-  #   ['STDO', 'STDP', 'MdnNB','MdnNE','NMdnGE',
+  #   ['STDO', 'STDP', 'MdnNB','MdnNE','NMdnGE', "MAE", "MSE", "MAPE", "SMAPE"
   #    'NO', 'NOP', 'NP', 'MO', 'MP', 'MdnO', 'MdnP',
   #    'RM', 'RMdn', 'MB', 'MdnB', 'NMB', 'NMdnB', 'FB',
   #    'ME','MdnE','NME', 'NMdnE', 'FE', 'R2', 'RMSE','d1',
