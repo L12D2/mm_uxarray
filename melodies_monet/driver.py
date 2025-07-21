@@ -436,6 +436,9 @@ class observation:
                         self.obj[v].data = self.obj[v].where(self.obj[v] <= d['obs_max'])
                     if 'nan_value' in d:
                         self.obj[v].data = self.obj[v].where(self.obj[v] != d['nan_value'])
+
+                    # array needs to be writeable 
+                    self.obj[v].data = self.obj[v].data.copy()
                     
                     # Then apply a correction if needed for the units.
                     if 'unit_scale' in d:
@@ -857,6 +860,10 @@ class model:
             for v in vars:
                 if v in self.variable_dict:
                     d = self.variable_dict[v]
+
+                    # array needs to be writeable 
+                    self.obj[v].data = self.obj[v].data.copy()
+                    
                     if 'unit_scale' in d:
                         scale = d['unit_scale']
                     else:
