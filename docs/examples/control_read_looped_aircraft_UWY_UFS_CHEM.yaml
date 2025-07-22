@@ -13,7 +13,7 @@ analysis:
   read:
       paired:
           method: 'netcdf' # 'netcdf' or 'pkl'
-          filenames: {'uwy_ufschem': ["./output/uwy_ufschem/0627_L1_uwy_ufschem.nc4"]}          
+          filenames: {'uwy_ufschem': ["/home/lthompson/mm/update_boxplots/07162025_upload_examples/output/uwy_ufschem/0627_L1_uwy_ufschem.nc4"]}          
           # example for netcdf method. 
           # Uses dict of form {group1: str or iterable of filenames, group2:...}  
           # Any wildcards will be expanded
@@ -34,11 +34,14 @@ model:
     ####### Extra_calc naming example
     # variable_calculating
       # variable required for calculation: "variable name in model"
-    
+      
       dewpoint:
         specific_hum: "spfh" # string of what it is in the model
+        pres_calc: "pressure_model"
       rel_hum: 
         specific_hum: "spfh"
+        pres_calc: "pressure_model"
+        temp_calc: "temperature_k"
       windspeed:
         u_comp: "ugrd"  
         v_comp: "vgrd" 
@@ -46,9 +49,8 @@ model:
         u_comp: "ugrd" 
         v_comp: "vgrd"
       ptemp_mod:
-        temperature: "temperature_k"
-        u_comp: "ugrd" 
-        v_comp: "vgrd"
+        pres_calc: "pressure_model"
+        temp_calc: "temperature_k"
     
     mapping: #model species name : obs species name
       uwy: 
@@ -84,8 +86,8 @@ obs:
     
     extra_calc:
       ptemp_obs:
-        temperature: "temperature_C"
-        geopot_h: "ghght_obs"
+        temp_calc: "temperature_C"
+        pres_calc: "pressure_obs"
         
     variables: #Opt 
       'pressure_hPa':

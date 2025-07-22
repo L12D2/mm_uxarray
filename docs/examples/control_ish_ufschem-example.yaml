@@ -30,23 +30,24 @@ model:
     mod_kwargs:
       surf_only: True  # specify that we have only one vertical level; WRF-Chem specific
     radius_of_influence: 100000 # meters
-
-    extra_calc: # Add more complex calculations and their associated variables here.  
+        
+    extra_calc: # Add more complex calculations and their associated variables here.
 
     ####### Extra_calc naming example
     # variable_calculating
       # variable required for calculation: "variable name in model"
       
       dewpoint:
-        specific_hum: "spfh" # string of what it is in the model 
+        specific_hum: "spfh" # string of what it is in the model
       rel_hum: 
         specific_hum: "spfh"
+        temp_calc: "temperature_k"
       windspeed:
         u_comp: "ugrd"  
         v_comp: "vgrd" 
       winddir: 
         u_comp: "ugrd" 
-        v_comp: "vgrd" 
+        v_comp: "vgrd"
         
     mapping: # of _model_ species name to _obs_ species name
       ish: # specifically for the obs labeled 'ish'

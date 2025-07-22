@@ -37,16 +37,17 @@ model:
       # variable required for calculation: "variable name in model"
       
       dewpoint:
-        specific_hum: "spfh" # string of what it is in the model 
+        specific_hum: "spfh" # string of what it is in the model
       rel_hum: 
         specific_hum: "spfh"
+        temp_calc: "temperature_k"
       windspeed:
         u_comp: "ugrd"  
         v_comp: "vgrd" 
       winddir: 
         u_comp: "ugrd" 
         v_comp: "vgrd" 
-      
+
     mapping: # of _model_ species name to _obs_ species name
       airnow: # specifically for the obs labeled 'airnow'
         o3: "OZONE"
