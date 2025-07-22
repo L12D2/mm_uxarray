@@ -106,6 +106,7 @@ obs:
         nlevels_plot: 21
       WS:
         unit_scale: 1
+        unit_scale_method: "*"
         nan_value: -1.0
         ylabel_plot: "Windspeed (m/s)"
         xlabel_plot: "Windspeed (m/s)"
@@ -124,6 +125,8 @@ obs:
         vdiff_plot: 3
         nlevels_plot: 18
       RHUM:
+        unit_scale: 1
+        unit_scale_method: "*"
         nan_value: -1.0
         ylabel_plot: "Relative Humidity (%)"
         xlabel_plot: "Relative Humidity (%)"
@@ -144,10 +147,10 @@ plots:
       markersize: 10.
     text_kwargs: # optional
       fontsize: 24.
-    domain_type: ["all", "state_name"]
+    domain_type: ["all", "state_name", "epa_region"]
     # ^ List of domain types: 'all' or any domain in obs file.
     #   (e.g., airnow: epa_region, state_name, siteid, etc.)
-    domain_name: ["CONUS", "CA"]
+    domain_name: ["ALL", "CA", "R9"]
     # ^ List of domain names. If domain_type = all,
     #   the domain name is used in the plot title.
     data: ["airnow_ufschem_v1"]
@@ -200,8 +203,8 @@ plots:
     text_kwargs:
       fontsize: 20.
     #gridlines: True
-    domain_type: ["all"]
-    domain_name: ["CONUS"]
+    domain_type: ["all", "epa_region"]
+    domain_name: ["ALL", "R9"]
     data: ["airnow_ufschem_v1"]
     data_proc:
       rem_obs_nan: True
@@ -215,8 +218,9 @@ plots:
     text_kwargs:
       fontsize: 20.
     gridlines: True
+    xlabel: "Binned by Observed Wind Speed (m/s)"
     domain_type: ["all"]
-    domain_name: ["CONUS"]
+    domain_name: ["ALL"]
     # to create an interval boxplot, simply specify the intervals you would like to plot AND the variable name. In this case, wind speed is being plotted at several intervals. 
     interval_list: [0, 3, 5, 8, 11, 14] 
     interval_var: WS
@@ -231,8 +235,8 @@ plots:
     type: "rose_plot"
     text_kwargs:
       fontsize: 16.
-    domain_type: ["all"] 
-    domain_name: ["CONUS"] 
+    domain_type: ["all", "state_name"] 
+    domain_name: ["ALL", "CA"] 
     data: ["airnow_ufschem_v1"]
     color_map: "inferno"  
     
@@ -257,7 +261,7 @@ plots:
     text_kwargs: 
       fontsize: 24.
     domain_type: ["all", "state_name", "epa_region"]
-    domain_name: ["CONUS", "CA", "R9"]
+    domain_name: ["ALL", "CA", "R9"]
     data: ["airnow_ufschem_v1"]
     data_proc: 
       rem_obs_nan: True
@@ -288,5 +292,5 @@ stats:
     yscale: 1.4
     edges: "horizontal"
   domain_type: ["all"]
-  domain_name: ["CONUS"]
+  domain_name: ["ALL"]
   data: ["airnow_ufschem_v1"]

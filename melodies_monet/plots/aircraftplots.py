@@ -35,10 +35,6 @@ except ImportError:
     Annotator = None
 
 import matplotlib.dates as mdates
-
-# ptemp / met libraries  
-from melodies_monet.util.metcalc import blayer, blh_from_richardson_bulk, bulk_richardson_number
-
 from monet.util.tools import get_epa_region_bounds as get_epa_bounds 
 import math
 from ..plots import savefig
@@ -462,7 +458,6 @@ def make_vertprofile(df, column=None, label=None, ax=None,
                      bins=None, 
                      ylabel = None,
                      gridlines = None,
-                     blh_calc = None,
                      altitude_variable=None, #ylabel=None,
                      vmin=None, vmax=None, 
                      domain_type=None, domain_name=None,
@@ -787,23 +782,7 @@ def make_vertprofile(df, column=None, label=None, ax=None,
     if altitude_variable == "pressure_obs":
         y0, y1 = ax.get_ylim()
         if y0 < y1:
-            ax.invert_yaxis()
-
-    # potential temperature options 
-    if blh_calc is not None:
-        print("Boundary Layer calculations are estimates...\n")
-        est_blh = blayer(df)
-        
-        # nice print output
-        for range_label, values in est_blh.items():
-            print(f"{range_label}:")
-            for method_label, val in values.items():
-                if val is not None:
-                    print(f"  {method_label}: {val.magnitude:.1f} {val.units}")
-                else:
-                    print(f"  {method_label}: —")
-            print("") 
-           
+            ax.invert_yaxis()           
     return ax
 
 ##NEW Violin plot 

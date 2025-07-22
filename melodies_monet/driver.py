@@ -1836,6 +1836,7 @@ class analysis:
                 interval_list = grp_dict.get('interval_list', None)
                 interval_var = grp_dict.get('interval_var', None)
                 gridlines = grp_dict.get('gridlines', None)
+                xlabel = grp_dict.get('xlabel', None)
                 interval_labels = grp_dict.get('interval_labels', None)
                 region_name = grp_dict.get('region_name', None)
                 region_list = grp_dict.get('region_list', None)
@@ -1913,7 +1914,6 @@ class analysis:
                 ylabel = grp_dict.get("ylabel", None)
                 gridlines = grp_dict.get('gridlines', None)
                 vertprofile_bins = grp_dict.get('vertprofile_bins', None)
-                blh_calc = grp_dict.get('blh_calc', None)
                 
             #read-in special settings for scatter density plot
             if plot_type == "scatter_density":
@@ -2451,8 +2451,7 @@ class analysis:
                                     column=obsvar,
                                     label=p.obs,
                                     ylabel = ylabel,
-                                    gridlines = gridlines,
-                                    blh_calc = blh_calc, 
+                                    gridlines = gridlines, 
                                     bins = bins,
                                     altitude_variable=altitude_variable,
                                     vmin=vmin,
@@ -2475,7 +2474,6 @@ class analysis:
                                 bins=bins,
                                 ylabel = ylabel,
                                 gridlines = gridlines,
-                                blh_calc = blh_calc,
                                 altitude_variable=altitude_variable,
                                 vmin=vmin,
                                 vmax=vmax,
@@ -2867,8 +2865,13 @@ class analysis:
                             else:
                                 vmin = None
                                 vmax = None
+
+                            if interval_var is not None: 
+                                xlabel = xlabel
+                            else:
+                                xlabel = ""
+                                
                             # First for p_index = 0 create the obs box plot data array.
-                            
                             if p_index == 0:
                                 comb_bx, label_bx,region_bx = splots.calculate_multi_boxplot(pairdf,
                                                                                              pairdf_reg,
@@ -2902,6 +2905,7 @@ class analysis:
                                     interval_labels=interval_labels,
                                     model_name_list=model_name_list,
                                     ylabel=use_ylabel,
+                                    xlabel = xlabel,
                                     vmin=vmin,
                                     vmax=vmax,
                                     outname=outname,
@@ -2912,6 +2916,7 @@ class analysis:
                                     text_dict=text_dict,
                                     gridlines = gridlines,
                                     debug=self.debug)
+        
                                 #Clear info for next plot.
                                 del (comb_bx, label_bx,region_bx, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict)
                             

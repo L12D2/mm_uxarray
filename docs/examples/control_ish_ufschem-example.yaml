@@ -26,6 +26,7 @@ model:
   ufschem_v1: # model label
     files: example:ufschem:2017-07
     mod_type: "ufschem" #change
+    is_global: True
     mod_kwargs:
       surf_only: True  # specify that we have only one vertical level; WRF-Chem specific
     radius_of_influence: 100000 # meters
@@ -67,7 +68,6 @@ model:
       
 obs:
   ish: # obs label
-    use_ish: True
     filename: example:ish:2017-07
     obs_type: pt_sfc
     variables: # optional
@@ -104,6 +104,8 @@ obs:
         vdiff_plot: 4
         nlevels_plot: 18
       wdir: 
+        unit_scale: 1
+        unit_scale_method: "*"
         nan_value: -1.0
         ylabel_plot: "Wind Direction (deg)"
         xlabel_plot: "Wind Direction (deg)"
@@ -171,7 +173,7 @@ plots:
     text_kwargs:
       fontsize: 16.
     domain_type: ["all", "state"]
-    domain_name: ["CONUS", "CA"]
+    domain_name: ["GLOBAL", "CA"]
     data: ["ish_ufschem_v1"]
     data_proc:
       rem_obs_nan: True
@@ -184,8 +186,8 @@ plots:
       figsize: [10, 5]
     text_kwargs:
       fontsize: 16. 
-    domain_type: ["all", "all"]
-    domain_name: ["CONUS", "GLOBAL"]
+    domain_type: ["all", "state"]
+    domain_name: ["GLOBAL", "CA"]
     
     # to get CONUS, you need to do "all" "CONUS"
 
@@ -201,8 +203,8 @@ plots:
     text_kwargs:
       fontsize: 20.
     #gridlines: True
-    domain_type: ["all"]
-    domain_name: ["GLOBAL"]
+    domain_type: ["all", "state"]
+    domain_name: ["GLOBAL", "CA"]
     data: ["ish_ufschem_v1"]
     data_proc:
       rem_obs_nan: True
@@ -215,8 +217,9 @@ plots:
     text_kwargs:
       fontsize: 20.
     gridlines: True
-    domain_type: ["all"]
-    domain_name: ["GLOBAL"]
+    xlabel: "Binned by Observed Temperature (K)"
+    domain_type: ["all", "state"]
+    domain_name: ["GLOBAL", "CA"]
     interval_list: [273.15, 281.15, 289.15, 297.15, 305.15]
     interval_labels: ["[273.15, 281.15)", "[281.15, 289.15)", "[289.15, 297.15)", "[297.15, 305.15)"]
     interval_var: t
@@ -233,8 +236,8 @@ plots:
     type: "rose_plot"
     text_kwargs:
       fontsize: 16.
-    domain_type: ["all", "state"]
-    domain_name: ["CONUS", "CA"]
+    domain_type: ["state"]
+    domain_name: ["CA"]
     data: ["ish_ufschem_v1"]
     color_map: "cividis"  
     
@@ -258,8 +261,8 @@ plots:
       markersize: 10.
     text_kwargs: 
       fontsize: 24.
-    domain_type: ["all", "all", "state"]
-    domain_name: ["CONUS", "GLOBAL", "CA"]
+    domain_type: ["all", "state"]
+    domain_name: ["GLOBAL", "CA"]
     data: ["ish_ufschem_v1"]
     data_proc: 
       rem_obs_nan: True
@@ -290,5 +293,5 @@ stats:
     yscale: 1.4
     edges: "horizontal"
   domain_type: ["all"]
-  domain_name: ["CONUS"]
+  domain_name: ["GLOBAL"]
   data: ["ish_ufschem_v1"]

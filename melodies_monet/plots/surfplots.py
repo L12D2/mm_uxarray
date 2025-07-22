@@ -1401,7 +1401,7 @@ def make_boxplot(comb_bx, label_bx, ylabel = None, vmin = None, vmax = None, out
     plt.tight_layout()
     savefig(outname + '.png', loc=4, logo_height=100)
   
-def make_multi_boxplot(comb_bx, label_bx,region_bx,region_list = None, region_name=None, interval_labels=None, interval_var=None, interval_list=None, model_name_list=None,ylabel = None, vmin = None, vmax = None, outname='plot',  
+def make_multi_boxplot(comb_bx, label_bx,region_bx,region_list = None, region_name=None, interval_labels=None, interval_var=None, interval_list=None, model_name_list=None,ylabel = None, vmin = None, vmax = None, outname='plot', xlabel = None,
                        domain_type=None, domain_name=None,
                        plot_dict=None, fig_dict=None,text_dict=None,debug=False, gridlines = False):
     
@@ -1421,6 +1421,8 @@ def make_multi_boxplot(comb_bx, label_bx,region_bx,region_list = None, region_na
         list of models and observation sources used for x-labels in plot
     ylabel : str
         Title of y-axis
+    xlabel : str
+        Title of x-axis
     vmin : real number
         Min value to use on y-axis
     vmax : real number
@@ -1542,8 +1544,8 @@ def make_multi_boxplot(comb_bx, label_bx,region_bx,region_list = None, region_na
                 data=tdf.loc[tdf.Regions.isin(acro)],
                 order=acro,
                 showfliers=False,**boxplot_kwargs)
-        
-    ax.set_xlabel('')
+    
+    ax.set_xlabel(xlabel,fontweight='bold',**text_kwargs)    
     ax.set_ylabel(ylabel,fontweight='bold',**text_kwargs)
     ax.tick_params(labelsize=text_kwargs['fontsize']*0.8)
     plt.legend(fontsize=text_kwargs['fontsize']*0.8)

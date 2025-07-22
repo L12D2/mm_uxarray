@@ -26,6 +26,7 @@ model:
   ufschem_v1: # model label
     files: example:ufschem:2017-07
     mod_type: "ufschem" #change
+    is_global: True
     mod_kwargs:
       surf_only: True  # specify that we have only one vertical level; WRF-Chem specific
     radius_of_influence: 100000 # meters
@@ -66,7 +67,6 @@ model:
       linestyle: "-"
 obs:
   ish_lite: # obs label
-    use_ish_lite: True
     filename: example:ish-lite:2017-07
     obs_type: pt_sfc
     variables: # optional
@@ -135,10 +135,10 @@ plots:
       markersize: 10.
     text_kwargs: # optional
       fontsize: 24.
-    domain_type: ["all", "all"]
+    domain_type: ["state", "all", "country"]
     # ^ List of domain types: 'all' or any domain in obs file.
     #   (e.g., airnow: epa_region, state_name, siteid, etc.)
-    domain_name: ["CONUS", "GLOBAL"]
+    domain_name: ["CA", "GLOBAL", "US"]
     # ^ List of domain names. If domain_type = all,
     #   the domain name is used in the plot title.
     data: ["ish_lite_ufschem_v1"]
@@ -165,8 +165,8 @@ plots:
       markersize: 10.
     text_kwargs:
       fontsize: 16.
-    domain_type: ["all"]
-    domain_name: ["CONUS"]
+    domain_type: ["all", "country"]
+    domain_name: ["CONUS", "US"]
     data: ["ish_lite_ufschem_v1"]
     data_proc:
       rem_obs_nan: True
@@ -203,8 +203,8 @@ plots:
     text_kwargs:
       fontsize: 20.
     gridlines: True
-    domain_type: ["all"]
-    domain_name: ["GLOBAL"]
+    domain_type: ["all", "country"]
+    domain_name: ["GLOBAL", "US"]
     data: ["ish_lite_ufschem_v1"]
     data_proc:
       rem_obs_nan: True
@@ -217,8 +217,9 @@ plots:
     text_kwargs:
       fontsize: 20.
     gridlines: True
-    domain_type: ["all"]
-    domain_name: ["GLOBAL"]
+    xlabel: "Binned by Observed Wind Speed (m/s)"
+    domain_type: ["all", "country"]
+    domain_name: ["GLOBAL", "US"]
     interval_list: [0, 3, 5, 8, 11, 14] 
     interval_var: ws
 
@@ -240,8 +241,8 @@ plots:
       markersize: 10.
     text_kwargs:
       fontsize: 24.
-    domain_type: ['all']
-    domain_name: ['New York City']
+    domain_type: ["all", "country"]
+    domain_name: ["GLOBAL", "US"]
     data: ['ish_lite_ufschem_v1']
     data_proc:
       rem_obs_nan: True
@@ -262,8 +263,8 @@ plots:
     type: "rose_plot"
     text_kwargs:
       fontsize: 16.
-    domain_type: ["all", "all", "state"]
-    domain_name: ["GLOBAL", "CONUS", "CA"]
+    domain_type: ["all", "country", "state"]
+    domain_name: ["GLOBAL", "US", "CA"]
     data: ["ish_lite_ufschem_v1"]
     data_proc:
       rem_obs_nan: True
@@ -278,8 +279,8 @@ plots:
       markersize: 10.
     text_kwargs: 
       fontsize: 24.
-    domain_type: ["all", "all", "state"]
-    domain_name: ["GLOBAL", "CONUS", "CA"]
+    domain_type: ["all", "country", "state"]
+    domain_name: ["GLOBAL", "US", "CA"]
     data: ["ish_lite_ufschem_v1"]
     data_proc: 
       rem_obs_nan: True
@@ -309,6 +310,6 @@ stats:
     xscale: 1.4
     yscale: 1.4
     edges: "horizontal"
-  domain_type: ["all"]
-  domain_name: ["CONUS"]
+  domain_type: ["country"]
+  domain_name: ["US"]
   data: ["ish_lite_ufschem_v1"]

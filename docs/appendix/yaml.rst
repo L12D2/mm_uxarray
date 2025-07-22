@@ -168,15 +168,15 @@ exceedance plots display wind barbs.
 
 * **Wind speed and direction:**
 
-   * **Wind speed:** is calculated using the u-component and v-component. Users are responsible for
+   * **Model Wind speed:** is calculated using the u-component and v-component. Users are responsible for
      knowing what those components are called in their model. If modeled wind speed is already 
      available, simply add the variable name to the variable list. 
 
-   * **Wind direction:** is calculated using the u-component and v-component. Users are responsible for
+   * **Model Wind direction:** is calculated using the u-component and v-component. Users are responsible for
      knowing what those components are called in their model. If modeled wind direction is already 
      available, simply add the variable name to the variable list. 
 
-   * **Wind barbs:** can be plotted using the u-component and v-component. Users are responsible for
+   * **Model Wind barbs:** can be plotted using the u-component and v-component. Users are responsible for
      knowing what those components are called in their model. **NOTE: plotted wind barbs are in knots. 
      Wind speed everywhere else in the model/observations are by default m/s unless specified elsewhere in the 
      YAML options.** 
@@ -193,7 +193,11 @@ exceedance plots display wind barbs.
 
 * **Tropopause:**
 
-   * **Tropopause:** under development. 
+   * **Tropopause:** Under development. Refer to https://github.com/L12D2/MELODIES-MONET/tree/BoundaryLayerHeight_Tropopause_calc_beta for current development. 
+
+* **Boundary Layer Height:**
+
+   * **blh_calc:** Under development. Refer to https://github.com/L12D2/MELODIES-MONET/tree/BoundaryLayerHeight_Tropopause_calc_beta for current development. 
 
 **apply_ak:** Removed. Instead, specify ``pairing_kwargs`` in the analysis section.
 
@@ -298,6 +302,31 @@ options for Aircraft and Satellite observations are under development.
      by values in the list or not in the list, respectively. 
      Example: {'state_name':{'oper':'isin','value':['CO']}, 
      'WS':{'oper':'<','value':1}} 
+
+**extra_calc:** The extra_calc section allows users to calculate complex meteorological 
+variables that may not have standard variable names across datasets. E.g. u, v, u10, and v10
+all commonly refer to the u and v components of wind speed. However, the naming convention
+varies by model. 
+
+This section allows dewpoint, relative humidity, wind speed, and wind direction to be 
+calculated. Users can also specify whether their spatial overlay, spatial bias, and spatial 
+exceedance plots display wind barbs. 
+
+**NOTE:** All extra_calc calculations should be left in SI units. See example yaml files:
+   
+   * ``control_ish_lite_ufschem-example.yaml``
+   * ``control_ish_ufschem-example.yaml``
+   * ``control_ufschem-example.yaml``
+
+* **Potential temperature:**
+
+   * **Modeled potential temperature:** is calculated using the modeled pressure and temperature. Users are responsible for
+     knowing what those components are called in their model. 
+
+   * **Observed potential temperature:** is calculated using the observed pressure and temperature. Users are responsible for
+     knowing what those components are called in their model.
+
+   * **NOTE:** Potential temperature is the only variable where model and observed calculations are supported.   
 
 **variables:** This is all optional. For each observational variable you can 
 include the following information to handle unit conversions, min/max values, 
@@ -486,9 +515,7 @@ For example, ::
         stop: 100001 # end value 
         step: 2000 # interval the binning should increase by 
 
-**blh_calc:** For "vert_profile" plot only. Provides a numerical estimation of the boundary layer
-height using potential temperature inversion, richardson number, and specific humidity gradient. 
-These calculations are estimates and should be evaluated against the plotted sonde data. 
+**blh_calc:** Under development. Refer to https://github.com/L12D2/MELODIES-MONET/tree/BoundaryLayerHeight_Tropopause_calc_beta for current development. 
 
 **color_map:** For 'scatter_density' & rose_plot plots only. Specify a default colormap in Matplotlib (e.g., 'RdBu_r'). NOTE: custom color_map is not available for rose_plot.  
 To use a custom colormap, leave color_map blank and provide the following options:
