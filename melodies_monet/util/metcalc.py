@@ -36,7 +36,7 @@ import xarray as xr
 # calc dewpoint 
 def dewpoint(obj, varmap = None, output_key = "dewpoint"):
     # grab variable names from the yaml 
-    pressure_key = varmap['pressure'] if varmap and 'pressure' in varmap else 'surfpres_pa'
+    pressure_key = varmap['pres_calc'] if varmap and 'pres_calc' in varmap else 'surfpres_pa'
     specific_hum_key = varmap['specific_hum'] if varmap and 'specific_hum' in varmap else 'specific_hum'
 
     pressure = obj[pressure_key]
@@ -78,9 +78,9 @@ def dewpoint(obj, varmap = None, output_key = "dewpoint"):
 # calc relative humidity
 def relh(obj, varmap=None, output_key="rel_hum"):
     # grab variable names from the yaml or fall back to defaults
-    pressure_key = varmap["pressure"] if varmap and "pressure" in varmap else "surfpres_pa"
+    pressure_key = varmap['pres_calc'] if varmap and 'pres_calc' in varmap else 'surfpres_pa'
     specific_hum_key = varmap["specific_hum"] if varmap and "specific_hum" in varmap else "specific_hum"
-    temperature_key = varmap["temperature"] if varmap and "temperature" in varmap else "temperature_k"
+    temperature_key = varmap["temp_calc"] if varmap and "temp_calc" in varmap else "temperature_k"
 
     pressure = obj[pressure_key]
     specific_hum = obj[specific_hum_key]
@@ -203,14 +203,16 @@ def wdir(obj, varmap = None, output_key = "winddir"):
 
 # calc potential temperature
 def ptemp(obj, varmap=None, output_key="ptemp", default_keys=None):
+    
     if default_keys is None:
         default_keys = {
             "pressure": "pressure",
             "temperature": "temperature"
         }
 
-    pressure_key = varmap.get("pres", default_keys["pressure"]) if varmap else default_keys["pressure"]
-    temperature_key = varmap.get("temperature", default_keys["temperature"]) if varmap else default_keys["temperature"]
+    pressure_key = varmap['pres_calc'] if varmap and 'pres_calc' in varmap else 'surfpres_pa'
+    # temperature_key = varmap.get("temp", default_keys["temperature"]) if varmap else default_keys["temperature"]
+    temperature_key = varmap['temp_calc'] if varmap and 'temp_calc' in varmap else 'temperature_k'
         
     pres = obj[pressure_key]
     temp = obj[temperature_key]

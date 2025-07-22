@@ -20,8 +20,11 @@ model:
       
       dewpoint:
         specific_hum: "spfh" # string of what it is in the model
+        pres_calc: "pressure_model"
       rel_hum: 
         specific_hum: "spfh"
+        pres_calc: "pressure_model"
+        temp_calc: "temperature_k"
       windspeed:
         u_comp: "ugrd"  
         v_comp: "vgrd" 
@@ -29,7 +32,8 @@ model:
         u_comp: "ugrd" 
         v_comp: "vgrd"
       ptemp_mod:
-        temperature: "temperature_k"
+        pres_calc: "pressure_model"
+        temp_calc: "temperature_k"
         
     mapping: #model species name : obs species name
       uwy: 
@@ -53,11 +57,7 @@ model:
             
         'spfh':
             unit_scale: 1 # 1000
-            unit_scale_method: '*'
-            
-        # 'z':
-        #     unit_scale: 1 
-        #     unit_scale_method: '*'   
+            unit_scale_method: '*' 
             
     projection: null
     
@@ -70,8 +70,8 @@ obs:
     
     extra_calc:
       ptemp_obs:
-        temperature: "temperature_C"
-        height: "ghght_obs"
+        temp_calc: "temperature_C"
+        pres_calc: "pressure_obs"
 
         # NOTE: for extra_calc, default SI units below are reccomended. 
         

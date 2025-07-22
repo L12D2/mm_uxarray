@@ -210,41 +210,7 @@ class observation:
 
         if self.extra_calc is not None:
             print("Performing extra calculations for obs...")
-
-            # potential temperature is the only calculated function supported for the obs. 
-            # variables such as dewpoint / relh are a) directly available or b) uncalculable without
-            # further building out the metcalc util file. Obs do not normally have specific humidity. 
-            # If these commented out functs are wanted in the future, other metpy libraries to calc 
-            # relh / dewpoint need to be used. 
-
-            # if "dewpoint" in self.extra_calc:
-            #     print("Calculating observed Dewpoint...")
-            #     from .util.metcalc import dewpoint # import functions from the util.metcalc file
-                
-            #     varmap = self.extra_calc["dewpoint"]
-            #     self.obj=dewpoint(self.obj, varmap = varmap)
-            #     #print(self.obj)
-
-            # if "rel_hum" in self.extra_calc:
-            #     print("Calculating observed relative humidity...")
-            #     from .util.metcalc import relh
-
-            #     varmap = self.extra_calc["rel_hum"]
-            #     self.obj=relh(self.obj, varmap = varmap)
-            #     #print(self.obj)
-
-            # if "windspeed" in self.extra_calc:
-            #     print("Calculating observed windpseed...")
-            #     from .util.metcalc import wspd
-
-            #     varmap = self.extra_calc["windspeed"]
-            #     self.obj=wspd(self.obj, varmap = varmap)
-            #     #print(self.obj)
-                
-            # if "winddir" in self.extra_calc:
-            #     print("Calculating observed wind direction...")
-            #     from .util.metcalc import wdir
-
+            
             if "ptemp_obs" in self.extra_calc:
                 print("Calculating observed potential temperature...")
                 from .util.metcalc import ptemp
@@ -643,7 +609,7 @@ class model:
 
         # Remove standardized variable names that user may have requested to pair on or output in MM
         # as they will be added anyway and here would cause [var_list] to fail in the below model readers.
-        for vn in ["temperature_k", "pres_pa_mid"]:
+        for vn in ["temperature_k", "pres_pa_mid", "pressure_model"]:
             if vn in list_input_var:
                 list_input_var.remove(vn)
 
@@ -781,44 +747,17 @@ class model:
                 print("Calculating model wind barbs...")
                 u_comp = self.extra_calc.get('wind_barb', {}).get("u_comp", None)
                 v_comp = self.extra_calc.get('wind_barb', {}).get("v_comp", None)         
-            
+
             if "ptemp_mod" in self.extra_calc:
                 print("Calculating modeled potential temperature...")
                 from .util.metcalc import ptemp
             
                 varmap = self.extra_calc["ptemp_mod"]
-
-                # Extract a single vertical column from the model field 
-                # for boundary layer calc
-                pres = self.obj[varmap.get("pres", "pressure_model")]
-                temp = self.obj[varmap.get("temp", "temperature_k")]
-
-                center_y = pres.shape[2] // 2
-                center_x = pres.shape[3] // 2
-                time_idx = 0  
-                
-                pres_column = pres[time_idx, :, center_y, center_x]
-                temp_column = temp[time_idx, :, center_y, center_x]
-
-                column_obj = {
-                    "pressure_model": pres_column,
-                    "temperature_k": temp_column
-                }
-                
-                # Create a temporary object with just this column
-                result = ptemp(
-                    column_obj,
-                    varmap={"pres": "pressure_model", 
-                            "temp": "temperature_k"},
-                    output_key="ptemp_mod"
-                )
-            
-                #Run ptemp on the extracted column
                 self.obj = ptemp(
                     self.obj,
-                    varmap={"pres": "pressure_model", 
-                            "temp": "temperature_k"},
-                    output_key="ptemp_mod"
+                    varmap=varmap,
+                    output_key="ptemp_mod",
+                    default_keys={"pressure": "pressure_model", "temperature": "temperature_k"}
                 )
     
             # uncomment once working 
