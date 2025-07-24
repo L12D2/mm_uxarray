@@ -47,6 +47,9 @@ model:
       winddir: 
         u_comp: "ugrd" 
         v_comp: "vgrd" 
+      wind_barb: 
+        u_comp: "ugrd" 
+        v_comp: "vgrd" 
 
     mapping: # of _model_ species name to _obs_ species name
       airnow: # specifically for the obs labeled 'airnow'

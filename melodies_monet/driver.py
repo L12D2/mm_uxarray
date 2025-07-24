@@ -1382,14 +1382,7 @@ class analysis:
                     # convert this to pandas dataframe unless already done because second time paired this obs
                     if not isinstance(obs.obj, pd.DataFrame):
                         obs.obj = obs.obj.to_dataframe()
-                    
-                    #print(f"Original obs shape: {obs.obj.shape}")
-                    #print(f"After dropna shape: {obs.obj.reset_index().dropna(subset['pressure_obs','latitude','longitude']).shape}")
-                    # if obs.obj is None:
-                    #     raise ValueError(f"obs.obj is None for {obs.label} — check that required variables were computed.")
-                    # elif not isinstance(obs.obj, pd.DataFrame):
-                    #     obs.obj = obs.obj.to_dataframe()
-                    
+                                        
                     #drop any variables where coords NaN
                     obs.obj = obs.obj.reset_index().dropna(subset=['pressure_obs','latitude','longitude']).set_index('time')
                     

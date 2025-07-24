@@ -49,12 +49,6 @@ def dewpoint(obj, varmap = None, output_key = "dewpoint"):
 
     dpt_np = dpt.astype("float64").values
 
-    # DEBUG
-    # make sure this is generic enough
-    # print("pressure dims:", pressure.dims)
-    # print("specific_hum dims:", specific_hum.dims)
-    # print("dpt_np shape:", dpt_np.shape)
-
     # fix is needed in order to work with vert plots. Check dimensions before proceeding. 
     if hasattr(obj, "coords") and hasattr(obj, "dims"):
         # Use pressure dims if number of dims matches dpt_np
@@ -100,12 +94,6 @@ def relh(obj, varmap=None, output_key="rel_hum"):
     # are handled  weirdly in the metpy library. 
     rlh_np = np.where(rlh_np > 100, np.nan, rlh_np)
 
-    # DEBUG
-    # print("pressure dims:", pressure.dims)
-    # print("specific_hum dims:", specific_hum.dims)
-    # print("temperature dims:", temperature.dims, temperature.shape)
-    # print("rlh_np shape:", rlh_np.shape)
-
     # fix is needed in order to work with vert plots. Check dimensions before proceeding. 
     if hasattr(obj, "coords") and hasattr(obj, "dims"): 
         dims_to_use = list(specific_hum.dims)
@@ -141,11 +129,6 @@ def wspd(obj, varmap = None, output_key = "windspeed"):
 
     wspd_np = wspd.astype("float64").values
 
-    # DEBUG
-    # print("u dims:", u.dims)
-    # print("v dims:", v.dims)
-    # print("wspd_np shape:", wspd_np.shape)
-
     # fix is needed in order to work with vert plots. Check dimensions before proceeding. 
     if hasattr(obj, "coords") and hasattr(obj, "dims"): 
         dims_to_use = list(u.dims)
@@ -175,12 +158,9 @@ def wdir(obj, varmap = None, output_key = "winddir"):
     v = obj[v_key]
 
     # metpy version of this is throwing in weird dimensions so calc by hand
-    # wdr_rad = np.arctan2(-v, -u)
     wdr_rad = np.arctan2(u, v)
-    #wdr_deg = np.degrees(wdr_rad)
     wdr_deg = (np.degrees(wdr_rad) + 180)
     winddir = wdr_deg % 360
-    #print(winddir)
     winddir_np = winddir.astype("float64").values
 
     if hasattr(obj, "coords") and hasattr(obj, "dims"):  
