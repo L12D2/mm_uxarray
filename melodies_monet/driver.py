@@ -493,7 +493,7 @@ class model:
 
         print(self.file_str)
         if isinstance(self.file_str, list):
-            self.files = self.file_str # we assume the given list is already sorted
+            self.files = sorted(self.file_str)
         elif self.file_str.startswith("example:"):
             example_id = ":".join(s.strip() for s in self.file_str.split(":")[1:])
             self.files = [tutorial.fetch_example(example_id)]
