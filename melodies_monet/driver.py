@@ -569,6 +569,13 @@ class model:
             print('**** Reading WRF-Chem model output...')
             self.mod_kwargs.update({'var_list' : list_input_var})
             self.obj = mio.models._wrfchem_mm.open_mfdataset(self.files,**self.mod_kwargs)
+        elif 'chimere' in self.model.lower():
+            print('**** Reading Chimere model output...')
+            self.mod_kwargs.update({
+                                    'var_list': list_input_var,
+                                    "surf_only": control_dict['model'][self.label].get('surf_only', False)
+                                    })
+            self.obj = mio.models.chimere.open_mfdataset(self.files, **self.mod_kwargs)
         elif any([mod_type in self.model.lower() for mod_type in ('ufs', 'rrfs')]):
             print('**** Reading UFS-AQM model output...')
             if 'rrfs' in self.model.lower():
@@ -890,7 +897,6 @@ class analysis:
                         else:
                             write_analysis_ncf(obj=getattr(self,attr), output_dir=self.output_dir_save, 
                                                keep_groups=self.save[attr]['data'])
-        
     def read_analysis(self):
         """Read all previously saved analysis attributes listed in analysis section of input yaml file.
 
