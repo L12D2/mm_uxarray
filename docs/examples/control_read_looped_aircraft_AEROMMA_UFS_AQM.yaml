@@ -174,7 +174,8 @@ plots:
     data: ['aeromma_ufsaqm']
     data_proc:
       rem_obs_nan: True 
-      set_axis: False   
+      set_axis: False
+      set_stat_sig: True
   plot_grp4:
     type: 'scatter_density'
     fig_kwargs:
@@ -238,3 +239,4 @@ plots:
     data_proc:
       rem_obs_nan: True # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
       set_axis: False #If select True, add vmin_plot and vmax_plot for each variable in obs.
+      set_stat_sig: True

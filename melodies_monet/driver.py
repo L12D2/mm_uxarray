@@ -2659,6 +2659,7 @@ class analysis:
                                     domain_name=domain_name,
                                     fig_dict=fig_dict,
                                     text_dict=text_dict,
+                                    set_stat_sig=set_stat_sig,
                                     gridlines=gridlines,
                                     debug=self.debug
                                 )
