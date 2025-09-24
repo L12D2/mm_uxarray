@@ -144,6 +144,7 @@ plots:
       markersize: 10.
     text_kwargs:  # Opt
       fontsize: 36.
+    ylabel: Height (m)
     domain_type: ['all']  # List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.)
     domain_name: ['Los Angeles']  # List of domain names. If domain_type = all, domain_name is used in plot title.
     data: ['aeromma_ufsaqm']  # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
@@ -153,9 +154,13 @@ plots:
       interquartile_style: 'shading' # or 'box'
     #TO DO: altitude_variable: 'Static_Pressure_YANG' or 'pressure_obs' (=P_BUI(hPa)*100) (pressure in Pa)  # ISSUE created: Add capability of the altitude variable to take pressure as an option to MSL height
     altitude_variable: altitude #'MSL_GPS_Altitude_YANG' #'ALTITUDE' in m or desired unit
-    #vertprofile_bins: [0, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000]   # Specify the Pressure altitude bin size in hPa    
-    vertprofile_bins: [0, 500, 1000, 1500, 2000, 2500, 3000, 3500, 4000] # meters
-    #vertprofile_bins: [0, 1000, 2000, 3000, 4000, 5000] # meters # Needs to be specified as per min and max altitude (vmin, vmax)
+  
+    vertprofile_bins:
+      range:
+        start: 0
+        stop: 4000
+        step: 500
+        
     vmin: #0  #Optional
     vmax: #5000 # Optional #'vertprofile bins' need to be edited as per min and max altitude (i.e., vmin and vmax, if specified)
   plot_grp3:

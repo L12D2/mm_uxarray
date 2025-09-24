@@ -104,11 +104,16 @@ Table of Contents
    examples/airnow_wrfchem
    examples/airnow_wrfchem_reg
    examples/airnow_camchem_se
+   examples/airnow_ufschem
    examples/camchem
    examples/idealized
+   examples/ish_ufschem
+   examples/ish_lite_ufschem
    examples/save_paired_data
    examples/read_paired_data
    examples/aircraft_pairing
+   examples/UWyoming_UFS-CHEM_pairing_loop_read
+   examples/UWyoming_UFS-CHEM_Pairing
    examples/AEROMMA_UFS-AQM_Plots
    examples/ufs-aqm-gml-ozonesonde
 
