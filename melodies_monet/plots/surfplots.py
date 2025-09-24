@@ -20,15 +20,18 @@ from ..plots import savefig
 
 try:
     from scipy.stats import ttest_ind
+except ImportError:
+    ttest_ind = None
+try:
     from statannotations.Annotator import Annotator
+except ImportError:
+    Annotator = None
+try:
     import windrose
     from windrose import WindroseAxes
 except ImportError:
-    ttest_ind = None
-    Annotator = None
     windrose = None
     WindroseAxes = None
-
 
 def make_24hr_regulatory(df, col=None):
     """Calculates 24-hour averages
