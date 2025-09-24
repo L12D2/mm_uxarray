@@ -2,7 +2,7 @@ Description of Examples
 =======================
 
 We are working on developing a couple examples to show case the flexibility 
-and ease of MELODIES MONET. We will upload several short model dataset to a 
+and ease of MELODIES MONET. We will upload several short model datasets to a 
 public archive for users to download to support these examples cases. 
 
 *This is under development.*
@@ -22,6 +22,8 @@ Other examples:
 * :doc:`idealized`
 * :doc:`save_paired_data`
 * :doc:`read_paired_data`
+* :doc:`UWyoming_UFS-CHEM_pairing_loop_read`
+* :doc:`UWyoming_UFS-CHEM_Pairing`
 
 Aircraft evaluation examples:
 

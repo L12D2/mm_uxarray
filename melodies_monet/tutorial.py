@@ -43,6 +43,10 @@ _examples = {
             "example_observation_data/surface/AIRNOW_20190701_20190731.nc",
             "sha256:67da806bcdca90289147254a3fa63a746b8a63ef973a497d0b47c789d48291c2",
         ),
+        "2017-07": (
+            "example_observation_data/surface/AirNow_20170701_20170703.nc",
+            "sha256:b924c66424b7f0f663eca946273fe8b6ce43953f5e97fd00564e0720f9b074fe",
+        )
     },
     "camchem": {
         "fv": (
@@ -88,6 +92,16 @@ _examples = {
             "sha256:b78522d6bcbfbc5dc6243cfd3ca8465c7d5aaebbcb49a9c30b9cbd9b99209aff",
         ),
     },
+    "ufschem": {
+        "2017-07": (
+            "example_model_data/ufschem_example/2017_07_01_03_ufschemv1.nc",
+            "sha256:697cde19c930d8138528c084140282e192407912c40a1f8b0cc37d80f5c7d3b7",
+        ),
+        "2023-06": (
+            "example_model_data/ufschem_example/2023_06_27_29_ufschemv1.nc",
+            "sha256:9c18cac9f0f8e0763ad5a96b0af59fd9769e8ff170a42c2e4c4957531cd393a3",
+        ),
+    },
     "aeronet": {
         "2019-09": (
             "example_observation_data/surface/AERONET_L15_20190901_20190930.nc",
@@ -122,7 +136,26 @@ _examples = {
             "sha256:cb078e01937d1fd7e1aea542cdcd3ffa5a78223d2aa339c3179b1834bbd45b0f",
         ),
     },
+    "ish": {
+        "2017-07" : (
+            "example_observation_data/surface/ISH_20170701_20170703.nc",
+            "sha256:beb7d5965728f07959ede6406b670b0b87fb15b99c27dfa561f105d48f81dd65",
+        ),
+    },
+    "ish-lite": {
+        "2017-07" : (
+            "example_observation_data/surface/ISH-Lite_20170701_20170703.nc",
+            "sha256:d2f86bbf56fb1049db90cd1fc520d032f988f5f668edf2018ffd34e67ed9c310",
+        ),
+    },
+    "uwy-sonde": {
+        "2023-06" : (
+            "example_observation_data/profile/met_sonde_2023062800-72493.csv",
+            "sha256:2596246f7780c549500319851f66358734707d524dd529f405013f80ce054809",
+        ),
+    },
 }
+
 """Files to fetch for a certain example, paths relative to the FTP site."""
 
 _examples_flat = {
