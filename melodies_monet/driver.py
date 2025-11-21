@@ -4,7 +4,6 @@
 Drive the entire analysis package via the :class:`analysis` class.
 """
 import monetio as mio
-from monetio import models
 import monet as m
 import os
 import xarray as xr
@@ -614,6 +613,12 @@ class model:
             if vn in list_input_var:
                 list_input_var.remove(vn)
 
+        #Remove variable names in extra sfc_varlist
+        if 'sfc_varlist' in self.mod_kwargs.keys():
+            for vn in self.mod_kwargs['sfc_varlist']:
+                if vn in list_input_var:
+                    list_input_var.remove(vn)
+
         # Remove variables that havent been calcd yet. 
         if self.extra_calc is not None: 
             calc_vars = set(self.extra_calc.keys())
@@ -622,7 +627,6 @@ class model:
                     
         if 'cmaq' in self.model.lower():
             print('**** Reading CMAQ model output...')
-            from monetio import models
             self.mod_kwargs.update({'var_list' : list_input_var})
             if self.files_vert is not None:
                 self.mod_kwargs.update({'fname_vert' : self.files_vert})
@@ -633,9 +637,14 @@ class model:
             self.obj = mio.models._cmaq_mm.open_mfdataset(self.files,**self.mod_kwargs)
         elif 'wrfchem' in self.model.lower():
             print('**** Reading WRF-Chem model output...')
-            from monetio import models
             self.mod_kwargs.update({'var_list' : list_input_var})
             self.obj = mio.models._wrfchem_mm.open_mfdataset(self.files,**self.mod_kwargs)
+        elif 'ufschem' in self.model.lower(): # added ufs-chem 
+            print('**** Reading UFS-CHEM model output...')
+            self.mod_kwargs.update({'var_list' : list_input_var})
+            if self.files_surf is not None:
+                self.mod_kwargs.update({'fname_sfc' : self.files_surf})
+            self.obj = mio.models._ufschem_v1.open_mfdataset(self.files,**self.mod_kwargs)
         elif any([mod_type in self.model.lower() for mod_type in ('ufs', 'rrfs')]):
             print('**** Reading UFS-AQM model output...')
             if 'rrfs' in self.model.lower():
@@ -651,27 +660,19 @@ class model:
                     DeprecationWarning)
                 loader = mio.models._rrfs_cmaq_mm.open_mfdataset
             self.obj = loader(self.files,**self.mod_kwargs)
-        elif 'ufschem' in self.model.lower(): # added ufs-chem 
-            print('**** Reading UFS-CHEM model output...')
-            from monetio import models
-            self.mod_kwargs.update({'var_list' : list_input_var})
-            self.obj = models._ufschem_v1.open_mfdataset(self.files,**self.mod_kwargs)
         elif 'gsdchem' in self.model.lower():
             print('**** Reading GSD-Chem model output...')
-            from monetio import models
             if len(self.files) > 1:
                 self.obj = mio.fv3chem.open_mfdataset(self.files,**self.mod_kwargs)
             else:
                 self.obj = mio.fv3chem.open_dataset(self.files,**self.mod_kwargs)
         elif 'cesm_fv' in self.model.lower():
             print('**** Reading CESM FV model output...')
-            from monetio import models
             self.mod_kwargs.update({'var_list' : list_input_var})
             self.obj = mio.models._cesm_fv_mm.open_mfdataset(self.files,**self.mod_kwargs)
         # CAM-chem-SE grid or MUSICAv0
         elif 'cesm_se' in self.model.lower(): 
             print('**** Reading CESM SE model output...')
-            from monetio import models
             self.mod_kwargs.update({'var_list' : list_input_var})
             if self.scrip_file.startswith("example:"):
                 from . import tutorial
@@ -682,14 +683,12 @@ class model:
             #self.obj, self.obj_scrip = read_cesm_se.open_mfdataset(self.files,**self.mod_kwargs)
             #self.obj.monet.scrip = self.obj_scrip      
         elif "camx" in self.model.lower():
-            from monetio import models
             self.mod_kwargs.update({"var_list": list_input_var})
             self.mod_kwargs.update({"surf_only": control_dict['model'][self.label].get('surf_only', False)})
             self.mod_kwargs.update({"fname_met_3D": control_dict['model'][self.label].get('files_vert', None)})
             self.mod_kwargs.update({"fname_met_2D": control_dict['model'][self.label].get('files_met_surf', None)})
             self.obj = mio.models._camx_mm.open_mfdataset(self.files, **self.mod_kwargs)
         elif 'raqms' in self.model.lower():
-            from monetio import models
             self.mod_kwargs.update({'var_list': list_input_var})
             if time_interval is not None:
                 # fill filelist with subset
@@ -706,7 +705,6 @@ class model:
 
         else:
             print('**** Reading Unspecified model output. Take Caution...')
-            from monetio import models
             if len(self.files) > 1:
                 self.obj = xr.open_mfdataset(self.files,**self.mod_kwargs)
             else:
@@ -749,13 +747,8 @@ class model:
 
                 varmap = self.extra_calc["winddir"]
                 self.obj=wdir(self.obj, varmap = varmap)
-                #print(self.obj)   
-
-            if "wind_barb" in self.extra_calc:
-                print("Calculating model wind barbs...")
-                u_comp = self.extra_calc.get('wind_barb', {}).get("u_comp", None)
-                v_comp = self.extra_calc.get('wind_barb', {}).get("v_comp", None)         
-
+                #print(self.obj)           
+                
             if "ptemp_mod" in self.extra_calc:
                 print("Calculating modeled potential temperature...")
                 from .util.metcalc import ptemp
@@ -1791,27 +1784,6 @@ class analysis:
             if plot_type == 'violin':
                 gridlines = grp_dict.get('gridlines', None) 
                 set_stat_sig = grp_dict.get('data_proc', {}).get('set_stat_sig', None)
-
-            # read in special settings for spatial overlay
-            if plot_type == "spatial_overlay":
-                model_key = list(self.control_dict["model"].keys())[0]
-                extra_calc = self.control_dict["model"][model_key]["extra_calc"]
-                u_comp = extra_calc.get('wind_barb', {}).get('u_comp', None)
-                v_comp = extra_calc.get('wind_barb', {}).get('v_comp', None)
-
-            # read in special settings for spatial bias
-            if plot_type == "spatial_bias":
-                model_key = list(self.control_dict["model"].keys())[0]
-                extra_calc = self.control_dict["model"][model_key]["extra_calc"]
-                u_comp = extra_calc.get('wind_barb', {}).get('u_comp', None)
-                v_comp = extra_calc.get('wind_barb', {}).get('v_comp', None)
-
-            # read in special settings for spatial bias exceedance
-            if plot_type == "spatial_bias_exceedance":
-                model_key = list(self.control_dict["model"].keys())[0]
-                extra_calc = self.control_dict["model"][model_key]["extra_calc"]
-                u_comp = extra_calc.get('wind_barb', {}).get('u_comp', None)
-                v_comp = extra_calc.get('wind_barb', {}).get('v_comp', None)
                 
             #read-in special settings for ozone sonde related plots
             if plot_type in {'vertical_single_date', 'vertical_boxplot_os', 'density_scatter_plot_os'}:
@@ -1976,6 +1948,15 @@ class analysis:
                         # Determine outname
                         outname = "{}.{}.{}.{}.{}.{}.{}".format(grp, plot_type, obsvar, startdatename, enddatename, domain_type, domain_name)
                        
+                        #Read in special settings for spatial plots with the option to calculate windbarbs.
+                        #These are dependent on the model in the pair so need to be read here for each pair.
+                        if plot_type in ["spatial_overlay","spatial_bias","spatial_bias_exceedance"]:
+                            u_comp = self.control_dict["model"][p.model].get(
+                                "extra_calc", {}).get('wind_barb', {}).get('u_comp', None)
+                            v_comp = self.control_dict["model"][p.model].get(
+                                "extra_calc", {}).get('wind_barb', {}).get('v_comp', None)
+                            wind_barb = grp_dict['data_proc'].get('wind_barb', False)
+
                         # Query with filter options
                         if 'filter_dict' in grp_dict['data_proc'] and 'filter_string' in grp_dict['data_proc']:
                             raise Exception("""For plot group: {}, only one of filter_dict and filter_string can be specified.""".format(grp))
@@ -3011,8 +2992,6 @@ class analysis:
                             splots.make_spatial_bias(
                                 pairdf,
                                 pairdf_reg,
-                                u_comp=u_comp, 
-                                v_comp=v_comp,
                                 column_o=obsvar,
                                 label_o=p.obs,
                                 column_m=modvar,
@@ -3021,6 +3000,9 @@ class analysis:
                                 ptile=use_percentile,
                                 vdiff=vdiff,
                                 outname=outname,
+                                u_comp=u_comp, 
+                                v_comp=v_comp,
+                                wind_barb=wind_barb,
                                 domain_type=domain_type,
                                 domain_name=domain_name,
                                 fig_dict=fig_dict,
@@ -3102,12 +3084,13 @@ class analysis:
                                     column_o=obsvar+'_reg',
                                     label_o=p.obs,
                                     column_m=modvar+'_reg',
-                                    u_comp = u_comp,
-                                    v_comp = v_comp,
                                     label_m=p.model,
                                     ylabel=use_ylabel,
                                     vdiff=vdiff,
                                     outname=outname,
+                                    u_comp = u_comp,
+                                    v_comp = v_comp,
+                                    wind_barb = wind_barb,
                                     domain_type=domain_type,
                                     domain_name=domain_name,
                                     fig_dict=fig_dict,
@@ -3164,8 +3147,6 @@ class analysis:
                                 splots.make_spatial_overlay(
                                     pairdf,
                                     vmodel,
-                                    u_comp=u_comp, 
-                                    v_comp=v_comp,
                                     column_o=obsvar,
                                     label_o=p.obs,
                                     column_m=p.model_vars[index],
@@ -3176,6 +3157,9 @@ class analysis:
                                     nlevels=nlevels,
                                     proj=proj,
                                     outname=outname,
+                                    u_comp=u_comp, 
+                                    v_comp=v_comp,
+                                    wind_barb=wind_barb,
                                     domain_type=domain_type,
                                     domain_name=domain_name,
                                     fig_dict=fig_dict,
