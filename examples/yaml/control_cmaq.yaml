@@ -31,7 +31,7 @@ model:
       linestyle: '--'
   rrfs_13km: # model label
     files: /scratch2/BMC/rcm1/rhs/fv3/regional/data/rrfs-cmaq/r131_v1/0802/dynf*.nc
-    mod_type: 'rrfs'
+    mod_type: 'ufs'
     mod_kwargs:
       mech: 'cb6r3_ae6_aq'
     radius_of_influence: 19500 #meters: horizontal resolution * 1.5

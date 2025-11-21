@@ -10,6 +10,7 @@ import xarray as xr
 import pandas as pd
 import numpy as np
 import datetime
+import warnings
 
 
 __all__ = (
@@ -514,7 +515,7 @@ class model:
         """Open the model files, store data in :class:`model` instance attributes,
         and apply mask and scaling.
         
-        Models supported are cmaq, wrfchem, rrfs, and gsdchem.
+        Models supported are cmaq, wrfchem, ufs (rrfs is deprecated), and gsdchem.
         If a model is not supported, MELODIES-MONET will try to open 
         the model data using a generic reader. If you wish to include new 
         models, add the new model option to this module.
@@ -568,12 +569,21 @@ class model:
             print('**** Reading WRF-Chem model output...')
             self.mod_kwargs.update({'var_list' : list_input_var})
             self.obj = mio.models._wrfchem_mm.open_mfdataset(self.files,**self.mod_kwargs)
-        elif 'rrfs' in self.model.lower():
-            print('**** Reading RRFS-CMAQ model output...')
+        elif any([mod_type in self.model.lower() for mod_type in ('ufs', 'rrfs')]):
+            print('**** Reading UFS-AQM model output...')
+            if 'rrfs' in self.model.lower():
+                warnings.warn("mod_type: 'rrfs' is deprecated. use 'ufs'." , DeprecationWarning)
             if self.files_pm25 is not None:
                 self.mod_kwargs.update({'fname_pm25' : self.files_pm25})
             self.mod_kwargs.update({'var_list' : list_input_var})
-            self.obj = mio.models._rrfs_cmaq_mm.open_mfdataset(self.files,**self.mod_kwargs)
+            if hasattr(mio.models, 'ufs'):
+                loader = mio.models.ufs.open_mfdataset
+            else:
+                warnings.warn(
+                    "usage of _rrfs_cmaq_mm is deprecated, use models.ufs.open_mf_dataset",
+                    DeprecationWarning)
+                loader = mio.models._rrfs_cmaq_mm.open_mfdataset
+            self.obj = loader(self.files,**self.mod_kwargs)
         elif 'gsdchem' in self.model.lower():
             print('**** Reading GSD-Chem model output...')
             if len(self.files) > 1:

@@ -111,7 +111,7 @@ Shell variables prefixed with the ``$`` symbol, such as ``$HOME``, will be expan
 please provide location of ``*.metcro2d.ncf`` files here.
 Shell variables prefixed with the ``$`` symbol, such as ``$HOME``, will be expanded.
 
-**mod_type:** The model type. Options are: "cmaq", "wrfchem", "rrfs", "gsdchem",
+**mod_type:** The model type. Options are: "cmaq", "wrfchem", "ufs" ("rrfs" is deprecated), "gsdchem",
 "cesm_fv", "cesm_se", and "raqms". 
 If you specify another name, MELODIES MONET will try to read in the data using
 xarray.open_mfdataset and xarray.open_dataset().
@@ -213,7 +213,7 @@ See :doc:`../getting_started/downloading_obs` for more details.
 **obs_type:** The observation type. Options are: "pt_sfc" or point surface. Adding 
 options for Aircraft and Satellite observations are under development.
 
-**sat_type:** The satellite observation type. Options include: "mopitt_l3", "omps_l3", "omps_nm", "modis_l2", and "tropomi_l2_no2". Additional options are under development. 
+**sat_type:** The satellite observation type. Options include: "mopitt_l3", "omps_l3", "omps_nm", "modis_l2", "tropomi_l2_no2", "tempo_l2_no2" and "tempo_l2_hcho". Additional options are under development. 
 
 **data_proc:** This section stores all of the data processing information.
    

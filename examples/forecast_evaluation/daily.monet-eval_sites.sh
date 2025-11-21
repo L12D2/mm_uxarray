@@ -1884,7 +1884,7 @@ echo "Including onlinecmaq_b1"
 cat << EOF >> control.yaml.${todays_date}
   online-CMAQ(UFS,v7.0b1): # model label
     files: ${onlinecmaq_b1_datadir}/aqm.t12z.chem_3d*
-    mod_type: 'rrfs'
+    mod_type: 'ufs'
     radius_of_influence: 12000 #meters
     mapping: #model species name : obs species name
       airnow:
@@ -1926,7 +1926,7 @@ echo "Including onlinecmaq_c3"
 cat << EOF >> control.yaml.${todays_date}
   online-CMAQ(UFS,v7.0c3): # model label
     files: ${onlinecmaq_c3_datadir}/aqm.t12z.chem_3d*
-    mod_type: 'rrfs'
+    mod_type: 'ufs'
     radius_of_influence: 12000 #meters
     mapping: #model species name : obs species name
       airnow:

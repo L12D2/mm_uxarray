@@ -38,7 +38,7 @@ Option 1) Using Conda
 We have recently created a conda-forge release of MELODIES MONET to make installation very simple 
 with just 1 line of code below::
 
-    $ conda create --name melodies-monet -y -c conda-forge python=3.11 melodies-monet wrf-python jupyterlab
+    $ conda create --name melodies-monet -y -c conda-forge python=3.11 melodies-monet netcdf4=1.7.2 wrf-python jupyterlab
 
 .. note::
    Currently, the wrf-python conda package is not compatible with Apple Silicon (Apple machines using Intel should be fine). If you need to run the WRF-Chem reader and only have access to a machine using Apple Silicon, you can try compiling it from source code from the official repos.
@@ -56,7 +56,7 @@ First create and activate a conda environment::
 
 Add dependencies from conda-forge::
 
-    $ conda install -y -c conda-forge pyyaml pandas=1 'matplotlib-base<3.9' monet monetio netcdf4 wrf-python typer rich pooch jupyterlab
+    $ conda install -y -c conda-forge pyyaml pandas=1 'matplotlib-base<3.9' monet monetio netcdf4=1.7.2 wrf-python typer rich pooch jupyterlab
    
 Now, install the stable branch of MELODIES MONET to the environment::
 

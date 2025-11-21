@@ -35,7 +35,7 @@ obs:
 model:
         ufsaqm:
                 files: '/scratch1/BMC/rcm2/rhs/monet_example/AEROMMA/UFS-AQM/cmaq54_OriRave1/aqm.202306*/12/aqm.t12z.dyn.*.nc'
-                mod_type: 'rrfs'
+                mod_type: 'ufs'
                 variables:
                         'pres_pa_mid':
                                 rename: pressure_model
