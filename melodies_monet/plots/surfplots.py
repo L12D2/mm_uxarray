@@ -262,7 +262,7 @@ def get_utcoffset(lat,lon):
 
 def make_spatial_bias(df, df_reg=None, column_o=None, label_o=None, column_m=None, 
                       label_m=None, ylabel = None, ptile = None, vdiff=None,
-                      outname = 'plot', u_comp = None, v_comp = None,
+                      outname = 'plot', u_comp = None, v_comp = None, wind_barb=False,
                       domain_type=None, domain_name=None, fig_dict=None, 
                       text_dict=None,debug=False): 
         
@@ -290,6 +290,12 @@ def make_spatial_bias(df, df_reg=None, column_o=None, label_o=None, column_m=Non
         Min and max value to use on colorbar axis
     outname : str
         file location and name of plot (do not include .png)
+    u_comp : str
+        Name of u_component in the model to use for wind barbs
+    v_comp : str
+        Name of v_component in the model to use for wind barbs
+    wind_barb : boolean
+        Whether to plot wind barbs (True) or not (False)
     domain_type : str
         Domain type specified in input yaml file
     domain_name : str
@@ -383,28 +389,28 @@ def make_spatial_bias(df, df_reg=None, column_o=None, label_o=None, column_m=Non
 
     #print(df.columns)
     
-    if u_comp is not None and v_comp is not None:  
-        print("Wind barbs may take longer to plot... Please be patient.")
+    if wind_barb:
+        if u_comp is not None and v_comp is not None:  
 
-        u_mod = df_mean[u_comp]
-        v_mod = df_mean[v_comp] 
+            u_mod = df_mean[u_comp]
+            v_mod = df_mean[v_comp] 
 
-        #ensure all bias stats are MODEL-OBS (enables you to tell the direction of the 
-        #model relative to observations)
-        #u_mean=u_mod - u_obs
-        #v_mean=v_mod - v_obs
+            #ensure all bias stats are MODEL-OBS (enables you to tell the direction of the 
+            #model relative to observations)
+            #u_mean=u_mod - u_obs
+            #v_mean=v_mod - v_obs
 
-        # set skip for less clutter
-        skip=2
-        ax.barbs(
-            df_mean["longitude"][::skip], # long
-            df_mean["latitude"][::skip], # lat
-            u_mod[::skip], 
-            v_mod[::skip], # u, v 
-            length=6, linewidth=0.85
-        )  # order per matplot lib follows (x, y, u, v)
-    else:
-        print("U-comp and V-comp need to be specified in the yaml file. Plotting wind barbs failed!")
+            # set skip for less clutter
+            skip=2
+            ax.barbs(
+                df_mean["longitude"][::skip], # long
+                df_mean["latitude"][::skip], # lat
+                u_mod[::skip]*1.94384, 
+                v_mod[::skip]*1.94384, # u, v 
+                length=6, linewidth=0.85
+            )  # order per matplot lib follows (x, y, u, v)
+        else:
+            print("U-comp and V-comp need to be specified in the yaml file. Plotting wind barbs failed!")
 
     #Update colorbar
     f = plt.gcf()
@@ -930,9 +936,10 @@ def make_taylor(df, df_reg=None, column_o=None, label_o='Obs', column_m=None, la
     ax.axis["right"].major_ticklabels.set_fontsize(text_kwargs['fontsize']*0.8)
     return dia
 
-def make_spatial_overlay(df, vmodel, u_comp = None, v_comp = None, column_o=None, label_o=None, column_m=None, 
+def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None, 
                       label_m=None, ylabel = None, vmin=None,
-                      vmax = None, nlevels = None, proj = None, outname = 'plot', 
+                      vmax = None, nlevels = None, proj = None, outname = 'plot',
+                      u_comp = None, v_comp = None, wind_barb = False,
                       domain_type=None, domain_name=None, fig_dict=None, 
                       text_dict=None,debug=False):
         
@@ -966,6 +973,12 @@ def make_spatial_overlay(df, vmodel, u_comp = None, v_comp = None, column_o=None
         cartopy projection to use in plot
     outname : str
         file location and name of plot (do not include .png)
+    u_comp : str
+        Name of u_component in the model to use for wind barbs
+    v_comp : str
+        Name of v_component in the model to use for wind barbs
+    wind_barb : boolean
+        Whether to plot wind barbs (True) or not (False)
     domain_type : str
         Domain type specified in input yaml file
     domain_name : str
@@ -1072,30 +1085,30 @@ def make_spatial_overlay(df, vmodel, u_comp = None, v_comp = None, column_o=None
         ax = vmodel_mean.monet.quick_contourf(cbar_kwargs=cbar_kwargs, figsize=map_kwargs['figsize'], map_kws=map_kwargs,
                                     robust=True, norm=norm, cmap=cmap, levels=clevel, extend='both') 
 
-    if u_comp is not None and v_comp is not None: 
-        print("Wind barbs may take longer to plot... Please be patient.")
-        u_mod = vmodel[u_comp].mean(dim='time').squeeze()
-        v_mod = vmodel[v_comp].mean(dim='time').squeeze()
+    if wind_barb:
+        if u_comp is not None and v_comp is not None:
+            u_mod = vmodel[u_comp].mean(dim='time').squeeze()
+            v_mod = vmodel[v_comp].mean(dim='time').squeeze()
         
-        #u_mod = vmodel_u[u_comp]
-        #v_mod = vmodel_v[v_comp] 
+            #u_mod = vmodel_u[u_comp]
+            #v_mod = vmodel_v[v_comp] 
 
-        #ensure all bias stats are MODEL-OBS (enables you to tell the direction of the 
-        #model relative to observations)
-        #u_mean=u_mod - u_obs
-        #v_mean=v_mod - v_obs
+            #ensure all bias stats are MODEL-OBS (enables you to tell the direction of the 
+            #model relative to observations)
+            #u_mean=u_mod - u_obs
+            #v_mean=v_mod - v_obs
 
-        # set skip for less clutter
-        skip=2
-        ax.barbs(
-            u_mod["longitude"][::skip], # long
-            u_mod["latitude"][::skip], # lat
-            u_mod[::skip]*1.94384, 
-            v_mod[::skip]*1.94384, # u, v 
-            length=6, linewidth=0.85
-        )  # order per matplot lib follows (x, y, u, v)
-    else:
-        print("U-comp and V-comp need to be specified in the yaml file. Plotting wind barbs failed!")
+            # set skip for less clutter
+            skip=2
+            ax.barbs(
+                u_mod["longitude"][::skip], # long
+                u_mod["latitude"][::skip], # lat
+                u_mod[::skip]*1.94384, 
+                v_mod[::skip]*1.94384, # u, v 
+                length=6, linewidth=0.85
+            )  # order per matplot lib follows (x, y, u, v)
+        else:
+            print("U-comp and V-comp need to be specified in the yaml file. Plotting wind barbs failed!")
 
     plt.gcf().canvas.draw() 
     plt.tight_layout(pad=0)
@@ -2174,9 +2187,9 @@ def Plot_CSI(column,score_name_input,threshold_list_input, comb_bx_input,plot_di
 
 
 def make_spatial_bias_exceedance(df, column_o=None, label_o=None, column_m=None,
-                                 u_comp = None, v_comp = None,
                                  label_m=None, ylabel = None,  vdiff=None,
                                  outname = 'plot',
+                                 u_comp = None, v_comp = None, wind_barb=False,
                                  domain_type=None, domain_name=None, fig_dict=None,
                                  text_dict=None,debug=False):
 
@@ -2200,6 +2213,12 @@ def make_spatial_bias_exceedance(df, column_o=None, label_o=None, column_m=None,
         Min and max value to use on colorbar axis
     outname : str
         file location and name of plot (do not include .png)
+    u_comp : str
+        Name of u_component in the model to use for wind barbs
+    v_comp : str
+        Name of v_component in the model to use for wind barbs
+    wind_barb : boolean
+        Whether to plot wind barbs (True) or not (False)
     domain_type : str
         Domain type specified in input yaml file
     domain_name : str
@@ -2298,27 +2317,27 @@ def make_spatial_bias_exceedance(df, column_o=None, label_o=None, column_m=None,
             map_kwargs['extent'] = [lonmin,lonmax,latmin,latmax]
         ax.axes.set_extent(map_kwargs['extent'],crs=ccrs.PlateCarree())
 
-        if u_comp is not None and v_comp is not None: 
-            print("Wind barbs may take longer to plot... Please be patient.")
-            u_mod = df_mean[u_comp]
-            v_mod = df_mean[v_comp] 
+        if wind_barb:
+            if u_comp is not None and v_comp is not None:
+                u_mod = df_mean[u_comp]
+                v_mod = df_mean[v_comp] 
     
-            #ensure all bias stats are MODEL-OBS (enables you to tell the direction of the 
-            #model relative to observations)
-            #u_mean=u_mod - u_obs
-            #v_mean=v_mod - v_obs
+                #ensure all bias stats are MODEL-OBS (enables you to tell the direction of the 
+                #model relative to observations)
+                #u_mean=u_mod - u_obs
+                #v_mean=v_mod - v_obs
     
-            # set skip for less clutter
-            skip=2
-            ax.barbs(
-                df_mean["longitude"][::skip], # long
-                df_mean["latitude"][::skip], # lat
-                u_mod[::skip]*1.94384, 
-                v_mod[::skip]*1.94384, # u, v 
-                length=6, linewidth=0.85
-            )  # order per matplot lib follows (x, y, u, v)
-        else:
-            print("U-comp and V-comp need to be specified in the yaml file. Plotting wind barbs failed!")
+                # set skip for less clutter
+                skip=2
+                ax.barbs(
+                    df_mean["longitude"][::skip], # long
+                    df_mean["latitude"][::skip], # lat
+                    u_mod[::skip]*1.94384, 
+                    v_mod[::skip]*1.94384, # u, v 
+                    length=6, linewidth=0.85
+                )  # order per matplot lib follows (x, y, u, v)
+            else:
+                print("U-comp and V-comp need to be specified in the yaml file. Plotting wind barbs failed!")
         
         #Update colorbar
         f = plt.gcf()
