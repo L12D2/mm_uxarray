@@ -637,6 +637,19 @@ class model:
             self.obj = mio.models._cmaq_mm.open_mfdataset(self.files,**self.mod_kwargs)
         elif 'wrfchem' in self.model.lower():
             print('**** Reading WRF-Chem model output...')
+            #Handle the awkward renaming of species in wrf-python automatically.
+            if any(item in list_input_var for item in ("uvmet10_u", "uvmet10_v")):
+                    list_input_var.append("uvmet10")
+            if any(item in list_input_var for item in ("uvmet_u", "uvmet_v")):
+                    list_input_var.append("uvmet")
+            if any(item in list_input_var for item in ("uvmet10_wdir", "uvmet10_wspd")):
+                    list_input_var.append("uvmet10_wspd_wdir")
+            if any(item in list_input_var for item in ("uvmet_wdir", "uvmet_wspd")):
+                    list_input_var.append("uvmet_wspd_wdir")   
+            for vn in ["uvmet10_u", "uvmet10_v","uvmet_u","uvmet_v",
+                       "uvmet10_wdir","uvmet10_wspd","uvmet_wdir","uvmet_wspd"]:
+                if vn in list_input_var:
+                    list_input_var.remove(vn)
             self.mod_kwargs.update({'var_list' : list_input_var})
             self.obj = mio.models._wrfchem_mm.open_mfdataset(self.files,**self.mod_kwargs)
         elif 'ufschem' in self.model.lower(): # added ufs-chem 
@@ -1956,7 +1969,7 @@ class analysis:
                             v_comp = self.control_dict["model"][p.model].get(
                                 "extra_calc", {}).get('wind_barb', {}).get('v_comp', None)
                             wind_barb = grp_dict['data_proc'].get('wind_barb', False)
-
+ 
                         # Query with filter options
                         if 'filter_dict' in grp_dict['data_proc'] and 'filter_string' in grp_dict['data_proc']:
                             raise Exception("""For plot group: {}, only one of filter_dict and filter_string can be specified.""".format(grp))
@@ -2413,58 +2426,45 @@ class analysis:
                                 del (ax, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict) # Clear axis for next plot.
 
                         elif plot_type.lower() == 'rose_plot':
+                            
+                            model_wdir = self.control_dict["model"][p.model].get(
+                                'extra_calc', {}).get('rose_plot', {}).get('model_wdir', None)
+                            model_wspd = self.control_dict["model"][p.model].get(
+                                "extra_calc", {}).get('rose_plot', {}).get('model_wspd', None)
+                            obs_wdir = self.control_dict["obs"][p.obs].get(
+                                'extra_calc', {}).get('rose_plot', {}).get('obs_wdir', None)
+                            obs_wspd = self.control_dict["obs"][p.obs].get(
+                                "extra_calc", {}).get('rose_plot', {}).get('obs_wspd', None)
+                            
+                            if model_wdir is None or model_wspd is None or obs_wdir is None or obs_wspd is None:
+                                print('Please add model_wdir, model_wspd, obs_wdir, obs_wspd to the YAML file under')
+                                print('extra_calc under rose_plot for each model and obs. Skipping rose plot.')
+                                continue
+                            
+                            wr_calm_limit = grp_dict['data_proc'].get('wr_calm_limit',0.5)
 
-                            # need to handle for different wdir, winddir, WD, wd, etc. combos
-                            # rename. 
-                            # this fix should work for ISH and ISH-Lite
+                            if obsvar == obs_wdir:
+                                print('Cannot make a wind rose plot with wind direction as second input.')
+                                print('Skipping rose plot for the following variable: ' + obsvar)
+                                continue
                             
-                            rename_dict = {}
-                            #print("pairdf before:", pairdf.columns)
-                            for col in pairdf.columns:
-                                if col == "wdir":
-                                    rename_dict[col] = "WD"
-                                if col == "winddir":
-                                    rename_dict[col] = "winddir"
-                                if col == "wd":
-                                    rename_dict[col] = "WD"
-                            #print("Renaming columns:", rename_dict)
-
-                            pairdf = pairdf.rename(columns=rename_dict)
-                            #print("pairdf after:", pairdf.columns)
-                            # probably need to throw in some sort of error message here so we can update this renaming dict. 
+                            # drop rows where model and observed wind direction are missing. 
+                            # obsvar and modvar nan occurs above. 
+                            rose_df = pairdf.reset_index().dropna(subset=[model_wdir, obs_wdir])
                             
-                            # handle calm winds.
-                            # possible wind names
-                            calm_wind_var = ["wspd", "windspeed", "ws", "WS", "WSPD"]
-                            
-                            # identify existing col names
-                            existing_cols = [col for col in calm_wind_var if col in pairdf.columns]
-                            
-                            # Create calm wind speed filter.
-                            # calm winds could be anything less than 1m/s. using 0.02 m/s since others have done so. 
-                            if existing_cols:
-                                calm_mask = (pairdf[existing_cols] <= 0.02).any(axis=1)
-                                pairdf = pairdf[~calm_mask]
-                            
-                            # drop rows where wd and winddir are missing. obsvar and modvar nan occurs above. 
-                            rose_df = pairdf.dropna(subset=["WD", "winddir"], how='all').reset_index(drop=True)
-                            #rose_df = pairdf.reset_index().dropna(subset=["WD", "winddir"], axis=0)
-                            
-                            # debug stuff
-                            #print(len(rose_df))
-                            #wd_mode = rose_df["WD"].mode()
-                            #winddir_mode = rose_df["winddir"].mode()
-                            #print("type of wd:", pairdf["WD"].dtype)
-                            #print("wd", wd_mode)
-                            #print("winddir", winddir_mode)
-                            
-                            # WD and winddir are not optional
-                            # user can change out obsvar and modvar to create pollution rose. 
+                            # user can change out obsvar and modvar to create pollution rose or a traditional 
+                            # windrose plot by setting obsvar and modvar equal to wind speed. 
                             splots.make_rose_plot(
                                 rose_df,
                                 obsvar=obsvar,
                                 modvar=modvar,
+                                obs_wdir=obs_wdir,
+                                model_wdir=model_wdir,
+                                obs_wspd=obs_wspd,
+                                model_wspd=model_wspd,
+                                wr_calm_limit=wr_calm_limit,
                                 color_map=color_map,
+                                ylabel=use_ylabel,
                                 outname=outname,
                                 domain_type=domain_type,
                                 domain_name=domain_name,

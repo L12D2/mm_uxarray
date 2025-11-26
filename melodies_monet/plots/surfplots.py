@@ -9,6 +9,7 @@ import numpy as np
 import cartopy.crs as ccrs
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+import matplotlib.ticker as mtick
 from numpy import corrcoef
 sns.set_context('paper')
 from monet.plots.taylordiagram import TaylorDiagram as td
@@ -1580,7 +1581,13 @@ def make_multi_boxplot(comb_bx, label_bx,region_bx,region_list = None, region_na
 def make_rose_plot(rose_df, 
                    obsvar, # obs windspeed
                    modvar, # mod windspeed
+                   obs_wdir,
+                   model_wdir,
+                   obs_wspd,
+                   model_wspd,
+                   wr_calm_limit=0.02,
                    color_map= 'viridis',
+                   ylabel = None,
                    outname = 'plot', 
                    domain_type=None, 
                    domain_name=None, 
@@ -1594,13 +1601,25 @@ def make_rose_plot(rose_df,
     Parameters
     ----------
     rose_df : dataframe
-             model/obs pair data to plot
-    obsvar: 
-             observed variable to compare with observed wind direction
-    obsvar: 
-             modeled variable to compare with modeled wind direction
-    color_map: 
-             TBD
+        model/obs pair data to plot
+    obsvar: str
+        observed variable to compare with observed wind direction
+    modvar: str
+        modeled variable to compare with modeled wind direction
+    obs_wdir: str
+        observed variable name for wind direction
+    model_wdir: str
+        modeled variable name for wind direction.
+    obs_wspd: str
+        observed variable name for wind speed. Needed for pollution roses.
+    model_wspd: str
+        modeled variable name for wind speed. Needed for polution roses.
+    wr_calm_limit: real number
+        Limit to use for calm_winds. Default is 0.02 m/s.
+    color_map: str
+        Color_map to use in plot
+    ylabel : str
+        Title of y-axis
     outname : str
         file location and name of plot (do not include .png)
     domain_type : str
@@ -1644,6 +1663,10 @@ def make_rose_plot(rose_df,
     #colors = color_map
 
     color_map_config = color_map
+
+    # set ylabel to column if not specified.
+    if ylabel is None:
+        ylabel = obsvar
     
     # string is not callable. converting it. 
     if isinstance(color_map_config, dict):
@@ -1658,16 +1681,43 @@ def make_rose_plot(rose_df,
 
     if isinstance(cmap, mpl.colors.ListedColormap):
         cmap = LinearSegmentedColormap.from_list("custom", cmap.colors)
-        
+
+    #Remove calm winds for pollution roses only.
+    if obsvar != obs_wspd:
+        #Treat obs and model seperately and mask calm winds.
+        rose_obs = rose_df[[obs_wdir , obs_wspd, obsvar]].copy()
+        mask_calm_obs = (rose_obs[obs_wspd] <= wr_calm_limit)
+        rose_obs = rose_obs[~mask_calm_obs]
+        mask_calm_obs_per = mask_calm_obs.sum()*100.0/len(rose_df)
+
+        rose_model = rose_df[[model_wdir , model_wspd , modvar]].copy()
+        mask_calm_model = (rose_model[model_wspd] <= wr_calm_limit)
+        rose_model = rose_model[~mask_calm_model]
+        mask_calm_model_per = mask_calm_model.sum()*100.0/len(rose_df)
+
+        use_calm_limit = None
+    else:
+        #Treat obs and model seperately. Do not mask winds because it is 
+        #handled in the windrose routine, but do calculate percentage.
+        rose_obs = rose_df[[obs_wdir , obsvar]].copy()
+        mask_calm_obs = (rose_obs[obs_wspd] <= wr_calm_limit)
+        mask_calm_obs_per = mask_calm_obs.sum()*100.0/len(rose_df)
+
+        rose_model = rose_df[[model_wdir , modvar]].copy()
+        mask_calm_model = (rose_model[model_wspd] <= wr_calm_limit)
+        mask_calm_model_per = mask_calm_model.sum()*100.0/len(rose_df)
+
+        use_calm_limit = wr_calm_limit
+    
     #print(len(rose_df))
     #draw ax1 
     ax1 = WindroseAxes.from_ax(fig = fig,rect=rect_set1)
-    ax1.bar(rose_df.WD, rose_df[obsvar], normed=True, cmap=cmap, label = "Observed")
+    ax1.bar(rose_obs[obs_wdir], rose_obs[obsvar], normed=True, calm_limit = use_calm_limit, cmap=cmap, label = "Observed")
     #print("Obs:", rose_df.WD.mode()[0])
     
     # draw ax2
     ax2 = WindroseAxes.from_ax(fig = fig, rect=rect_set2)
-    ax2.bar(rose_df.winddir, rose_df[modvar], normed=True, cmap=cmap, label = "Modeled")
+    ax2.bar(rose_model[model_wdir], rose_model[modvar], normed=True, calm_limit = use_calm_limit, cmap=cmap, label = "Modeled")
     #print("Mod:",rose_df.winddir.mode()[0])
     
     # set label settings for the two axs
@@ -1675,14 +1725,21 @@ def make_rose_plot(rose_df,
         fontsize = text_kwargs["fontsize"]*0.8
         ax.set_thetagrids(range(0, 360, 45), 
                           fontsize=fontsize)
+        fmt = '%.0f%%' 
+        yticks = mtick.FormatStrFormatter(fmt)
+        ax.yaxis.set_major_formatter(yticks)
 
         for label in ax.get_yticklabels():
             label.set_fontsize(fontsize*0.8)
-        
-    ax1.set_xlabel("Observed", fontsize=text_kwargs["fontsize"]*0.9)
-    ax2.set_xlabel("Modeled", fontsize=text_kwargs["fontsize"]*0.9)
+            
+    ax1.set_xlabel("Observed\nCalm wind: " + str(round(mask_calm_obs_per,2)) 
+                   + "%\nCalm wind limit: " + str(round(wr_calm_limit,2)) + " m/s", 
+                   fontsize=text_kwargs["fontsize"]*0.9)
+    ax2.set_xlabel("Modeled\nCalm wind: " + str(round(mask_calm_model_per,2)) + 
+                   "%\nCalm wind limit: " + str(round(wr_calm_limit,2)) + " m/s", 
+                   fontsize=text_kwargs["fontsize"]*0.9)
     
-    legend_title = f"{obsvar}" # dynamically set eventually 
+    legend_title = f"{ylabel}" # dynamically set eventually 
     plt.legend(loc=(1.28, 0.4), fontsize=text_kwargs['fontsize']*0.8, title=legend_title,
               title_fontsize=text_kwargs["fontsize"]*0.8)
 
