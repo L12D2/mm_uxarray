@@ -1,13 +1,13 @@
-from .model import Model
-from .observation import Observation
-from .pair import Pair
+from .model import model
+from .observation import observation
+from .pair import pair
 
-from .analysis import Analysis
+from .analysis import analysis
 
 
 __all__ = (
-    "Pair",
-    "Observation",
-    "Model",
-    "Analysis",
+    "pair",
+    "observation",
+    "model",
+    "analysis",
 )

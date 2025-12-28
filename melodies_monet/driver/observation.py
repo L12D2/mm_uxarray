@@ -5,7 +5,7 @@ import numpy as np
 import monetio as mio
 
 
-class Observation:
+class observation:
     """The observation class.
 
     A class with information and data from an observational dataset.

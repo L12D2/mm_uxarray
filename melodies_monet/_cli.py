@@ -145,10 +145,10 @@ def run(
     typer.secho(f"with full path: {p.absolute().as_posix()}", fg=INFO_COLOR)
 
     with _timer("Importing the driver"):
-        from melodies_monet.driver import Analysis
+        from melodies_monet.driver import analysis
     
     with _timer("Reading control file and initializing"):
-        an = Analysis()
+        an = analysis()
         an.control = control
         an.read_control()
         if debug and not an.debug:

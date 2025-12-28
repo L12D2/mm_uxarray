@@ -5,10 +5,10 @@ import pandas as pd
 import numpy as np
 import datetime
 
-from melodies_monet.driver import Model, Observation, Pair
+from melodies_monet.driver import model, observation, pair
 
 
-class Analysis:
+class analysis:
     """The analysis class.
 
     The analysis class is the highest
@@ -289,7 +289,7 @@ class Analysis:
             # open each model
             for mod in self.control_dict["model"]:
                 # create a new model instance
-                m = Model()
+                m = model()
                 # this is the model type (ie cmaq, rapchem, gsdchem etc)
                 m.model = self.control_dict["model"][mod]["mod_type"]
                 # set the model label in the dictionary and model class instance
@@ -386,7 +386,7 @@ class Analysis:
         """
         if "obs" in self.control_dict:
             for obs in self.control_dict["obs"]:
-                o = Observation()
+                o = observation()
                 o.obs = obs
                 o.label = obs
                 o.obs_type = self.control_dict["obs"][obs]["obs_type"]
@@ -587,7 +587,7 @@ class Analysis:
                     if self.debug:
                         print("After pairing: ", paired_data)
                     # this outputs as a pandas dataframe.  Convert this to xarray obj
-                    p = Pair()
+                    p = pair()
                     print("saving pair")
                     p.obs = obs.label
                     p.model = mod.label
@@ -647,7 +647,7 @@ class Analysis:
                     # raise KeyError("'pressure_model' is missing in the paired_data")   #qzr++
 
                     # this outputs as a pandas dataframe.  Convert this to xarray obj
-                    p = Pair()
+                    p = pair()
                     p.type = "aircraft"
                     p.radius_of_influence = None
                     p.obs = obs.label
@@ -722,7 +722,7 @@ class Analysis:
                     paired_data = vert_interp(ds_model, obs.obj, keys + mod_vars)
                     print("In pair function, After pairing: ", paired_data)
                     # this outputs as a pandas dataframe.  Convert this to xarray obj
-                    p = Pair()
+                    p = pair()
                     p.type = "sonde"
                     p.radius_of_influence = None
                     p.obs = obs.label
@@ -775,7 +775,7 @@ class Analysis:
                     paired_data = mobile_and_ground_pair(ds_model, obs.obj, keys + mod_vars)
                     print("After pairing: ", paired_data)
                     # this outputs as a pandas dataframe.  Convert this to xarray obj
-                    p = Pair()
+                    p = pair()
                     if obs.obs_type.lower() == "mobile":
                         p.type = "mobile"
                     elif obs.obs_type.lower() == "ground":
@@ -825,7 +825,7 @@ class Analysis:
                             paired_data = sutil.omps_nm_pairing(model_obj, obs.obj, keys)
 
                         paired_data = paired_data.where(paired_data.ozone_column.notnull())
-                        p = Pair()
+                        p = pair()
                         p.type = obs.obs_type
                         p.obs = obs.label
                         p.model = mod.label
@@ -888,7 +888,7 @@ class Analysis:
                                 obs.obj, model_obj, no2varname=no2_varname
                             )
 
-                        p = Pair()
+                        p = pair()
 
                         paired_data_cp = paired_data.sel(
                             time=slice(self.start_time.date(), self.end_time.date())
@@ -932,7 +932,7 @@ class Analysis:
                             paired_data_atswath, model_obj, method=regrid_method
                         )
 
-                        p = Pair()
+                        p = pair()
 
                         paired_data = paired_data_atgrid.sel(
                             time=slice(self.start_time, self.end_time)
@@ -974,7 +974,7 @@ class Analysis:
                         )
                         paired_obsgrid = sutil.omps_l3_daily_o3_pairing(mod_dat, obs_dat, keys[0])
 
-                        p = Pair()
+                        p = pair()
                         p.type = obs.obs_type
                         p.obs = obs.label
                         p.model = mod.label
@@ -1010,7 +1010,7 @@ class Analysis:
                             paired = sutil.mopitt_l3_pairing(
                                 model_obj, obs_dat, keys[0], global_model=mod.is_global
                             )
-                            p = Pair()
+                            p = pair()
                             p.type = obs.obs_type
                             p.obs = obs.label
                             p.model = mod.label

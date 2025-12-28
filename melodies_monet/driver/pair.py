@@ -2,7 +2,7 @@ import xarray as xr
 import pandas as pd
 
 
-class Pair:
+class pair:
     """The pair class.
 
     The pair class pairs model data

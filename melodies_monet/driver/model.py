@@ -4,7 +4,7 @@ import xarray as xr
 import monetio as mio
 
 
-class Model:
+class model:
     """The model class.
 
     A class with information and data from model results.
