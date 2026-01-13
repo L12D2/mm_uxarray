@@ -1,8 +1,8 @@
-from .model import model
-from .observation import observation
-from .pair import pair
+from melodies_monet.driver.model import model
+from melodies_monet.driver.observation import observation
+from melodies_monet.driver.pair import pair
 
-from .analysis import analysis
+from melodies_monet.driver.analysis import analysis
 
 
 __all__ = (
