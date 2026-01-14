@@ -62,17 +62,20 @@ class model:
         from melodies_monet import tutorial
 
         print(self.file_str)
-        if self.file_str.startswith("example:"):
+        if isinstance(self.file_str, list):
+            self.files = sorted(self.file_str)
+        elif self.file_str.startswith("example:"):
             example_id = ":".join(s.strip() for s in self.file_str.split(":")[1:])
             self.files = [tutorial.fetch_example(example_id)]
         else:
             self.files = sort(glob(self.file_str))
 
         # add option to read list of files from text file
-        _, extension = os.path.splitext(self.file_str)
-        if extension.lower() == ".txt":
-            with open(self.file_str, "r") as f:
-                self.files = f.read().split()
+        if not isinstance(self.file_str, list):
+            _, extension = os.path.splitext(self.file_str)
+            if extension.lower() == '.txt':
+                with open(self.file_str,'r') as f:
+                    self.files = f.read().split()
 
         if self.file_vert_str is not None:
             self.files_vert = sort(glob(self.file_vert_str))

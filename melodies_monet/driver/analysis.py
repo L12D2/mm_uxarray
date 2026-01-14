@@ -304,7 +304,12 @@ class analysis:
                     m.mod_kwargs = self.control_dict["model"][mod]["mod_kwargs"]
                 m.label = mod
                 # create file string (note this can include hot strings)
-                m.file_str = os.path.expandvars(self.control_dict["model"][mod]["files"])
+                if isinstance(self.control_dict['model'][mod]['files'], list):
+                    m.file_str = [
+                        os.path.expandvars(f) for f in self.control_dict['model'][mod]['files']
+                    ]
+                else:
+                    m.file_str = os.path.expandvars(self.control_dict['model'][mod]['files'])
                 if "files_vert" in self.control_dict["model"][mod].keys():
                     m.file_vert_str = os.path.expandvars(
                         self.control_dict["model"][mod]["files_vert"]

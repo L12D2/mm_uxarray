@@ -20,6 +20,7 @@ class observation:
         """The data object (:class:`pandas.DataFrame` or :class:`xarray.Dataset`)."""
         self.type = "pt_src"
         self.sat_type = None
+        self.sat_method = None
         self.data_proc = None
         self.variable_dict = None
         self.variable_summing = None
@@ -36,6 +37,7 @@ class observation:
             f"    obj={repr(self.obj) if self.obj is None else '...'},\n"
             f"    type={self.type!r},\n"
             f"    sat_type={self.sat_type!r},\n"
+            f"    sat_method={self.sat_method!r},\n"
             f"    data_proc={self.data_proc!r},\n"
             f"    variable_dict={self.variable_dict!r},\n"
             f"    resample={self.resample!r},\n"
