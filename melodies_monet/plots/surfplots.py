@@ -861,7 +861,7 @@ def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
     # For unstructured grid, we need a more advanced plotting code
     # Call an external function (Plot_2D)
     if vmodel.attrs.get('mio_has_unstructured_grid',False):
-        from melodies_monet.plot.Plot_2D import Plot_2D
+        from melodies_monet.plots.Plot_2D import Plot_2D
         
         fig = plt.figure( figsize=fig_dict['figsize'] )
         ax = fig.add_subplot(1,1,1,projection=proj)
