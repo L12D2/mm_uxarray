@@ -16,7 +16,7 @@ from monet.util.stats import (
 )
 import numpy as np
 import matplotlib.pyplot as plt
-from ..plots import savefig
+from melodies_monet.plots import savefig
 
 def produce_stat_dict(stat_list,spaces=False):
     """Select statistics. Only statistics listed in the default dictionary 
