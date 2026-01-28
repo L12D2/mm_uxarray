@@ -24,7 +24,7 @@ Incompatibilities
 -----------------
 - ``pandas=1`` is incompatible with ``matplotlib`` 3.9+.
 - ``wrf-python``, at least in the official conda-forge package, is not available for Python 3.12+, until `this build issue <https://github.com/conda-forge/wrf-python-feedstock/pull/70>`__ is resolved.
-- ``wrf-python`` has known incompatibilities with newer versions of ``netCDF4`` and ``setuptools`` that may cause runtime failures (e.g., when calling ``open_models()`` for WRF-Chem data).  
+- The version of ``wrf-python`` compatible with python=3.11 has known incompatibilities with newer ``netCDF4`` and ``setuptools`` versions. Note that currently, MELODIES-MONET installs by default with Python 3.11 in conda. We have done some testing installing it from source with Python 3.14 (using the pip comand referred to in the :doc:`/develop/developers_guide`, which would avoid those issues, but note that testing this is still work in progress.
   This is an upstream issue. WRF-Chem users are strongly encouraged to use a pinned environment (see below).
 
 .. _user-install-instructions:
