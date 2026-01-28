@@ -14,7 +14,7 @@ Optional dependencies
 ---------------------
 
 - ``netcdf4`` (`from Unidata <https://unidata.github.io/netcdf4-python/>`__; most likely needed for reading model/obs datasets)
-- ``wrf-python`` (needed in order to use the WRF-Chem reader; note that ``wrf-python`` has known incompatibilities with newer ``netCDF4`` and ``setuptools`` versions — see *Incompatibilities* below)
+- ``wrf-python`` (needed in order to use the WRF-Chem reader; note that the version of ``wrf-python`` compatible with python=3.11 has known incompatibilities with newer ``netCDF4`` and ``setuptools`` versions — see *Incompatibilities* below)
 - ``typer`` (to use the :doc:`/cli`;
   add ``rich`` `for <https://typer.tiangolo.com/release-notes/#060>`__ fancy tracebacks and ``--help``)
 - ``pooch`` (to enable automatic downloading of :doc:`tutorial datasets </examples/tutorial-data>`)
