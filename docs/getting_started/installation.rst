@@ -62,7 +62,7 @@ First create and activate a conda environment::
 
 Add dependencies from conda-forge::
 
-    $ conda install -y -c conda-forge pyyaml pandas=1 'matplotlib-base<3.9' monet monetio "netcdf4<1.7" "setuptools<70" wrf-python typer rich pooch jupyterlab
+    $ conda install -y -c conda-forge pyyaml pandas=1 "matplotlib-base<3.9" monet monetio "netcdf4<1.7" "setuptools<70" wrf-python typer rich pooch jupyterlab
    
 Now, install the stable branch of MELODIES-MONET to the environment::
 
