@@ -41,7 +41,7 @@ We have recently created a conda-forge release of MELODIES-MONET to make install
 with just 1 line of code below::
 
     $ conda create --name melodies-monet -y -c conda-forge \
-      python=3.11 netcdf4<1.7 setuptools<70 wrf-python melodies-monet jupyterlab
+      python=3.11 "netcdf4<1.7" "setuptools<70" wrf-python melodies-monet jupyterlab
 
 .. note::
    WRF-Chem users may experience failures with newer ``netCDF4`` or ``setuptools`` versions due to upstream
