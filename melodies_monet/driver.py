@@ -659,11 +659,13 @@ class model:
                 self.mod_kwargs.update({'fname_sfc' : self.files_surf})
             self.obj = mio.models._ufschem_v1.open_mfdataset(self.files,**self.mod_kwargs)
         elif any([mod_type in self.model.lower() for mod_type in ('ufs', 'rrfs')]):
-            print('**** Reading UFS-AQM model output...')
+            print('**** Reading UFS-AQM or UFS-Chem model output...')
             if 'rrfs' in self.model.lower():
                 warnings.warn("mod_type: 'rrfs' is deprecated. use 'ufs'." , DeprecationWarning)
             if self.files_pm25 is not None:
                 self.mod_kwargs.update({'fname_pm25' : self.files_pm25})
+            if self.files_surf is not None:
+                self.mod_kwargs.update({'fname_sfc' : self.files_surf})
             self.mod_kwargs.update({'var_list' : list_input_var})
             if hasattr(mio.models, 'ufs'):
                 loader = mio.models.ufs.open_mfdataset

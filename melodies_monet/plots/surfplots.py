@@ -187,10 +187,12 @@ def map_projection(m, *, model_name=None):
         else:
             raise NotImplementedError('WRFChem projection not supported. Please add to surfplots.py')         
     # Need to add the projections you want to use for the other models here.
-    elif mod in ('rrfs', 'ufs'):
+    elif mod in ('rrfs', 'ufs') and m.is_global is False:
         proj = ccrs.LambertConformal(
             central_longitude=m.obj.cen_lon, central_latitude=m.obj.cen_lat)
-    elif mod in {"ufschem", 'cesm_fv', 'cesm_se', 'raqms'}: # added ufs-chem here 
+    elif mod in {'ufs'} and m.is_global is True: # added global option for ufs-chem here 
+        proj = ccrs.PlateCarree()
+    elif mod in {'cesm_fv', 'cesm_se', 'raqms'}:
         proj = ccrs.PlateCarree()
     elif mod == 'random':
         proj = ccrs.PlateCarree()
