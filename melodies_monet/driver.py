@@ -652,12 +652,6 @@ class model:
                     list_input_var.remove(vn)
             self.mod_kwargs.update({'var_list' : list_input_var})
             self.obj = mio.models._wrfchem_mm.open_mfdataset(self.files,**self.mod_kwargs)
-        elif 'ufschem' in self.model.lower(): # added ufs-chem 
-            print('**** Reading UFS-CHEM model output...')
-            self.mod_kwargs.update({'var_list' : list_input_var})
-            if self.files_surf is not None:
-                self.mod_kwargs.update({'fname_sfc' : self.files_surf})
-            self.obj = mio.models._ufschem_v1.open_mfdataset(self.files,**self.mod_kwargs)
         elif any([mod_type in self.model.lower() for mod_type in ('ufs', 'rrfs')]):
             print('**** Reading UFS-AQM or UFS-Chem model output...')
             if 'rrfs' in self.model.lower():
