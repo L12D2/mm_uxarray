@@ -18,6 +18,7 @@ class observation:
         self.file = None
         self.obj = None
         """The data object (:class:`pandas.DataFrame` or :class:`xarray.Dataset`)."""
+        self.extra_calc = None
         self.type = "pt_src"
         self.sat_type = None
         self.sat_method = None
@@ -35,6 +36,7 @@ class observation:
             f"    label={self.label!r},\n"
             f"    file={self.file!r},\n"
             f"    obj={repr(self.obj) if self.obj is None else '...'},\n"
+            f"    extra_calc={self.extra_calc!r},\n"
             f"    type={self.type!r},\n"
             f"    sat_type={self.sat_type!r},\n"
             f"    sat_method={self.sat_method!r},\n"
@@ -72,6 +74,17 @@ class observation:
 
         assert len(files) >= 1, "need at least one"
 
+        # extra calc handling for obs
+        if self.extra_calc is not None:
+            for v in self.extra_calc.values():
+                if v is None:
+                    continue
+                for input_var in v.values():
+                    if self.variable_dict is None:
+                        self.variable_dict = {}
+                    if input_var not in self.variable_dict:
+                        self.variable_dict[input_var] = "None"
+                        
         _, extension = os.path.splitext(files[0])
         try:
             if extension in {".nc", ".ncf", ".netcdf", ".nc4"}:
@@ -99,6 +112,24 @@ class observation:
         self.sum_variables()
         self.resample_data()
         self.filter_obs()
+
+        if self.extra_calc is not None:
+            print("Performing extra calculations for obs...")
+            
+            if "ptemp_obs" in self.extra_calc:
+                print("Calculating observed potential temperature...")
+                from melodies_monet.util.metcalc import ptemp
+            
+                varmap = self.extra_calc["ptemp_obs"]
+                self.obj = ptemp(
+                    self.obj,
+                    varmap=varmap,
+                    output_key="ptemp_obs",
+                    default_keys={"pressure": "pressure_obs", "temperature": "temperature_C"}
+                )
+    
+            else:
+                print("No extra calculations performed.")
 
     def add_coordinates_ground(self):
         """Add latitude and longitude coordinates to data when the observation type is ground and
