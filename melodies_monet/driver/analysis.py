@@ -322,10 +322,14 @@ class analysis:
                     m.file_pm25_str = os.path.expandvars(
                         self.control_dict["model"][mod]["files_pm25"]
                     )
+                    
+                # create extra_calc mapping 
+                m.extra_calc = self.control_dict['model'][mod].get('extra_calc')
+                
                 # create mapping
                 m.mapping = self.control_dict["model"][mod]["mapping"]
+                
                 # add variable dict
-
                 if "variables" in self.control_dict["model"][mod].keys():
                     m.variable_dict = self.control_dict["model"][mod]["variables"]
                 if "variable_summing" in self.control_dict["model"][mod].keys():
@@ -412,6 +416,10 @@ class analysis:
                     o.ground_coordinate = self.control_dict["obs"][obs]["ground_coordinate"]
                 if "sat_type" in self.control_dict["obs"][obs].keys():
                     o.sat_type = self.control_dict["obs"][obs]["sat_type"]
+
+                # create extra_calc mapping
+                o.extra_calc = self.control_dict['obs'][obs].get('extra_calc')
+                
                 if load_files:
                     if o.obs_type in [
                         "sat_swath_sfc",
@@ -1107,9 +1115,24 @@ class analysis:
 
             # read-in special settings for multi-boxplot
             if plot_type == "multi_boxplot":
-                region_name = grp_dict["region_name"]
-                region_list = grp_dict["region_list"]
-                model_name_list = grp_dict["model_name_list"]
+                interval_list = grp_dict.get('interval_list', None)
+                interval_var = grp_dict.get('interval_var', None)
+                gridlines = grp_dict.get('gridlines', None)
+                xlabel = grp_dict.get('xlabel', None)
+                interval_labels = grp_dict.get('interval_labels', None)
+                region_name = grp_dict.get('region_name', None)
+                region_list = grp_dict.get('region_list', None)
+                model_name_list = grp_dict.get('model_name_list', None)
+
+            #read-in special settings for multi-boxplot
+            if plot_type == 'boxplot':
+                gridlines = grp_dict.get('gridlines', None)
+                set_stat_sig = grp_dict.get('data_proc', {}).get('set_stat_sig', None)
+                
+            # read in special settings for violin 
+            if plot_type == 'violin':
+                gridlines = grp_dict.get('gridlines', None) 
+                set_stat_sig = grp_dict.get('data_proc', {}).get('set_stat_sig', None)
 
             # read-in special settings for ozone sonde related plots
             if plot_type in {
@@ -1145,9 +1168,23 @@ class analysis:
                 score_name = grp_dict["score_name"]
                 model_name_list = grp_dict["model_name_list"]
                 threshold_tick_style = grp_dict.get("threshold_tick_style", None)
+                gridlines = grp_dict.get('gridlines', None)
+
+            #read-in special settings for rose plot
+            if plot_type == "rose_plot":
+                color_map = grp_dict.get('color_map', 'viridis')
+
+            #read-in special settings for vertprofile
+            if plot_type == "vertprofile":
+                ylabel = grp_dict.get("ylabel", None)
+                gridlines = grp_dict.get('gridlines', None)
+                vertprofile_bins = grp_dict.get('vertprofile_bins', None)
+                
+            #read-in special settings for scatter density plot
+            if plot_type == "scatter_density":
+                gridlines = grp_dict.get('gridlines', None)
 
             # first get the observational obs labels
-
             obs_vars = []
             for pair_label in pair_labels:
                 obs_vars.extend(self.paired[pair_label].obs_vars)
@@ -1286,6 +1323,15 @@ class analysis:
                             domain_type,
                             domain_name,
                         )
+
+                        #Read in special settings for spatial plots with the option to calculate windbarbs.
+                        #These are dependent on the model in the pair so need to be read here for each pair.
+                        if plot_type in ["spatial_overlay","spatial_bias","spatial_bias_exceedance"]:
+                            u_comp = self.control_dict["model"][p.model].get(
+                                "extra_calc", {}).get('wind_barb', {}).get('u_comp', None)
+                            v_comp = self.control_dict["model"][p.model].get(
+                                "extra_calc", {}).get('wind_barb', {}).get('v_comp', None)
+                            wind_barb = grp_dict['data_proc'].get('wind_barb', False)
 
                         # Query with filter options
                         if (
@@ -1491,27 +1537,24 @@ class analysis:
                             # Steps needed to subset paired df if secondary y-axis (altitude_variable) limits are provided,
                             # ELSE: make_timeseries from surfaceplots.py plots the whole df by default
                             # Edit below to accommodate 'ground' or 'mobile' where altitude_yax2 is not needed for timeseries
-                            altitude_yax2 = grp_dict["data_proc"].get("altitude_yax2", {})
 
-                            # Extract vmin_y2 and vmax_y2 from filter_dict
-                            # Check if 'filter_dict' exists and 'altitude' is a key in filter_criteria
-                            # Extract vmin_y2 and vmax_y2 from filter_dict
-                            # Better structure for filter_dict (min and max secondary axis) to be optional below
+                            # changing this to be adaptable to pressure
+                            altitude_yax2 = grp_dict["data_proc"].get("altitude_yax2", {})
+                            altitude_variable = altitude_yax2.get('altitude_variable', 'altitude')
+
                             filter_criteria = (
                                 altitude_yax2.get("filter_dict", None)
                                 if isinstance(altitude_yax2, dict)
                                 else None
                             )
 
-                            if filter_criteria and "altitude" in filter_criteria:
-                                vmin_y2, vmax_y2 = filter_criteria["altitude"]["value"]
-                            elif filter_criteria is None:
-
-                                if "altitude" in pairdf:
-                                    vmin_y2 = pairdf["altitude"].min()
-                                    vmax_y2 = pairdf["altitude"].max()
-                                else:
-                                    vmin_y2 = vmax_y2 = None
+                            if filter_criteria and altitude_variable in filter_criteria:
+                                # Use user-defined min/max from filter_dict
+                                vmin_y2, vmax_y2 = filter_criteria[altitude_variable]['value']
+                            elif altitude_variable in pairdf:
+                                # Use data min/max if no filter_dict
+                                vmin_y2 = pairdf[altitude_variable].min()
+                                vmax_y2 = pairdf[altitude_variable].max()
                             else:
                                 vmin_y2 = vmax_y2 = None
 
@@ -1603,18 +1646,6 @@ class analysis:
                                     obs_dict,
                                     obs_plot_dict,
                                 )  # Clear axis for next plot.
-
-                            # At the end save the plot.
-                            ##if p_index == len(pair_labels) - 1:
-                            # Adding Altitude variable as secondary y-axis to timeseries (for, model vs aircraft) qzr++
-
-                            # Older approach without 'altitude_yax2' control list in YAML now commented out
-                            ##if grp_dict['data_proc'].get('altitude_variable'):
-                            ##  altitude_variable = grp_dict['data_proc']['altitude_variable']
-                            ##  altitude_ticks = grp_dict['data_proc'].get('altitude_ticks', 1000)  # Get altitude tick interval from YAML or default to 1000
-                            ##  ax = airplots.add_yax2_altitude(ax, pairdf, altitude_variable, altitude_ticks, text_kwargs)
-                            ##savefig(outname + '.png', logo_height=150)
-                            ##del (ax, fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict) #Clear axis for next plot.
 
                         elif plot_type.lower() == "curtain":
                             # Set cmin and cmax from obs_plot_dict for colorbar limits
@@ -1795,17 +1826,35 @@ class analysis:
                                 vmax = None
                             # Select altitude variable from the .yaml file
                             altitude_variable = grp_dict["altitude_variable"]
+                            
                             # Define the bins for binning the altitude
-                            bins = grp_dict["vertprofile_bins"]
+                            # more generic bin setting that can handle altitude and pressure
+                            bin_settings = grp_dict.get('vertprofile_bins', {}).get('range', None)
+
+                            if bin_settings and all(k in bin_settings for k in ['start', 'stop', 'step']):
+                                print(f"Using vertprofile_bins from YAML range: {bin_settings}")
+                                vertprofile_bins = list(range(
+                                    int(bin_settings['start']),
+                                    int(bin_settings['stop']),
+                                    int(bin_settings['step'])
+                                ))
+                            else:
+                                print("Bin range must be specified in YAML! Defaulting to generic bin list.")
+
+                                # generic fallback option. 
+                                vertprofile_bins = [0, 1000, 3000, 4000, 5000, 6000]
+
+                            bins = vertprofile_bins
                             if p_index == 0:
                                 # First plot the observations.
                                 ax = airplots.make_vertprofile(
                                     pairdf,
                                     column=obsvar,
                                     label=p.obs,
-                                    bins=bins,
+                                    ylabel = ylabel,
+                                    gridlines = gridlines, 
+                                    bins = bins,
                                     altitude_variable=altitude_variable,
-                                    ylabel=use_ylabel,
                                     vmin=vmin,
                                     vmax=vmax,
                                     domain_type=domain_type,
@@ -1824,8 +1873,9 @@ class analysis:
                                 label=p.model,
                                 ax=ax,
                                 bins=bins,
+                                ylabel = ylabel,
+                                gridlines = gridlines,
                                 altitude_variable=altitude_variable,
-                                ylabel=use_ylabel,
                                 vmin=vmin,
                                 vmax=vmax,
                                 domain_type=domain_type,
@@ -1847,6 +1897,57 @@ class analysis:
                                     obs_dict,
                                     obs_plot_dict,
                                 )  # Clear axis for next plot.
+
+                        elif plot_type.lower() == 'rose_plot':
+                            
+                            model_wdir = self.control_dict["model"][p.model].get(
+                                'extra_calc', {}).get('rose_plot', {}).get('model_wdir', None)
+                            model_wspd = self.control_dict["model"][p.model].get(
+                                "extra_calc", {}).get('rose_plot', {}).get('model_wspd', None)
+                            obs_wdir = self.control_dict["obs"][p.obs].get(
+                                'extra_calc', {}).get('rose_plot', {}).get('obs_wdir', None)
+                            obs_wspd = self.control_dict["obs"][p.obs].get(
+                                "extra_calc", {}).get('rose_plot', {}).get('obs_wspd', None)
+                            
+                            if model_wdir is None or model_wspd is None or obs_wdir is None or obs_wspd is None:
+                                print('Please add model_wdir, model_wspd, obs_wdir, obs_wspd to the YAML file under')
+                                print('extra_calc under rose_plot for each model and obs. Skipping rose plot.')
+                                continue
+                            
+                            wr_calm_limit = grp_dict['data_proc'].get('wr_calm_limit',0.5)
+
+                            if obsvar == obs_wdir:
+                                print('Cannot make a wind rose plot with wind direction as second input.')
+                                print('Skipping rose plot for the following variable: ' + obsvar)
+                                continue
+                            
+                            # drop rows where model and observed wind direction are missing. 
+                            # obsvar and modvar nan occurs above. 
+                            rose_df = pairdf.reset_index().dropna(subset=[model_wdir, obs_wdir])
+                            
+                            # user can change out obsvar and modvar to create pollution rose or a traditional 
+                            # windrose plot by setting obsvar and modvar equal to wind speed. 
+                            splots.make_rose_plot(
+                                rose_df,
+                                obsvar=obsvar,
+                                modvar=modvar,
+                                obs_wdir=obs_wdir,
+                                model_wdir=model_wdir,
+                                obs_wspd=obs_wspd,
+                                model_wspd=model_wspd,
+                                wr_calm_limit=wr_calm_limit,
+                                color_map=color_map,
+                                ylabel=use_ylabel,
+                                outname=outname,
+                                domain_type=domain_type,
+                                domain_name=domain_name,
+                                plot_dict=obs_dict,
+                                fig_dict=fig_dict,
+                                text_dict=text_dict,
+                                debug=self.debug)
+                                
+                            #Clear info for next plot.
+                            del (fig_dict, plot_dict, text_dict, obs_dict, obs_plot_dict)
 
                         elif plot_type.lower() == "vertical_single_date":
                             # to use vmin, vmax from obs in yaml
@@ -2121,6 +2222,8 @@ class analysis:
                                     domain_name=domain_name,
                                     fig_dict=fig_dict,
                                     text_dict=text_dict,
+                                    set_stat_sig=set_stat_sig,
+                                    gridlines=gridlines,
                                     debug=self.debug,
                                 )
 
@@ -2206,7 +2309,7 @@ class analysis:
                             print(
                                 f"Processing scatter density plot for model '{model_label}' and observation '{obs_label}'..."
                             )
-                            ax = airplots.make_scatter_density_plot(
+                            ax = splots.make_scatter_density_plot(
                                 pairdf,
                                 mod_var=modvar,
                                 obs_var=obsvar,
@@ -2219,6 +2322,7 @@ class analysis:
                                 vmax_x=vmax_x,
                                 vmin_y=vmin_y,
                                 vmax_y=vmax_y,
+                                gridlines = gridlines,
                                 outname=outname_pair,
                                 **kwargs,
                             )
@@ -2287,6 +2391,8 @@ class analysis:
                                     fig_dict=fig_dict,
                                     text_dict=text_dict,
                                     debug=self.debug,
+                                    set_stat_sig=set_stat_sig,
+                                    gridlines = gridlines,
                                 )
                                 # Clear info for next plot.
                                 del (
@@ -2315,13 +2421,20 @@ class analysis:
                             else:
                                 vmin = None
                                 vmax = None
-                            # First for p_index = 0 create the obs box plot data array.
 
+                            if interval_var is not None: 
+                                xlabel = xlabel
+                            else:
+                                xlabel = ""
+                                
+                            # First for p_index = 0 create the obs box plot data array.
                             if p_index == 0:
                                 comb_bx, label_bx, region_bx = splots.calculate_multi_boxplot(
                                     pairdf,
                                     pairdf_reg,
                                     region_name=region_name,
+                                    interval_var=interval_var,
+                                    interval_list=interval_list,
                                     column=obsvar,
                                     label=p.obs,
                                     plot_dict=obs_dict,
@@ -2332,6 +2445,8 @@ class analysis:
                                 pairdf,
                                 pairdf_reg,
                                 region_name=region_name,
+                                interval_var=interval_var,
+                                interval_list=interval_list,
                                 column=modvar,
                                 label=p.model,
                                 plot_dict=plot_dict,
@@ -2346,8 +2461,11 @@ class analysis:
                                     label_bx,
                                     region_bx,
                                     region_list=region_list,
+                                    region_name=region_name,
+                                    interval_labels=interval_labels,
                                     model_name_list=model_name_list,
                                     ylabel=use_ylabel,
+                                    xlabel = xlabel,
                                     vmin=vmin,
                                     vmax=vmax,
                                     outname=outname,
@@ -2356,6 +2474,7 @@ class analysis:
                                     plot_dict=obs_dict,
                                     fig_dict=fig_dict,
                                     text_dict=text_dict,
+                                    gridlines = gridlines,
                                     debug=self.debug,
                                 )
                                 # Clear info for next plot.
@@ -2531,6 +2650,7 @@ class analysis:
                                     domain_name=domain_name,
                                     model_name_list=model_name_list,
                                     threshold_tick_style=threshold_tick_style,
+                                    gridlines=gridlines,
                                 )
                                 # save figure
                                 plt.tight_layout()
@@ -2640,6 +2760,9 @@ class analysis:
                                 ptile=use_percentile,
                                 vdiff=vdiff,
                                 outname=outname,
+                                u_comp=u_comp, 
+                                v_comp=v_comp,
+                                wind_barb=wind_barb,
                                 domain_type=domain_type,
                                 domain_name=domain_name,
                                 fig_dict=fig_dict,
@@ -2738,6 +2861,9 @@ class analysis:
                                     ylabel=use_ylabel,
                                     vdiff=vdiff,
                                     outname=outname,
+                                    u_comp = u_comp,
+                                    v_comp = v_comp,
+                                    wind_barb = wind_barb,
                                     domain_type=domain_type,
                                     domain_name=domain_name,
                                     fig_dict=fig_dict,
@@ -2833,6 +2959,9 @@ class analysis:
                                     nlevels=nlevels,
                                     proj=proj,
                                     outname=outname,
+                                    u_comp=u_comp, 
+                                    v_comp=v_comp,
+                                    wind_barb=wind_barb,
                                     domain_type=domain_type,
                                     domain_name=domain_name,
                                     fig_dict=fig_dict,
