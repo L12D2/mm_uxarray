@@ -31,7 +31,7 @@ except ImportError:
 import matplotlib.dates as mdates
 from monet.util.tools import get_epa_region_bounds as get_epa_bounds 
 import math
-from ..plots import savefig
+from melodies_monet.plots import savefig
 
 
 # Define a custom formatting function 
