@@ -16,7 +16,7 @@ from monet.plots.taylordiagram import TaylorDiagram as td
 from monet.util.tools import get_epa_region_bounds as get_epa_bounds
 from monet.util.tools import get_giorgi_region_bounds as get_giorgi_bounds
 
-from ..plots import savefig
+from melodies_monet.plots import savefig
 
 plt.set_loglevel(level="warning")
 logging.getLogger("PIL").setLevel(logging.WARNING)
