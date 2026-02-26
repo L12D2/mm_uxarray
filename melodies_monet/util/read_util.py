@@ -24,7 +24,7 @@ def read_saved_data(analysis, filenames, method, attr, xr_kws={}):
     import xarray as xr
     from glob import glob
     import os
-    from .. import tutorial
+    from melodies_monet import tutorial
     
     # Determine where to read files from
     if getattr(analysis,'output_dir_read') is not None:
