@@ -823,7 +823,9 @@ class analysis:
                             obs.obj = obs.obj.swap_dims({"time": "x"})
                         if pairing_kws["apply_ak"] is True:
                             model_obj = mod.obj[keys + ["pres_pa_mid", "surfpres_pa"]]
-
+                            overpass_datetime = pd.date_range(self.start_time.replace(hour=13,minute=30),
+                                                              self.end_time.replace(hour=13,minute=30),freq='D')
+                            model_obj = sutil.mod_to_overpasstime(model_obj,overpass_datetime)
                             paired_data = sutil.omps_nm_pairing_apriori(model_obj, obs.obj, keys)
                         else:
                             model_obj = mod.obj[keys + ["dp_pa"]]
