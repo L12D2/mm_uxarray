@@ -79,7 +79,7 @@ def mod_to_overpasstime(modobj,opass_tms,partial_col=None):
     outmod['time'] = (['time'],opass_tms)
     
     if partial_col:
-        from .tools import calc_partialcolumn        
+        from melodies_monet.util.tools import calc_partialcolumn        
         outmod[f'{partial_col}_col'] = calc_partialcolumn(outmod,var=partial_col)
         
     return outmod

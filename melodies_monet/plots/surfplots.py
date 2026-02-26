@@ -15,7 +15,7 @@ from monet.plots.taylordiagram import TaylorDiagram as td
 from matplotlib.colors import ListedColormap
 from monet.util.tools import get_epa_region_bounds as get_epa_bounds 
 import math
-from ..plots import savefig
+from melodies_monet.plots import savefig
 
 def make_24hr_regulatory(df, col=None):
     """Calculates 24-hour averages
@@ -824,8 +824,8 @@ def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
         title_add = 'EPA Region ' + domain_name + ': '
     elif domain_type.startswith('custom:') or domain_type.startswith('auto-region:'):
         valid_data = vmodel.notnull()
-        lons = vmodel.longitude.where(valid_data)
-        lats = vmodel.latitude.where(valid_data)
+        lons = vmodel.where(valid_data).longitude
+        lats = vmodel.where(valid_data).latitude
         latmin, lonmin, latmax, lonmax = lats.min(), lons.min(), lats.max(), lons.max()
         title_add = domain_name + ': '
     else:
@@ -861,7 +861,7 @@ def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
     # For unstructured grid, we need a more advanced plotting code
     # Call an external function (Plot_2D)
     if vmodel.attrs.get('mio_has_unstructured_grid',False):
-        from .Plot_2D import Plot_2D
+        from melodies_monet.plots.Plot_2D import Plot_2D
         
         fig = plt.figure( figsize=fig_dict['figsize'] )
         ax = fig.add_subplot(1,1,1,projection=proj)
