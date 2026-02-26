@@ -3268,7 +3268,7 @@ class analysis:
 
                         # Create empty list for all dom
                         # Calculate statistic and append to list
-                        if obsvar == "WD":  # Use separate calculations for WD
+                        if obsvar in ["WD", "wdir"]:  # Use separate calculations for WD
                             p_stat_list.append(
                                 proc_stats.calc(
                                     pairdf, stat=stat_grp, obsvar=obsvar, modvar=modvar, wind=True
