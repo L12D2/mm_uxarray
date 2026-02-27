@@ -840,7 +840,7 @@ class analysis:
                         label = "{}_{}".format(p.obs, p.model)
                         self.paired[label] = p
 
-                    if obs.sat_type == "tropomi_l2_no2" and (obs.sat_method == None or self.sat_method == "replace_apriori"):
+                    if obs.sat_type == "tropomi_l2_no2" and (obs.sat_method == None or obs.sat_method == "replace_apriori"):
                         from melodies_monet.util import sat_l2_swath_utility as no2util
                         from melodies_monet.util import satellite_utilities as sutil
 
