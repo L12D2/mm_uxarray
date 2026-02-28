@@ -1117,7 +1117,7 @@ class analysis:
             if plot_type == "multi_boxplot":
                 interval_list = grp_dict.get('interval_list', None)
                 interval_var = grp_dict.get('interval_var', None)
-                gridlines = grp_dict.get('gridlines', None)
+                gridlines = grp_dict.get('gridlines', False)
                 xlabel = grp_dict.get('xlabel', None)
                 interval_labels = grp_dict.get('interval_labels', None)
                 region_name = grp_dict.get('region_name', None)
@@ -1126,12 +1126,12 @@ class analysis:
 
             #read-in special settings for multi-boxplot
             if plot_type == 'boxplot':
-                gridlines = grp_dict.get('gridlines', None)
+                gridlines = grp_dict.get('gridlines', False)
                 set_stat_sig = grp_dict.get('data_proc', {}).get('set_stat_sig', None)
                 
             # read in special settings for violin 
             if plot_type == 'violin':
-                gridlines = grp_dict.get('gridlines', None) 
+                gridlines = grp_dict.get('gridlines', False) 
                 set_stat_sig = grp_dict.get('data_proc', {}).get('set_stat_sig', None)
 
             # read-in special settings for ozone sonde related plots
@@ -1168,7 +1168,7 @@ class analysis:
                 score_name = grp_dict["score_name"]
                 model_name_list = grp_dict["model_name_list"]
                 threshold_tick_style = grp_dict.get("threshold_tick_style", None)
-                gridlines = grp_dict.get('gridlines', None)
+                gridlines = grp_dict.get('gridlines', False)
 
             #read-in special settings for rose plot
             if plot_type == "rose_plot":
@@ -1177,12 +1177,12 @@ class analysis:
             #read-in special settings for vertprofile
             if plot_type == "vertprofile":
                 ylabel = grp_dict.get("ylabel", None)
-                gridlines = grp_dict.get('gridlines', None)
+                gridlines = grp_dict.get('gridlines', False)
                 vertprofile_bins = grp_dict.get('vertprofile_bins', None)
                 
             #read-in special settings for scatter density plot
             if plot_type == "scatter_density":
-                gridlines = grp_dict.get('gridlines', None)
+                gridlines = grp_dict.get('gridlines', False)
 
             # first get the observational obs labels
             obs_vars = []
