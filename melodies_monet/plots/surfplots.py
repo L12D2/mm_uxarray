@@ -1345,7 +1345,7 @@ def make_boxplot(comb_bx, label_bx, ylabel = None, vmin = None, vmax = None, out
         ylabel = label_bx[0]['column']
     
     # gridline option
-    if gridlines is not None:
+    if gridlines:
         sns.set_style("whitegrid")
     else:
         sns.set_style("ticks")
@@ -1385,7 +1385,7 @@ def make_boxplot(comb_bx, label_bx, ylabel = None, vmin = None, vmax = None, out
     ax.set_ylabel(ylabel,fontweight='bold',**text_kwargs)
     ax.tick_params(labelsize=text_kwargs['fontsize']*0.8)
 
-    if set_stat_sig is not None:
+    if set_stat_sig:
         # statistical significance of the means 
         p_values = []
         
@@ -1484,7 +1484,7 @@ def make_multi_boxplot(comb_bx, label_bx,region_bx,region_list = None, region_na
         ylabel = label_bx[0]['column']
     
     # gridline option
-    if gridlines is not None:
+    if gridlines:
         sns.set_style("whitegrid")
     else:
         sns.set_style("ticks")
@@ -2180,7 +2180,7 @@ def Calc_Score(score_name_input,threshold_input, model_input, obs_input):
    
     return output_score
 
-def Plot_CSI(column,score_name_input,threshold_list_input, comb_bx_input,plot_dict,fig_dict,text_dict,domain_type,domain_name,model_name_list,threshold_tick_style, gridlines = None):
+def Plot_CSI(column,score_name_input,threshold_list_input, comb_bx_input,plot_dict,fig_dict,text_dict,domain_type,domain_name,model_name_list,threshold_tick_style, gridlines = False):
 
     CSI_output = []  #(2, threshold len)
     threshold_list = threshold_list_input

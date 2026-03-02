@@ -451,7 +451,7 @@ def make_curtain_plot(time, altitude, model_data_2d, obs_pressure, pairdf, mod_v
 def make_vertprofile(df, column=None, label=None, ax=None, 
                      bins=None, 
                      ylabel = None,
-                     gridlines = None,
+                     gridlines = False,
                      altitude_variable=None, #ylabel=None,
                      vmin=None, vmax=None, 
                      domain_type=None, domain_name=None,
@@ -471,10 +471,12 @@ def make_vertprofile(df, column=None, label=None, ax=None,
         Matplotlib ax from previous occurrence so it can overlay obs and model results on the same plot.
     bins : int or array-like
         Bins for binning the altitude variable.
-    altitude_variable: str
-        The Altitude variable in the paired df e.g., 'MSL_GPS_Altitude_YANG'
     ylabel : str
         Title of y-axis.
+    gridlines : boolean
+        Draws background gridlines
+    altitude_variable: str
+        The Altitude variable in the paired df e.g., 'MSL_GPS_Altitude_YANG'
     vmin : float
         Min value to use on y-axis.
     vmax : float
@@ -753,7 +755,7 @@ def make_vertprofile(df, column=None, label=None, ax=None,
     else: 
         ax.set_ylabel("Unspecified ylabel in yaml", fontweight='bold', **text_kwargs)
 
-    if gridlines is not None:
+    if gridlines:
         ax.grid(True)
     else:
         ax.grid(False)
@@ -892,7 +894,7 @@ def make_violin_plot(comb_violin, label_violin, outname='plot',
     text_kwargs = {**def_text, **text_dict} if text_dict else def_text
     
     # gridline option
-    if gridlines is not None:
+    if gridlines:
         plt.grid(True)
     else:
         plt.grid(False)
@@ -909,7 +911,7 @@ def make_violin_plot(comb_violin, label_violin, outname='plot',
     # Increase tick label size
     plt.tick_params(axis='both', labelsize=text_kwargs['fontsize']*0.8)
 
-    if set_stat_sig is not None:
+    if set_stat_sig:
         # statistical significance of the means 
         p_values = []
     
