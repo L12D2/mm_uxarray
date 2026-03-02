@@ -547,7 +547,7 @@ def make_timeseries(df, df_reg=None, column=None, label=None, ax=None, avg_windo
             ax.set_title(domain_name,fontweight='bold',**text_kwargs)
     return ax
 
-def make_scatter_density_plot(df, mod_var=None, obs_var=None, ax=None, color_map='viridis', xlabel=None, ylabel=None, title=None, fill=False, vmin_x=None, vmax_x=None, vmin_y=None, gridlines = False, vmax_y=None, outname='plot', **kwargs):
+def make_scatter_density_plot(df, mod_var=None, obs_var=None, ax=None, color_map='viridis', xlabel=None, ylabel=None, title=None, fill=False, vmin_x=None, vmax_x=None, vmin_y=None, vmax_y=None, gridlines = False, outname='plot', **kwargs):
     
     """  
     Creates a scatter density plot for the specified column (variable) in the paired DataFrame (df).
@@ -574,18 +574,19 @@ def make_scatter_density_plot(df, mod_var=None, obs_var=None, ax=None, color_map
         Fill set to True for seaborn kde plot
     outname : str
         File location and name of plot.
-    **kwargs: dict 
-        Additional keyword arguments for customization
     gridlines : boolean
         Draws background gridlines 
+    **kwargs: dict 
+        Additional keyword arguments for customization
+
     Returns
     -------
     ax : ax
         Matplotlib ax such that driver.py can iterate to overlay multiple models on the same plot.
     """
         
-        # Create a custom colormap based on color_map options in yaml or just use default colormap id color_map is just a string (e.g. viridis)
-        # Determine the normalization based on vcenter
+    # Create a custom colormap based on color_map options in yaml or just use default colormap id color_map is just a string (e.g. viridis)
+    # Determine the normalization based on vcenter
     vcenter = kwargs.get('vcenter', None)
         
     if vcenter is not None:
@@ -626,7 +627,7 @@ def make_scatter_density_plot(df, mod_var=None, obs_var=None, ax=None, color_map
 
     if fill:  # For KDE plot
         #print("Generating KDE plot...")
-    
+        
         # Check the type of the colormap and set Seaborn's palette accordingly
         if isinstance(cmap, mpl.colors.ListedColormap):
             sns.set_palette(cmap.colors)
@@ -643,9 +644,14 @@ def make_scatter_density_plot(df, mod_var=None, obs_var=None, ax=None, color_map
         # Get the QuadMesh object from the Axes for the colorbar and explicitly set its colormap
         mappable = ax.collections[0]
         mappable.set_cmap(cmap)
+
+        # gridline option
+        if gridlines:
+            ax.set_axisbelow(False)
+            ax.grid(True, color='white', linestyle='--', linewidth=0.5)
         
     else:  # For scatter plot using matplotlib
-        print("Generating scatter plot...")
+        #print("Generating scatter plot...")
         
         plot = plt.scatter(x_data, y_data, c=y_data, cmap=cmap, norm=norm, marker='o', 
                            **{k: v for k, v in kwargs.items() if k in plt.scatter.__code__.co_varnames})
@@ -662,11 +668,11 @@ def make_scatter_density_plot(df, mod_var=None, obs_var=None, ax=None, color_map
         plt.plot(x_line, y_line, color="black", ls="--", label="Best Fit Line")
         plt.legend()
     
-    # gridline option
-    if gridlines:
-        ax.grid(True)
-    else:
-        ax.grid(False)
+        # gridline option
+        if gridlines:
+            ax.grid(True)
+        else:
+            ax.grid(False)
         
     # Set plot labels and titles
     if xlabel:
