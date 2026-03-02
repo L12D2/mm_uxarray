@@ -2278,6 +2278,7 @@ class analysis:
                                 "ylabel",
                                 "title",
                                 "data",
+                                "gridlines",
                             ]
                             kwargs = {
                                 key: value
