@@ -82,7 +82,11 @@ class model:
         if self.file_vert_str is not None:
             self.files_vert = sort(glob(self.file_vert_str))
         if self.file_surf_str is not None:
-            self.files_surf = sort(glob(self.file_surf_str))
+            if self.file_surf_str.startswith("example:"):
+                example_id = ":".join(s.strip() for s in self.file_surf_str.split(":")[1:])
+                self.files_surf = [tutorial.fetch_example(example_id)]
+            else:
+                self.files_surf = sort(glob(self.file_surf_str))
         if self.file_pm25_str is not None:
             self.files_pm25 = sort(glob(self.file_pm25_str))
 
