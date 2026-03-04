@@ -1168,7 +1168,7 @@ class analysis:
 
             #read-in special settings for vertprofile
             if plot_type == "vertprofile":
-                ylabel = grp_dict.get("ylabel", None)
+                ylabel_vert = grp_dict.get("ylabel_vert", None)
                 vertprofile_bins = grp_dict.get('vertprofile_bins', None)
 
             # first get the observational obs labels
@@ -1839,9 +1839,10 @@ class analysis:
                                     column=obsvar,
                                     label=p.obs,
                                     bins = bins,
-                                    ylabel = ylabel,
+                                    ylabel_vert = ylabel_vert,
                                     gridlines = gridlines,
                                     altitude_variable=altitude_variable,
+                                    ylabel=use_ylabel,
                                     vmin=vmin,
                                     vmax=vmax,
                                     domain_type=domain_type,
@@ -1860,9 +1861,10 @@ class analysis:
                                 label=p.model,
                                 ax=ax,
                                 bins=bins,
-                                ylabel = ylabel,
+                                ylabel_vert = ylabel_vert,
                                 gridlines = gridlines,
                                 altitude_variable=altitude_variable,
+                                ylabel=use_ylabel,
                                 vmin=vmin,
                                 vmax=vmax,
                                 domain_type=domain_type,
