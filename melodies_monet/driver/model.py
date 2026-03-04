@@ -321,8 +321,7 @@ class model:
                 self.obj = ptemp(
                     self.obj,
                     varmap=varmap,
-                    output_key="ptemp_mod",
-                    default_keys={"pressure": "pressure_model", "temperature": "temperature_k"}
+                    output_key="ptemp_mod"
                 )
                 
             else:

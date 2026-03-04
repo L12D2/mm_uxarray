@@ -124,8 +124,7 @@ class observation:
                 self.obj = ptemp(
                     self.obj,
                     varmap=varmap,
-                    output_key="ptemp_obs",
-                    default_keys={"pressure": "pressure_obs", "temperature": "temperature_C"}
+                    output_key="ptemp_obs"
                 )
     
             else:
