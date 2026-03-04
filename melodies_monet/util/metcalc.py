@@ -171,7 +171,7 @@ def wdir(obj, varmap = None, output_key = "winddir"):
     v = obj[v_key].compute()
     #Unfortunately, wind_direction does not work with dask in metpy.
     #Maybe find another solution as we move to optimize memory usage, 
-    #but for now just compuete these.
+    #but for now just compute these.
 
     wdir = (metpy.calc.wind_direction(
         u * units("m/s"),
