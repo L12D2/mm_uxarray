@@ -200,7 +200,6 @@ def add_yax2_altitude(ax, pairdf, altitude_yax2, text_kwargs, vmin_y2, vmax_y2):
         Matplotlib ax such that driver.py can iterate to overlay multiple models on the same plot.
     """
     ax2 = ax.twinx()
-    #print("length of pairdf", len(pairdf))
     
     # Fetch altitude parameters from altitude_yax2
     altitude_variable = altitude_yax2['altitude_variable']
@@ -217,27 +216,16 @@ def add_yax2_altitude(ax, pairdf, altitude_yax2, text_kwargs, vmin_y2, vmax_y2):
                    color=plot_kwargs_y2.get('color', 'g'))
     ax2.tick_params(axis='y', labelcolor=plot_kwargs_y2.get('color', 'g'), 
                     labelsize=text_kwargs['fontsize'] * 0.8)
-    ax2.set_ylim(vmin_y2, vmax_y2) 
+    ax2.set_ylim(vmin_y2, vmax_y2)
     ax2.set_xlim(ax.get_xlim())
-
-    #print(vmin_y2)
-    #print(vmax_y2)
+    start_tick = max(0, vmin_y2 - altitude_ticks)
+    ax2.yaxis.set_ticks(np.arange(start_tick, vmax_y2 + altitude_ticks + 1, altitude_ticks))
     
-    #start_tick = max(0, vmin_y2 - altitude_ticks)
-    #ax2.yaxis.set_ticks(np.arange(start_tick, vmax_y2 + altitude_ticks + 1, altitude_ticks))
-    #tick_values = np.arange(start_tick, vmax_y2 + altitude_ticks + 1, altitude_ticks)
-
-    # flip the axis is pressure is there. 
+    # flip the secondary y-axis if pressure is there. 
     if altitude_variable == "pressure_obs":
-        ax2.set_ylim(vmax_y2, vmin_y2)
-
-        # Flip the primary x axis as well for pressure 
-        ax.invert_yaxis()
-    else:
-        start_tick = max(0, vmin_y2 - altitude_ticks)
-        tick_values = np.arange(start_tick, vmax_y2 + altitude_ticks + 1, altitude_ticks)
-        ax2.set_ylim(vmin_y2, vmax_y2)
-        ax2.yaxis.set_ticks(tick_values)
+        y0, y1 = ax2.get_ylim()
+        if y0 < y1:
+            ax2.invert_yaxis()
         
     # Extract the current legend and add a custom legend for the altitude line
     lines, labels = ax.get_legend_handles_labels()
@@ -450,9 +438,9 @@ def make_curtain_plot(time, altitude, model_data_2d, obs_pressure, pairdf, mod_v
 ####NEW vertprofile has option for both shading (for interquartile range) or box (interquartile range)-whisker (10th-90th percentile bounds) (qzr++)
 def make_vertprofile(df, column=None, label=None, ax=None, 
                      bins=None, 
-                     ylabel = None,
+                     ylabel_vert = None,
                      gridlines = False,
-                     altitude_variable=None, #ylabel=None,
+                     altitude_variable=None, ylabel=None,
                      vmin=None, vmax=None, 
                      domain_type=None, domain_name=None,
                      plot_dict=None, fig_dict=None, text_dict=None, debug=False, interquartile_style=None):
@@ -512,7 +500,15 @@ def make_vertprofile(df, column=None, label=None, ax=None,
         text_kwargs = {**def_text, **text_dict}
     else:
         text_kwargs = def_text
-    
+
+    # Set ylabel to column if not specified
+    if ylabel_vert is None:
+        if altitude_variable is None:
+            ylabel_vert = "Altitude (m)" #Default to Altitude if none provided
+        else:
+            ylabel_vert = altitude_variable
+    if ylabel is None:
+        ylabel = column
     if label is not None:
         plot_dict['label'] = label
     if vmin is not None and vmax is not None:
@@ -748,13 +744,9 @@ def make_vertprofile(df, column=None, label=None, ax=None,
     ax.yaxis.set_major_formatter(FuncFormatter(custom_yaxis_formatter))                     
     
     # Set parameters for all plots
-    ax.set_xlabel(column, fontweight='bold', **text_kwargs) 
+    ax.set_ylabel(ylabel_vert, fontweight='bold', **text_kwargs)
+    ax.set_xlabel(ylabel, fontweight='bold', **text_kwargs) 
     
-    if ylabel is not None:
-        ax.set_ylabel(ylabel, fontweight='bold', **text_kwargs)
-    else: 
-        ax.set_ylabel("Unspecified ylabel in yaml", fontweight='bold', **text_kwargs)
-
     if gridlines:
         ax.grid(True)
     else:
@@ -770,15 +762,14 @@ def make_vertprofile(df, column=None, label=None, ax=None,
             ax.set_title('EPA Region ' + domain_name,fontweight='bold',**text_kwargs)
         else:
             ax.set_title(domain_name,fontweight='bold',**text_kwargs)         
-                
-    #breakpoint() #debug
+
     # invert the yaxis for pressure to be on bottom
     # function is called multiple times so this should ensure high to low pressure yax setting
     # is respected. 
     if altitude_variable == "pressure_obs":
         y0, y1 = ax.get_ylim()
         if y0 < y1:
-            ax.invert_yaxis()           
+            ax.invert_yaxis()       
     return ax
 
 ##NEW Violin plot 
