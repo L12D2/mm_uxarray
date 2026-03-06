@@ -19,7 +19,10 @@ Optional dependencies
   add ``rich`` `for <https://typer.tiangolo.com/release-notes/#060>`__ fancy tracebacks and ``--help``)
 - ``pooch`` (to enable automatic downloading of :doc:`tutorial datasets </examples/tutorial-data>`)
 - ``regionmask`` (`for complex region masking support <https://regionmask.readthedocs.io/en/stable/>`__; can read shapefiles, geojson, arbitrary polygons and predefined regions.)
-- ``metpy`` (`for meteorological calculations done in metcalc.util <https://unidata.github.io/MetPy/v0.2/)
+- ``metpy`` (for meteorological calculations)
+- ``windrose`` (for windrose plots)
+- ``statannotations`` (for statistical significance annotations on box and violin plots)
+
 
 Incompatibilities
 -----------------
@@ -42,7 +45,7 @@ We have recently created a conda-forge release of MELODIES MONET to make install
 with just 1 line of code below::
 
     $ conda create --name melodies-monet -y -c conda-forge \
-      python=3.11 "netcdf4<1.7" "setuptools<70" wrf-python melodies-monet jupyterlab
+      python=3.11 "netcdf4<1.7" "setuptools<70" wrf-python melodies-monet jupyterlab metpy windrose statannotations
 
 .. note::
    WRF-Chem users may experience failures with newer ``netCDF4`` or ``setuptools`` versions due to upstream
@@ -63,7 +66,8 @@ First create and activate a conda environment::
 
 Add dependencies from conda-forge::
 
-    $ conda install -y -c conda-forge pyyaml pandas=1 "matplotlib-base<3.9" monet monetio "netcdf4<1.7" "setuptools<70" wrf-python typer rich pooch jupyterlab
+    $ conda install -y -c conda-forge pyyaml pandas=1 "matplotlib-base<3.9" \ 
+      monet monetio "netcdf4<1.7" "setuptools<70" wrf-python typer rich pooch jupyterlab metpy windrose statannotations
    
 Now, install the stable branch of MELODIES MONET to the environment::
 
