@@ -17,7 +17,7 @@ from monet.plots.taylordiagram import TaylorDiagram as td
 from matplotlib.colors import ListedColormap
 from monet.util.tools import get_epa_region_bounds as get_epa_bounds 
 import math
-from ..plots import savefig
+from melodies_monet.plots import savefig
 
 def make_24hr_regulatory(df, col=None):
     """Calculates 24-hour averages
@@ -122,7 +122,7 @@ def map_projection(f):
         else:
             raise NotImplementedError('WRFChem projection not supported. Please add to surfplots.py')         
     #Need to add the projections you want to use for the other models here.        
-    elif f.model.lower() == 'rrfs':
+    elif f.model.lower() in ('rrfs', 'ufs'):
         proj = ccrs.LambertConformal(
             central_longitude=f.obj.cen_lon, central_latitude=f.obj.cen_lat)
     elif f.model.lower() in ['cesm_fv','cesm_se','raqms']:

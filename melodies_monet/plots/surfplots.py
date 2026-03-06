@@ -9,6 +9,7 @@ import numpy as np
 import cartopy.crs as ccrs
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+import matplotlib.ticker as mtick
 from numpy import corrcoef
 sns.set_context('paper')
 from monet.plots.taylordiagram import TaylorDiagram as td
@@ -16,19 +17,22 @@ from matplotlib.colors import ListedColormap
 from monet.util.tools import get_epa_region_bounds as get_epa_bounds 
 from matplotlib.colors import TwoSlopeNorm, ListedColormap, LinearSegmentedColormap, Normalize
 import math
-from ..plots import savefig
+from melodies_monet.plots import savefig
 
 try:
     from scipy.stats import ttest_ind
+except ImportError:
+    ttest_ind = None
+try:
     from statannotations.Annotator import Annotator
+except ImportError:
+    Annotator = None
+try:
     import windrose
     from windrose import WindroseAxes
 except ImportError:
-    ttest_ind = None
-    Annotator = None
     windrose = None
     WindroseAxes = None
-
 
 def make_24hr_regulatory(df, col=None):
     """Calculates 24-hour averages
@@ -141,7 +145,7 @@ def map_projection(m, *, model_name=None):
     m : melodies_monet.driver.model
         Model class instance.
     model_name : str, optional
-        For example, ``'rrfs'``. ``m.model.lower()`` used if not provided.
+        For example, ``'ufs'``. ``m.model.lower()`` used if not provided.
         If provided, will be used to create a new projection
         (i.e., an existing ``m.proj`` projection won't be returned).
 
@@ -183,10 +187,12 @@ def map_projection(m, *, model_name=None):
         else:
             raise NotImplementedError('WRFChem projection not supported. Please add to surfplots.py')         
     # Need to add the projections you want to use for the other models here.
-    elif mod == 'rrfs':
+    elif mod in ('rrfs', 'ufs') and m.is_global is False:
         proj = ccrs.LambertConformal(
             central_longitude=m.obj.cen_lon, central_latitude=m.obj.cen_lat)
-    elif mod in {"ufschem", 'cesm_fv', 'cesm_se', 'raqms'}: # added ufs-chem here 
+    elif mod in {'ufs'} and m.is_global is True: # added global option for ufs-chem here 
+        proj = ccrs.PlateCarree()
+    elif mod in {'cesm_fv', 'cesm_se', 'raqms'}:
         proj = ccrs.PlateCarree()
     elif mod == 'random':
         proj = ccrs.PlateCarree()
@@ -259,7 +265,7 @@ def get_utcoffset(lat,lon):
 
 def make_spatial_bias(df, df_reg=None, column_o=None, label_o=None, column_m=None, 
                       label_m=None, ylabel = None, ptile = None, vdiff=None,
-                      outname = 'plot', u_comp = None, v_comp = None,
+                      outname = 'plot', u_comp = None, v_comp = None, wind_barb=False,
                       domain_type=None, domain_name=None, fig_dict=None, 
                       text_dict=None,debug=False): 
         
@@ -287,6 +293,12 @@ def make_spatial_bias(df, df_reg=None, column_o=None, label_o=None, column_m=Non
         Min and max value to use on colorbar axis
     outname : str
         file location and name of plot (do not include .png)
+    u_comp : str
+        Name of u_component in the model to use for wind barbs
+    v_comp : str
+        Name of v_component in the model to use for wind barbs
+    wind_barb : boolean
+        Whether to plot wind barbs (True) or not (False)
     domain_type : str
         Domain type specified in input yaml file
     domain_name : str
@@ -376,32 +388,30 @@ def make_spatial_bias(df, df_reg=None, column_o=None, label_o=None, column_m=Non
 
     if 'extent' not in map_kwargs:
         map_kwargs['extent'] = [lonmin,lonmax,latmin,latmax]  
-    ax.axes.set_extent(map_kwargs['extent'],crs=ccrs.PlateCarree())
+    ax.axes.set_extent(map_kwargs['extent'],crs=map_kwargs['crs'])
 
     #print(df.columns)
     
-    if u_comp is not None and v_comp is not None:  
-        print("Wind barbs may take longer to plot... Please be patient.")
+    if wind_barb:
+        if u_comp is not None and v_comp is not None:
+            #Recalculate mean, so always use mean for windbarbs and not percentiles.
+            df_mean_wind=df.groupby(['siteid'],as_index=False).mean(numeric_only=True)
 
-        u_mod = df_mean[u_comp]
-        v_mod = df_mean[v_comp] 
+            u_mod = df_mean_wind[u_comp]
+            v_mod = df_mean_wind[v_comp]
 
-        #ensure all bias stats are MODEL-OBS (enables you to tell the direction of the 
-        #model relative to observations)
-        #u_mean=u_mod - u_obs
-        #v_mean=v_mod - v_obs
-
-        # set skip for less clutter
-        skip=2
-        ax.barbs(
-            df_mean["longitude"][::skip], # long
-            df_mean["latitude"][::skip], # lat
-            u_mod[::skip], 
-            v_mod[::skip], # u, v 
-            length=6, linewidth=0.85
-        )  # order per matplot lib follows (x, y, u, v)
-    else:
-        print("U-comp and V-comp need to be specified in the yaml file. Plotting wind barbs failed!")
+            # set skip for less clutter
+            skip=1
+            ax.barbs(
+                df_mean_wind["longitude"][::skip], # long
+                df_mean_wind["latitude"][::skip], # lat
+                u_mod[::skip]*1.94384, 
+                v_mod[::skip]*1.94384, # u, v
+                transform=map_kwargs['crs'],
+                length=6, linewidth=0.85
+            )  # order per matplot lib follows (x, y, u, v)
+        else:
+            print("U-comp and V-comp need to be specified in the yaml file. Plotting wind barbs failed!")
 
     #Update colorbar
     f = plt.gcf()
@@ -535,7 +545,7 @@ def make_timeseries(df, df_reg=None, column=None, label=None, ax=None, avg_windo
             ax.set_title(domain_name,fontweight='bold',**text_kwargs)
     return ax
 
-def make_scatter_density_plot(df, mod_var=None, obs_var=None, ax=None, color_map='viridis', xlabel=None, ylabel=None, title=None, fill=False, vmin_x=None, vmax_x=None, vmin_y=None, gridlines = False, vmax_y=None, outname='plot', **kwargs):
+def make_scatter_density_plot(df, mod_var=None, obs_var=None, ax=None, color_map='viridis', xlabel=None, ylabel=None, title=None, fill=False, vmin_x=None, vmax_x=None, vmin_y=None, vmax_y=None, gridlines = False, outname='plot', **kwargs):
     
     """  
     Creates a scatter density plot for the specified column (variable) in the paired DataFrame (df).
@@ -562,18 +572,19 @@ def make_scatter_density_plot(df, mod_var=None, obs_var=None, ax=None, color_map
         Fill set to True for seaborn kde plot
     outname : str
         File location and name of plot.
-    **kwargs: dict 
-        Additional keyword arguments for customization
     gridlines : boolean
         Draws background gridlines 
+    **kwargs: dict 
+        Additional keyword arguments for customization
+
     Returns
     -------
     ax : ax
         Matplotlib ax such that driver.py can iterate to overlay multiple models on the same plot.
     """
         
-        # Create a custom colormap based on color_map options in yaml or just use default colormap id color_map is just a string (e.g. viridis)
-        # Determine the normalization based on vcenter
+    # Create a custom colormap based on color_map options in yaml or just use default colormap id color_map is just a string (e.g. viridis)
+    # Determine the normalization based on vcenter
     vcenter = kwargs.get('vcenter', None)
         
     if vcenter is not None:
@@ -614,7 +625,7 @@ def make_scatter_density_plot(df, mod_var=None, obs_var=None, ax=None, color_map
 
     if fill:  # For KDE plot
         #print("Generating KDE plot...")
-    
+        
         # Check the type of the colormap and set Seaborn's palette accordingly
         if isinstance(cmap, mpl.colors.ListedColormap):
             sns.set_palette(cmap.colors)
@@ -631,9 +642,14 @@ def make_scatter_density_plot(df, mod_var=None, obs_var=None, ax=None, color_map
         # Get the QuadMesh object from the Axes for the colorbar and explicitly set its colormap
         mappable = ax.collections[0]
         mappable.set_cmap(cmap)
+
+        # gridline option
+        if gridlines:
+            ax.set_axisbelow(False)
+            ax.grid(True, color='white', linestyle='--', linewidth=0.5)
         
     else:  # For scatter plot using matplotlib
-        print("Generating scatter plot...")
+        #print("Generating scatter plot...")
         
         plot = plt.scatter(x_data, y_data, c=y_data, cmap=cmap, norm=norm, marker='o', 
                            **{k: v for k, v in kwargs.items() if k in plt.scatter.__code__.co_varnames})
@@ -650,11 +666,11 @@ def make_scatter_density_plot(df, mod_var=None, obs_var=None, ax=None, color_map
         plt.plot(x_line, y_line, color="black", ls="--", label="Best Fit Line")
         plt.legend()
     
-    # gridline option
-    if gridlines:
-        ax.grid(True)
-    else:
-        ax.grid(False)
+        # gridline option
+        if gridlines:
+            ax.grid(True)
+        else:
+            ax.grid(False)
         
     # Set plot labels and titles
     if xlabel:
@@ -927,9 +943,10 @@ def make_taylor(df, df_reg=None, column_o=None, label_o='Obs', column_m=None, la
     ax.axis["right"].major_ticklabels.set_fontsize(text_kwargs['fontsize']*0.8)
     return dia
 
-def make_spatial_overlay(df, vmodel, u_comp = None, v_comp = None, column_o=None, label_o=None, column_m=None, 
+def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None, 
                       label_m=None, ylabel = None, vmin=None,
-                      vmax = None, nlevels = None, proj = None, outname = 'plot', 
+                      vmax = None, nlevels = None, proj = None, outname = 'plot',
+                      u_comp = None, v_comp = None, wind_barb = False,
                       domain_type=None, domain_name=None, fig_dict=None, 
                       text_dict=None,debug=False):
         
@@ -963,6 +980,12 @@ def make_spatial_overlay(df, vmodel, u_comp = None, v_comp = None, column_o=None
         cartopy projection to use in plot
     outname : str
         file location and name of plot (do not include .png)
+    u_comp : str
+        Name of u_component in the model to use for wind barbs
+    v_comp : str
+        Name of v_component in the model to use for wind barbs
+    wind_barb : boolean
+        Whether to plot wind barbs (True) or not (False)
     domain_type : str
         Domain type specified in input yaml file
     domain_name : str
@@ -1019,8 +1042,8 @@ def make_spatial_overlay(df, vmodel, u_comp = None, v_comp = None, column_o=None
         title_add = 'EPA Region ' + domain_name + ': '
     elif domain_type.startswith('custom:') or domain_type.startswith('auto-region:'):
         valid_data = vmodel.notnull()
-        lons = vmodel.longitude.where(valid_data)
-        lats = vmodel.latitude.where(valid_data)
+        lons = vmodel.where(valid_data).longitude
+        lats = vmodel.where(valid_data).latitude
         latmin, lonmin, latmax, lonmax = lats.min(), lons.min(), lats.max(), lons.max()
         title_add = domain_name + ': '
     else:
@@ -1056,7 +1079,7 @@ def make_spatial_overlay(df, vmodel, u_comp = None, v_comp = None, column_o=None
     # For unstructured grid, we need a more advanced plotting code
     # Call an external function (Plot_2D)
     if vmodel.attrs.get('mio_has_unstructured_grid',False):
-        from .Plot_2D import Plot_2D
+        from melodies_monet.plots.Plot_2D import Plot_2D
         
         fig = plt.figure( figsize=fig_dict['figsize'] )
         ax = fig.add_subplot(1,1,1,projection=proj)
@@ -1069,30 +1092,23 @@ def make_spatial_overlay(df, vmodel, u_comp = None, v_comp = None, column_o=None
         ax = vmodel_mean.monet.quick_contourf(cbar_kwargs=cbar_kwargs, figsize=map_kwargs['figsize'], map_kws=map_kwargs,
                                     robust=True, norm=norm, cmap=cmap, levels=clevel, extend='both') 
 
-    if u_comp is not None and v_comp is not None: 
-        print("Wind barbs may take longer to plot... Please be patient.")
-        u_mod = vmodel[u_comp].mean(dim='time').squeeze()
-        v_mod = vmodel[v_comp].mean(dim='time').squeeze()
-        
-        #u_mod = vmodel_u[u_comp]
-        #v_mod = vmodel_v[v_comp] 
+    if wind_barb:
+        if u_comp is not None and v_comp is not None:
+            u_mod = vmodel[u_comp].mean(dim='time').squeeze()
+            v_mod = vmodel[v_comp].mean(dim='time').squeeze()
 
-        #ensure all bias stats are MODEL-OBS (enables you to tell the direction of the 
-        #model relative to observations)
-        #u_mean=u_mod - u_obs
-        #v_mean=v_mod - v_obs
-
-        # set skip for less clutter
-        skip=2
-        ax.barbs(
-            u_mod["longitude"][::skip], # long
-            u_mod["latitude"][::skip], # lat
-            u_mod[::skip]*1.94384, 
-            v_mod[::skip]*1.94384, # u, v 
-            length=6, linewidth=0.85
-        )  # order per matplot lib follows (x, y, u, v)
-    else:
-        print("U-comp and V-comp need to be specified in the yaml file. Plotting wind barbs failed!")
+            # set skip for less clutter
+            skip=2
+            ax.barbs(
+                u_mod["longitude"][::skip], # long
+                u_mod["latitude"][::skip], # lat
+                u_mod[::skip]*1.94384, 
+                v_mod[::skip]*1.94384, # u, v
+                transform=map_kwargs['crs'],
+                length=6, linewidth=0.85
+            )  # order per matplot lib follows (x, y, u, v)
+        else:
+            print("U-comp and V-comp need to be specified in the yaml file. Plotting wind barbs failed!")
 
     plt.gcf().canvas.draw() 
     plt.tight_layout(pad=0)
@@ -1326,7 +1342,7 @@ def make_boxplot(comb_bx, label_bx, ylabel = None, vmin = None, vmax = None, out
         ylabel = label_bx[0]['column']
     
     # gridline option
-    if gridlines is not None:
+    if gridlines:
         sns.set_style("whitegrid")
     else:
         sns.set_style("ticks")
@@ -1366,7 +1382,7 @@ def make_boxplot(comb_bx, label_bx, ylabel = None, vmin = None, vmax = None, out
     ax.set_ylabel(ylabel,fontweight='bold',**text_kwargs)
     ax.tick_params(labelsize=text_kwargs['fontsize']*0.8)
 
-    if set_stat_sig is not None:
+    if set_stat_sig:
         # statistical significance of the means 
         p_values = []
         
@@ -1379,7 +1395,7 @@ def make_boxplot(comb_bx, label_bx, ylabel = None, vmin = None, vmax = None, out
            # print(vals2)
             stat, p = ttest_ind(vals1, vals2) #Calculate the T-test for the means of two independent samples of scores.
             p_values.append(p)
-            print(p_values)
+            #print(p_values)
         
         # add *, **, and *** 
         ax = plt.gca()
@@ -1465,7 +1481,7 @@ def make_multi_boxplot(comb_bx, label_bx,region_bx,region_list = None, region_na
         ylabel = label_bx[0]['column']
     
     # gridline option
-    if gridlines is not None:
+    if gridlines:
         sns.set_style("whitegrid")
     else:
         sns.set_style("ticks")
@@ -1564,7 +1580,13 @@ def make_multi_boxplot(comb_bx, label_bx,region_bx,region_list = None, region_na
 def make_rose_plot(rose_df, 
                    obsvar, # obs windspeed
                    modvar, # mod windspeed
+                   obs_wdir,
+                   model_wdir,
+                   obs_wspd,
+                   model_wspd,
+                   wr_calm_limit=0.5,
                    color_map= 'viridis',
+                   ylabel = None,
                    outname = 'plot', 
                    domain_type=None, 
                    domain_name=None, 
@@ -1578,13 +1600,25 @@ def make_rose_plot(rose_df,
     Parameters
     ----------
     rose_df : dataframe
-             model/obs pair data to plot
-    obsvar: 
-             observed variable to compare with observed wind direction
-    obsvar: 
-             modeled variable to compare with modeled wind direction
-    color_map: 
-             TBD
+        model/obs pair data to plot
+    obsvar: str
+        observed variable to compare with observed wind direction
+    modvar: str
+        modeled variable to compare with modeled wind direction
+    obs_wdir: str
+        observed variable name for wind direction
+    model_wdir: str
+        modeled variable name for wind direction.
+    obs_wspd: str
+        observed variable name for wind speed. Needed for pollution roses.
+    model_wspd: str
+        modeled variable name for wind speed. Needed for polution roses.
+    wr_calm_limit: real number
+        Limit to use for calm_winds. Default is 0.02 m/s.
+    color_map: str
+        Color_map to use in plot
+    ylabel : str
+        Title of y-axis
     outname : str
         file location and name of plot (do not include .png)
     domain_type : str
@@ -1628,6 +1662,10 @@ def make_rose_plot(rose_df,
     #colors = color_map
 
     color_map_config = color_map
+
+    # set ylabel to column if not specified.
+    if ylabel is None:
+        ylabel = obsvar
     
     # string is not callable. converting it. 
     if isinstance(color_map_config, dict):
@@ -1642,16 +1680,43 @@ def make_rose_plot(rose_df,
 
     if isinstance(cmap, mpl.colors.ListedColormap):
         cmap = LinearSegmentedColormap.from_list("custom", cmap.colors)
-        
+
+    #Remove calm winds for pollution roses only.
+    if obsvar != obs_wspd:
+        #Treat obs and model seperately and mask calm winds.
+        rose_obs = rose_df[[obs_wdir , obs_wspd, obsvar]].copy()
+        mask_calm_obs = (rose_obs[obs_wspd] <= wr_calm_limit)
+        rose_obs = rose_obs[~mask_calm_obs]
+        mask_calm_obs_per = mask_calm_obs.sum()*100.0/len(rose_df)
+
+        rose_model = rose_df[[model_wdir , model_wspd , modvar]].copy()
+        mask_calm_model = (rose_model[model_wspd] <= wr_calm_limit)
+        rose_model = rose_model[~mask_calm_model]
+        mask_calm_model_per = mask_calm_model.sum()*100.0/len(rose_df)
+
+        use_calm_limit = None
+    else:
+        #Treat obs and model seperately. Do not mask winds because it is 
+        #handled in the windrose routine, but do calculate percentage.
+        rose_obs = rose_df[[obs_wdir , obsvar]].copy()
+        mask_calm_obs = (rose_obs[obs_wspd] <= wr_calm_limit)
+        mask_calm_obs_per = mask_calm_obs.sum()*100.0/len(rose_df)
+
+        rose_model = rose_df[[model_wdir , modvar]].copy()
+        mask_calm_model = (rose_model[model_wspd] <= wr_calm_limit)
+        mask_calm_model_per = mask_calm_model.sum()*100.0/len(rose_df)
+
+        use_calm_limit = wr_calm_limit
+    
     #print(len(rose_df))
     #draw ax1 
     ax1 = WindroseAxes.from_ax(fig = fig,rect=rect_set1)
-    ax1.bar(rose_df.WD, rose_df[obsvar], normed=True, cmap=cmap, label = "Observed")
+    ax1.bar(rose_obs[obs_wdir], rose_obs[obsvar], normed=True, calm_limit = use_calm_limit, cmap=cmap, label = "Observed")
     #print("Obs:", rose_df.WD.mode()[0])
     
     # draw ax2
     ax2 = WindroseAxes.from_ax(fig = fig, rect=rect_set2)
-    ax2.bar(rose_df.winddir, rose_df[modvar], normed=True, cmap=cmap, label = "Modeled")
+    ax2.bar(rose_model[model_wdir], rose_model[modvar], normed=True, calm_limit = use_calm_limit, cmap=cmap, label = "Modeled")
     #print("Mod:",rose_df.winddir.mode()[0])
     
     # set label settings for the two axs
@@ -1659,14 +1724,21 @@ def make_rose_plot(rose_df,
         fontsize = text_kwargs["fontsize"]*0.8
         ax.set_thetagrids(range(0, 360, 45), 
                           fontsize=fontsize)
+        fmt = '%.0f%%' 
+        yticks = mtick.FormatStrFormatter(fmt)
+        ax.yaxis.set_major_formatter(yticks)
 
         for label in ax.get_yticklabels():
             label.set_fontsize(fontsize*0.8)
-        
-    ax1.set_xlabel("Observed", fontsize=text_kwargs["fontsize"]*0.9)
-    ax2.set_xlabel("Modeled", fontsize=text_kwargs["fontsize"]*0.9)
+            
+    ax1.set_xlabel("Observed\nCalm wind: " + str(round(mask_calm_obs_per,2)) 
+                   + "%\nCalm wind limit: " + str(round(wr_calm_limit,2)) + " m/s", 
+                   fontsize=text_kwargs["fontsize"]*0.9)
+    ax2.set_xlabel("Modeled\nCalm wind: " + str(round(mask_calm_model_per,2)) + 
+                   "%\nCalm wind limit: " + str(round(wr_calm_limit,2)) + " m/s", 
+                   fontsize=text_kwargs["fontsize"]*0.9)
     
-    legend_title = f"{obsvar}" # dynamically set eventually 
+    legend_title = f"{ylabel}" # dynamically set eventually 
     plt.legend(loc=(1.28, 0.4), fontsize=text_kwargs['fontsize']*0.8, title=legend_title,
               title_fontsize=text_kwargs["fontsize"]*0.8)
 
@@ -2105,7 +2177,7 @@ def Calc_Score(score_name_input,threshold_input, model_input, obs_input):
    
     return output_score
 
-def Plot_CSI(column,score_name_input,threshold_list_input, comb_bx_input,plot_dict,fig_dict,text_dict,domain_type,domain_name,model_name_list,threshold_tick_style, gridlines = None):
+def Plot_CSI(column,score_name_input,threshold_list_input, comb_bx_input,plot_dict,fig_dict,text_dict,domain_type,domain_name,model_name_list,threshold_tick_style, gridlines = False):
 
     CSI_output = []  #(2, threshold len)
     threshold_list = threshold_list_input
@@ -2171,9 +2243,9 @@ def Plot_CSI(column,score_name_input,threshold_list_input, comb_bx_input,plot_di
 
 
 def make_spatial_bias_exceedance(df, column_o=None, label_o=None, column_m=None,
-                                 u_comp = None, v_comp = None,
                                  label_m=None, ylabel = None,  vdiff=None,
                                  outname = 'plot',
+                                 u_comp = None, v_comp = None, wind_barb=False,
                                  domain_type=None, domain_name=None, fig_dict=None,
                                  text_dict=None,debug=False):
 
@@ -2197,6 +2269,12 @@ def make_spatial_bias_exceedance(df, column_o=None, label_o=None, column_m=None,
         Min and max value to use on colorbar axis
     outname : str
         file location and name of plot (do not include .png)
+    u_comp : str
+        Name of u_component in the model to use for wind barbs
+    v_comp : str
+        Name of v_component in the model to use for wind barbs
+    wind_barb : boolean
+        Whether to plot wind barbs (True) or not (False)
     domain_type : str
         Domain type specified in input yaml file
     domain_name : str
@@ -2293,29 +2371,28 @@ def make_spatial_bias_exceedance(df, column_o=None, label_o=None, column_m=None,
 
         if 'extent' not in map_kwargs:
             map_kwargs['extent'] = [lonmin,lonmax,latmin,latmax]
-        ax.axes.set_extent(map_kwargs['extent'],crs=ccrs.PlateCarree())
+        ax.axes.set_extent(map_kwargs['extent'],crs=map_kwargs['crs'])
 
-        if u_comp is not None and v_comp is not None: 
-            print("Wind barbs may take longer to plot... Please be patient.")
-            u_mod = df_mean[u_comp]
-            v_mod = df_mean[v_comp] 
+        if wind_barb:
+            if u_comp is not None and v_comp is not None:
+                #Recalculate mean, so always use mean for windbarbs and not percentiles.
+                df_mean_wind=df.groupby(['siteid'],as_index=False).mean(numeric_only=True)
+            
+                u_mod = df_mean_wind[u_comp]
+                v_mod = df_mean_wind[v_comp]
     
-            #ensure all bias stats are MODEL-OBS (enables you to tell the direction of the 
-            #model relative to observations)
-            #u_mean=u_mod - u_obs
-            #v_mean=v_mod - v_obs
-    
-            # set skip for less clutter
-            skip=2
-            ax.barbs(
-                df_mean["longitude"][::skip], # long
-                df_mean["latitude"][::skip], # lat
-                u_mod[::skip]*1.94384, 
-                v_mod[::skip]*1.94384, # u, v 
-                length=6, linewidth=0.85
-            )  # order per matplot lib follows (x, y, u, v)
-        else:
-            print("U-comp and V-comp need to be specified in the yaml file. Plotting wind barbs failed!")
+                # set skip for less clutter
+                skip=1
+                ax.barbs(
+                    df_mean_wind["longitude"][::skip], # long
+                    df_mean_wind["latitude"][::skip], # lat
+                    u_mod[::skip]*1.94384, 
+                    v_mod[::skip]*1.94384, # u, v
+                    transform=map_kwargs['crs'],
+                    length=6, linewidth=0.85
+                )  # order per matplot lib follows (x, y, u, v)
+            else:
+                print("U-comp and V-comp need to be specified in the yaml file. Plotting wind barbs failed!")
         
         #Update colorbar
         f = plt.gcf()

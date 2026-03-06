@@ -18,26 +18,20 @@ from matplotlib.colors import TwoSlopeNorm, LinearSegmentedColormap, Normalize
 from matplotlib.patches import Rectangle
 from matplotlib.ticker import FuncFormatter
 
-# optional dependencies.   
+# optional dependencies.
 try:
-    from metpy.units import units
-    import metpy.calc as mcalc
-    import metpy.constants as mconst
     from scipy.stats import ttest_ind
-    from scipy.ndimage import uniform_filter1d
+except ImportError:
+    ttest_ind = None
+try:
     from statannotations.Annotator import Annotator
 except ImportError:
-    units = None
-    mcalc = None
-    mconst = None
-    ttest_ind = None
-    uniform_filter1d = None
     Annotator = None
 
 import matplotlib.dates as mdates
 from monet.util.tools import get_epa_region_bounds as get_epa_bounds 
 import math
-from ..plots import savefig
+from melodies_monet.plots import savefig
 
 
 # Define a custom formatting function 
@@ -206,7 +200,6 @@ def add_yax2_altitude(ax, pairdf, altitude_yax2, text_kwargs, vmin_y2, vmax_y2):
         Matplotlib ax such that driver.py can iterate to overlay multiple models on the same plot.
     """
     ax2 = ax.twinx()
-    #print("length of pairdf", len(pairdf))
     
     # Fetch altitude parameters from altitude_yax2
     altitude_variable = altitude_yax2['altitude_variable']
@@ -223,27 +216,16 @@ def add_yax2_altitude(ax, pairdf, altitude_yax2, text_kwargs, vmin_y2, vmax_y2):
                    color=plot_kwargs_y2.get('color', 'g'))
     ax2.tick_params(axis='y', labelcolor=plot_kwargs_y2.get('color', 'g'), 
                     labelsize=text_kwargs['fontsize'] * 0.8)
-    ax2.set_ylim(vmin_y2, vmax_y2) 
+    ax2.set_ylim(vmin_y2, vmax_y2)
     ax2.set_xlim(ax.get_xlim())
-
-    #print(vmin_y2)
-    #print(vmax_y2)
+    start_tick = max(0, vmin_y2 - altitude_ticks)
+    ax2.yaxis.set_ticks(np.arange(start_tick, vmax_y2 + altitude_ticks + 1, altitude_ticks))
     
-    #start_tick = max(0, vmin_y2 - altitude_ticks)
-    #ax2.yaxis.set_ticks(np.arange(start_tick, vmax_y2 + altitude_ticks + 1, altitude_ticks))
-    #tick_values = np.arange(start_tick, vmax_y2 + altitude_ticks + 1, altitude_ticks)
-
-    # flip the axis is pressure is there. 
+    # flip the secondary y-axis if pressure is there. 
     if altitude_variable == "pressure_obs":
-        ax2.set_ylim(vmax_y2, vmin_y2)
-
-        # Flip the primary x axis as well for pressure 
-        ax.invert_yaxis()
-    else:
-        start_tick = max(0, vmin_y2 - altitude_ticks)
-        tick_values = np.arange(start_tick, vmax_y2 + altitude_ticks + 1, altitude_ticks)
-        ax2.set_ylim(vmin_y2, vmax_y2)
-        ax2.yaxis.set_ticks(tick_values)
+        y0, y1 = ax2.get_ylim()
+        if y0 < y1:
+            ax2.invert_yaxis()
         
     # Extract the current legend and add a custom legend for the altitude line
     lines, labels = ax.get_legend_handles_labels()
@@ -456,9 +438,9 @@ def make_curtain_plot(time, altitude, model_data_2d, obs_pressure, pairdf, mod_v
 ####NEW vertprofile has option for both shading (for interquartile range) or box (interquartile range)-whisker (10th-90th percentile bounds) (qzr++)
 def make_vertprofile(df, column=None, label=None, ax=None, 
                      bins=None, 
-                     ylabel = None,
-                     gridlines = None,
-                     altitude_variable=None, #ylabel=None,
+                     ylabel_vert = None,
+                     gridlines = False,
+                     altitude_variable=None, ylabel=None,
                      vmin=None, vmax=None, 
                      domain_type=None, domain_name=None,
                      plot_dict=None, fig_dict=None, text_dict=None, debug=False, interquartile_style=None):
@@ -477,10 +459,12 @@ def make_vertprofile(df, column=None, label=None, ax=None,
         Matplotlib ax from previous occurrence so it can overlay obs and model results on the same plot.
     bins : int or array-like
         Bins for binning the altitude variable.
-    altitude_variable: str
-        The Altitude variable in the paired df e.g., 'MSL_GPS_Altitude_YANG'
     ylabel : str
         Title of y-axis.
+    gridlines : boolean
+        Draws background gridlines
+    altitude_variable: str
+        The Altitude variable in the paired df e.g., 'MSL_GPS_Altitude_YANG'
     vmin : float
         Min value to use on y-axis.
     vmax : float
@@ -516,7 +500,15 @@ def make_vertprofile(df, column=None, label=None, ax=None,
         text_kwargs = {**def_text, **text_dict}
     else:
         text_kwargs = def_text
-    
+
+    # Set ylabel to column if not specified
+    if ylabel_vert is None:
+        if altitude_variable is None:
+            ylabel_vert = "Altitude (m)" #Default to Altitude if none provided
+        else:
+            ylabel_vert = altitude_variable
+    if ylabel is None:
+        ylabel = column
     if label is not None:
         plot_dict['label'] = label
     if vmin is not None and vmax is not None:
@@ -752,14 +744,10 @@ def make_vertprofile(df, column=None, label=None, ax=None,
     ax.yaxis.set_major_formatter(FuncFormatter(custom_yaxis_formatter))                     
     
     # Set parameters for all plots
-    ax.set_xlabel(column, fontweight='bold', **text_kwargs) 
+    ax.set_ylabel(ylabel_vert, fontweight='bold', **text_kwargs)
+    ax.set_xlabel(ylabel, fontweight='bold', **text_kwargs) 
     
-    if ylabel is not None:
-        ax.set_ylabel(ylabel, fontweight='bold', **text_kwargs)
-    else: 
-        ax.set_ylabel("Unspecified ylabel in yaml", fontweight='bold', **text_kwargs)
-
-    if gridlines is not None:
+    if gridlines:
         ax.grid(True)
     else:
         ax.grid(False)
@@ -774,15 +762,14 @@ def make_vertprofile(df, column=None, label=None, ax=None,
             ax.set_title('EPA Region ' + domain_name,fontweight='bold',**text_kwargs)
         else:
             ax.set_title(domain_name,fontweight='bold',**text_kwargs)         
-                
-    #breakpoint() #debug
+
     # invert the yaxis for pressure to be on bottom
     # function is called multiple times so this should ensure high to low pressure yax setting
     # is respected. 
     if altitude_variable == "pressure_obs":
         y0, y1 = ax.get_ylim()
         if y0 < y1:
-            ax.invert_yaxis()           
+            ax.invert_yaxis()       
     return ax
 
 ##NEW Violin plot 
@@ -841,7 +828,7 @@ def calculate_violin(df, column=None, label=None,
 def make_violin_plot(comb_violin, label_violin, outname='plot',
                      domain_type=None, domain_name=None,
                      fig_dict=None, text_dict=None, debug=False,
-                     ylabel=None, vmin=None, vmax=None, gridlines=False):  
+                     ylabel=None, vmin=None, vmax=None, set_stat_sig=False, gridlines=False):  
     """
     Creates a violin plot using combined data from multiple model/observation datasets.
 
@@ -869,6 +856,8 @@ def make_violin_plot(comb_violin, label_violin, outname='plot',
         The minimum value for the y-axis.
     vmax : float, optional
         The maximum value for the y-axis.
+    set_stat_sig : boolean 
+        Whether to provide statistical significance marker or not. 
     gridlines : boolean
         Draws background gridlines
     Returns
@@ -896,7 +885,7 @@ def make_violin_plot(comb_violin, label_violin, outname='plot',
     text_kwargs = {**def_text, **text_dict} if text_dict else def_text
     
     # gridline option
-    if gridlines is not None:
+    if gridlines:
         plt.grid(True)
     else:
         plt.grid(False)
@@ -913,26 +902,28 @@ def make_violin_plot(comb_violin, label_violin, outname='plot',
     # Increase tick label size
     plt.tick_params(axis='both', labelsize=text_kwargs['fontsize']*0.8)
 
-    # statistical significance of the means 
-    p_values = []
+    if set_stat_sig:
+        # statistical significance of the means 
+        p_values = []
     
-    pairs = [(g1, g2) for i, g1 in enumerate(order) for g2 in order[i+1:]]
+        pairs = [(g1, g2) for i, g1 in enumerate(order) for g2 in order[i+1:]]
 
-    for g1, g2 in pairs: 
-        vals1 = melted_comb_violin[melted_comb_violin["group"] == g1]["value"]
-        vals2 = melted_comb_violin[melted_comb_violin["group"] == g2]["value"]
-       # print(vals1)
-       # print(vals2)
-        stat, p = ttest_ind(vals1, vals2) #Calculate the T-test for the means of two independent samples of scores.
-        p_values.append(p)
-       # print(p_values)
+        for g1, g2 in pairs: 
+            vals1 = melted_comb_violin[melted_comb_violin["group"] == g1]["value"]
+            vals2 = melted_comb_violin[melted_comb_violin["group"] == g2]["value"]
+           # print(vals1)
+           # print(vals2)
+            stat, p = ttest_ind(vals1, vals2) #Calculate the T-test for the means of two independent samples of scores.
+            p_values.append(p)
+           # print(p_values)
 
-    # add *, **, and *** 
-    ax = plt.gca()
-    annotator = Annotator(ax, pairs, data=melted_comb_violin, x='group', y='value', order=order)
-    # for more than 2 violin plots/boxplots, you can use pairs = [] to specify how the stat sig test is done. 
-    annotator.configure(test=None, text_format='star', loc='inside', verbose=2, line_offset_to_group=-0.15, fontsize = text_kwargs["fontsize"]) 
-    annotator.set_pvalues_and_annotate(p_values)
+        # add *, **, and *** 
+        ax = plt.gca()
+        annotator = Annotator(ax, pairs, data=melted_comb_violin, x='group', y='value', order=order)
+        # for more than 2 violin plots/boxplots, you can use pairs = [] to specify how the stat sig test is done. 
+        annotator.configure(test=None, text_format='star', loc='inside', 
+                            verbose=2, line_offset_to_group=-0.15, fontsize = text_kwargs["fontsize"]) 
+        annotator.set_pvalues_and_annotate(p_values)
     
     # Set y-axis limits if provided
     if vmin is not None and vmax is not None:

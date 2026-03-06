@@ -95,11 +95,15 @@ _examples = {
     "ufschem": {
         "2017-07": (
             "example_model_data/ufschem_example/2017_07_01_03_ufschemv1.nc",
-            "sha256:697cde19c930d8138528c084140282e192407912c40a1f8b0cc37d80f5c7d3b7",
+            "sha256:a014e678b983e3c3dcdd3c451e74e82e684408498f13b00c49aa66ed252d8504",
         ),
-        "2023-06": (
-            "example_model_data/ufschem_example/2023_06_27_29_ufschemv1.nc",
-            "sha256:9c18cac9f0f8e0763ad5a96b0af59fd9769e8ff170a42c2e4c4957531cd393a3",
+        "2017-07_sfc": (
+            "example_model_data/ufschem_example/2017_07_01_03_ufschemv1_sfc.nc",
+            "sha256:218bb48e40e521d270a48b873eba925cd8064b7923aa69345d8f72a19a12f736",
+        ),
+        "2023-08-01": (
+            "example_model_data/ufschem_example/2023_08_01_ufschemv1.nc",
+            "sha256:e2bce72a4eb6a42db312ee0c013aa35b62d4a4858c79750bbaba67fe88eafd6c",
         ),
     },
     "aeronet": {
@@ -149,9 +153,9 @@ _examples = {
         ),
     },
     "uwy-sonde": {
-        "2023-06" : (
-            "example_observation_data/profile/met_sonde_2023062800-72493.csv",
-            "sha256:2596246f7780c549500319851f66358734707d524dd529f405013f80ce054809",
+        "2023-08-01" : (
+            "example_observation_data/profile/met_sonde_2023080112-72632.csv",
+            "sha256:c5715bb7935c9a3f0a8e8c6ecd40bc8e0098e26f8a3eafbf5fba4fa02cab7424",
         ),
     },
 }

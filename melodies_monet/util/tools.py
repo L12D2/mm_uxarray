@@ -278,31 +278,27 @@ def get_epa_region_df(df):
         df.loc[con, 'EPA_ACRO'] = acro
     return df
 
-def resample_stratify(da, levels, vertical, axis=1, interpolation='linear', extrapolation='nan'):
+def resample_stratify(da, levels, vertical, axis=1,interpolation='linear',extrapolation='nan'):
     import stratify
 
-    # Force computation to avoid Dask chunk mismatch
-    vertical_np = vertical.compute().data
-    da_np = da.compute().data
-
-    result = stratify.interpolate(
-        levels,
-        vertical_np,
-        da_np,
-        axis=axis,
-        interpolation=interpolation,
-        extrapolation=extrapolation
-    )
-
+    result = stratify.interpolate(levels, vertical.chunk().data, da.chunk().data, axis=axis,
+                                 interpolation = interpolation,extrapolation = extrapolation)
     dims = da.dims
-    out = xr.DataArray(result, dims=dims, coords=da.coords, attrs=da.attrs)
+    out = xr.DataArray(result, dims=dims)
+    for i in dims:
+        if i != "z":
+            out[i] = da[i]
+    out.attrs = da.attrs.copy()
+    if len(da.coords) > 0:
+        for i in da.coords:
+            if i != "z":
+                out.coords[i] = da.coords[i]
     return out
-    
+
 def vert_interp(ds_model,df_obs,var_name_list):
     from pandas import merge_asof
 
     ds_model['pressure_model_nan'] = ds_model['pressure_model'].copy()
-    #print(ds_model['pressure_model'])
     var_name_list.append('pressure_model_nan')
 
     var_out_list = []
@@ -400,7 +396,7 @@ def find_obs_time_bounds(files=[],time_var=None):
             elif extension in ['.ict', '.icartt']:
                 obs = mio.icartt.add_data(file)
             elif extension in ['.csv']:
-                from .read_util import read_aircraft_obs_csv
+                from melodies_monet.util.read_util import read_aircraft_obs_csv
                 obs = read_aircraft_obs_csv(filename=file,time_var=time_var)
             else:
                 raise ValueError(f'extension {extension!r} currently unsupported')
