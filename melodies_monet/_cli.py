@@ -8,7 +8,6 @@ import time
 from contextlib import contextmanager
 from pathlib import Path
 from typing import List, Tuple
-from monetio import models
 
 _LOGGING_LEVEL = os.environ.get("MM_LOGGING_LEVEL", None)
 if _LOGGING_LEVEL is not None:
@@ -556,8 +555,7 @@ def get_ish_lite(
     """
     import warnings
 
-    #import monetio as mio
-    from monetio import models
+    import monetio as mio
     import pandas as pd
 
     from melodies_monet.util.write_util import write_ncf
@@ -774,7 +772,6 @@ def get_ish(
     import warnings
 
     import monetio as mio
-    from monetio import models
     import pandas as pd
 
     from melodies_monet.util.write_util import write_ncf
