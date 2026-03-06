@@ -64,7 +64,7 @@ plots:
       markersize: 10.
     text_kwargs:  # Opt
       fontsize: 18.
-    ylabel: Height (m)
+    ylabel_vert: Altitude (m)
     domain_type: ['all']  # List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.)
     domain_name: [' ']  # List of domain names. If domain_type = all, domain_name is used in plot title.
     data: ['iagos_ufsaqm']  # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
