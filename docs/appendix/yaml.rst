@@ -116,8 +116,7 @@ Shell variables prefixed with the ``$`` symbol, such as ``$HOME``, will be expan
 
 * cmaq
 * wrfchem
-* ufschem
-* ufs (rrfs is deprecated)
+* ufs (rrfs is deprecated. This works for both UFS-AQM and UFS-Chem)
 * gsdchem
 * cesm_fv 
 * cesm_se 
