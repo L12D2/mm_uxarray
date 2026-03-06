@@ -24,10 +24,13 @@ analysis:
 
 model:
   ufschem_v1: # model label
-    files: example:ufschem:2017-07
-    mod_type: "ufschem" #change
+    files: example:ufschem:2017-07 #Your UFS-Chem atm files
+    files_surf: example:ufschem:2017-07_sfc # Your UFS-Chem sfc files
+    mod_type: "ufs"
+    is_global: True
     mod_kwargs:
       surf_only: True  # specify that we have only one vertical level; WRF-Chem specific
+      sfc_varlist: ['tmp2m','spfh2m','ugrd10m','vgrd10m']
     radius_of_influence: 100000 # meters
 
     extra_calc: # Add more complex calculations and their associated variables here.  
@@ -36,33 +39,29 @@ model:
     # variable_calculating
       # variable required for calculation: "variable name in model"
       
-      dewpoint:
-        specific_hum: "spfh" # string of what it is in the model
       rel_hum: 
-        specific_hum: "spfh"
-        temp_calc: "temperature_k"
+        pres_calc: "surfpres_pa"
+        specific_hum: "spfh2m"
+        temp_calc: "tmp2m"
       windspeed:
-        u_comp: "ugrd"  
-        v_comp: "vgrd" 
+        u_comp: "ugrd10m"
+        v_comp: "vgrd10m"
       winddir: 
-        u_comp: "ugrd" 
-        v_comp: "vgrd" 
+        u_comp: "ugrd10m"
+        v_comp: "vgrd10m"
       wind_barb: 
-        u_comp: "ugrd" 
-        v_comp: "vgrd" 
+        u_comp: "ugrd10m" 
+        v_comp: "vgrd10m"
+      rose_plot:
+        model_wdir: "winddir"
+        model_wspd: "windspeed"
 
     mapping: # of _model_ species name to _obs_ species name
       airnow: # specifically for the obs labeled 'airnow'
         o3: "OZONE"
-        temperature_k: "TEMP"
+        tmp2m: "TEMP"
         windspeed: "WS"
-        winddir: "WD"
         rel_hum: "RHUM"
-
-    #variables: 
-     # winddir: None # provide this as a none, otherwise YAML will error. 
-     # if you do not want plots specifically for wind direction, simply add it to the variable list here. 
-     # Wind direction is needed if you wish to plot wind roses. 
      
     projection: ~
     plot_kwargs: # optional
@@ -87,10 +86,10 @@ obs:
         # optional; set ylabel in order to include units and/or other info
         xlabel_plot: "Ozone (ppbv)"
         # optional; set ylabel in order to include units and/or other info
-        vmin_plot: 15.0
+        vmin_plot: 0.0
         # ^ optional; Min for y-axis during plotting.
         #   To apply to a plot, change restrict_yaxis = True.
-        vmax_plot: 100
+        vmax_plot: 80
         # ^ optional; Max for y-axis during plotting.
         #   To apply to a plot, change restrict_yaxis = True.
         vdiff_plot: 20.0
@@ -102,8 +101,8 @@ obs:
         unit_scale: 273.15
         unit_scale_method: "+"
         nan_value: -1.0
-        ylabel_plot: "Temperature (K)"
-        xlabel_plot: "Temperature (K)"
+        ylabel_plot: "Temperature 2m (K)"
+        xlabel_plot: "Temperature 2m (K)"
         vmin_plot: 275
         vmax_plot: 320
         vdiff_plot: 20.0
@@ -112,8 +111,8 @@ obs:
         unit_scale: 1
         unit_scale_method: "*"
         nan_value: -1.0
-        ylabel_plot: "Windspeed (m/s)"
-        xlabel_plot: "Windspeed (m/s)"
+        ylabel_plot: "Windspeed 10m (m/s)"
+        xlabel_plot: "Windspeed 10m (m/s)"
         vmin_plot: 0
         vmax_plot: 10
         vdiff_plot: 4
@@ -122,8 +121,8 @@ obs:
         unit_scale: 1
         unit_scale_method: "*"
         nan_value: -1.0
-        ylabel_plot: "Wind Direction (deg)"
-        xlabel_plot: "Wind Direction (deg)"
+        ylabel_plot: "Wind Direction 10m (deg)"
+        xlabel_plot: "Wind Direction 10m (deg)"
         vmin_plot: 0
         vmax_plot: 380
         vdiff_plot: 3
@@ -132,12 +131,16 @@ obs:
         unit_scale: 1
         unit_scale_method: "*"
         nan_value: -1.0
-        ylabel_plot: "Relative Humidity (%)"
-        xlabel_plot: "Relative Humidity (%)"
+        ylabel_plot: "Relative Humidity 2m (%)"
+        xlabel_plot: "Relative Humidity 2m (%)"
         vmin_plot: 0
         vmax_plot: 100
         vdiff_plot: 15
         nlevels_plot: 8
+    extra_calc:
+      rose_plot:
+        obs_wdir: "WD"
+        obs_wspd: "WS"
         
 plots:
   plot_grp1:
@@ -151,10 +154,10 @@ plots:
       markersize: 10.
     text_kwargs: # optional
       fontsize: 24.
-    domain_type: ["all", "state_name", "epa_region"]
+    domain_type: ["state_name", "epa_region"]
     # ^ List of domain types: 'all' or any domain in obs file.
     #   (e.g., airnow: epa_region, state_name, siteid, etc.)
-    domain_name: ["ALL", "CA", "R9"]
+    domain_name: ["MI", "R5"]
     # ^ List of domain names. If domain_type = all,
     #   the domain name is used in the plot title.
     data: ["airnow_ufschem_v1"]
@@ -172,6 +175,39 @@ plots:
       set_axis: True
       # ^ If true, add `vmin_plot` and `vmax_plot` for each variable in obs.
 
+  plot_grp1a:
+    type: "timeseries" # plot type
+    fig_kwargs: # optional; to define figure options
+      figsize: [12, 6] # figure size (width, height) in inches
+    default_plot_kwargs:
+      # ^ optional; Define defaults for all plots.
+      #   Important: Model kwargs overwrite these.
+      linewidth: 2.0
+      markersize: 10.
+    text_kwargs: # optional
+      fontsize: 24.
+    domain_type: ["state_name", "epa_region"]
+    # ^ List of domain types: 'all' or any domain in obs file.
+    #   (e.g., airnow: epa_region, state_name, siteid, etc.)
+    domain_name: ["MI", "R5"]
+    # ^ List of domain names. If domain_type = all,
+    #   the domain name is used in the plot title.
+    data: ["airnow_ufschem_v1"]
+    # ^ make this a list of pairs in obs_model
+    #   where the obs is the obs label and model is the model_label
+    data_proc: # optional
+      rem_obs_nan: True
+      # ^ True: Remove all points where model or obs variable is NaN.
+      #   False: Remove only points where model variable is NaN.
+      ts_select_time: "time_local"  # `ts_` indicates this is time series plot-specific
+      # ^ Time used for avg and plotting
+      #   Options: 'time' for UTC or 'time_local'
+      ts_avg_window: "h"
+      # ^ Options: None for no averaging, pandas resample rule (e.g., 'h', 'D')
+      set_axis: True
+      # ^ If true, add `vmin_plot` and `vmax_plot` for each variable in obs.
+      filter_string: 'WS != 0 and WD != 0' #Remove observations labeled as calm from the analysis
+
   plot_grp2:
     type: "spatial_bias"
     fig_kwargs: # optional; For all spatial plots, specify map_kwargs here too.
@@ -179,12 +215,13 @@ plots:
       figsize: [10, 5]
     text_kwargs:
       fontsize: 16.
-    domain_type: ["state_name"]
-    domain_name: ["CA"]
+    domain_type: ["state_name","epa_region"]
+    domain_name: ["MI","R5"]
     data: ["airnow_ufschem_v1"]
     data_proc:
       rem_obs_nan: True
       set_axis: True
+      wind_barb: True
 
   plot_grp3:
     type: "spatial_overlay"
@@ -193,12 +230,29 @@ plots:
       figsize: [10, 5]
     text_kwargs:
       fontsize: 16.
-    domain_type: ["epa_region"]
-    domain_name: ["R9"]
+    domain_type: ["epa_region","siteid"]
+    domain_name: ["R5","260810020"]
     data: ["airnow_ufschem_v1"]
     data_proc:
       rem_obs_nan: True
       set_axis: True
+      wind_barb: True
+
+  plot_grp3a:
+    type: "spatial_overlay"
+    fig_kwargs:
+      states: True
+      figsize: [10, 5]
+    text_kwargs:
+      fontsize: 16.
+    domain_type: ["epa_region","siteid"]
+    domain_name: ["R5","260810020"]
+    data: ["airnow_ufschem_v1"]
+    data_proc:
+      rem_obs_nan: True
+      set_axis: True
+      wind_barb: True
+      filter_string: 'WS != 0 and WD != 0' #Remove observations labeled as calm from the analysis
       
   plot_grp4:
     type: "boxplot"
@@ -207,8 +261,8 @@ plots:
     text_kwargs:
       fontsize: 20.
     #gridlines: True
-    domain_type: ["all", "epa_region"]
-    domain_name: ["ALL", "R9"]
+    domain_type: ["epa_region"]
+    domain_name: ["R5"]
     data: ["airnow_ufschem_v1"]
     data_proc:
       rem_obs_nan: True
@@ -223,8 +277,8 @@ plots:
       fontsize: 20.
     gridlines: True
     xlabel: "Binned by Observed Wind Speed (m/s)"
-    domain_type: ["all"]
-    domain_name: ["ALL"]
+    domain_type: ["epa_region"]
+    domain_name: ["R5"]
     # to create an interval boxplot, simply specify the intervals you would like to plot AND the variable name. In this case, wind speed is being plotted at several intervals. 
     interval_list: [0, 3, 5, 8, 11, 14] 
     interval_var: WS
@@ -239,8 +293,8 @@ plots:
     type: "rose_plot"
     text_kwargs:
       fontsize: 16.
-    domain_type: ["all", "state_name"] 
-    domain_name: ["ALL", "CA"] 
+    domain_type: ["state_name","siteid"] 
+    domain_name: ["MI","260810020"]
     data: ["airnow_ufschem_v1"]
     color_map: "inferno"  
     
@@ -254,6 +308,7 @@ plots:
     data_proc:
       rem_obs_nan: True
       set_axis: True
+      wr_calm_limit: 0.5
   
   plot_grp7:
     type: "diurnal"
@@ -264,8 +319,8 @@ plots:
       markersize: 10.
     text_kwargs: 
       fontsize: 24.
-    domain_type: ["all", "state_name", "epa_region"]
-    domain_name: ["ALL", "CA", "R9"]
+    domain_type: ["state_name", "epa_region"]
+    domain_name: ["MI", "R5"]
     data: ["airnow_ufschem_v1"]
     data_proc: 
       rem_obs_nan: True
@@ -295,6 +350,6 @@ stats:
     xscale: 1.4
     yscale: 1.4
     edges: "horizontal"
-  domain_type: ["all"]
-  domain_name: ["ALL"]
+  domain_type: ["epa_region"]
+  domain_name: ["R5"]
   data: ["airnow_ufschem_v1"]

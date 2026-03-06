@@ -24,11 +24,13 @@ analysis:
 
 model:
   ufschem_v1: # model label
-    files: example:ufschem:2017-07
-    mod_type: "ufschem" #change
+    files: example:ufschem:2017-07 #Your UFS-Chem atm files
+    files_surf: example:ufschem:2017-07_sfc # Your UFS-Chem sfc files
+    mod_type: "ufs"
     is_global: True
     mod_kwargs:
       surf_only: True  # specify that we have only one vertical level; WRF-Chem specific
+      sfc_varlist: ['tmp2m','spfh2m','ugrd10m','vgrd10m']
     radius_of_influence: 100000 # meters
         
     extra_calc: # Add more complex calculations and their associated variables here.
@@ -38,28 +40,30 @@ model:
       # variable required for calculation: "variable name in model"
       
       dewpoint:
-        specific_hum: "spfh" # string of what it is in the model
+        pres_calc: "surfpres_pa"
+        specific_hum: "spfh2m"
       rel_hum: 
-        specific_hum: "spfh"
-        temp_calc: "temperature_k"
+        pres_calc: "surfpres_pa"
+        specific_hum: "spfh2m"
+        temp_calc: "tmp2m"
       windspeed:
-        u_comp: "ugrd"  
-        v_comp: "vgrd" 
+        u_comp: "ugrd10m"
+        v_comp: "vgrd10m"
       winddir: 
-        u_comp: "ugrd" 
-        v_comp: "vgrd"
+        u_comp: "ugrd10m"
+        v_comp: "vgrd10m"
+      wind_barb: 
+        u_comp: "ugrd10m" 
+        v_comp: "vgrd10m"
+      rose_plot:
+        model_wdir: "winddir"
+        model_wspd: "windspeed"
         
     mapping: # of _model_ species name to _obs_ species name
       ish: # specifically for the obs labeled 'ish'
-        temperature_k: "t"
+        tmp2m: "t"
         windspeed: "ws"
         dewpoint: "dpt"
-
-    variables: 
-      winddir: None # provide this as a none, otherwise YAML will error.
-      
-     # if you do not want plots specifically for wind direction, simply add it to the variable list here. 
-     # Wind direction is needed if you wish to plot wind roses. 
       
     projection: ~
     plot_kwargs: # optional
@@ -79,9 +83,9 @@ obs:
         # ^ optional; Multiply = '*' , Add = '+', subtract = '-', divide = '/'
         nan_value: -1.0
         # ^ optional; When loading data, set this value to NaN
-        ylabel_plot: "Temperature (K)"
+        ylabel_plot: "Temperature 2m (K)"
         # optional; set ylabel in order to include units and/or other info
-        xlabel_plot: "Temperature (K)"
+        xlabel_plot: "Temperature 2m (K)"
         # optional; set ylabel in order to include units and/or other info
         vmin_plot: 273.15
         # ^ optional; Min for y-axis during plotting.
@@ -98,8 +102,8 @@ obs:
         unit_scale: 1
         unit_scale_method: "*"
         nan_value: -1.0
-        ylabel_plot: "Windspeed (m/s)"
-        xlabel_plot: "Windspeed (m/s)"
+        ylabel_plot: "Windspeed 10m (m/s)"
+        xlabel_plot: "Windspeed 10m (m/s)"
         vmin_plot: 0
         vmax_plot: 12
         vdiff_plot: 4
@@ -108,8 +112,8 @@ obs:
         unit_scale: 1
         unit_scale_method: "*"
         nan_value: -1.0
-        ylabel_plot: "Wind Direction (deg)"
-        xlabel_plot: "Wind Direction (deg)"
+        ylabel_plot: "Wind Direction 10m (deg)"
+        xlabel_plot: "Wind Direction 10m (deg)"
         vmin_plot: 0
         vmax_plot: 370
         vdiff_plot: 4
@@ -118,12 +122,16 @@ obs:
         unit_scale: 273.15
         unit_scale_method: "+"
         nan_value: -1.0
-        ylabel_plot: "Dewpoint (K)"
-        xlabel_plot: "Dewpoint (K)"
+        ylabel_plot: "Dewpoint 2m (K)"
+        xlabel_plot: "Dewpoint 2m (K)"
         vmin_plot: 273.15
         vmax_plot: 300
         vdiff_plot: 4
         nlevels_plot: 18
+    extra_calc:
+      rose_plot:
+        obs_wdir: "wdir"
+        obs_wspd: "ws"
         
 plots:
   plot_grp1:
@@ -137,10 +145,10 @@ plots:
       markersize: 10.
     text_kwargs: # optional
       fontsize: 24.
-    domain_type: ["all", "state", "country"]
+    domain_type: ["country","state"]
     # ^ List of domain types: 'all' or any domain in obs file.
     #   (e.g., ish: country, state, siteid, etc.)
-    domain_name: ["GLOBAL", "CA", "CN"]
+    domain_name: ["US","MI"]
     # ^ List of domain names. If domain_type = all,
     #   the domain name is used in the plot title.
 
@@ -165,6 +173,48 @@ plots:
       # ^ Options: None for no averaging, pandas resample rule (e.g., 'h', 'D')
       set_axis: True
       # ^ If true, add `vmin_plot` and `vmax_plot` for each variable in obs.
+      filter_string: '24 < latitude < 50 and -130 < longitude < -60'
+
+  plot_grp1a:
+    type: "timeseries" # plot type
+    fig_kwargs: # optional; to define figure options
+      figsize: [12, 6] # figure size (width, height) in inches
+    default_plot_kwargs:
+      # ^ optional; Define defaults for all plots.
+      #   Important: Model kwargs overwrite these.
+      linewidth: 2.0
+      markersize: 10.
+    text_kwargs: # optional
+      fontsize: 24.
+    domain_type: ["country","state"]
+    # ^ List of domain types: 'all' or any domain in obs file.
+    #   (e.g., ish: country, state, siteid, etc.)
+    domain_name: ["US","MI"]
+    # ^ List of domain names. If domain_type = all,
+    #   the domain name is used in the plot title.
+
+      #   #### View unique state and country values 
+  #   # an.paired['ish_ufschem_v1']
+  #   # df = an.paired['ish_ufschem_v1'].obj.to_dataframe()
+  #   # df.columns
+  #   # df["country"].unique()
+  #   # df["state"].unique()
+
+    data: ["ish_ufschem_v1"]
+    # ^ make this a list of pairs in obs_model
+    #   where the obs is the obs label and model is the model_label
+    data_proc: # optional
+      rem_obs_nan: True
+      # ^ True: Remove all points where model or obs variable is NaN.
+      #   False: Remove only points where model variable is NaN.
+      ts_select_time: "time_local"  # `ts_` indicates this is time series plot-specific
+      # ^ Time used for avg and plotting
+      #   Options: 'time' for UTC or 'time_local'
+      ts_avg_window: "h"
+      # ^ Options: None for no averaging, pandas resample rule (e.g., 'h', 'D')
+      set_axis: True
+      # ^ If true, add `vmin_plot` and `vmax_plot` for each variable in obs.
+      filter_string: '24 < latitude < 50 and -130 < longitude < -60 and ws != 0 and wdir != 0' #Remove observations labeled as calm from the analysis
 
   plot_grp2:
     type: "spatial_bias"
@@ -173,12 +223,13 @@ plots:
       figsize: [10, 5]
     text_kwargs:
       fontsize: 16.
-    domain_type: ["all", "state"]
-    domain_name: ["GLOBAL", "CA"]
+    domain_type: ["state"]
+    domain_name: ["MI"]
     data: ["ish_ufschem_v1"]
     data_proc:
       rem_obs_nan: True
       set_axis: True
+      wind_barb: True
 
   plot_grp3:
     type: "spatial_overlay"
@@ -187,29 +238,75 @@ plots:
       figsize: [10, 5]
     text_kwargs:
       fontsize: 16. 
-    domain_type: ["all", "state"]
-    domain_name: ["GLOBAL", "CA"]
-    
-    # to get CONUS, you need to do "all" "CONUS"
-
+    domain_type: ["country","state"]
+    domain_name: ["US","MI"]
     data: ["ish_ufschem_v1"]
     data_proc:
       rem_obs_nan: True
       set_axis: True
-      
+      wind_barb: True
+      filter_string: '24 < latitude < 50 and -130 < longitude < -60'
+
+  plot_grp3a:
+    type: "spatial_overlay"
+    fig_kwargs:
+      states: True
+      figsize: [10, 5]
+    text_kwargs:
+      fontsize: 16. 
+    domain_type: ["country","state"]
+    domain_name: ["US","MI"]
+    data: ["ish_ufschem_v1"]
+    data_proc:
+      rem_obs_nan: True
+      set_axis: True
+      wind_barb: True
+      filter_string: '24 < latitude < 50 and -130 < longitude < -60 and ws != 0 and wdir != 0' #Remove observations labeled as calm from the analysis
+
+  plot_grp3b:
+    type: "spatial_overlay"
+    fig_kwargs:
+      states: True
+      figsize: [10, 5]
+    text_kwargs:
+      fontsize: 16. 
+    domain_type: ["all"]
+    domain_name: ["Filter_Box_Midwest"] #This is only used for the title
+    data: ["ish_ufschem_v1"]
+    data_proc:
+      rem_obs_nan: True
+      set_axis: True
+      wind_barb: True
+      filter_string: '37 < latitude < 49 and -104 < longitude < -80'
+
   plot_grp4:
     type: "boxplot"
     fig_kwargs:
       figsize: [8, 6]
     text_kwargs:
       fontsize: 20.
-    #gridlines: True
-    domain_type: ["all", "state"]
-    domain_name: ["GLOBAL", "CA"]
+    domain_type: ["state"]
+    domain_name: ["MI"]
     data: ["ish_ufschem_v1"]
     data_proc:
       rem_obs_nan: True
       set_axis: False
+
+  plot_grp4a:
+    type: "boxplot"
+    fig_kwargs:
+      figsize: [8, 6]
+    text_kwargs:
+      fontsize: 20.
+    gridlines: True
+    domain_type: ["all"]
+    domain_name: ["Filter_Box_Midwest"] #This is only used for the title
+    data: ["ish_ufschem_v1"]
+    data_proc:
+      rem_obs_nan: True
+      set_axis: False
+      filter_string: '37 < latitude < 49 and -104 < longitude < -80'
+      set_stat_sig: True
 
   plot_grp5:
     type: "multi_boxplot"
@@ -219,8 +316,8 @@ plots:
       fontsize: 20.
     gridlines: True
     xlabel: "Binned by Observed Temperature (K)"
-    domain_type: ["all", "state"]
-    domain_name: ["GLOBAL", "CA"]
+    domain_type: ["state"]
+    domain_name: ["MI"]
     interval_list: [273.15, 281.15, 289.15, 297.15, 305.15]
     interval_labels: ["[273.15, 281.15)", "[281.15, 289.15)", "[289.15, 297.15)", "[297.15, 305.15)"]
     interval_var: t
@@ -237,8 +334,8 @@ plots:
     type: "rose_plot"
     text_kwargs:
       fontsize: 16.
-    domain_type: ["state"]
-    domain_name: ["CA"]
+    domain_type: ["state","siteid"]
+    domain_name: ["MI","72539614815"]
     data: ["ish_ufschem_v1"]
     color_map: "cividis"  
     
@@ -252,6 +349,7 @@ plots:
     data_proc:
       rem_obs_nan: True
       set_axis: True
+      wr_calm_limit: 0.5
   
   plot_grp7:
     type: "diurnal"
@@ -262,8 +360,8 @@ plots:
       markersize: 10.
     text_kwargs: 
       fontsize: 24.
-    domain_type: ["all", "state"]
-    domain_name: ["GLOBAL", "CA"]
+    domain_type: ["state", "siteid"]
+    domain_name: ["MI", "72539614815"]
     data: ["ish_ufschem_v1"]
     data_proc: 
       rem_obs_nan: True
@@ -293,6 +391,6 @@ stats:
     xscale: 1.4
     yscale: 1.4
     edges: "horizontal"
-  domain_type: ["all"]
-  domain_name: ["GLOBAL"]
+  domain_type: ["state"]
+  domain_name: ["MI"]
   data: ["ish_ufschem_v1"]
