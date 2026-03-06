@@ -1,9 +1,8 @@
-
 # Example pairing script that pairs University of Wyoming sonde data with UFS-Chem 
 
 analysis:
-  start_time: '2023-06-27 23:00:00' #UTC
-  end_time: '2023-06-28-23:59:00' #UTC
+  start_time: '2023-08-01 00:00:00' #UTC
+  end_time: '2023-08-02-00:00:00' #UTC
   output_dir:  ./output/uwy_ufschem
   debug: True
 
@@ -38,7 +37,6 @@ model:
     mapping: #model species name : obs species name
       uwy: 
         temperature_k: temperature_C
-        spfh: w
         dewpoint: dpt_obs
         rel_hum: relh_obs
         windspeed: windspeed_obs
@@ -91,13 +89,7 @@ obs:
           rename: dpt_obs 
           unit_scale: 273.15 
           unit_scale_method: '+' 
-          nan_value: -1
-
-      'mixing ratio_g/kg':
-          rename: w 
-          unit_scale: 1000 
-          unit_scale_method: '/'
-          nan_value: -1          
+          nan_value: -1        
 
       'relative humidity_%':
           rename: relh_obs 
@@ -115,13 +107,5 @@ obs:
           rename: wdir_obs 
           unit_scale: 1 
           unit_scale_method: '*' 
-          nan_value: -1
-             
-      'geopotential height_m':
-          rename: ghght_obs 
-          unit_scale: 1 
-          unit_scale_method: '*' 
-          ylabel_plot: 'Geopotential Height'
-          xlabel_plot: 'Geopotential Height'
           nan_value: -1
           
