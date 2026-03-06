@@ -388,28 +388,26 @@ def make_spatial_bias(df, df_reg=None, column_o=None, label_o=None, column_m=Non
 
     if 'extent' not in map_kwargs:
         map_kwargs['extent'] = [lonmin,lonmax,latmin,latmax]  
-    ax.axes.set_extent(map_kwargs['extent'],crs=ccrs.PlateCarree())
+    ax.axes.set_extent(map_kwargs['extent'],crs=map_kwargs['crs'])
 
     #print(df.columns)
     
     if wind_barb:
-        if u_comp is not None and v_comp is not None:  
+        if u_comp is not None and v_comp is not None:
+            #Recalculate mean, so always use mean for windbarbs and not percentiles.
+            df_mean_wind=df.groupby(['siteid'],as_index=False).mean(numeric_only=True)
 
-            u_mod = df_mean[u_comp]
-            v_mod = df_mean[v_comp] 
-
-            #ensure all bias stats are MODEL-OBS (enables you to tell the direction of the 
-            #model relative to observations)
-            #u_mean=u_mod - u_obs
-            #v_mean=v_mod - v_obs
+            u_mod = df_mean_wind[u_comp]
+            v_mod = df_mean_wind[v_comp]
 
             # set skip for less clutter
-            skip=2
+            skip=1
             ax.barbs(
-                df_mean["longitude"][::skip], # long
-                df_mean["latitude"][::skip], # lat
+                df_mean_wind["longitude"][::skip], # long
+                df_mean_wind["latitude"][::skip], # lat
                 u_mod[::skip]*1.94384, 
-                v_mod[::skip]*1.94384, # u, v 
+                v_mod[::skip]*1.94384, # u, v
+                transform=map_kwargs['crs'],
                 length=6, linewidth=0.85
             )  # order per matplot lib follows (x, y, u, v)
         else:
@@ -1098,14 +1096,6 @@ def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
         if u_comp is not None and v_comp is not None:
             u_mod = vmodel[u_comp].mean(dim='time').squeeze()
             v_mod = vmodel[v_comp].mean(dim='time').squeeze()
-        
-            #u_mod = vmodel_u[u_comp]
-            #v_mod = vmodel_v[v_comp] 
-
-            #ensure all bias stats are MODEL-OBS (enables you to tell the direction of the 
-            #model relative to observations)
-            #u_mean=u_mod - u_obs
-            #v_mean=v_mod - v_obs
 
             # set skip for less clutter
             skip=2
@@ -1113,7 +1103,8 @@ def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
                 u_mod["longitude"][::skip], # long
                 u_mod["latitude"][::skip], # lat
                 u_mod[::skip]*1.94384, 
-                v_mod[::skip]*1.94384, # u, v 
+                v_mod[::skip]*1.94384, # u, v
+                transform=map_kwargs['crs'],
                 length=6, linewidth=0.85
             )  # order per matplot lib follows (x, y, u, v)
         else:
@@ -1404,7 +1395,7 @@ def make_boxplot(comb_bx, label_bx, ylabel = None, vmin = None, vmax = None, out
            # print(vals2)
             stat, p = ttest_ind(vals1, vals2) #Calculate the T-test for the means of two independent samples of scores.
             p_values.append(p)
-            print(p_values)
+            #print(p_values)
         
         # add *, **, and *** 
         ax = plt.gca()
@@ -1593,7 +1584,7 @@ def make_rose_plot(rose_df,
                    model_wdir,
                    obs_wspd,
                    model_wspd,
-                   wr_calm_limit=0.02,
+                   wr_calm_limit=0.5,
                    color_map= 'viridis',
                    ylabel = None,
                    outname = 'plot', 
@@ -2380,25 +2371,24 @@ def make_spatial_bias_exceedance(df, column_o=None, label_o=None, column_m=None,
 
         if 'extent' not in map_kwargs:
             map_kwargs['extent'] = [lonmin,lonmax,latmin,latmax]
-        ax.axes.set_extent(map_kwargs['extent'],crs=ccrs.PlateCarree())
+        ax.axes.set_extent(map_kwargs['extent'],crs=map_kwargs['crs'])
 
         if wind_barb:
             if u_comp is not None and v_comp is not None:
-                u_mod = df_mean[u_comp]
-                v_mod = df_mean[v_comp] 
-    
-                #ensure all bias stats are MODEL-OBS (enables you to tell the direction of the 
-                #model relative to observations)
-                #u_mean=u_mod - u_obs
-                #v_mean=v_mod - v_obs
+                #Recalculate mean, so always use mean for windbarbs and not percentiles.
+                df_mean_wind=df.groupby(['siteid'],as_index=False).mean(numeric_only=True)
+            
+                u_mod = df_mean_wind[u_comp]
+                v_mod = df_mean_wind[v_comp]
     
                 # set skip for less clutter
-                skip=2
+                skip=1
                 ax.barbs(
-                    df_mean["longitude"][::skip], # long
-                    df_mean["latitude"][::skip], # lat
+                    df_mean_wind["longitude"][::skip], # long
+                    df_mean_wind["latitude"][::skip], # lat
                     u_mod[::skip]*1.94384, 
-                    v_mod[::skip]*1.94384, # u, v 
+                    v_mod[::skip]*1.94384, # u, v
+                    transform=map_kwargs['crs'],
                     length=6, linewidth=0.85
                 )  # order per matplot lib follows (x, y, u, v)
             else:
