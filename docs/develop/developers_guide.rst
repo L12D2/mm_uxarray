@@ -168,7 +168,7 @@ to learn more about our current and future documentation plans.
    to your GitHub account for your current machine.
    If you are new to GitHub, check out
 
-   `Getting Started with GitHub on Project Pythia <https://foundations.projectpythia.org/foundations/getting-started-github.html>`__.
+   `Getting Started with GitHub on Project Pythia <https://foundations.projectpythia.org/foundations/getting-started-github/>`__.
 
    We recommend the SSH method, but if you don't add an SSH key
    you can still clone the repositories via HTTPS, e.g. ::
