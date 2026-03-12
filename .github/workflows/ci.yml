@@ -20,10 +20,10 @@ jobs:
       fail-fast: false  # always both
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Set up Python (micromamba)
-        uses: mamba-org/setup-micromamba@v1
+        uses: mamba-org/setup-micromamba@v2
         with:
           environment-file: docs/environment-docs.yml
           cache-environment: true
@@ -95,10 +95,10 @@ jobs:
         shell: bash -l {0}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Set up Python (micromamba)
-        uses: mamba-org/setup-micromamba@v1
+        uses: mamba-org/setup-micromamba@v2
         with:
           environment-file: docs/environment-docs.yml
           cache-environment: true
@@ -124,7 +124,7 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Check that .py files have the license header
         run: python3 ci/check-for-license-header.py
