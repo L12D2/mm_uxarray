@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+#
 import os
 import xarray as xr
 import numpy as np
