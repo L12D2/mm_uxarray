@@ -197,7 +197,6 @@ texinfo_documents = [
 
 linkcheck_ignore = [
     # Auth required:
-    "https://rdhpcs-common-docs.rdhpcs.noaa.gov/wiki/index.php/Anaconda#Installation",
     "https://www2.cisl.ucar.edu/resources/conda-environments",
     # Sphinx 4.5 linkcheck having problem:
     "https://docs.github.com/en/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account",
