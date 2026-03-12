@@ -55,8 +55,8 @@ We will use the conda package manager system to create a contained Python
 environment for running and developing MELODIES MONET. 
 
 #. **Install Anaconda/Miniconda:** Follow the instructions
-   `on the RDHPCS wiki <https://rdhpcs-common-docs.rdhpcs.noaa.gov/wiki/index.php/Anaconda>`__
-   to download and run Anaconda/Miniconda on Hera. Tips for success:
+   `on the RDHPCS docs <https://docs.rdhpcs.noaa.gov/software/python/conda_basics.html>`__
+   to run Anaconda/Miniconda on Hera. Tips for success:
 
    * You will need a NOAA HPC account to access the RDHPCS wiki link above.
 
