@@ -85,7 +85,7 @@ Surface Evaluation
    observation over the analysis window. This plot type has two options: a) scatter plot: model and observation values as scatter dots or markers, b) kernel density estimate (KDE) plot which visually represents the probability density of observation and model values as continuous variable (shown in the example figure above). Note: for multiple models being compared to one observation, each model-observation set would have a separate scatter plot.
 
 .. figure:: /_static/figures/plot_grp6.rose_plot.ws.2017-07-01_00.2017-07-03_00.siteid.72539614815.png
-   :scale: 25 %
+   :scale: 20 %
 
    **Rose plot** - Wind rose if provide wind speed or polution rose if you provide another variable. In the wind rose plots, calm winds are plotted as an inner circle for wind direction and data is removed for pollution rose plots based on the threshold set in your yaml file.
 
