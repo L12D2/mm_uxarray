@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+#
 import monet as m
 import os
 import xarray as xr
