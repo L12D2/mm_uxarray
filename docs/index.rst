@@ -113,8 +113,8 @@ Table of Contents
    examples/read_paired_data
    examples/aircraft_pairing
    examples/AEROMMA_UFS-AQM_Plots
-   examples/UWyoming_UFS-CHEM_pairing_loop_read
    examples/UWyoming_UFS-CHEM_Pairing
+   examples/UWyoming_UFS-CHEM_pairing_loop_read
    examples/ufs-aqm-gml-ozonesonde
 
 .. toctree::
