@@ -2418,9 +2418,26 @@ class analysis:
                                 xlabel = xlabel
                             else:
                                 xlabel = ""
+
+                            if not cal_reg or region_list is not None:
+                            # For non-regulatory metrics, makes plot for both intervals and regions
+                            # For regulatory metrics, makes plot only for regions
                                 
-                            # First for p_index = 0 create the obs box plot data array.
-                            if p_index == 0:
+                                # First for p_index = 0 create the obs box plot data array.
+                                if p_index == 0:
+                                    comb_bx, label_bx, region_bx = splots.calculate_multi_boxplot(
+                                        pairdf,
+                                        pairdf_reg,
+                                        region_name=region_name,
+                                        interval_list=interval_list,
+                                        interval_var=interval_var,
+                                        interval_labels=interval_labels,
+                                        column=obsvar,
+                                        label=p.obs,
+                                        plot_dict=obs_dict,
+                                    )
+    
+                                # Then add the models to this dataarray.
                                 comb_bx, label_bx, region_bx = splots.calculate_multi_boxplot(
                                     pairdf,
                                     pairdf_reg,
@@ -2428,60 +2445,54 @@ class analysis:
                                     interval_list=interval_list,
                                     interval_var=interval_var,
                                     interval_labels=interval_labels,
-                                    column=obsvar,
-                                    label=p.obs,
-                                    plot_dict=obs_dict,
+                                    column=modvar,
+                                    label=p.model,
+                                    plot_dict=plot_dict,
+                                    comb_bx=comb_bx,
+                                    label_bx=label_bx,
                                 )
-
-                            # Then add the models to this dataarray.
-                            comb_bx, label_bx, region_bx = splots.calculate_multi_boxplot(
-                                pairdf,
-                                pairdf_reg,
-                                region_name=region_name,
-                                interval_list=interval_list,
-                                interval_var=interval_var,
-                                interval_labels=interval_labels,
-                                column=modvar,
-                                label=p.model,
-                                plot_dict=plot_dict,
-                                comb_bx=comb_bx,
-                                label_bx=label_bx,
+    
+                                # For the last p_index make the plot.
+                                if p_index == len(pair_labels) - 1:
+                                    splots.make_multi_boxplot(
+                                        comb_bx,
+                                        label_bx,
+                                        region_bx,
+                                        region_list=region_list,
+                                        region_name=region_name,
+                                        interval_labels=interval_labels,
+                                        model_name_list=model_name_list,
+                                        ylabel=use_ylabel,
+                                        xlabel = xlabel,
+                                        vmin=vmin,
+                                        vmax=vmax,
+                                        outname=outname,
+                                        domain_type=domain_type,
+                                        domain_name=domain_name,
+                                        plot_dict=obs_dict,
+                                        fig_dict=fig_dict,
+                                        text_dict=text_dict,
+                                        gridlines = gridlines,
+                                        debug=self.debug,
+                                    )
+                                    # Clear info for next plot.
+                                    del (
+                                        comb_bx,
+                                        label_bx,
+                                        region_bx,
+                                    )
+                            else:
+                                print(
+                                    "Warning: Interval multi-box plots are not available yet for regulatory metrics."
+                                )
+                            # Clear info for next plot.
+                            del (
+                                fig_dict,
+                                plot_dict,
+                                text_dict,
+                                obs_dict,
+                                obs_plot_dict,
                             )
-
-                            # For the last p_index make the plot.
-                            if p_index == len(pair_labels) - 1:
-                                splots.make_multi_boxplot(
-                                    comb_bx,
-                                    label_bx,
-                                    region_bx,
-                                    region_list=region_list,
-                                    region_name=region_name,
-                                    interval_labels=interval_labels,
-                                    model_name_list=model_name_list,
-                                    ylabel=use_ylabel,
-                                    xlabel = xlabel,
-                                    vmin=vmin,
-                                    vmax=vmax,
-                                    outname=outname,
-                                    domain_type=domain_type,
-                                    domain_name=domain_name,
-                                    plot_dict=obs_dict,
-                                    fig_dict=fig_dict,
-                                    text_dict=text_dict,
-                                    gridlines = gridlines,
-                                    debug=self.debug,
-                                )
-                                # Clear info for next plot.
-                                del (
-                                    comb_bx,
-                                    label_bx,
-                                    region_bx,
-                                    fig_dict,
-                                    plot_dict,
-                                    text_dict,
-                                    obs_dict,
-                                    obs_plot_dict,
-                                )
 
                         elif plot_type.lower() == "scorecard":
                             # First for p_index = 0 create the obs box plot data array.
