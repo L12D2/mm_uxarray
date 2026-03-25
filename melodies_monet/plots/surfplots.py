@@ -1262,11 +1262,7 @@ def calculate_multi_boxplot(df, df_reg=None, region_name= None, interval_list=No
             
     elif interval_var is not None: 
         if df_reg is not None:
-            comb_bx[label] = df_reg[column+'_reg']
-            df_short = df[['siteid','epa_region']].drop_duplicates()
-            df_reg_epa = df_reg.merge(df_short[['siteid','epa_region']],how='left',on='siteid')
-            region_bx['set_regions'] = df_reg_epa["epa_region"]
-            region_bx['interval_labels'] = pd.Series([np.nan] * len(region_bx['set_regions']), index=region_bx.index)
+            raise NotImplementedError('Interval multi-box plots not available yet for regulatory metrics') 
         else:
             comb_bx[label] = df[column] 
             df['interval_labels'] = pd.cut(
@@ -1278,13 +1274,6 @@ def calculate_multi_boxplot(df, df_reg=None, region_name= None, interval_list=No
             ) 
             
             region_bx['set_regions'] = df['interval_labels']
-            
-            # add a column for the temperature interval list 
-            #print(df) 
-            #print(region_bx["set_regions"])
-       #elif:
-            #comb_bx[label] = df[interval_labels] 
-            #region_bx['set_regions']=df[region_name[0]]
             
     label_bx.append(plot_kwargs)
     
