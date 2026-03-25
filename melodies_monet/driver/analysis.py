@@ -2414,7 +2414,7 @@ class analysis:
                                 vmin = None
                                 vmax = None
 
-                            if interval_var is not None: 
+                            if interval_var is not None:
                                 xlabel = xlabel
                             else:
                                 xlabel = ""
@@ -2459,7 +2459,6 @@ class analysis:
                                         label_bx,
                                         region_bx,
                                         region_list=region_list,
-                                        region_name=region_name,
                                         interval_labels=interval_labels,
                                         model_name_list=model_name_list,
                                         ylabel=use_ylabel,
