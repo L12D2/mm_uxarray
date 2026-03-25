@@ -958,8 +958,6 @@ def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
         model/obs pair data to plot
     vmodel: dataarray
         slice of model data to plot
-    wind_barb : dataarray
-        slice of wind to plot
     column_o : str
         Column label of observation variable to plot
     label_o : str
@@ -1201,7 +1199,15 @@ def calculate_multi_boxplot(df, df_reg=None, region_name= None, interval_list=No
     df_reg : pandas.DataFrame
         model/obs paired regulatory data to plot
     region_name : list of str
-        user input regions of interets to plot
+        user input regions of interest to plot
+    interval_list : list of numbers
+        list of points that will create a single groupped boxplot. E.g. [0, 3, 5, 8, 11, 14]
+        will create groupped boxplots for [0-3), [3-5), and so forth.
+    interval_var : str
+        the variable a grouped boxplot will be created for
+    interval_labels: list of str
+        Labels that refer to the interval list. e.g. [“[0, 3)”, “[3, 5)”, “[5, 8)”, “[8, 11)”, “[11, 14)”]
+        are labels that will appear on the x-axis
     column : str
         Column label of variable to plot
     label : str
@@ -2242,7 +2248,7 @@ def Plot_CSI(column,score_name_input,threshold_list_input, comb_bx_input,plot_di
  
 
 
-def make_spatial_bias_exceedance(df, column_o=None, label_o=None, column_m=None,
+def make_spatial_bias_exceedance(df, df_wind=None, column_o=None, label_o=None, column_m=None,
                                  label_m=None, ylabel = None,  vdiff=None,
                                  outname = 'plot',
                                  u_comp = None, v_comp = None, wind_barb=False,
@@ -2254,7 +2260,9 @@ def make_spatial_bias_exceedance(df, column_o=None, label_o=None, column_m=None,
     Parameters
     ----------
     df : pandas.DataFrame
-        model/obs paired data to plot
+        model/obs paired data to plot with regulatory calcs
+    df_wind : pandas.DataFrame
+        model/obs paired data to plot with wind data
     column_o : str
         Column label of observation variable to plot
     label_o : str
@@ -2374,9 +2382,11 @@ def make_spatial_bias_exceedance(df, column_o=None, label_o=None, column_m=None,
         ax.axes.set_extent(map_kwargs['extent'],crs=map_kwargs['crs'])
 
         if wind_barb:
-            if u_comp is not None and v_comp is not None:
+            if u_comp is not None and v_comp is not None and df_wind is not None:
                 #Recalculate mean, so always use mean for windbarbs and not percentiles.
-                df_mean_wind=df.groupby(['siteid'],as_index=False).mean(numeric_only=True)
+                #Also use regular dataframe with hourly data and not the regulatory dataframe, 
+                #which only has wind fields in it for midnight local time.
+                df_mean_wind=df_wind.groupby(['siteid'],as_index=False).mean(numeric_only=True)
             
                 u_mod = df_mean_wind[u_comp]
                 v_mod = df_mean_wind[v_comp]
