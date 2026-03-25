@@ -1412,9 +1412,10 @@ def make_boxplot(comb_bx, label_bx, ylabel = None, vmin = None, vmax = None, out
     plt.tight_layout()
     savefig(outname + '.png', loc=4, logo_height=100)
   
-def make_multi_boxplot(comb_bx, label_bx,region_bx,region_list = None, region_name=None, interval_labels=None, interval_var=None, interval_list=None, model_name_list=None,ylabel = None, vmin = None, vmax = None, outname='plot', xlabel = None,
-                       domain_type=None, domain_name=None,
-                       plot_dict=None, fig_dict=None,text_dict=None,debug=False, gridlines = False):
+def make_multi_boxplot(comb_bx, label_bx,region_bx,region_list = None, interval_labels=None,
+                       model_name_list=None,ylabel = None, xlabel = None, vmin = None, vmax = None, 
+                       outname='plot', domain_type=None, domain_name=None,
+                       plot_dict=None, fig_dict=None, text_dict=None, gridlines = False, debug=False):
     
     """Creates box-plot. 
     
@@ -1428,6 +1429,10 @@ def make_multi_boxplot(comb_bx, label_bx,region_bx,region_list = None, region_na
     region_bx : dataframe
         dataframe containing information of stations to help create multi-box-plot
         from calculate_boxplot
+    region_list : list of str
+        list of regions to plot
+    interval_labels : list of str
+        list of interval labels to plot
     model_name_list : list of str
         list of models and observation sources used for x-labels in plot
     ylabel : str
@@ -1451,11 +1456,12 @@ def make_multi_boxplot(comb_bx, label_bx,region_bx,region_list = None, region_na
         Dictionary containing information about figure
     text_dict : dictionary
         Dictionary containing information about text
+    gridlines : boolean
+        Draws background gridlines
     debug : boolean
         Whether to plot interactively (True) or not (False). Flag for 
         submitting jobs to supercomputer turn off interactive mode.
-    gridlines : boolean
-        Draws background gridlines    
+    
     Returns
     -------
     plot 
