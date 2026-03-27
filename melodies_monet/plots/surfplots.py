@@ -1540,22 +1540,15 @@ def make_multi_boxplot(comb_bx, label_bx,region_bx,region_list = None, interval_
         to_concat.append(data_model[['Value','model','Regions']])
     
     tdf =pd.concat(to_concat)
-    #print(tdf)
 
     if region_list is not None:
         acro = region_list
-        x_data = "Regions"
-        #data_obs['Regions'] = region_bx['set_regions'].values 
-        #data_plot = tdf.loc[tdf.Regions.isin(acro)]
     else:
         # needed to convert a list of strings to a string so the data would populate
         tdf['Regions'] = tdf['Regions'].astype(str)
         acro = [str(lab) for lab in interval_labels]
-        #print("tdf['Regions'].unique():", tdf['Regions'].unique())
-        #print("acro:", acro)
-        x_data = "Regions"
         
-    sns.boxplot(x=x_data,
+    sns.boxplot(x="Regions",
                 y='Value',
                 hue='model',
                 data=tdf.loc[tdf.Regions.isin(acro)],
@@ -1590,9 +1583,9 @@ def make_rose_plot(rose_df,
                    ylabel = None,
                    outname = 'plot', 
                    domain_type=None, 
-                   domain_name=None, 
-                   fig_dict=None, 
+                   domain_name=None,
                    plot_dict = None,
+                   fig_dict=None,
                    text_dict=None,
                    debug=False):
 
@@ -1615,7 +1608,7 @@ def make_rose_plot(rose_df,
     model_wspd: str
         modeled variable name for wind speed. Needed for polution roses.
     wr_calm_limit: real number
-        Limit to use for calm_winds. Default is 0.02 m/s.
+        Limit to use for calm_winds. Default is 0.5 m/s.
     color_map: str
         Color_map to use in plot
     ylabel : str
@@ -1626,6 +1619,9 @@ def make_rose_plot(rose_df,
         Domain type specified in input yaml file
     domain_name : str
         Domain name specified in input yaml file
+    plot_dict : dictionary
+        Dictionary containing information about plotting for each pair 
+        (e.g., color, linestyle, markerstyle)
     fig_dict : dictionary
         Dictionary containing information about figure
     text_dict : dictionary
@@ -1647,20 +1643,11 @@ def make_rose_plot(rose_df,
         text_kwargs = {**def_text, **text_dict}
     else:
         text_kwargs = def_text
-
-    #not supported by the windroseaxes library 
-    # if fig_dict is not None:
-    #     fig = plt.subplots(**fig_dict)
-    # else:
-    #     fig = plt.subplots((8,8))
         
     #Plot settings
     fig = plt.figure(figsize = (8,8))
-    
-    #need to be put in fig_dict? 
     rect_set1 = [0.3, 0.1, 0.4, 0.8]
     rect_set2 = [0.98, 0.1, 0.4, 0.8]
-    #colors = color_map
 
     color_map_config = color_map
 
@@ -1708,17 +1695,14 @@ def make_rose_plot(rose_df,
         mask_calm_model_per = mask_calm_model.sum()*100.0/len(rose_df)
 
         use_calm_limit = wr_calm_limit
-    
-    #print(len(rose_df))
+
     #draw ax1 
     ax1 = WindroseAxes.from_ax(fig = fig,rect=rect_set1)
     ax1.bar(rose_obs[obs_wdir], rose_obs[obsvar], normed=True, calm_limit = use_calm_limit, cmap=cmap, label = "Observed")
-    #print("Obs:", rose_df.WD.mode()[0])
     
     # draw ax2
     ax2 = WindroseAxes.from_ax(fig = fig, rect=rect_set2)
     ax2.bar(rose_model[model_wdir], rose_model[modvar], normed=True, calm_limit = use_calm_limit, cmap=cmap, label = "Modeled")
-    #print("Mod:",rose_df.winddir.mode()[0])
     
     # set label settings for the two axs
     for ax in [ax1, ax2]:
