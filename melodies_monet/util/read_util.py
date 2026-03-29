@@ -225,13 +225,6 @@ def read_aircraft_obs_csv(filename,time_var=None):
 
     # place a nan
     # inplace = true assigns it back to df. 
-    df.replace(r'^\s*$', np.nan, regex=True, inplace=True)
-    
-    #df = df.applymap(lambda x: np.nan if isinstance(x, str) and x.strip() == '' else x)
-    
-    #print(df)
-    # need to make sure this df is respected downstream in the code. 
-    # for the UWY .csv, if that first row has blank spots, forces this to return a non 
-    # obj. 
+    df.replace(r'^\s*$', np.nan, regex=True, inplace=True) 
     
     return xr.Dataset.from_dataframe(df)

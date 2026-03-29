@@ -958,8 +958,6 @@ def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
         model/obs pair data to plot
     vmodel: dataarray
         slice of model data to plot
-    wind_barb : dataarray
-        slice of wind to plot
     column_o : str
         Column label of observation variable to plot
     label_o : str
@@ -1201,7 +1199,15 @@ def calculate_multi_boxplot(df, df_reg=None, region_name= None, interval_list=No
     df_reg : pandas.DataFrame
         model/obs paired regulatory data to plot
     region_name : list of str
-        user input regions of interets to plot
+        user input regions of interest to plot
+    interval_list : list of numbers
+        list of points that will create a single groupped boxplot. E.g. [0, 3, 5, 8, 11, 14]
+        will create groupped boxplots for [0-3), [3-5), and so forth.
+    interval_var : str
+        the variable a grouped boxplot will be created for
+    interval_labels: list of str
+        Labels that refer to the interval list. e.g. [“[0, 3)”, “[3, 5)”, “[5, 8)”, “[8, 11)”, “[11, 14)”]
+        are labels that will appear on the x-axis
     column : str
         Column label of variable to plot
     label : str
@@ -1256,11 +1262,7 @@ def calculate_multi_boxplot(df, df_reg=None, region_name= None, interval_list=No
             
     elif interval_var is not None: 
         if df_reg is not None:
-            comb_bx[label] = df_reg[column+'_reg']
-            df_short = df[['siteid','epa_region']].drop_duplicates()
-            df_reg_epa = df_reg.merge(df_short[['siteid','epa_region']],how='left',on='siteid')
-            region_bx['set_regions'] = df_reg_epa["epa_region"]
-            region_bx['interval_labels'] = pd.Series([np.nan] * len(region_bx['set_regions']), index=region_bx.index)
+            raise NotImplementedError('Interval multi-box plots not available yet for regulatory metrics') 
         else:
             comb_bx[label] = df[column] 
             df['interval_labels'] = pd.cut(
@@ -1272,13 +1274,6 @@ def calculate_multi_boxplot(df, df_reg=None, region_name= None, interval_list=No
             ) 
             
             region_bx['set_regions'] = df['interval_labels']
-            
-            # add a column for the temperature interval list 
-            #print(df) 
-            #print(region_bx["set_regions"])
-       #elif:
-            #comb_bx[label] = df[interval_labels] 
-            #region_bx['set_regions']=df[region_name[0]]
             
     label_bx.append(plot_kwargs)
     
@@ -1417,9 +1412,10 @@ def make_boxplot(comb_bx, label_bx, ylabel = None, vmin = None, vmax = None, out
     plt.tight_layout()
     savefig(outname + '.png', loc=4, logo_height=100)
   
-def make_multi_boxplot(comb_bx, label_bx,region_bx,region_list = None, region_name=None, interval_labels=None, interval_var=None, interval_list=None, model_name_list=None,ylabel = None, vmin = None, vmax = None, outname='plot', xlabel = None,
-                       domain_type=None, domain_name=None,
-                       plot_dict=None, fig_dict=None,text_dict=None,debug=False, gridlines = False):
+def make_multi_boxplot(comb_bx, label_bx,region_bx,region_list = None, interval_labels=None,
+                       model_name_list=None,ylabel = None, xlabel = None, vmin = None, vmax = None, 
+                       outname='plot', domain_type=None, domain_name=None,
+                       plot_dict=None, fig_dict=None, text_dict=None, gridlines = False, debug=False):
     
     """Creates box-plot. 
     
@@ -1433,6 +1429,10 @@ def make_multi_boxplot(comb_bx, label_bx,region_bx,region_list = None, region_na
     region_bx : dataframe
         dataframe containing information of stations to help create multi-box-plot
         from calculate_boxplot
+    region_list : list of str
+        list of regions to plot
+    interval_labels : list of str
+        list of interval labels to plot
     model_name_list : list of str
         list of models and observation sources used for x-labels in plot
     ylabel : str
@@ -1456,11 +1456,12 @@ def make_multi_boxplot(comb_bx, label_bx,region_bx,region_list = None, region_na
         Dictionary containing information about figure
     text_dict : dictionary
         Dictionary containing information about text
+    gridlines : boolean
+        Draws background gridlines
     debug : boolean
         Whether to plot interactively (True) or not (False). Flag for 
         submitting jobs to supercomputer turn off interactive mode.
-    gridlines : boolean
-        Draws background gridlines    
+    
     Returns
     -------
     plot 
@@ -1539,22 +1540,15 @@ def make_multi_boxplot(comb_bx, label_bx,region_bx,region_list = None, region_na
         to_concat.append(data_model[['Value','model','Regions']])
     
     tdf =pd.concat(to_concat)
-    #print(tdf)
 
     if region_list is not None:
         acro = region_list
-        x_data = "Regions"
-        #data_obs['Regions'] = region_bx['set_regions'].values 
-        #data_plot = tdf.loc[tdf.Regions.isin(acro)]
     else:
         # needed to convert a list of strings to a string so the data would populate
         tdf['Regions'] = tdf['Regions'].astype(str)
         acro = [str(lab) for lab in interval_labels]
-        #print("tdf['Regions'].unique():", tdf['Regions'].unique())
-        #print("acro:", acro)
-        x_data = "Regions"
         
-    sns.boxplot(x=x_data,
+    sns.boxplot(x="Regions",
                 y='Value',
                 hue='model',
                 data=tdf.loc[tdf.Regions.isin(acro)],
@@ -1589,9 +1583,9 @@ def make_rose_plot(rose_df,
                    ylabel = None,
                    outname = 'plot', 
                    domain_type=None, 
-                   domain_name=None, 
-                   fig_dict=None, 
+                   domain_name=None,
                    plot_dict = None,
+                   fig_dict=None,
                    text_dict=None,
                    debug=False):
 
@@ -1614,7 +1608,7 @@ def make_rose_plot(rose_df,
     model_wspd: str
         modeled variable name for wind speed. Needed for polution roses.
     wr_calm_limit: real number
-        Limit to use for calm_winds. Default is 0.02 m/s.
+        Limit to use for calm_winds. Default is 0.5 m/s.
     color_map: str
         Color_map to use in plot
     ylabel : str
@@ -1625,6 +1619,9 @@ def make_rose_plot(rose_df,
         Domain type specified in input yaml file
     domain_name : str
         Domain name specified in input yaml file
+    plot_dict : dictionary
+        Dictionary containing information about plotting for each pair 
+        (e.g., color, linestyle, markerstyle)
     fig_dict : dictionary
         Dictionary containing information about figure
     text_dict : dictionary
@@ -1646,20 +1643,11 @@ def make_rose_plot(rose_df,
         text_kwargs = {**def_text, **text_dict}
     else:
         text_kwargs = def_text
-
-    #not supported by the windroseaxes library 
-    # if fig_dict is not None:
-    #     fig = plt.subplots(**fig_dict)
-    # else:
-    #     fig = plt.subplots((8,8))
         
     #Plot settings
     fig = plt.figure(figsize = (8,8))
-    
-    #need to be put in fig_dict? 
     rect_set1 = [0.3, 0.1, 0.4, 0.8]
     rect_set2 = [0.98, 0.1, 0.4, 0.8]
-    #colors = color_map
 
     color_map_config = color_map
 
@@ -1707,17 +1695,14 @@ def make_rose_plot(rose_df,
         mask_calm_model_per = mask_calm_model.sum()*100.0/len(rose_df)
 
         use_calm_limit = wr_calm_limit
-    
-    #print(len(rose_df))
+
     #draw ax1 
     ax1 = WindroseAxes.from_ax(fig = fig,rect=rect_set1)
     ax1.bar(rose_obs[obs_wdir], rose_obs[obsvar], normed=True, calm_limit = use_calm_limit, cmap=cmap, label = "Observed")
-    #print("Obs:", rose_df.WD.mode()[0])
     
     # draw ax2
     ax2 = WindroseAxes.from_ax(fig = fig, rect=rect_set2)
     ax2.bar(rose_model[model_wdir], rose_model[modvar], normed=True, calm_limit = use_calm_limit, cmap=cmap, label = "Modeled")
-    #print("Mod:",rose_df.winddir.mode()[0])
     
     # set label settings for the two axs
     for ax in [ax1, ax2]:
@@ -2242,7 +2227,7 @@ def Plot_CSI(column,score_name_input,threshold_list_input, comb_bx_input,plot_di
  
 
 
-def make_spatial_bias_exceedance(df, column_o=None, label_o=None, column_m=None,
+def make_spatial_bias_exceedance(df, df_wind=None, column_o=None, label_o=None, column_m=None,
                                  label_m=None, ylabel = None,  vdiff=None,
                                  outname = 'plot',
                                  u_comp = None, v_comp = None, wind_barb=False,
@@ -2254,7 +2239,9 @@ def make_spatial_bias_exceedance(df, column_o=None, label_o=None, column_m=None,
     Parameters
     ----------
     df : pandas.DataFrame
-        model/obs paired data to plot
+        model/obs paired data to plot with regulatory calcs
+    df_wind : pandas.DataFrame
+        model/obs paired data to plot with wind data
     column_o : str
         Column label of observation variable to plot
     label_o : str
@@ -2374,9 +2361,11 @@ def make_spatial_bias_exceedance(df, column_o=None, label_o=None, column_m=None,
         ax.axes.set_extent(map_kwargs['extent'],crs=map_kwargs['crs'])
 
         if wind_barb:
-            if u_comp is not None and v_comp is not None:
+            if u_comp is not None and v_comp is not None and df_wind is not None:
                 #Recalculate mean, so always use mean for windbarbs and not percentiles.
-                df_mean_wind=df.groupby(['siteid'],as_index=False).mean(numeric_only=True)
+                #Also use regular dataframe with hourly data and not the regulatory dataframe, 
+                #which only has wind fields in it for midnight local time.
+                df_mean_wind=df_wind.groupby(['siteid'],as_index=False).mean(numeric_only=True)
             
                 u_mod = df_mean_wind[u_comp]
                 v_mod = df_mean_wind[v_comp]

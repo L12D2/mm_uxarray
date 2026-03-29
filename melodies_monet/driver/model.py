@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+#
 import os
 import warnings
 import xarray as xr

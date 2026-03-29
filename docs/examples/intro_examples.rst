@@ -33,8 +33,9 @@ Aircraft and sonde evaluation examples:
 
 * :doc:`aircraft_pairing`
 * :doc:`AEROMMA_UFS-AQM_Plots`
-* :doc:`UWyoming_UFS-CHEM_pairing_loop_read`
 * :doc:`UWyoming_UFS-CHEM_Pairing`
+* :doc:`UWyoming_UFS-CHEM_pairing_loop_read`
+* :doc:`ufs-aqm-gml-ozonesonde`
 
 Execution statistics
 --------------------
