@@ -1,4 +1,5 @@
-
+# SPDX-License-Identifier: Apache-2.0
+#
 """
 This file calculates a number of meteorological variables. For hydrometeorological variables, 
 variables including dewpoint and relative humidity are not universally provided by the obs. 
