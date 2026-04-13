@@ -31,6 +31,7 @@ class model:
         self.variable_summing = None
         self.plot_kwargs = None
         self.proj = None
+        self.mod_to_overpass = False
 
     def __repr__(self):
         return (
