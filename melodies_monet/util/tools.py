@@ -485,7 +485,7 @@ def convert_std_to_amb(
     Convert aerosol concentrations from standard to ambient conditions.
     
     Parameters
-    ---
+    ----------
     :param ds: xarray.Dataset
         Dataset containing variables to convert.
     :param convert_vars: list of str, optional
