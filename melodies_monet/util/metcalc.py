@@ -46,10 +46,10 @@ def dewpoint(obj, varmap = None, output_key = "dewpoint"):
     """
     
     if metpy is None:
-    raise ImportError(
-        "metpy is required for extra_calc. "
-        "Install with: conda install -c conda-forge metpy"
-    )
+        raise ImportError(
+            "metpy is required for extra_calc. "
+            "Install with: conda install -c conda-forge metpy"
+        )
     
     # grab variable names from the yaml 
     pressure_key = varmap['pres_calc'] if varmap and 'pres_calc' in varmap else 'surfpres_pa'
@@ -90,10 +90,10 @@ def relh(obj, varmap=None, output_key="rel_hum"):
     """
     
     if metpy is None:
-    raise ImportError(
-        "metpy is required for extra_calc. "
-        "Install with: conda install -c conda-forge metpy"
-    )
+        raise ImportError(
+            "metpy is required for extra_calc. "
+            "Install with: conda install -c conda-forge metpy"
+        )
     
     # grab variable names from the yaml or fall back to defaults
     pressure_key = varmap['pres_calc'] if varmap and 'pres_calc' in varmap else 'surfpres_pa'
@@ -143,10 +143,10 @@ def wspd(obj, varmap = None, output_key = "windspeed"):
     """
     
     if metpy is None:
-    raise ImportError(
-        "metpy is required for extra_calc. "
-        "Install with: conda install -c conda-forge metpy"
-    )
+        raise ImportError(
+            "metpy is required for extra_calc. "
+            "Install with: conda install -c conda-forge metpy"
+        )
     
     # grab variable names from the yaml 
     u_key = varmap["u_comp"] 
@@ -186,10 +186,10 @@ def wdir(obj, varmap = None, output_key = "winddir"):
     """
 
     if metpy is None:
-    raise ImportError(
-        "metpy is required for extra_calc. "
-        "Install with: conda install -c conda-forge metpy"
-    )
+        raise ImportError(
+            "metpy is required for extra_calc. "
+            "Install with: conda install -c conda-forge metpy"
+        )
     
     # grab variable names from the yaml 
     u_key = varmap["u_comp"] 
@@ -232,10 +232,10 @@ def ptemp(obj, varmap=None, output_key="ptemp"):
     """
 
     if metpy is None:
-    raise ImportError(
-        "metpy is required for extra_calc. "
-        "Install with: conda install -c conda-forge metpy"
-    )
+        raise ImportError(
+            "metpy is required for extra_calc. "
+            "Install with: conda install -c conda-forge metpy"
+        )
     
     pressure_key = varmap['pres_calc'] if varmap and 'pres_calc' in varmap else 'surfpres_pa'
     temperature_key = varmap['temp_calc'] if varmap and 'temp_calc' in varmap else 'temperature_k'
