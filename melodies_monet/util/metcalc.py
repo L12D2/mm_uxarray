@@ -15,12 +15,15 @@ See: control_aircraft_looping_AEROMMA_UFSAQM.yaml
 Author: Liam Thompson
 """
 
-# will need to make this an optional dependency if we proceed in using this. 
-import metpy
+try:
+    import metpy
+    from metpy.units import units
+except ImportError:
+    metpy = None
+    units = None
+
 # if future iterations want to calc dewpoint/relh on the observations, this can be done with other metpy
-# libraries. 
-# addtl libraries to make the world go round
-from metpy.units import units
+# libraries.
 
 # calc dewpoint 
 def dewpoint(obj, varmap = None, output_key = "dewpoint"):
@@ -41,6 +44,12 @@ def dewpoint(obj, varmap = None, output_key = "dewpoint"):
         Xarray dataset with applied calculation as a new data array
         
     """
+    
+    if metpy is None:
+    raise ImportError(
+        "metpy is required for extra_calc. "
+        "Install with: conda install -c conda-forge metpy"
+    )
     
     # grab variable names from the yaml 
     pressure_key = varmap['pres_calc'] if varmap and 'pres_calc' in varmap else 'surfpres_pa'
@@ -79,6 +88,12 @@ def relh(obj, varmap=None, output_key="rel_hum"):
         Xarray dataset with applied calculation as a new data array
         
     """
+    
+    if metpy is None:
+    raise ImportError(
+        "metpy is required for extra_calc. "
+        "Install with: conda install -c conda-forge metpy"
+    )
     
     # grab variable names from the yaml or fall back to defaults
     pressure_key = varmap['pres_calc'] if varmap and 'pres_calc' in varmap else 'surfpres_pa'
@@ -127,6 +142,12 @@ def wspd(obj, varmap = None, output_key = "windspeed"):
         
     """
     
+    if metpy is None:
+    raise ImportError(
+        "metpy is required for extra_calc. "
+        "Install with: conda install -c conda-forge metpy"
+    )
+    
     # grab variable names from the yaml 
     u_key = varmap["u_comp"] 
     v_key = varmap["v_comp"] 
@@ -163,6 +184,12 @@ def wdir(obj, varmap = None, output_key = "winddir"):
         Xarray dataset with applied calculation as a new data array
         
     """
+
+    if metpy is None:
+    raise ImportError(
+        "metpy is required for extra_calc. "
+        "Install with: conda install -c conda-forge metpy"
+    )
     
     # grab variable names from the yaml 
     u_key = varmap["u_comp"] 
@@ -204,6 +231,12 @@ def ptemp(obj, varmap=None, output_key="ptemp"):
         
     """
 
+    if metpy is None:
+    raise ImportError(
+        "metpy is required for extra_calc. "
+        "Install with: conda install -c conda-forge metpy"
+    )
+    
     pressure_key = varmap['pres_calc'] if varmap and 'pres_calc' in varmap else 'surfpres_pa'
     temperature_key = varmap['temp_calc'] if varmap and 'temp_calc' in varmap else 'temperature_k'
         
@@ -219,4 +252,3 @@ def ptemp(obj, varmap=None, output_key="ptemp"):
     obj[output_key] = ptmp
         
     return obj
-
