@@ -90,11 +90,6 @@ or other interactive Python session,
 as it gives you some visual indication of the progress of multi-file data loading
 and some parts of the processing.
 
-**pairing_kwargs:** This is an optional argument. This dictionary allows for specifying keyword arguments for pairing methods.
-First level should be the observation type (e.g. "sat_grid_clm", "sat_swath_clm"). Then under the observation type label provide the specific pairing options for your application.
-   
-   * **apply_ak:** This is an optional argument used for pairing of satellite data. When no pairing keyword arguments are specified it will default to True. This should be set to True when application of satellite averaging kernels or apriori data to model observations is desired.
-   * **mod_to_overpass:** This is an optional argument used for pairing of satellite data. When set to True the model data will be pre-processed to the published local overpass time for the satellite. As of now, local overpass times are hard-wired.
 
 Models
 ------
@@ -198,7 +193,8 @@ exceedance plots display wind barbs.
 
    * **blh_calc:** Under development. Refer to https://github.com/L12D2/MELODIES-MONET/tree/BoundaryLayerHeight_Tropopause_calc_beta for current development. 
 
-**apply_ak:** Removed. Instead, specify ``pairing_kwargs`` in the analysis section.
+**mod_to_overpass:** This is an optional argument used for pairing of satellite data. When set to True 
+the model data will be pre-processed to the published local overpass time for the satellite. As of now, local overpass times are hard-wired.
 
 **is_global:** Optional boolean argument to specify if the model dataset is global or
 regional. Used in some satellite pairing methods to indicate if a longitude wrap should 
@@ -286,6 +282,8 @@ See :doc:`../getting_started/downloading_obs` for more details.
 options for Aircraft and Satellite observations are under development.
 
 **sat_type:** The satellite observation type. Options include: "mopitt_l3", "omps_l3", "omps_nm", "modis_l2", "tropomi_l2_no2", "tempo_l2_no2" and "tempo_l2_hcho". Additional options are under development. 
+
+**sat_method:** Processing option for satellite. Current options include: "apply_ak" and "replace_apriori".
 
 **data_proc:** This section stores all of the data processing information.
    
