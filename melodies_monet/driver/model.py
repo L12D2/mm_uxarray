@@ -302,7 +302,7 @@ class model:
                 self.obj=relh(self.obj, varmap = varmap)
 
             if "windspeed" in self.extra_calc:
-                print("Calculating modeled windpseed...")
+                print("Calculating modeled windspeed...")
                 from melodies_monet.util.metcalc import wspd
 
                 varmap = self.extra_calc["windspeed"]
@@ -325,9 +325,6 @@ class model:
                     varmap=varmap,
                     output_key="ptemp_mod"
                 )
-                
-            else:
-                print("No extra calculations performed.")
 
     def rename_vars(self):
         """Rename any variables in model with rename set.
