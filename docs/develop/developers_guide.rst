@@ -69,13 +69,6 @@ these instructions:
        $ git checkout develop
        $ pip install --force-reinstall --no-deps --editable .
 
-(c) Clone [#clone]_ and link the latest development version of the MELODIES MONET::
-
-       $ git clone git@github.com:NCAR/MELODIES-MONET.git
-       $ cd MELODIES-MONET
-       $ git checkout develop
-       $ pip install --force-reinstall --no-deps --editable .
-
 
 How to incorporate updates to MELODIES MONET
 --------------------------------------------
@@ -98,7 +91,8 @@ changes.
           $ git pull upstream main
           $ git push origin main
 
-(b) Navigate on your working machine
+(b) Clone [#clone]_ and link the latest development version of the MELODIES MONET via your fork:: 
+    Navigate on your working machine
     to where you would like to keep the MELODIES-MONET code
     (e.g. in your work location) and clone [#clone]_ your fork::
 
@@ -107,8 +101,10 @@ changes.
 (c) Checkout the develop branch --- you need to do this with the remote branch
     as well as create a local tracking branch::
 
+       $ cd $ForkName
        $ git checkout origin/develop
        $ git checkout develop
+       $ pip install --force-reinstall --no-deps --editable .
 
     Then all development work will be in the ``melodies_monet`` folder. ::
 

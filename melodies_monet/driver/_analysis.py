@@ -297,6 +297,8 @@ class analysis:
                 # set the model label in the dictionary and model class instance
                 if "is_global" in self.control_dict["model"][mod].keys():
                     m.is_global = self.control_dict["model"][mod]["is_global"]
+                if "mod_to_overpass" in self.control_dict["model"][mod].keys():
+                    m.mod_to_overpass = self.control_dict["model"][mod]["mod_to_overpass"]
                 if "radius_of_influence" in self.control_dict["model"][mod].keys():
                     m.radius_of_influence = self.control_dict["model"][mod]["radius_of_influence"]
                 else:
@@ -414,6 +416,8 @@ class analysis:
                     o.ground_coordinate = self.control_dict["obs"][obs]["ground_coordinate"]
                 if "sat_type" in self.control_dict["obs"][obs].keys():
                     o.sat_type = self.control_dict["obs"][obs]["sat_type"]
+                if 'sat_method' in self.control_dict['obs'][obs].keys():
+                    o.sat_method = self.control_dict['obs'][obs]['sat_method']
                 if load_files:
                     if o.obs_type in [
                         "sat_swath_sfc",
@@ -805,14 +809,6 @@ class analysis:
                 # TODO: add other network types / data types where (ie flight, satellite etc)
                 # if sat_swath_clm (satellite l2 column products)
                 elif obs.obs_type.lower() == "sat_swath_clm":
-                    # grab kwargs for pairing. Use default if not specified
-                    pairing_kws = {"apply_ak": True, "mod_to_overpass": False}
-                    for key in self.pairing_kwargs.get(obs.obs_type.lower(), {}):
-                        pairing_kws[key] = self.pairing_kwargs[obs.obs_type.lower()][key]
-                    if "apply_ak" not in self.pairing_kwargs.get(obs.obs_type.lower(), {}):
-                        print(
-                            "WARNING: The satellite pairing option apply_ak is being set to True because it was not specified in the YAML. Pairing will fail if there is no AK available."
-                        )
 
                     if obs.sat_type == "omps_nm":
 
@@ -823,9 +819,13 @@ class analysis:
                         if "time" in obs.obj.dims:
                             obs.obj = obs.obj.sel(time=slice(self.start_time, self.end_time))
                             obs.obj = obs.obj.swap_dims({"time": "x"})
-                        if pairing_kws["apply_ak"] is True:
+                        if obs.sat_method == 'apply_ak':
                             model_obj = mod.obj[keys + ["pres_pa_mid", "surfpres_pa"]]
-
+                            
+                            overpass_datetime = pd.date_range(self.start_time.replace(hour=13,minute=30),
+                                                              self.end_time.replace(hour=13,minute=30),freq='D')
+                            model_obj = sutil.mod_to_overpasstime(model_obj,overpass_datetime)
+                            
                             paired_data = sutil.omps_nm_pairing_apriori(model_obj, obs.obj, keys)
                         else:
                             model_obj = mod.obj[keys + ["dp_pa"]]
@@ -842,7 +842,7 @@ class analysis:
                         label = "{}_{}".format(p.obs, p.model)
                         self.paired[label] = p
 
-                    if obs.sat_type == "tropomi_l2_no2":
+                    if obs.sat_type == "tropomi_l2_no2" and (obs.sat_method == None or obs.sat_method == "replace_apriori"):
                         from melodies_monet.util import sat_l2_swath_utility as no2util
                         from melodies_monet.util import satellite_utilities as sutil
 
@@ -864,7 +864,7 @@ class analysis:
                             )
                         no2_varname = keys[i_no2_varname[0]]
 
-                        if pairing_kws["mod_to_overpass"]:
+                        if m.mod_to_overpass:
                             print("sampling model to 13:30 local overpass time")
                             overpass_datetime = pd.date_range(
                                 self.start_time.replace(hour=13, minute=30),
@@ -886,10 +886,12 @@ class analysis:
                             model_obj[f"{no2_varname}_col"] = calc_partialcolumn(
                                 model_obj, var=no2_varname
                             )
-                        if pairing_kws["apply_ak"] is True:
+                        # Regrid observation to model grid with replacement of apriori
+                        if obs.sat_method == 'replace_apriori':
                             paired_data = no2util.trp_interp_swatogrd_ak(
                                 obs.obj, model_obj, no2varname=no2_varname
                             )
+                        # Regrid observation to model grid without any modification
                         else:
                             paired_data = no2util.trp_interp_swatogrd(
                                 obs.obj, model_obj, no2varname=no2_varname
@@ -958,14 +960,7 @@ class analysis:
 
                 # if sat_grid_clm (satellite l3 column products)
                 elif obs.obs_type.lower() == "sat_grid_clm":
-                    # grab kwargs for pairing. Use default if not specified
-                    pairing_kws = {"apply_ak": True, "mod_to_overpass": False}
-                    for key in self.pairing_kwargs.get(obs.obs_type.lower(), {}):
-                        pairing_kws[key] = self.pairing_kwargs[obs.obs_type.lower()][key]
-                    if "apply_ak" not in self.pairing_kwargs[obs.obs_type.lower()]:
-                        print(
-                            "WARNING: The satellite pairing option apply_ak is being set to True because it was not specified in the YAML. Pairing will fail if there is no AK available."
-                        )
+
                     if len(keys) > 1:
                         print("Caution: More than 1 variable is included in mapping keys.")
                         print("Pairing code is calculating a column for {}".format(keys[0]))
@@ -994,11 +989,11 @@ class analysis:
                     elif obs.sat_type == "mopitt_l3":
                         from melodies_monet.util import satellite_utilities as sutil
 
-                        if pairing_kws["apply_ak"]:
+                        if obs.sat_method == "apply_ak":
                             model_obj = mod.obj[keys + ["pres_pa_mid"]]
 
                             # Sample model to observation overpass time
-                            if pairing_kws["mod_to_overpass"]:
+                            if m.mod_to_overpass:
                                 print("sampling model to 10:30 local overpass time")
                                 overpass_datetime = pd.date_range(
                                     self.start_time.replace(hour=10, minute=30),
