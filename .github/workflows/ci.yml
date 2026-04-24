@@ -37,11 +37,6 @@ jobs:
           python -m pip install --force-reinstall --no-deps https://github.com/noaa-oar-arl/monetio/archive/develop.zip
           python -m pip install --force-reinstall --no-deps https://github.com/noaa-oar-arl/monet/archive/develop.zip
 
-      - name: Ensure pandas 1
-        run: |
-          python -m pip uninstall -y pandas xarray
-          micromamba install --force-reinstall -y pandas=1.5.3 xarray=2024.3.0
-
       - name: Versions
         run: |
           which python
