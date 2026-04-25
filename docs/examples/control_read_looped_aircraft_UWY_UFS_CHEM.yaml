@@ -25,7 +25,7 @@ analysis:
       
 model:
   ufschem: # model label
-    files: /wrk/rschwantes/aeromma_1x1/short2/2023_08_01_ufschemv1.nc #example:ufschem:2023-06
+    files: example:ufschem:2023-08-01 #example:ufschem:2023-06
     mod_type: 'ufschem'
     radius_of_influence: 100000 #meters
     
@@ -74,7 +74,7 @@ model:
       linestyle: ':' 
 obs:
   uwy: # obs label
-    filename: /wrk/rschwantes/aeromma_1x1/obs/2023080112-72632.csv #example:uwy-sonde:2023-06
+    filename: example:uwy-sonde:2023-08-01 #example:uwy-sonde:2023-06
     obs_type: aircraft
     time_var: time
     resample: '2s' #'600S' #10 min so works on Hera as a test. Can comment this if submitting a job. 

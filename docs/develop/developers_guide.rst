@@ -55,7 +55,8 @@ these instructions:
        $ conda create --name melodies-monet python=3.11
        $ conda activate melodies-monet
        $ conda install -y -c conda-forge pyyaml pandas=1 "matplotlib-base<3.9" monet monetio \
-         "netcdf4<1.7" "setuptools<70" wrf-python typer rich pooch jupyterlab metpy windrose statannotations
+         "netcdf4<1.7" "setuptools<70" "dask>=2024.2.1" wrf-python typer rich pooch jupyterlab \
+         metpy windrose statannotations
 
 (b) Clone [#clone]_ and link the latest development versions of MONET and MONETIO from GitHub to
     your conda environment::

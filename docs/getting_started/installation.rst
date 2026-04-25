@@ -45,7 +45,8 @@ We have recently created a conda-forge release of MELODIES MONET to make install
 with just 1 line of code below::
 
     $ conda create --name melodies-monet -y -c conda-forge \
-      python=3.11 "netcdf4<1.7" "setuptools<70" wrf-python melodies-monet jupyterlab metpy windrose statannotations
+      python=3.11 "netcdf4<1.7" "setuptools<70" "dask>=2024.2.1" wrf-python melodies-monet \
+      jupyterlab metpy windrose statannotations
 
 .. note::
    WRF-Chem users may experience failures with newer ``netCDF4`` or ``setuptools`` versions due to upstream
@@ -66,8 +67,9 @@ First create and activate a conda environment::
 
 Add dependencies from conda-forge::
 
-    $ conda install -y -c conda-forge pyyaml pandas=1 "matplotlib-base<3.9" \ 
-      monet monetio "netcdf4<1.7" "setuptools<70" wrf-python typer rich pooch jupyterlab metpy windrose statannotations
+    $ conda install -y -c conda-forge pyyaml pandas=1 "matplotlib-base<3.9" \
+      monet monetio "netcdf4<1.7" "setuptools<70" "dask>=2024.2.1" wrf-python \
+      typer rich pooch jupyterlab metpy windrose statannotations
    
 Now, install the stable branch of MELODIES MONET to the environment::
 

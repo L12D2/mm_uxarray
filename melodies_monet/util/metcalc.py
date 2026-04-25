@@ -15,12 +15,15 @@ See: control_aircraft_looping_AEROMMA_UFSAQM.yaml
 Author: Liam Thompson
 """
 
-# will need to make this an optional dependency if we proceed in using this. 
-import metpy
+try:
+    import metpy
+    from metpy.units import units
+except ImportError:
+    metpy = None
+    units = None
+
 # if future iterations want to calc dewpoint/relh on the observations, this can be done with other metpy
-# libraries. 
-# addtl libraries to make the world go round
-from metpy.units import units
+# libraries.
 
 # calc dewpoint 
 def dewpoint(obj, varmap = None, output_key = "dewpoint"):
@@ -42,12 +45,21 @@ def dewpoint(obj, varmap = None, output_key = "dewpoint"):
         
     """
     
-    # grab variable names from the yaml 
-    pressure_key = varmap['pres_calc'] if varmap and 'pres_calc' in varmap else 'surfpres_pa'
-    specific_hum_key = varmap['specific_hum'] if varmap and 'specific_hum' in varmap else 'specific_hum'
-
-    pressure = obj[pressure_key]
-    specific_hum = obj[specific_hum_key]
+    if metpy is None:
+        raise ImportError(
+            "metpy is required for extra_calc. "
+            "Install with: conda install -c conda-forge metpy"
+        )
+    
+    # grab variable names from the yaml and error if not provided
+    try:
+        pressure = obj[varmap['pres_calc']]
+    except (KeyError,TypeError) as e:
+        raise Exception("Please specify 'pres_calc' in yaml file under 'dewpoint' under 'extra_calc'") from e
+    try:
+        specific_hum = obj[varmap['specific_hum']]
+    except (KeyError,TypeError) as e:
+        raise Exception("Please specify 'specific_hum' in yaml file under 'dewpoint' under 'extra_calc'") from e
 
     dpt = (metpy.calc.dewpoint_from_specific_humidity(
         pressure * units.Pa,
@@ -80,14 +92,25 @@ def relh(obj, varmap=None, output_key="rel_hum"):
         
     """
     
-    # grab variable names from the yaml or fall back to defaults
-    pressure_key = varmap['pres_calc'] if varmap and 'pres_calc' in varmap else 'surfpres_pa'
-    specific_hum_key = varmap["specific_hum"] if varmap and "specific_hum" in varmap else "specific_hum"
-    temperature_key = varmap["temp_calc"] if varmap and "temp_calc" in varmap else "temperature_k"
+    if metpy is None:
+        raise ImportError(
+            "metpy is required for extra_calc. "
+            "Install with: conda install -c conda-forge metpy"
+        )
 
-    pressure = obj[pressure_key]
-    specific_hum = obj[specific_hum_key]
-    temperature = obj[temperature_key]
+    # grab variable names from the yaml and error if not provided
+    try:
+        pressure = obj[varmap['pres_calc']]
+    except (KeyError,TypeError) as e:
+        raise Exception("Please specify 'pres_calc' in yaml file under 'rel_hum' under 'extra_calc'") from e
+    try:
+        specific_hum = obj[varmap['specific_hum']]
+    except (KeyError,TypeError) as e:
+        raise Exception("Please specify 'specific_hum' in yaml file under 'rel_hum' under 'extra_calc'") from e
+    try:
+        temperature = obj[varmap["temp_calc"]]
+    except (KeyError,TypeError) as e:
+        raise Exception("Please specify 'temp_calc' in yaml file under 'rel_hum' under 'extra_calc'") from e
 
     rlh = (metpy.calc.relative_humidity_from_specific_humidity(
         pressure * units.Pa,
@@ -127,12 +150,21 @@ def wspd(obj, varmap = None, output_key = "windspeed"):
         
     """
     
-    # grab variable names from the yaml 
-    u_key = varmap["u_comp"] 
-    v_key = varmap["v_comp"] 
+    if metpy is None:
+        raise ImportError(
+            "metpy is required for extra_calc. "
+            "Install with: conda install -c conda-forge metpy"
+        )
 
-    u = obj[u_key]
-    v = obj[v_key]
+    # grab variable names from the yaml and error if not provided
+    try:
+        u = obj[varmap["u_comp"]]
+    except (KeyError,TypeError) as e:
+        raise Exception("Please specify 'u_comp' in yaml file under 'windspeed' under 'extra_calc'") from e
+    try:
+        v = obj[varmap["v_comp"]]
+    except (KeyError,TypeError) as e:
+        raise Exception("Please specify 'v_comp' in yaml file under 'windspeed' under 'extra_calc'") from e
 
     wspd = (metpy.calc.wind_speed(
         u * units("m/s"),
@@ -163,13 +195,22 @@ def wdir(obj, varmap = None, output_key = "winddir"):
         Xarray dataset with applied calculation as a new data array
         
     """
-    
-    # grab variable names from the yaml 
-    u_key = varmap["u_comp"] 
-    v_key = varmap["v_comp"] 
-    
-    u = obj[u_key].compute()
-    v = obj[v_key].compute()
+
+    if metpy is None:
+        raise ImportError(
+            "metpy is required for extra_calc. "
+            "Install with: conda install -c conda-forge metpy"
+        )
+
+    # grab variable names from the yaml and error if not provided
+    try:
+        u = obj[varmap["u_comp"]].compute()
+    except (KeyError,TypeError) as e:
+        raise Exception("Please specify 'u_comp' in yaml file under 'winddir' under 'extra_calc'") from e
+    try:
+        v = obj[varmap["v_comp"]].compute()
+    except (KeyError,TypeError) as e:
+        raise Exception("Please specify 'v_comp' in yaml file under 'winddir' under 'extra_calc'") from e
     #Unfortunately, wind_direction does not work with dask in metpy.
     #Maybe find another solution as we move to optimize memory usage, 
     #but for now just compute these.
@@ -204,11 +245,21 @@ def ptemp(obj, varmap=None, output_key="ptemp"):
         
     """
 
-    pressure_key = varmap['pres_calc'] if varmap and 'pres_calc' in varmap else 'surfpres_pa'
-    temperature_key = varmap['temp_calc'] if varmap and 'temp_calc' in varmap else 'temperature_k'
-        
-    pres = obj[pressure_key]
-    temp = obj[temperature_key]
+    if metpy is None:
+        raise ImportError(
+            "metpy is required for extra_calc. "
+            "Install with: conda install -c conda-forge metpy"
+        )
+
+    # grab variable names from the yaml and error if not provided
+    try:
+        pres = obj[varmap['pres_calc']]
+    except (KeyError,TypeError) as e:
+        raise Exception("Please specify 'pres_calc' in yaml file under 'ptemp_mod' or 'ptemp_obs' under 'extra_calc'") from e
+    try:
+        temp = obj[varmap["temp_calc"]]
+    except (KeyError,TypeError) as e:
+        raise Exception("Please specify 'temp_calc' in yaml file under 'ptemp_mod' or 'ptemp_obs' under 'extra_calc'") from e
     
     ptmp = (metpy.calc.potential_temperature(
         pres * units.Pa,
@@ -219,4 +270,3 @@ def ptemp(obj, varmap=None, output_key="ptemp"):
     obj[output_key] = ptmp
         
     return obj
-

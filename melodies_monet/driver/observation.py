@@ -128,9 +128,6 @@ class observation:
                     varmap=varmap,
                     output_key="ptemp_obs"
                 )
-    
-            else:
-                print("No extra calculations performed.")
 
     def add_coordinates_ground(self):
         """Add latitude and longitude coordinates to data when the observation type is ground and
