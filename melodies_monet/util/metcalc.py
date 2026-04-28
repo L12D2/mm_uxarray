@@ -203,6 +203,7 @@ def wdir(obj, varmap = None, output_key = "winddir"):
         raise ImportError(
             "metpy is required for extra_calc. "
             "Install with: conda install -c conda-forge metpy"
+            "or with: pip install metpy"
         )
 
     # grab variable names from the yaml and error if not provided
