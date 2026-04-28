@@ -19,6 +19,7 @@ General Rules
   * spatial_overlay - average over entire analysis window
   * spatial_overlay_exceedance - number of exceedances within the analysis window 
   * boxplot - calculated over entire analysis window
+  * rose_plot - calculated over entire analysis window
 * If "set_axis" = True in "data_proc" section of each "plot_grp", the y-axis 
   for that "plot_grp" will be set based on the values specified in the "obs" 
   section for each "variable". If "set_axis" = False, then the automatic
@@ -106,8 +107,16 @@ Shell variables prefixed with the ``$`` symbol, such as ``$HOME``, will be expan
 please provide location of ``*.metcro2d.ncf`` files here.
 Shell variables prefixed with the ``$`` symbol, such as ``$HOME``, will be expanded.
 
-**mod_type:** The model type. Options are: "cmaq", "wrfchem", "ufs" ("rrfs" is deprecated), "gsdchem",
-"cesm_fv", "cesm_se", and "raqms". 
+**mod_type:** The model type. Current options available: 
+
+* cmaq
+* wrfchem
+* ufs (rrfs is deprecated. This works for both UFS-AQM and UFS-Chem)
+* gsdchem
+* cesm_fv 
+* cesm_se 
+* raqms
+
 If you specify another name, MELODIES MONET will try to read in the data using
 xarray.open_mfdataset and xarray.open_dataset().
 
@@ -120,6 +129,69 @@ data (e.g., surf_only: True).
 **radius_of_influence:** The "radius of influence" used for pairing in MONET. 
 Typically this is set at the horizontal resolution of your model * 1.5. Setting 
 this to a smaller value will speed up the pairing process. 
+
+**extra_calc:** The extra_calc section allows users to calculate complex meteorological 
+variables that may not have standard variable names across datasets. E.g. u, v, u10, and v10
+all commonly refer to the u and v components of wind speed. However, the naming convention
+varies by model. 
+
+This section allows dewpoint, relative humidity, wind speed, and wind direction to be 
+calculated. Users can also specify whether their spatial overlay, spatial bias, and spatial 
+exceedance plots display wind barbs. 
+
+**NOTE:** All extra_calc calculations should be left in SI units. See example yaml files:
+   
+   * ``control_ish_lite_ufschem-example.yaml``
+   * ``control_ish_ufschem-example.yaml``
+   * ``control_ufschem-example.yaml``
+
+* **Hydrometeorology:** 
+
+   * Observations will sometimes only record dewpoint or relative humidity. Hence, both options are available for
+     calculation, provided the model has specific humidity. 
+
+   * **Model dewpoint:** can be calculated with the specific humidity. Users will need to know the
+     naming convention of specific humidity in their specific model. Observations will sometimes 
+     only record dewpoint or relative humidity. Hence, both options are available for calculation,
+     provided the model has specific humidity. 
+ 
+   * **Model relative humidity:** can be calculated with the specific humidity. Users will need to know 
+     the naming convention of specific humidity in their specific model. 
+
+   * *Calculations for standardized hydrometeorological variables continue to be incorporated into MELODIES-MONET.*
+
+* **Wind speed and direction:**
+
+   * **Model Wind speed:** is calculated using the u-component and v-component. Users are responsible for
+     knowing what those components are called in their model. If modeled wind speed is already 
+     available, simply add the variable name to the variable list. 
+
+   * **Model Wind direction:** is calculated using the u-component and v-component. Users are responsible for
+     knowing what those components are called in their model. If modeled wind direction is already 
+     available, simply add the variable name to the variable list. 
+
+   * **Model Wind barbs:** can be plotted using the u-component and v-component. Users are responsible for
+     knowing what those components are called in their model. **NOTE: plotted wind barbs are in knots. 
+     Wind speed everywhere else in the model/observations are by default m/s unless specified elsewhere in the 
+     YAML options.** 
+
+* **Potential temperature:**
+
+   * **Modeled potential temperature:** is calculated using the modeled pressure and temperature. Users are responsible for
+     knowing what those components are called in their model. 
+
+   * **Observed potential temperature:** is calculated using the observed pressure and temperature. Users are responsible for
+     knowing what those components are called in their model.
+
+   * **NOTE:** Potential temperature is the only variable where model and observed calculations are supported.   
+
+* **Tropopause:**
+
+   * **Tropopause:** Under development. Refer to https://github.com/L12D2/MELODIES-MONET/tree/BoundaryLayerHeight_Tropopause_calc_beta for current development. 
+
+* **Boundary Layer Height:**
+
+   * **blh_calc:** Under development. Refer to https://github.com/L12D2/MELODIES-MONET/tree/BoundaryLayerHeight_Tropopause_calc_beta for current development. 
 
 **mod_to_overpass:** This is an optional argument used for pairing of satellite data. When set to True 
 the model data will be pre-processed to the published local overpass time for the satellite. As of now, local overpass times are hard-wired.
@@ -227,6 +299,31 @@ options for Aircraft and Satellite observations are under development.
      by values in the list or not in the list, respectively. 
      Example: {'state_name':{'oper':'isin','value':['CO']}, 
      'WS':{'oper':'<','value':1}} 
+
+**extra_calc:** The extra_calc section allows users to calculate complex meteorological 
+variables that may not have standard variable names across datasets. E.g. u, v, u10, and v10
+all commonly refer to the u and v components of wind speed. However, the naming convention
+varies by model. 
+
+This section allows dewpoint, relative humidity, wind speed, and wind direction to be 
+calculated. Users can also specify whether their spatial overlay, spatial bias, and spatial 
+exceedance plots display wind barbs. 
+
+**NOTE:** All extra_calc calculations should be left in SI units. See example yaml files:
+   
+   * ``control_ish_lite_ufschem-example.yaml``
+   * ``control_ish_ufschem-example.yaml``
+   * ``control_ufschem-example.yaml``
+
+* **Potential temperature:**
+
+   * **Modeled potential temperature:** is calculated using the modeled pressure and temperature. Users are responsible for
+     knowing what those components are called in their model. 
+
+   * **Observed potential temperature:** is calculated using the observed pressure and temperature. Users are responsible for
+     knowing what those components are called in their model.
+
+   * **NOTE:** Potential temperature is the only variable where model and observed calculations are supported.   
 
 **variables:** This is all optional. For each observational variable you can 
 include the following information to handle unit conversions, min/max values, 
@@ -370,7 +467,16 @@ where domain_type is equal to domain_name.
 (e.g., ['epa_region'])
 
 **region_list:** list of regions we will calculate for scorecard. 
-(e.g., ['R1','R2','R3','R4','R5','R6','R7','R8','R9','R10']
+(e.g., ['R1', 'R2', 'R3', 'R4', 'R5', 'R6', 'R7', 'R8', 'R9', 'R10']
+
+**interval_list:** list of points that will create a single groupped boxplot. 
+E.g. [0, 3, 5, 8, 11, 14] will create groupped boxplots for [0-3), [3-5), and so forth.
+
+**interval_var:** the variable a grouped boxplot will be created for. 
+
+**interval_labels:** Labels that refer to the interval list. 
+e.g. ["[0, 3)", "[3, 5)", "[5, 8)", "[8, 11)", "[11, 14)"] are labels that will appear on
+the x-axis
 
 **urban_rural_name:** list of only one string input, which is variable used to
 determine whether urban or rural site. (e.g., ['msa_name'])
@@ -395,11 +501,20 @@ for csi plot, list of model names (only) user choose to set as labels.
 **altitude_variable:** For "vert_profile" plot only. Name of altitude variable in observational 
 dataset (e.g., altitude)
 
-**vertprofile_bins:** For "vert_profile" plot only. List of vertical bins, on which to analyze the data.
-Units should be identical to the units of the altitude_variable specified above (e.g., 
-[0, 500, 1000, 1500, 2000, 2500, 3000, 3500, 4000] if altitude is in meters)
+**vertprofile_bins:** For "vert_profile" plot only. Users input a range in which to bin and analyze the data.
+Units should be identical to the units of the altitude_variable specified above (e.g. pressure_obs (Pa) and altitude (m)). 
 
-**color_map:** For 'scatter_density' plot only. Specify a default colormap in Matplotlib (e.g., 'RdBu_r'). 
+For example, ::
+
+    vertprofile_bins
+      range: 
+        start: 0 # starting value
+        stop: 100001 # end value 
+        step: 2000 # interval the binning should increase by 
+
+**blh_calc:** Under development. Refer to https://github.com/L12D2/MELODIES-MONET/tree/BoundaryLayerHeight_Tropopause_calc_beta for current development. 
+
+**color_map:** For 'scatter_density' & rose_plot plots only. Specify a default colormap in Matplotlib (e.g., 'RdBu_r'). NOTE: custom color_map is not available for rose_plot.  
 To use a custom colormap, leave color_map blank and provide the following options:
 
    * **colors:** Specify a list of colors (e.g., ['royalblue', 'cyan', 'yellow', 'orange']).
@@ -445,6 +560,10 @@ No conversions occur. Current options are only 'hPa' and 'Pa'.
 **data:** This a list of model / observation pairs to be plotted where the 
 observation label is first and the model label is second 
 (e.g., ['airnow_cmaq_expt', 'airnow_rrfs_13km', 'airnow_wrfchem_v4.2'])
+
+**gridlines:** This allows users to provide background gridlines to their plots. Currently supported on the CSI, boxplot, and multi-boxplots.
+
+
 
 **data_proc:** This section stores all of the data processing information.
    
@@ -506,6 +625,18 @@ observation label is first and the model label is second
    * **interquartile_style:** For "vert_profile" plot only. Specify 'shading' to 
      plot shaded curves of the 25th and 75th percentile range of each vertical bin or 
      'box' to plot box-plots of each vertical bin.
+
+   * **set_stat_sig:** This option allows the user to calculate an independent 
+     t-test between two independent samples. The variances are assumed to be equal.
+
+      Example output: p-value annotation legend:
+
+      *   ``ns``: 5.00e-02 < p <= 1.00e+00
+      *    ``*``: 1.00e-02 < p <= 5.00e-02
+      *   ``**``: 1.00e-03 < p <= 1.00e-02
+      *  ``***``: 1.00e-04 < p <= 1.00e-03
+      * ``****``: p <= 1.00e-04
+
 
 Stats
 -----

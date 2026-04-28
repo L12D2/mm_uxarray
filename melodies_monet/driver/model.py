@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+#
 import os
 import warnings
 import xarray as xr
@@ -26,6 +28,7 @@ class model:
         self.files_pm25 = None
         self.label = None
         self.obj = None
+        self.extra_calc = None
         self.mapping = None
         self.variable_dict = None
         self.variable_summing = None
@@ -43,6 +46,7 @@ class model:
             f"    file_str={self.file_str!r},\n"
             f"    label={self.label!r},\n"
             f"    obj={repr(self.obj) if self.obj is None else '...'},\n"
+            f"    extra_calc={self.extra_calc!r},\n"
             f"    mapping={self.mapping!r},\n"
             f"    variable_dict={self.variable_dict!r},\n"
             f"    label={self.label!r},\n"
@@ -81,7 +85,11 @@ class model:
         if self.file_vert_str is not None:
             self.files_vert = sort(glob(self.file_vert_str))
         if self.file_surf_str is not None:
-            self.files_surf = sort(glob(self.file_surf_str))
+            if self.file_surf_str.startswith("example:"):
+                example_id = ":".join(s.strip() for s in self.file_surf_str.split(":")[1:])
+                self.files_surf = [tutorial.fetch_example(example_id)]
+            else:
+                self.files_surf = sort(glob(self.file_surf_str))
         if self.file_pm25_str is not None:
             self.files_pm25 = sort(glob(self.file_pm25_str))
 
@@ -111,11 +119,24 @@ class model:
         # Calculate species to input into MONET, so works for all mechanisms in wrfchem
         # I want to expand this for the other models too when add aircraft data.
         # First make a list of variables not in mapping but from variable_summing, if provided
+
+        # extra_calc handling for the model.
+        if self.extra_calc is not None:
+            for v in self.extra_calc.values():
+                if v is None:
+                    continue
+                for input_var in v.values():
+                    if self.variable_dict is None:
+                        self.variable_dict = {}
+                    if input_var not in self.variable_dict:
+                        self.variable_dict[input_var] = "None"
+        
         if self.variable_summing is not None:
             vars_for_summing = []
             for var in self.variable_summing.keys():
                 vars_for_summing = vars_for_summing + self.variable_summing[var]["vars"]
         list_input_var = list(self.variable_dict.keys()) if self.variable_dict is not None else []
+        
         for obs_map in self.mapping:
             if self.variable_summing is not None:
                 list_input_var = list_input_var + list(
@@ -131,9 +152,21 @@ class model:
 
         # Remove standardized variable names that user may have requested to pair on or output in MM
         # as they will be added anyway and here would cause [var_list] to fail in the below model readers.
-        for vn in ["temperature_k", "pres_pa_mid"]:
+        for vn in ["temperature_k", "pres_pa_mid", "pressure_model"]:
             if vn in list_input_var:
                 list_input_var.remove(vn)
+
+        #Remove variable names in extra sfc_varlist
+        if 'sfc_varlist' in self.mod_kwargs.keys():
+            for vn in self.mod_kwargs['sfc_varlist']:
+                if vn in list_input_var:
+                    list_input_var.remove(vn)
+
+        # Remove variables that havent been calcd yet. 
+        if self.extra_calc is not None: 
+            calc_vars = set(self.extra_calc.keys())
+            #print("this is calc vars", calc_vars)
+            list_input_var = [v for v in list_input_var if v not in calc_vars]
 
         if "cmaq" in self.model.lower():
             print("**** Reading CMAQ model output...")
@@ -147,6 +180,19 @@ class model:
             self.obj = mio.models._cmaq_mm.open_mfdataset(self.files, **self.mod_kwargs)
         elif "wrfchem" in self.model.lower():
             print("**** Reading WRF-Chem model output...")
+            #Handle the awkward renaming of species in wrf-python automatically.
+            if any(item in list_input_var for item in ("uvmet10_u", "uvmet10_v")):
+                    list_input_var.append("uvmet10")
+            if any(item in list_input_var for item in ("uvmet_u", "uvmet_v")):
+                    list_input_var.append("uvmet")
+            if any(item in list_input_var for item in ("uvmet10_wdir", "uvmet10_wspd")):
+                    list_input_var.append("uvmet10_wspd_wdir")
+            if any(item in list_input_var for item in ("uvmet_wdir", "uvmet_wspd")):
+                    list_input_var.append("uvmet_wspd_wdir")   
+            for vn in ["uvmet10_u", "uvmet10_v","uvmet_u","uvmet_v",
+                       "uvmet10_wdir","uvmet10_wspd","uvmet_wdir","uvmet_wspd"]:
+                if vn in list_input_var:
+                    list_input_var.remove(vn)
             self.mod_kwargs.update({"var_list": list_input_var})
             self.obj = mio.models._wrfchem_mm.open_mfdataset(self.files, **self.mod_kwargs)
         elif "chimere" in self.model.lower():
@@ -159,11 +205,13 @@ class model:
             )
             self.obj = mio.models.chimere.open_mfdataset(self.files, **self.mod_kwargs)
         elif any([mod_type in self.model.lower() for mod_type in ("ufs", "rrfs")]):
-            print("**** Reading UFS-AQM model output...")
+            print("**** Reading UFS-AQM or UFS-Chem model output...")
             if "rrfs" in self.model.lower():
                 warnings.warn("mod_type: 'rrfs' is deprecated. use 'ufs'.", DeprecationWarning)
             if self.files_pm25 is not None:
                 self.mod_kwargs.update({"fname_pm25": self.files_pm25})
+            if self.files_surf is not None:
+                self.mod_kwargs.update({'fname_sfc' : self.files_surf})
             self.mod_kwargs.update({"var_list": list_input_var})
             if hasattr(mio.models, "ufs"):
                 loader = mio.models.ufs.open_mfdataset
@@ -232,9 +280,52 @@ class model:
                 self.obj = xr.open_mfdataset(self.files, **self.mod_kwargs)
             else:
                 self.obj = xr.open_dataset(self.files[0], **self.mod_kwargs)
+        
         self.mask_and_scale()
         self.rename_vars()  # rename any variables as necessary
         self.sum_variables()
+
+        if self.extra_calc is not None:
+            print("Performing extra model calculations...")
+            
+            if "dewpoint" in self.extra_calc:
+                print("Calculating modeled Dewpoint...")
+                from melodies_monet.util.metcalc import dewpoint # import functions from the util.metcalc file
+                
+                varmap = self.extra_calc["dewpoint"]
+                self.obj=dewpoint(self.obj, varmap = varmap)
+
+            if "rel_hum" in self.extra_calc:
+                print("Calculating modeled relative humidity...")
+                from melodies_monet.util.metcalc import relh
+
+                varmap = self.extra_calc["rel_hum"]
+                self.obj=relh(self.obj, varmap = varmap)
+
+            if "windspeed" in self.extra_calc:
+                print("Calculating modeled windspeed...")
+                from melodies_monet.util.metcalc import wspd
+
+                varmap = self.extra_calc["windspeed"]
+                self.obj=wspd(self.obj, varmap = varmap)
+                
+            if "winddir" in self.extra_calc:
+                print("Calculating modeled wind direction...")
+                from melodies_monet.util.metcalc import wdir
+
+                varmap = self.extra_calc["winddir"]
+                self.obj=wdir(self.obj, varmap = varmap)          
+                
+            if "ptemp_mod" in self.extra_calc:
+                print("Calculating modeled potential temperature...")
+                from melodies_monet.util.metcalc import ptemp
+            
+                varmap = self.extra_calc["ptemp_mod"]
+                self.obj = ptemp(
+                    self.obj,
+                    varmap=varmap,
+                    output_key="ptemp_mod"
+                )
 
     def rename_vars(self):
         """Rename any variables in model with rename set.
