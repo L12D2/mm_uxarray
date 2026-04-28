@@ -1,5 +1,8 @@
 # SPDX-License-Identifier: Apache-2.0
 #
+"""
+Driver routines.
+"""
 from melodies_monet.driver._model import model
 from melodies_monet.driver._observation import observation
 from melodies_monet.driver._pair import pair

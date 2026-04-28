@@ -69,6 +69,8 @@ nb_execution_excludepatterns = [
     "examples/airnow_*.ipynb",
     "examples/camchem.ipynb",
     "examples/*_paired_data.ipynb",
+    "examples/UWyoming*.ipynb",
+    "examples/*ish*.ipynb",
 ]
 nb_execution_show_tb = True
 
