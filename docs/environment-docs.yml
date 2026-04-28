@@ -13,7 +13,7 @@ dependencies:
   - netcdf4
   - numpy
   - pandas=2
-  - pillow<10
+  - pillow
   #
   # Extras
   - numba
