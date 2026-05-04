@@ -54,9 +54,10 @@ these instructions:
 
        $ conda create --name melodies-monet python=3.11
        $ conda activate melodies-monet
-       $ conda install -y -c conda-forge pyyaml pandas=1 "matplotlib-base<3.9" monet monetio \
-         "netcdf4<1.7" "setuptools<70" "dask>=2024.2.1" wrf-python typer rich pooch jupyterlab \
-         metpy windrose statannotations
+       $ conda install -y -c conda-forge pyyaml pandas=2 monet monetio \
+         "netcdf4<1.7" "setuptools<70" "dask>=2024.2.1" wrf-python \
+         metpy windrose statannotations \
+         typer rich pooch jupyterlab
 
 (b) Clone [#clone]_ and link the latest development versions of MONET and MONETIO from GitHub to
     your conda environment::
@@ -166,7 +167,7 @@ to learn more about our current and future documentation plans.
    to your GitHub account for your current machine.
    If you are new to GitHub, check out
 
-   `Getting Started with GitHub on Project Pythia <https://foundations.projectpythia.org/foundations/getting-started-github.html>`__.
+   `Getting Started with GitHub on Project Pythia <https://foundations.projectpythia.org/foundations/getting-started-github/>`__.
 
    We recommend the SSH method, but if you don't add an SSH key
    you can still clone the repositories via HTTPS, e.g. ::
