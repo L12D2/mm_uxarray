@@ -287,7 +287,7 @@ class observation:
             elif "tempo_l2" in self.sat_type:
                 print("Reading TEMPO L2")
                 try:
-                    self.obj = mio.sat.tempo_l2_no2.open_dataset(
+                    self.obj = mio.sat.tempo_l2.open_dataset(
                         self.file, self.variable_dict, debug=self.debug
                     )
                 except AttributeError:
