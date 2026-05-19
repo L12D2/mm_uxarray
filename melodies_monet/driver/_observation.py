@@ -191,6 +191,11 @@ class observation:
         None
         """
         from melodies_monet.util import time_interval_subset as tsub
+        from melodies_monet.util.tools_sat import (
+            mask_and_scale_sat,
+            sum_variables_sat,
+            filter_obs_sat,
+        )
         from glob import glob
 
         try:
@@ -287,7 +292,7 @@ class observation:
             elif "tempo_l2" in self.sat_type:
                 print("Reading TEMPO L2")
                 try:
-                    self.obj = mio.sat.tempo_l2_no2.open_dataset(
+                    self.obj = mio.sat.tempo_l2.open_dataset(
                         self.file, self.variable_dict, debug=self.debug
                     )
                 except AttributeError:
@@ -300,6 +305,9 @@ class observation:
         except ValueError as e:
             print("something happened opening file:", e)
             return
+        mask_and_scale_sat(self)  # mask and scale values from the control values
+        sum_variables_sat(self)
+        filter_obs_sat(self)
 
     def filter_obs(self):
         """Filter observations based on filter_dict.
