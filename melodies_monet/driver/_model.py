@@ -177,7 +177,12 @@ class model:
                 self.mod_kwargs.update({"fname_surf": self.files_surf})
             if len(self.files) > 1:
                 self.mod_kwargs.update({"concatenate_forecasts": True})
-            self.obj = mio.models._cmaq_mm.open_mfdataset(self.files, **self.mod_kwargs)
+            try:
+                self.obj = mio.models._cmaq_mm.open_mfdataset(self.files, **self.mod_kwargs)
+                #Note this is tried first because if connect with old MONETIO code you need to use
+                #the _cmaq_mm.py reader and not the cmaq.py reader, which is old.
+            except AttributeError:
+                self.obj = mio.models.cmaq.open_mfdataset(self.files, **self.mod_kwargs)
         elif "wrfchem" in self.model.lower():
             print("**** Reading WRF-Chem model output...")
             #Handle the awkward renaming of species in wrf-python automatically.
@@ -194,7 +199,10 @@ class model:
                 if vn in list_input_var:
                     list_input_var.remove(vn)
             self.mod_kwargs.update({"var_list": list_input_var})
-            self.obj = mio.models._wrfchem_mm.open_mfdataset(self.files, **self.mod_kwargs)
+            try:
+                self.obj = mio.models.wrfchem.open_mfdataset(self.files, **self.mod_kwargs)
+            except AttributeError:
+                self.obj = mio.models._wrfchem_mm.open_mfdataset(self.files, **self.mod_kwargs)
         elif "chimere" in self.model.lower():
             print("**** Reading Chimere model output...")
             self.mod_kwargs.update(
@@ -231,7 +239,10 @@ class model:
         elif "cesm_fv" in self.model.lower():
             print("**** Reading CESM FV model output...")
             self.mod_kwargs.update({"var_list": list_input_var})
-            self.obj = mio.models._cesm_fv_mm.open_mfdataset(self.files, **self.mod_kwargs)
+            try:
+                self.obj = mio.models.cesm_fv.open_mfdataset(self.files, **self.mod_kwargs)
+            except AttributeError:
+                self.obj = mio.models._cesm_fv_mm.open_mfdataset(self.files, **self.mod_kwargs)
         # CAM-chem-SE grid or MUSICAv0
         elif "cesm_se" in self.model.lower():
             print("**** Reading CESM SE model output...")
@@ -242,7 +253,10 @@ class model:
                 example_id = ":".join(s.strip() for s in self.scrip_file.split(":")[1:])
                 self.scrip_file = tutorial.fetch_example(example_id)
             self.mod_kwargs.update({"scrip_file": self.scrip_file})
-            self.obj = mio.models._cesm_se_mm.open_mfdataset(self.files, **self.mod_kwargs)
+            try:
+                self.obj = mio.models.cesm_se.open_mfdataset(self.files, **self.mod_kwargs)
+            except AttributeError:
+                self.obj = mio.models._cesm_se_mm.open_mfdataset(self.files, **self.mod_kwargs)
             # self.obj, self.obj_scrip = read_cesm_se.open_mfdataset(self.files,**self.mod_kwargs)
             # self.obj.monet.scrip = self.obj_scrip
         elif "camx" in self.model.lower():
@@ -256,7 +270,12 @@ class model:
             self.mod_kwargs.update(
                 {"fname_met_2D": control_dict["model"][self.label].get("files_met_surf", None)}
             )
-            self.obj = mio.models._camx_mm.open_mfdataset(self.files, **self.mod_kwargs)
+            try:
+                self.obj = mio.models._camx_mm.open_mfdataset(self.files, **self.mod_kwargs)
+                #Note this is tried first because if connect with old MONETIO code you need to use
+                #the _camx_mm.py reader and not the camx.py reader, which is old.
+            except AttributeError:
+                self.obj = mio.models.camx.open_mfdataset(self.files, **self.mod_kwargs)
         elif "raqms" in self.model.lower():
             self.mod_kwargs.update({"var_list": list_input_var})
             if time_interval is not None:
