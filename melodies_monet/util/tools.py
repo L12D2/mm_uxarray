@@ -396,7 +396,7 @@ def find_obs_time_bounds(files=[],time_var=None):
             elif extension in ['.ict', '.icartt']:
                 obs = mio.icartt.add_data(file)
             elif extension in ['.csv']:
-                from .read_util import read_aircraft_obs_csv
+                from melodies_monet.util.read_util import read_aircraft_obs_csv
                 obs = read_aircraft_obs_csv(filename=file,time_var=time_var)
             else:
                 raise ValueError(f'extension {extension!r} currently unsupported')
@@ -588,7 +588,7 @@ def calc_geolocaltime(modobj):
     # but it is very cheap to redo and should make us be safer.
 
     hrs2ms = 3600_000
-    timedelta = (modobj["longitude"].values * hrs2ms / 15).astype('timedelta64[ms]')
+    timedelta = (modobj["longitude"] * hrs2ms / 15).astype('timedelta64[ns]')
     localtime = modobj["time"] + timedelta
     localtime.attrs['description'] = 'Geographic local time, based on longitude'
     return localtime

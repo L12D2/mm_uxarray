@@ -7,13 +7,13 @@ dependencies:
   - python=3.11
   #
   # melodies_monet deps
-  - matplotlib-base<3.9  # for pandas v1 compat
+  - matplotlib-base
   - monet
   - monetio
   - netcdf4
   - numpy
-  - pandas<2
-  - pillow<10
+  - pandas=2
+  - pillow
   #
   # Extras
   - numba
