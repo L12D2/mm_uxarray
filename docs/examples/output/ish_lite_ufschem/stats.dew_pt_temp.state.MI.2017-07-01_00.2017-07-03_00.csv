@@ -1,0 +1,7 @@
+Stat_ID,Stat_FullName,ish_lite_ufschem_v1
+MB,Mean_Bias,0.33
+MdnB,Median_Bias,0.24
+R2,Coefficient_of_Determination_(R2),0.48
+RMSE,Root_Mean_Square_Error,2.06
+MAE,Mean_Absolute_Error,1.62
+MSE,Mean_Squared_Error,4.26
