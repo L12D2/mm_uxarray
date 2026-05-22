@@ -35,7 +35,7 @@ model:
       - /glade/campaign/acom/acom-da/conus_outputs/f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.ERA5_ref_dust_M1.1.002/H1/f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.ERA5_ref_dust_M1.1.002.cam.h1.2024-01-01-03600.nc
 
     mod_type: 'cesm_se'
-    scrip_file: example:camchem:se_scrip
+    grid_file: "/glade/campaign/acom/acom-da/conus_outputs/grid/ne0CONUS_ne30x8_EXODUS.nc" # for unstructured grids, this can be the raw grid itself and NOT the script file
     radius_of_influence: 25500 #meters: horizontal resolution * 1.5
     mapping: #model species name : obs species name
       airnow:
@@ -55,7 +55,7 @@ model:
 obs:
   airnow: # obs label
     use_airnow: true
-    filename: u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/output/airnow_camchemse/AirNow_20240101_20240201.nc
+    filename: /glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/output/airnow_camchemse/AirNow_20240101_20240201.nc
 
     obs_type: pt_sfc
     variables: #Opt

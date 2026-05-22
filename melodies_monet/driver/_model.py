@@ -5,6 +5,8 @@ import warnings
 import xarray as xr
 import monetio as mio
 
+import uxarray as ux
+
 
 class model:
     """The model class.
@@ -243,22 +245,38 @@ class model:
                 self.obj = mio.models.cesm_fv.open_mfdataset(self.files, **self.mod_kwargs)
             except AttributeError:
                 self.obj = mio.models._cesm_fv_mm.open_mfdataset(self.files, **self.mod_kwargs)
+       
         # CAM-chem-SE grid or MUSICAv0
         elif "cesm_se" in self.model.lower():
             print("**** Reading CESM SE model output...")
             self.mod_kwargs.update({"var_list": list_input_var})
-            if self.scrip_file.startswith("example:"):
-                from melodies_monet import tutorial
 
-                example_id = ":".join(s.strip() for s in self.scrip_file.split(":")[1:])
-                self.scrip_file = tutorial.fetch_example(example_id)
-            self.mod_kwargs.update({"scrip_file": self.scrip_file})
+            # grid 
+            if hasattr(self, "grid_file"):
+                print(f"Using UXArray grid file: {self.grid_file}")
+                self.mod_kwargs.update({"grid_file": self.grid_file})
+
+            # scrip
+            elif hasattr(self, "scrip_file"):
+                if self.scrip_file.startswith("example:"):
+                    from melodies_monet import tutorial
+
+                    example_id = ":".join(s.strip() for s in self.scrip_file.split(":")[1:])
+                    self.scrip_file = tutorial.fetch_example(example_id)
+                print("User provided scrip file. Defaulting to legacy...")
+                self.mod_kwargs.update({"scrip_file": self.scrip_file})
+            else:
+                raise ValueError(
+                    'CESM-SE requires either "grid_file" '
+                    'or "scrip_file" in the YAML config.')
+        
             try:
                 self.obj = mio.models.cesm_se.open_mfdataset(self.files, **self.mod_kwargs)
             except AttributeError:
                 self.obj = mio.models._cesm_se_mm.open_mfdataset(self.files, **self.mod_kwargs)
             # self.obj, self.obj_scrip = read_cesm_se.open_mfdataset(self.files,**self.mod_kwargs)
             # self.obj.monet.scrip = self.obj_scrip
+        
         elif "camx" in self.model.lower():
             self.mod_kwargs.update({"var_list": list_input_var})
             self.mod_kwargs.update(
