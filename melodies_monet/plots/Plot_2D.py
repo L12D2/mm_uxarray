@@ -43,6 +43,7 @@ class Plot_2D(object):
         # make se model runs not run on predefined lat lon        
         self.model_lat = None
         self.model_lon = None
+        
         # xarray, lon, and lat check
         #if type(var) in [xr.core.dataset.Dataset, xr.core.dataarray.DataArray]:
         if isinstance(var, (xr.Dataset, xr.DataArray)):
@@ -65,22 +66,27 @@ class Plot_2D(object):
                 self.var = np.copy(var.values)
                 self.model_lat = var.latitude.values if hasattr(var, "latitude") else None
                 self.model_lon = var.longitude.values if hasattr(var, "longitude") else None
-                print(f"MM SE coords available: {list(var.coords)}")
-                print(f"MM model_lat set: {self.model_lat is not None}, model_lon set: {self.model_lon is not None}")
-        else:
-            self.var = np.copy(var)
-            if np.ndim(var) == 2: # FV results
-                self.model_type = 'FV'
-                if np.shape(lons) == ():
-                    raise ValueError('"lons" must be provided for FV model output')
-                else:
-                    self.lon = np.copy(lons)
-                if np.shape(lats) == ():
-                    raise ValueError('"lats" must be provided for FV model output')
-                else:
-                    self.lat = np.copy(lats)
-            else: # SE results
-                self.model_type = 'SE'        
+
+                # important debug statements for SE grids
+                # print(f"MM SE coords available: {list(var.coords)}")
+                # print(f"MM model_lat set: {self.model_lat is not None}, model_lon set: {self.model_lon is not None}")
+        
+        # Do not remember if was needed for something. Seems like the code above does all this? 
+        # MM runs with this commented. 
+        # else:
+        #     self.var = np.copy(var)
+        #     if np.ndim(var) == 2: # FV results
+        #         self.model_type = 'FV'
+        #         if np.shape(lons) == ():
+        #             raise ValueError('"lons" must be provided for FV model output')
+        #         else:
+        #             self.lon = np.copy(lons)
+        #         if np.shape(lats) == ():
+        #             raise ValueError('"lats" must be provided for FV model output')
+        #         else:
+        #             self.lat = np.copy(lats)
+        #     else: # SE results
+        #         self.model_type = 'SE'        
         
         # lon_range dimension check
         if len(lon_range) != 2:
@@ -127,10 +133,12 @@ class Plot_2D(object):
                     print("Reading UXARRAY grid file:", grid_file)
                 try: 
                     uxgrid = ux.open_grid(grid_file)
-                    print(f"[Plot_2D SE] len(var)={len(self.var)} "
-                          f"uxgrid.n_node={uxgrid.n_node} "
-                          f"uxgrid.n_face={uxgrid.n_face} "
-                          f"face_node_conn.shape={uxgrid.face_node_connectivity.shape}")
+
+                    # important debug information for unstructured grids
+                    # print(f"[Plot_2D SE] len(var)={len(self.var)} "
+                    #       f"uxgrid.n_node={uxgrid.n_node} "
+                    #       f"uxgrid.n_face={uxgrid.n_face} "
+                    #       f"face_node_conn.shape={uxgrid.face_node_connectivity.shape}")
 
                     # corner and center coords 
                     self.corner_lon = np.copy(uxgrid.node_lon.values)
