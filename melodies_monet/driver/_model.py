@@ -283,7 +283,9 @@ class model:
                 self.obj.attrs['mio_grid_file'] = self.grid_file
             if hasattr(self, "scrip_file") and self.scrip_file:
                 self.obj.attrs['mio_scrip_file'] = self.scrip_file
-                
+            
+            self.obj.attrs['mio_has_unstructured_grid'] = True
+
         elif "camx" in self.model.lower():
             self.mod_kwargs.update({"var_list": list_input_var})
             self.mod_kwargs.update(
