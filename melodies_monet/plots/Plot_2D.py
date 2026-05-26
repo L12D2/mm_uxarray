@@ -106,7 +106,7 @@ class Plot_2D(object):
                 self.lon_range[1] += 180
 
                     
-        # Read scrip file in case of SE model output
+        # Read scrip or grid file in case of SE model output
         if self.model_type == 'SE':
             if isinstance(scrip_file, xr.Dataset):
                 ds_scrip = scrip_file
@@ -584,7 +584,7 @@ class Plot_2D(object):
                                                           -self.cmin_p,
                                                           0, 
                                                           self.cmin_p,
-                                           np.sqrt( 10**(self.cmax_od) * self.cmin_p ),
+                                            np.sqrt( 10**(self.cmax_od) * self.cmin_p ),
                                                           10**( self.cmax_od ) ] )
                             nticks = 7
                             self.linthresh = self.cmin_p
