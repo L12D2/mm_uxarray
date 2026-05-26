@@ -265,6 +265,7 @@ class model:
                     self.scrip_file = tutorial.fetch_example(example_id)
                 print("User provided scrip file. Defaulting to legacy...")
                 self.mod_kwargs.update({"scrip_file": self.scrip_file})
+                
             else:
                 raise ValueError(
                     'CESM-SE requires either "grid_file" '
@@ -276,7 +277,13 @@ class model:
                 self.obj = mio.models._cesm_se_mm.open_mfdataset(self.files, **self.mod_kwargs)
             # self.obj, self.obj_scrip = read_cesm_se.open_mfdataset(self.files,**self.mod_kwargs)
             # self.obj.monet.scrip = self.obj_scrip
-        
+
+            # setting attributes for grid and scrip
+            if hasattr(self, "grid_file") and self.grid_file:
+                self.obj.attrs['mio_grid_file'] = self.grid_file
+            if hasattr(self, "scrip_file") and self.scrip_file:
+                self.obj.attrs['mio_scrip_file'] = self.scrip_file
+                
         elif "camx" in self.model.lower():
             self.mod_kwargs.update({"var_list": list_input_var})
             self.mod_kwargs.update(
