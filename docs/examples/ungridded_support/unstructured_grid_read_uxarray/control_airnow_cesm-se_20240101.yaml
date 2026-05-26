@@ -36,7 +36,7 @@ model:
 
     mod_type: 'cesm_se'
     grid_file: "/glade/campaign/acom/acom-da/conus_outputs/grid/ne0CONUS_ne30x8_EXODUS.nc" # for unstructured grids, this can be the raw grid itself and NOT the script file
-    radius_of_influence: 25500 #meters: horizontal resolution * 1.5
+    radius_of_influence: 27794 #meters: horizontal resolution * 1.5
     mapping: #model species name : obs species name
       airnow:
         #CO: 'CO' #The mapping tables need to contain the same species for all models.
@@ -90,65 +90,65 @@ obs:
 # Setting axis values - If set_axis = True in data_proc section of each plot_grp the yaxis for the plot will be set based on the values specified in the obs section for each variable. If set_axis is set to False, then defaults will be used. 'vmin_plot' and 'vmax_plot' are needed for 'timeseries', 'spatial_overlay', and 'boxplot'. 'vdiff_plot' is needed for 'spatial_bias' plots and'ty_scale' is needed for 'taylor' plots. 'nlevels' or the number of levels used in the contour plot can also optionally be provided for spatial_overlay plot. If set_axis = True and the proper limits are not provided in the obs section, a warning will print, and the plot will be created using the default limits.
 plots:
   
-  # plot_grp1:
-  #   type: 'timeseries' # plot type
-  #   fig_kwargs: #Opt to define figure options
-  #     figsize: [12, 6] # figure size if multiple plots
-  #   default_plot_kwargs: # Opt to define defaults for all plots. Model kwargs overwrite these.
-  #     linewidth: 2.0
-  #     markersize: 10.
-  #   text_kwargs: #Opt
-  #     fontsize: 18.
-  #   # domain_type: ['all', 'epa_region', 'state_name'] #List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.) 
-  #   # domain_name: ['CONUS', 'R8', 'CO'] #List of domain names. If domain_type = all domain_name is used in plot title.
+  plot_grp1:
+    type: 'timeseries' # plot type
+    fig_kwargs: #Opt to define figure options
+      figsize: [12, 6] # figure size if multiple plots
+    default_plot_kwargs: # Opt to define defaults for all plots. Model kwargs overwrite these.
+      linewidth: 2.0
+      markersize: 10.
+    text_kwargs: #Opt
+      fontsize: 18.
+    # domain_type: ['all', 'epa_region', 'state_name'] #List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.) 
+    # domain_name: ['CONUS', 'R8', 'CO'] #List of domain names. If domain_type = all domain_name is used in plot title.
 
-  #   domain_type: ['all'] #List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.) 
-  #   domain_name: ['CONUS'] #List of domain names. If domain_type = all domain_name is used in plot title.
+    domain_type: ['all'] #List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.) 
+    domain_name: ['CONUS'] #List of domain names. If domain_type = all domain_name is used in plot title.
     
-  #   data: ['airnow_cam-chem-se'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
-  #   data_proc:
-  #     rem_obs_nan: true # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
-  #     ts_select_time: 'time_local' #Time used for avg and plotting: Options: 'time' for UTC or 'time_local'
-  #     ts_avg_window: 'h' # Options: None for no averaging or list pandas resample rule (e.g., 'h', 'D')
-  #     set_axis: false #If select True, add vmin_plot and vmax_plot for each variable in obs.
+    data: ['airnow_cam-chem-se'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
+    data_proc:
+      rem_obs_nan: true # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
+      ts_select_time: 'time_local' #Time used for avg and plotting: Options: 'time' for UTC or 'time_local'
+      ts_avg_window: 'h' # Options: None for no averaging or list pandas resample rule (e.g., 'h', 'D')
+      set_axis: false #If select True, add vmin_plot and vmax_plot for each variable in obs.
   
-  # plot_grp2:
-  #   type: 'taylor' # plot type
-  #   fig_kwargs: #Opt to define figure options
-  #     figsize: [8, 8] # figure size if multiple plots
-  #   default_plot_kwargs: # Opt to define defaults for all plots. Model kwargs overwrite these.
-  #     linewidth: 2.0
-  #     markersize: 10.
-  #   text_kwargs: #Opt
-  #     fontsize: 16.
-  #   # domain_type: ['all', 'epa_region', 'state_name'] #List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.) 
-  #   # domain_name: ['CONUS', 'R8', 'CO'] #List of domain names. If domain_type = all domain_name is used in plot title.
+  plot_grp2:
+    type: 'taylor' # plot type
+    fig_kwargs: #Opt to define figure options
+      figsize: [8, 8] # figure size if multiple plots
+    default_plot_kwargs: # Opt to define defaults for all plots. Model kwargs overwrite these.
+      linewidth: 2.0
+      markersize: 10.
+    text_kwargs: #Opt
+      fontsize: 16.
+    # domain_type: ['all', 'epa_region', 'state_name'] #List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.) 
+    # domain_name: ['CONUS', 'R8', 'CO'] #List of domain names. If domain_type = all domain_name is used in plot title.
 
-  #   domain_type: ['all'] #List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.) 
-  #   domain_name: ['CONUS'] #List of domain names. If domain_type = all domain_name is used in plot title.
+    domain_type: ['all'] #List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.) 
+    domain_name: ['CONUS'] #List of domain names. If domain_type = all domain_name is used in plot title.
     
-  #   data: ['airnow_cam-chem-se'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
-  #   data_proc:
-  #     rem_obs_nan: true # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
-  #     set_axis: true #If select True, add ty_scale for each variable in obs.
+    data: ['airnow_cam-chem-se'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
+    data_proc:
+      rem_obs_nan: true # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
+      set_axis: true #If select True, add ty_scale for each variable in obs.
   
-  # plot_grp3:
-  #   type: 'spatial_bias' # plot type
-  #   fig_kwargs: #For all spatial plots, specify map_kwargs here too.
-  #     states: true
-  #     figsize: [10, 5] # figure size 
-  #   text_kwargs: #Opt
-  #     fontsize: 16.
-  #   # domain_type: ['all', 'epa_region', 'state_name'] #List of domain types: . (e.g., airnow: epa_region, state_name, siteid, etc.) 
-  #   # domain_name: ['CONUS', 'R8', 'CO'] #List of domain names. If domain_type = all domain_name is used in plot title.
+  plot_grp3:
+    type: 'spatial_bias' # plot type
+    fig_kwargs: #For all spatial plots, specify map_kwargs here too.
+      states: true
+      figsize: [10, 5] # figure size 
+    text_kwargs: #Opt
+      fontsize: 16.
+    # domain_type: ['all', 'epa_region', 'state_name'] #List of domain types: . (e.g., airnow: epa_region, state_name, siteid, etc.) 
+    # domain_name: ['CONUS', 'R8', 'CO'] #List of domain names. If domain_type = all domain_name is used in plot title.
     
-  #   domain_type: ['all'] #List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.) 
-  #   domain_name: ['CONUS'] #List of domain names. If domain_type = all domain_name is used in plot title.
+    domain_type: ['all'] #List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.) 
+    domain_name: ['CONUS'] #List of domain names. If domain_type = all domain_name is used in plot title.
     
-  #   data: ['airnow_cam-chem-se'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
-  #   data_proc:
-  #     rem_obs_nan: true # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
-  #     set_axis: true #If select True, add vdiff_plot for each variable in obs.
+    data: ['airnow_cam-chem-se'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
+    data_proc:
+      rem_obs_nan: true # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
+      set_axis: true #If select True, add vdiff_plot for each variable in obs.
   
   plot_grp4:
     type: 'spatial_overlay' # plot type
@@ -168,22 +168,22 @@ plots:
       rem_obs_nan: true # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
       set_axis: true #If select True, add vmin_plot and vmax_plot for each variable in obs.
   
-  # plot_grp5:
-  #   type: 'boxplot' # plot type
-  #   fig_kwargs: #Opt to define figure options
-  #     figsize: [8, 6] # figure size 
-  #   text_kwargs: #Opt
-  #     fontsize: 20.
-  #   # domain_type: ['all', 'epa_region', 'state_name'] #List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region etc.) 
-  #   # domain_name: ['CONUS', 'R8', 'CO'] #List of domain names. If domain_type = all domain_name is used in plot title.
+  plot_grp5:
+    type: 'boxplot' # plot type
+    fig_kwargs: #Opt to define figure options
+      figsize: [8, 6] # figure size 
+    text_kwargs: #Opt
+      fontsize: 20.
+    # domain_type: ['all', 'epa_region', 'state_name'] #List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region etc.) 
+    # domain_name: ['CONUS', 'R8', 'CO'] #List of domain names. If domain_type = all domain_name is used in plot title.
     
-  #   domain_type: ['all'] #List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.) 
-  #   domain_name: ['CONUS'] #List of domain names. If domain_type = all domain_name is used in plot title.
+    domain_type: ['all'] #List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.) 
+    domain_name: ['CONUS'] #List of domain names. If domain_type = all domain_name is used in plot title.
     
-  #   data: ['airnow_cam-chem-se'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
-  #   data_proc:
-  #     rem_obs_nan: true # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
-  #     set_axis: false #If select True, add vmin_plot and vmax_plot for each variable in obs.
+    data: ['airnow_cam-chem-se'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
+    data_proc:
+      rem_obs_nan: true # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
+      set_axis: false #If select True, add vmin_plot and vmax_plot for each variable in obs.
 
 
 # #-----------------------------------------------------------------------------
