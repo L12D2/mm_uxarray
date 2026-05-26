@@ -9,6 +9,7 @@ can be used for either finite volume or spectral element (+ regional refinement)
 import numpy as np
 import matplotlib.pyplot as plt
 import xarray as xr
+import uxarray as ux
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 import matplotlib.cm as cm
@@ -19,7 +20,7 @@ import matplotlib
 class Plot_2D(object):
     
     def __init__(self, var, lons=None, lats=None, lon_range=[-180,180], lat_range=[-90,90],
-                 scrip_file="", ax=None, cmap=None, projection=ccrs.PlateCarree(), center_180=False, 
+                 scrip_file="", grid_file = "", ax=None, cmap=None, projection=ccrs.PlateCarree(), center_180=False, # accept both grid and scrip
                  grid_line=False, grid_line_lw=1, coast=True, country=True, state=False, 
                  resolution="10m", feature_line_lw=0.5, feature_color="black",
                  lonlat_info=True, lonlat_line=True, lon_interval=None, lat_interval=None,
@@ -111,19 +112,56 @@ class Plot_2D(object):
                 ds_scrip = scrip_file
                 if verbose:
                     print( "use xarray dataset for scrip file" )
+            
+            elif isinstance(grid_file, str) and grid_file != "":
+                # incorp ux 
+                if verbose: 
+                    print("Reading UXARRAY grid file:", grid_file)
+                try: 
+                    uxgrid = ux.open_grid(grid_file)
+
+                    # corner and center coords 
+                    self.corner_lon = np.copy(uxgrid.node_lon.values)
+                    self.corner_lat = np.copy(uxgrid.node_lat.values)
+                    self.center_lon = np.zeros(uxgrid.n_face)
+                    self.center_lat = np.zeros(uxgrid.n_face)
+
+                    face_node_conn = uxgrid.face_node_connectivity.values
+
+                    for i in range(uxgrid.n_face):
+                        node_indices = face_node_conn[i, :]
+                        valid_indices = node_indices[node_indices >= 0]
+
+                        # filter invalid 
+                        if len(valid_indices) > 0: 
+                            self.center_lon[i] = np.mean(self.corner_lon[valid_indices])
+                            self.center_lat[i] = np.mean(self.corner_lat[valid_indices])
+
+                    # scrip structure 
+                    ds_scrip = xr.Dataset({"grid_corner_lon": (["n_node", "n_corners"], self._get_corner_lon_2d(uxgrid)),
+                                          "grid_corner_lat": (["n_node", "n_corners"], self._get_corner_lat_2d(uxgrid)),
+                                          "grid_center_lon": (["n_face"], self.center_lon),
+                                          "grid_center_lat": (["n_face"], self.center_lat)
+                                         })
+
+                except ImportError:
+                    raise ValueError('UXArray must be installed to use grid_file parameter')
+                except Exception as e:
+                    raise ValueError(f"Error reading UXARRAY grid file: {str(e)}")
+                    
             else:
                 if scrip_file == "":
-                    raise ValueError( '"scrip_file" must be specified for SE model output' )
+                    raise ValueError( '"scrip_file" or "grid_file" must be specified for SE model output' )
                 if not isinstance(scrip_file, str):
                     raise ValueError( '"scrip_file" must be provided as "string"' )
                 if verbose:
                     print( "Read SCRIP file:", scrip_file )
                 ds_scrip = xr.open_dataset( scrip_file )
                 
-            self.corner_lon = np.copy( ds_scrip.grid_corner_lon.values )
-            self.corner_lat = np.copy( ds_scrip.grid_corner_lat.values )
-            self.center_lon = np.copy( ds_scrip.grid_center_lon.values )
-            self.center_lat = np.copy( ds_scrip.grid_center_lat.values )
+            self.corner_lon = np.copy(ds_scrip.grid_corner_lon.values)
+            self.corner_lat = np.copy(ds_scrip.grid_corner_lat.values)
+            self.center_lon = np.copy(ds_scrip.grid_center_lon.values)
+            self.center_lat = np.copy(ds_scrip.grid_center_lat.values)
 
             
         # Color map check
@@ -156,6 +194,7 @@ class Plot_2D(object):
         
         # Pass input keywords
         self.scrip_file = scrip_file
+        self.grid_file = grid_file
         self.font_family = font_family
         self.projection = projection
         self.center_180 = center_180
@@ -712,6 +751,44 @@ class Plot_2D(object):
         # Call 2D plot code
         self.plot()
 
+    def _get_corner_lon_2d(self, uxgrid):
+        """Convert node coordinates to 2D corner array for compatibility with SCRIP format"""
+        n_face = uxgrid.n_face
+        n_corners = uxgrid.face_node_connectivity.shape[1]
+        corner_lon_2d = np.zeros((n_face, n_corners))
+        
+        face_node_conn = uxgrid.face_node_connectivity.values
+        node_lon = uxgrid.node_lon.values
+        
+        for i in range(n_face):
+            for j in range(n_corners):
+                node_idx = face_node_conn[i, j]
+                if node_idx >= 0:
+                    corner_lon_2d[i, j] = node_lon[node_idx]
+                else:
+                    corner_lon_2d[i, j] = node_lon[face_node_conn[i, 0]]
+        
+        return corner_lon_2d
+    
+    def _get_corner_lat_2d(self, uxgrid):
+        """Convert node coordinates to 2D corner array for compatibility with SCRIP format"""
+        n_face = uxgrid.n_face
+        n_corners = uxgrid.face_node_connectivity.shape[1]
+        corner_lat_2d = np.zeros((n_face, n_corners))
+        
+        face_node_conn = uxgrid.face_node_connectivity.values
+        node_lat = uxgrid.node_lat.values
+        
+        for i in range(n_face):
+            for j in range(n_corners):
+                node_idx = face_node_conn[i, j]
+                if node_idx >= 0:
+                    corner_lat_2d[i, j] = node_lat[node_idx]
+                else:
+                    corner_lat_2d[i, j] = node_lat[face_node_conn[i, 0]]
+        
+        return corner_lat_2d
+    
     # ========================================================================
     # =============================== Plotting ===============================
     # ========================================================================

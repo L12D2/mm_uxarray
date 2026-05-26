@@ -1081,8 +1081,15 @@ def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
         
         fig = plt.figure( figsize=fig_dict['figsize'] )
         ax = fig.add_subplot(1,1,1,projection=proj)
+
+        grid_file = vmodel.attrs.get('mio_grid_file', '')
+        scrip_file = vmodel.attrs.get('mio_scrip_file', '')
+
+        # print what exists
+        print(f"grid_file: {grid_file}")
+        print(f"scrip_file: {scrip_file}")
         
-        _ = Plot_2D( vmodel_mean, scrip_file=vmodel.mio_scrip_file, cmap=cmap, #colorticks=clevel, colorlabels=clevel,
+        _ = Plot_2D( vmodel_mean, scrip_file=scrip_file, grid_file = grid_file, cmap=cmap, #colorticks=clevel, colorlabels=clevel,
                        cmin=vmin, cmax=vmax, lon_range=[lonmin,lonmax], lat_range=[latmin,latmax],
                        ax=ax, state=fig_dict['states'] )
     else:
