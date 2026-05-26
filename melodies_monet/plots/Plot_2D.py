@@ -19,7 +19,7 @@ import matplotlib
 class Plot_2D(object):
     
     def __init__(self, var, lons=None, lats=None, lon_range=[-180,180], lat_range=[-90,90],
-                 scrip_file="", ax=None, cmap=None, projection=ccrs.PlateCarree(), center_180=False, 
+                 scrip_file="", grid_file="", ax=None, cmap=None, projection=ccrs.PlateCarree(), center_180=False, 
                  grid_line=False, grid_line_lw=1, coast=True, country=True, state=False, 
                  resolution="10m", feature_line_lw=0.5, feature_color="black",
                  lonlat_info=True, lonlat_line=True, lon_interval=None, lat_interval=None,
@@ -105,15 +105,54 @@ class Plot_2D(object):
                 self.lon_range[1] += 180
 
                     
-        # Read scrip file in case of SE model output
+        # Read scrip or grid file in case of SE model output
         if self.model_type == 'SE':
             if isinstance(scrip_file, xr.Dataset):
                 ds_scrip = scrip_file
                 if verbose:
                     print( "use xarray dataset for scrip file" )
+            elif isinstance(grid_file, str) and grid_file != "":
+                # Handle UXArray EXODUS grid file
+                if verbose:
+                    print( "Read UXArray grid file:", grid_file )
+                try:
+                    import uxarray as ux
+                    uxgrid = ux.open_grid(grid_file)
+                    
+                    # Extract corner and center coordinates from UXArray grid
+                    self.corner_lon = np.copy( uxgrid.node_lon.values )
+                    self.corner_lat = np.copy( uxgrid.node_lat.values )
+                    
+                    # For face centers, compute mean of corner nodes
+                    self.center_lon = np.zeros( uxgrid.n_face )
+                    self.center_lat = np.zeros( uxgrid.n_face )
+                    
+                    face_node_conn = uxgrid.face_node_connectivity.values
+                    for i in range(uxgrid.n_face):
+                        node_indices = face_node_conn[i, :]
+                        # Filter out invalid indices (often -1 for unused nodes)
+                        valid_indices = node_indices[node_indices >= 0]
+                        if len(valid_indices) > 0:
+                            self.center_lon[i] = np.mean( self.corner_lon[valid_indices] )
+                            self.center_lat[i] = np.mean( self.corner_lat[valid_indices] )
+                    
+                    # Create synthetic SCRIP-like structure for compatibility
+                    ds_scrip = xr.Dataset({
+                        'grid_corner_lon': (['n_node', 'n_corners'], 
+                                           self._get_corner_lon_2d(uxgrid)),
+                        'grid_corner_lat': (['n_node', 'n_corners'], 
+                                           self._get_corner_lat_2d(uxgrid)),
+                        'grid_center_lon': (['n_face'], self.center_lon),
+                        'grid_center_lat': (['n_face'], self.center_lat),
+                    })
+                    
+                except ImportError:
+                    raise ValueError( 'UXArray must be installed to use grid_file parameter' )
+                except Exception as e:
+                    raise ValueError( f'Error reading UXArray grid file: {str(e)}' )
             else:
                 if scrip_file == "":
-                    raise ValueError( '"scrip_file" must be specified for SE model output' )
+                    raise ValueError( '"scrip_file" or "grid_file" must be specified for SE model output' )
                 if not isinstance(scrip_file, str):
                     raise ValueError( '"scrip_file" must be provided as "string"' )
                 if verbose:
@@ -156,6 +195,7 @@ class Plot_2D(object):
         
         # Pass input keywords
         self.scrip_file = scrip_file
+        self.grid_file = grid_file
         self.font_family = font_family
         self.projection = projection
         self.center_180 = center_180
@@ -545,7 +585,7 @@ class Plot_2D(object):
                                                           -self.cmin_p,
                                                           0, 
                                                           self.cmin_p,
-                                           np.sqrt( 10**(self.cmax_od) * self.cmin_p ),
+                                            np.sqrt( 10**(self.cmax_od) * self.cmin_p ),
                                                           10**( self.cmax_od ) ] )
                             nticks = 7
                             self.linthresh = self.cmin_p
@@ -711,6 +751,44 @@ class Plot_2D(object):
 
         # Call 2D plot code
         self.plot()
+
+    def _get_corner_lon_2d(self, uxgrid):
+        """Convert node coordinates to 2D corner array for compatibility with SCRIP format"""
+        n_face = uxgrid.n_face
+        n_corners = uxgrid.face_node_connectivity.shape[1]
+        corner_lon_2d = np.zeros((n_face, n_corners))
+        
+        face_node_conn = uxgrid.face_node_connectivity.values
+        node_lon = uxgrid.node_lon.values
+        
+        for i in range(n_face):
+            for j in range(n_corners):
+                node_idx = face_node_conn[i, j]
+                if node_idx >= 0:
+                    corner_lon_2d[i, j] = node_lon[node_idx]
+                else:
+                    corner_lon_2d[i, j] = node_lon[face_node_conn[i, 0]]
+        
+        return corner_lon_2d
+    
+    def _get_corner_lat_2d(self, uxgrid):
+        """Convert node coordinates to 2D corner array for compatibility with SCRIP format"""
+        n_face = uxgrid.n_face
+        n_corners = uxgrid.face_node_connectivity.shape[1]
+        corner_lat_2d = np.zeros((n_face, n_corners))
+        
+        face_node_conn = uxgrid.face_node_connectivity.values
+        node_lat = uxgrid.node_lat.values
+        
+        for i in range(n_face):
+            for j in range(n_corners):
+                node_idx = face_node_conn[i, j]
+                if node_idx >= 0:
+                    corner_lat_2d[i, j] = node_lat[node_idx]
+                else:
+                    corner_lat_2d[i, j] = node_lat[face_node_conn[i, 0]]
+        
+        return corner_lat_2d
 
     # ========================================================================
     # =============================== Plotting ===============================
