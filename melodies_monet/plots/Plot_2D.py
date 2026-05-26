@@ -38,39 +38,47 @@ class Plot_2D(object):
         # ========================================================================
         # variable dimension check
         if (np.ndim(var) > 2) or (np.ndim(var) < 1):
-            raise ValueError( '"var" must be 1-D (SE) or 2-D (FV) array' )
-        
+            raise ValueError('"var" must be 1-D (SE) or 2-D (FV) array')
+
+        # make se model runs not run on predefined lat lon        
+        self.model_lat = None
+        self.model_lon = None
         # xarray, lon, and lat check
-        if type(var) in [ xr.core.dataset.Dataset, xr.core.dataarray.DataArray ]:
+        #if type(var) in [xr.core.dataset.Dataset, xr.core.dataarray.DataArray]:
+        if isinstance(var, (xr.Dataset, xr.DataArray)):
             if np.ndim(var) == 2: # FV results
                 self.model_type = 'FV'
                 if verbose:
-                    print( '"var" is a xarray variable, longitude and latitude values ' + \
+                    print('"var" is a xarray variable, longitude and latitude values ' + \
                            'are being automatically assigned by xarray dimension variables')
                 if lons is not None:
-                    print( 'Warning: "lons" is assigned but not used ' + \
+                    print('Warning: "lons" is assigned but not used ' + \
                            'because xarray itself has longitude values')
                 if lats is not None:
-                    print( 'Warning: "lats" is assigned but not used ' + \
+                    print('Warning: "lats" is assigned but not used ' + \
                            'because xarray itself has longitude values')                
                 self.var = np.copy( var.values )
                 self.lon = np.copy( var.lon.values )
                 self.lat = np.copy( var.lat.values )
             else: # SE results
                 self.model_type = 'SE'
-                self.var = np.copy( var.values )
+                self.var = np.copy(var.values)
+                self.model_lat = var.latitude.values if hasattr(var, "latitude") else None
+                self.model_lon = var.longitude.values if hasattr(var, "longitude") else None
+                print(f"MM SE coords available: {list(var.coords)}")
+                print(f"MM model_lat set: {self.model_lat is not None}, model_lon set: {self.model_lon is not None}")
         else:
             self.var = np.copy(var)
             if np.ndim(var) == 2: # FV results
                 self.model_type = 'FV'
                 if np.shape(lons) == ():
-                    raise ValueError( '"lons" must be provided for FV model output' )
+                    raise ValueError('"lons" must be provided for FV model output')
                 else:
-                    self.lon = np.copy( lons )
+                    self.lon = np.copy(lons)
                 if np.shape(lats) == ():
-                    raise ValueError( '"lats" must be provided for FV model output' )
+                    raise ValueError('"lats" must be provided for FV model output')
                 else:
-                    self.lat = np.copy( lats )
+                    self.lat = np.copy(lats)
             else: # SE results
                 self.model_type = 'SE'        
         
@@ -119,6 +127,10 @@ class Plot_2D(object):
                     print("Reading UXARRAY grid file:", grid_file)
                 try: 
                     uxgrid = ux.open_grid(grid_file)
+                    print(f"[Plot_2D SE] len(var)={len(self.var)} "
+                          f"uxgrid.n_node={uxgrid.n_node} "
+                          f"uxgrid.n_face={uxgrid.n_face} "
+                          f"face_node_conn.shape={uxgrid.face_node_connectivity.shape}")
 
                     # corner and center coords 
                     self.corner_lon = np.copy(uxgrid.node_lon.values)
@@ -144,6 +156,8 @@ class Plot_2D(object):
                                           "grid_center_lat": (["n_face"], self.center_lat)
                                          })
 
+                    #print(ds_scrip)
+
                 except ImportError:
                     raise ValueError('UXArray must be installed to use grid_file parameter')
                 except Exception as e:
@@ -163,7 +177,29 @@ class Plot_2D(object):
             self.center_lon = np.copy(ds_scrip.grid_center_lon.values)
             self.center_lat = np.copy(ds_scrip.grid_center_lat.values)
 
-            
+            # n_nodes; avg over the corner node values 
+            if len(self.var) != uxgrid.n_node:
+                print('made it here')
+                from scipy.spatial import cKDTree
+
+                if self.model_lat is None or self.model_lon is None:
+                    raise ValueError(
+                        "SE model data is missing 'latitude'/'longitude' coordinates"
+                        "needed to align ncol ordering with the grid file's nodes."
+                    )
+                    
+                mlon = np.where(self.model_lon > 180, self.model_lon - 360, self.model_lon)
+                flon = np.where(self.center_lon > 180, self.center_lon - 360, self.center_lon)
+
+                tree = cKDTree(np.column_stack([flon, self.center_lat]))
+                _, face_for_ncol = tree.query(np.column_stack([mlon, self.model_lat]))
+                face_sum = np.zeros(uxgrid.n_face)
+                face_count = np.zeros(uxgrid.n_face)
+                np.add.at(face_sum, face_for_ncol, self.var)
+                np.add.at(face_count, face_for_ncol, 1)
+                face_var = np.where(face_count > 0, face_sum / np.maximum(face_count, 1), np.nan)
+                self.var = face_var
+
         # Color map check
         if cmap is None:
             if diff:

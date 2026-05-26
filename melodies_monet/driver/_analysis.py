@@ -2949,6 +2949,9 @@ class analysis:
                                     vmodel, domain_type, domain_name, domain_info
                                 )
 
+                            # enable plotting to see unstrucutred grids
+                            vmodel.attrs.update(self.models[p.model].obj.attrs)
+                            
                             # Determine proj to use for spatial plots
                             proj = splots.map_projection(self.models[p.model])
                             # p_label needs to be added to the outname for this plot
