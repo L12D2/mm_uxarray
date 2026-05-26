@@ -343,11 +343,22 @@ class analysis:
 
                 # unstructured grid check
                 if m.model in ["cesm_se"]:
-                    if "scrip_file" in self.control_dict["model"][mod].keys():
-                        m.scrip_file = self.control_dict["model"][mod]["scrip_file"]
+                
+                    model_cfg = self.control_dict["model"][mod]
+                
+                    if "grid_file" in model_cfg.keys():
+                
+                        m.grid_file = model_cfg["grid_file"]
+                
+                    elif "scrip_file" in model_cfg.keys():
+                
+                        m.scrip_file = model_cfg["scrip_file"]
+                
                     else:
+                
                         raise ValueError(
-                            '"Scrip_file" must be provided for unstructured grid output!'
+                            '"grid_file" or "scrip_file" must be provided '
+                            'for CESM-SE unstructured grid output!'
                         )
 
                 # maybe set projection
