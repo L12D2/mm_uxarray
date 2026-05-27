@@ -948,7 +948,7 @@ def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
                       vmax = None, nlevels = None, proj = None, outname = 'plot',
                       u_comp = None, v_comp = None, wind_barb = False,
                       domain_type=None, domain_name=None, fig_dict=None, 
-                      text_dict=None,debug=False):
+                      text_dict=None, uxgrid = None, debug=False):
         
     """Creates spatial overlay plot. 
     
@@ -992,6 +992,8 @@ def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
         Dictionary containing information about figure
     text_dict : dictionary
         Dictionary containing information about text
+    uxgrid: 
+        Specifiy if plotting unstructured grid data
     debug : boolean
         Whether to plot interactively (True) or not (False). Flag for 
         submitting jobs to supercomputer turn off interactive mode.
@@ -1089,9 +1091,43 @@ def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
         print(f"grid_file: {grid_file}")
         print(f"scrip_file: {scrip_file}")
         
-        _ = Plot_2D( vmodel_mean, scrip_file=scrip_file, grid_file = grid_file, cmap=cmap, #colorticks=clevel, colorlabels=clevel,
-                       cmin=vmin, cmax=vmax, lon_range=[lonmin,lonmax], lat_range=[latmin,latmax],
-                       ax=ax, state=fig_dict['states'] )
+        # _ = Plot_2D( vmodel_mean, scrip_file=scrip_file, grid_file = grid_file, cmap=cmap, #colorticks=clevel, colorlabels=clevel,
+        #                cmin=vmin, cmax=vmax, lon_range=[lonmin,lonmax], lat_range=[latmin,latmax],
+        #                ax=ax, state=fig_dict['states'] )
+
+        if uxgrid is not None or grid_file:
+            import uxarray as ux
+            import cartopy.feature as cfeature
+            from melodies_monet.util.uxarray_util import uxda_from_columns
+
+            if uxgrid is None:
+                uxgrid = ux.open_grid(grid_file)
+
+            uxda = uxda_from_columns(vmodel_mean, uxgrid)
+            poly = uxda.to_polycollection(periodic_elements="ignore")
+            # older uxarray returned (poly, corrected_to_gdf); newer returns poly
+            if isinstance(poly, tuple):
+                poly = poly[0]
+            poly.set_cmap(cmap)
+            poly.set_norm(norm)
+            poly.set_edgecolor('face')
+            poly.set_transform(ccrs.PlateCarree())
+            ax.add_collection(poly)
+
+            ax.coastlines(lw=0.5)
+            ax.add_feature(cfeature.BORDERS, lw=0.5)
+            if fig_dict.get('states', True):
+                ax.add_feature(cfeature.STATES, lw=0.3)
+            ax.set_extent([lonmin, lonmax, latmin, latmax], crs=ccrs.PlateCarree())
+
+            cbar = fig.colorbar(poly, ax=ax, shrink=0.8, pad=0.04, extend='both')
+            cbar.set_label(ylabel, fontweight='bold', **text_kwargs)
+        else:
+            from melodies_monet.plots.Plot_2D import Plot_2D
+            _ = Plot_2D( vmodel_mean, scrip_file=scrip_file, cmap=cmap,
+                           cmin=vmin, cmax=vmax, lon_range=[lonmin,lonmax], lat_range=[latmin,latmax],
+                           ax=ax, state=fig_dict['states'] )
+
     else:
         #I add extend='both' here because the colorbar is setup to plot the values outside the range
         ax = vmodel_mean.monet.quick_contourf(cbar_kwargs=cbar_kwargs, figsize=map_kwargs['figsize'], map_kws=map_kwargs,

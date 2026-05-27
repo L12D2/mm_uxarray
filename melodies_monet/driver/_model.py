@@ -38,6 +38,10 @@ class model:
         self.proj = None
         self.mod_to_overpass = False
 
+        # Build in uxarray native support ; only populate if GRID FILE is provided in cesm-se 
+        self.uxds = None
+        self.uxgrid = None
+
     def __repr__(self):
         return (
             f"{type(self).__name__}(\n"
@@ -286,6 +290,20 @@ class model:
             
             self.obj.attrs['mio_has_unstructured_grid'] = True
 
+            # grid file is provided; data needs to be binded to uxarray grid 
+            # to handle plotting throuigh uxarray natively 
+
+            if hasattr(self, "grid_file") and self.grid_file:
+                try:
+                    self.uxgrid = ux.open_grid(self.grid_file)
+                    print("**** Opened uxarray grid:", self.grid_file)
+                except Exception as e:
+                    self.uxgrid = None
+                    warnings.warn(
+                        "Could not open uxarray grid from grid_file "
+                        f"({self.grid_file!r}); continuing with the legacy "
+                        f"plotting path. Reason: {e}")
+
         elif "camx" in self.model.lower():
             self.mod_kwargs.update({"var_list": list_input_var})
             self.mod_kwargs.update(
@@ -303,6 +321,7 @@ class model:
                 #the _camx_mm.py reader and not the camx.py reader, which is old.
             except AttributeError:
                 self.obj = mio.models.camx.open_mfdataset(self.files, **self.mod_kwargs)
+                
         elif "raqms" in self.model.lower():
             self.mod_kwargs.update({"var_list": list_input_var})
             if time_interval is not None:

@@ -2980,6 +2980,7 @@ class analysis:
                                     domain_name=domain_name,
                                     fig_dict=fig_dict,
                                     text_dict=text_dict,
+                                    uxgrid=getattr(self.models[p.model], "uxgrid", None), 
                                     debug=self.debug,
                                 )
                             else:
