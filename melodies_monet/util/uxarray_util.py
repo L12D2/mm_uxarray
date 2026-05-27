@@ -10,7 +10,7 @@ these util functions only run if a grid file is provided in the YAML, preserving
 
 import numpy as np
 import uxarray as ux
-
+import xarray as xr
 
 def _coord(obj, names):
     """Return ``(name, coord)`` for the first of ``names`` present on ``obj``.
@@ -144,13 +144,25 @@ def uxda_from_columns(da, uxgrid):
     spatial_dim, lon_name = _spatial_dim(da)
     lat_name = _lat_name(da)
     name = da.name if da.name is not None else "_v"
+    n_face = uxgrid.n_face
 
-    if da.sizes[spatial_dim] == uxgrid.n_face:
+    if da.sizes[spatial_dim] == n_face:
         aligned = da.rename({spatial_dim: "n_face"})
+        return ux.UxDataArray(aligned, uxgrid=uxgrid)
+
+    face_for_col = _face_for_columns(
+        uxgrid, da[lon_name].values, da[lat_name].values)
+
+    if da.ndim == 1:
+        values = np.asarray(da.values, dtype=float)
+        fc = np.asarray(face_for_col)
+        valid = ~np.isnan(values)
+        face_sum = np.bincount(fc[valid], weights=values[valid], minlength=n_face)
+        face_cnt = np.bincount(fc[valid], minlength=n_face)
+        binned = np.where(face_cnt > 0, face_sum / np.maximum(face_cnt, 1), np.nan)
+        aligned = xr.DataArray(binned, dims=["n_face"], name=name)
+        
     else:
-        face_for_col = _face_for_columns(
-            uxgrid, da[lon_name].values, da[lat_name].values
-        )
         aligned = _bin_to_faces(
             da.to_dataset(name=name), uxgrid, spatial_dim, face_for_col
         )[name]

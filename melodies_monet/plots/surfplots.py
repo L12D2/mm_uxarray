@@ -7,6 +7,8 @@ import seaborn as sns
 import pandas as pd
 import numpy as np
 import cartopy.crs as ccrs
+import uxarray as ux
+import cartopy.feature as cfeature
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
@@ -1095,9 +1097,8 @@ def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
         #                cmin=vmin, cmax=vmax, lon_range=[lonmin,lonmax], lat_range=[latmin,latmax],
         #                ax=ax, state=fig_dict['states'] )
 
+        # plot uxgrid natively here rather than from plot_2D
         if uxgrid is not None or grid_file:
-            import uxarray as ux
-            import cartopy.feature as cfeature
             from melodies_monet.util.uxarray_util import uxda_from_columns
 
             if uxgrid is None:
@@ -1105,6 +1106,7 @@ def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
 
             uxda = uxda_from_columns(vmodel_mean, uxgrid)
             poly = uxda.to_polycollection(periodic_elements="ignore")
+            
             # older uxarray returned (poly, corrected_to_gdf); newer returns poly
             if isinstance(poly, tuple):
                 poly = poly[0]
@@ -1120,13 +1122,17 @@ def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
                 ax.add_feature(cfeature.STATES, lw=0.3)
             ax.set_extent([lonmin, lonmax, latmin, latmax], crs=ccrs.PlateCarree())
 
+            gl = ax.gridlines(draw_labels=True, lw=1.0, color='black', alpha=0.5, linestyle=':')
+            gl.top_labels = False
+            gl.right_labels = False
+
             cbar = fig.colorbar(poly, ax=ax, shrink=0.8, pad=0.04, extend='both')
             cbar.set_label(ylabel, fontweight='bold', **text_kwargs)
         else:
             from melodies_monet.plots.Plot_2D import Plot_2D
-            _ = Plot_2D( vmodel_mean, scrip_file=scrip_file, cmap=cmap,
+            _ = Plot_2D(vmodel_mean, scrip_file=scrip_file, cmap=cmap,
                            cmin=vmin, cmax=vmax, lon_range=[lonmin,lonmax], lat_range=[latmin,latmax],
-                           ax=ax, state=fig_dict['states'] )
+                           ax=ax, state=fig_dict['states'])
 
     else:
         #I add extend='both' here because the colorbar is setup to plot the values outside the range
