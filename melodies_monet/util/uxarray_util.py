@@ -6,6 +6,14 @@ unstructured model output binding to a uxarray grid
 
 these util functions only run if a grid file is provided in the YAML, preserving currently existing functionality
 
+https://uxarray.readthedocs.io/en/latest/user-guide/grid-formats.html
+
+Users should be able to provide EXODUS, UGRID, SCRIP, etc. This util file will handle all of those types automatically. 
+
+UGRID; MPAS; SCRIP; EXODUS; ESMF; GEOS CS; ICON; FESOM2; HEALPix
+
+05282026: EXODUS and SCRIP are supported; if ncol = num_element uxarray should handle automatically. If no, CKDTree is triggered for nearest neighbor interpolation. 
+
 """
 
 import numpy as np

@@ -8,13 +8,13 @@
 # Universal comparison variables
 analysis:
   start_time: '2024-01-01'          #UTC
-  end_time: '2024-02-01'          #UTC
+  end_time: '2024-01-02'          #UTC
   output_dir: 
-    /glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/output
+    /glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/output/airnow_camchemse
   output_dir_save: 
-    /glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/output
+    /glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/output/airnow_camchemse
   output_dir_read: 
-    /glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/output
+    /glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/output/airnow_camchemse
 
   save:
     paired:
