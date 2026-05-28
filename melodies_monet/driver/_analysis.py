@@ -953,9 +953,16 @@ class analysis:
                         regrid_method = (
                             obs.regrid_method if obs.regrid_method is not None else "bilinear"
                         )
+
+                        # memory blows way up. Need to slim modobj
+                        _sat_needed = list(mod_sp) + [
+                            "pres_pa_mid", "dz_m", "temperature_k",]
+                        _sat_vars = [v for v in _sat_needed if v in mod.obj.variables]
+                        mod_obj_for_sat = mod.obj[_sat_vars]
+                        
                         paired_data_atswath = sutil.regrid_and_apply_weights(
-                            obs.obj, mod.obj, species=mod_sp, method=regrid_method, tempo_sp=sat_sp
-                        )
+                            obs.obj, mod_obj_for_sat, species=mod_sp, method=regrid_method, tempo_sp=sat_sp)
+                        
                         paired_data_atgrid = sutil.back_to_modgrid_multiscan(
                             paired_data_atswath, model_obj, method=regrid_method
                         )

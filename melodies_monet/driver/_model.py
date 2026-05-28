@@ -301,6 +301,19 @@ class model:
             
             self.obj.attrs['mio_has_unstructured_grid'] = True
 
+            # insert this here for the unstructured grid stuff. This renaming may be breakng somewhere else, but gets it out of the 
+            # juypter notebook. 
+            _rename = {}
+            if "lon" in self.obj.data_vars and "longitude" not in self.obj.variables:
+                _rename["lon"] = "longitude"
+            if "lat" in self.obj.data_vars and "latitude" not in self.obj.variables:
+                _rename["lat"] = "latitude"
+            if _rename:
+                self.obj = self.obj.rename(_rename)
+            _promote = [c for c in ("longitude", "latitude") if c in self.obj.data_vars]
+            if _promote:
+                self.obj = self.obj.set_coords(_promote)
+
         elif "camx" in self.model.lower():
             self.mod_kwargs.update({"var_list": list_input_var})
             self.mod_kwargs.update(

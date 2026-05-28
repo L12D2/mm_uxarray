@@ -480,9 +480,29 @@ def is_nonpairable(obsobj, k, modobj):
     ------
     collections.OrderedDict[str, xr.Dataset]
     """
-    if obsobj[k]["lon"].max() < modobj["longitude"].min():
+    
+    # if obsobj[k]["lon"].max() < modobj["longitude"].min():
+    
+    # Normalize longitudes to the same [-180, 180] convention before
+    # comparing. CESM-SE (and several other models) store lon in 0..360, while
+    # TEMPO L2 reports in -180..180; a CONUS model and CONUS
+    # swath look non-overlapping (e.g. model min=200 vs obs max=-60) and every
+    # granule is discarded.
+    
+    def _to_neg180(a):
+        import numpy as np
+        return ((np.asarray(a) + 180.0) % 360.0) - 180.0
+
+    mlon = _to_neg180(modobj["longitude"].values)
+    olon = _to_neg180(obsobj[k]["lon"].values)
+            
+    if olon.max() < mlon.min():
         return True
-    elif obsobj[k]["lon"].min() > modobj["longitude"].max():
+    elif olon.min() > mlon.max():
+        return True
+
+    #elif obsobj[k]["lon"].min() > modobj["longitude"].max():
+    elif olon.min() > mlon.max():
         return True
     elif obsobj[k]["lat"].max() < modobj["latitude"].min():
         return True
@@ -794,6 +814,13 @@ def back_to_modgrid_multiscan(
     """
     out_regridded = xr.Dataset()
     ordered_keys = sorted(list(paireddict.keys()))
+    if not ordered_keys:
+        raise ValueError(
+            "back_to_modgrid_multiscan received an empty paireddict. "
+            "Every granule was discarded as 'no overlap with model' upstream. "
+            "Check is_nonpairable() and the model/obs longitude conventions "
+            "(model in 0..360 vs obs in -180..180 is a common cause).")
+            
     scan_num = paireddict[ordered_keys[0]].attrs["scan_num"]
     keys_in_scan = [ordered_keys[0]]
     if len(ordered_keys) > 1:
