@@ -20,7 +20,7 @@ import matplotlib
 class Plot_2D(object):
     
     def __init__(self, var, lons=None, lats=None, lon_range=[-180,180], lat_range=[-90,90],
-                 scrip_file="", grid_file = "", ax=None, cmap=None, projection=ccrs.PlateCarree(), center_180=False, # accept both grid and scrip
+                 scrip_file="", ax=None, cmap=None, projection=ccrs.PlateCarree(), center_180=False, 
                  grid_line=False, grid_line_lw=1, coast=True, country=True, state=False, 
                  resolution="10m", feature_line_lw=0.5, feature_color="black",
                  lonlat_info=True, lonlat_line=True, lon_interval=None, lat_interval=None,
@@ -125,52 +125,8 @@ class Plot_2D(object):
             if isinstance(scrip_file, xr.Dataset):
                 ds_scrip = scrip_file
                 if verbose:
-                    print( "use xarray dataset for scrip file" )
-            
-            # elif isinstance(grid_file, str) and grid_file != "":
-            #     # incorp ux 
-            #     if verbose: 
-            #         print("Reading UXARRAY grid file:", grid_file)
-            #     try: 
-            #         uxgrid = ux.open_grid(grid_file)
-
-            #         # important debug information for unstructured grids
-            #         # print(f"[Plot_2D SE] len(var)={len(self.var)} "
-            #         #       f"uxgrid.n_node={uxgrid.n_node} "
-            #         #       f"uxgrid.n_face={uxgrid.n_face} "
-            #         #       f"face_node_conn.shape={uxgrid.face_node_connectivity.shape}")
-
-            #         # corner and center coords 
-            #         self.corner_lon = np.copy(uxgrid.node_lon.values)
-            #         self.corner_lat = np.copy(uxgrid.node_lat.values)
-            #         self.center_lon = np.zeros(uxgrid.n_face)
-            #         self.center_lat = np.zeros(uxgrid.n_face)
-
-            #         face_node_conn = uxgrid.face_node_connectivity.values
-
-            #         for i in range(uxgrid.n_face):
-            #             node_indices = face_node_conn[i, :]
-            #             valid_indices = node_indices[node_indices >= 0]
-
-            #             # filter invalid 
-            #             if len(valid_indices) > 0: 
-            #                 self.center_lon[i] = np.mean(self.corner_lon[valid_indices])
-            #                 self.center_lat[i] = np.mean(self.corner_lat[valid_indices])
-
-            #         # scrip structure 
-            #         ds_scrip = xr.Dataset({"grid_corner_lon": (["n_node", "n_corners"], self._get_corner_lon_2d(uxgrid)),
-            #                               "grid_corner_lat": (["n_node", "n_corners"], self._get_corner_lat_2d(uxgrid)),
-            #                               "grid_center_lon": (["n_face"], self.center_lon),
-            #                               "grid_center_lat": (["n_face"], self.center_lat)
-            #                              })
-
-            #         #print(ds_scrip)
-
-            #     except ImportError:
-            #         raise ValueError('UXArray must be installed to use grid_file parameter')
-            #     except Exception as e:
-            #         raise ValueError(f"Error reading UXARRAY grid file: {str(e)}")
-                    
+                    print( "using uxarray dataset for scrip file" )
+                                
             else:
                 # breaking here. 
                 if scrip_file == "":
@@ -185,29 +141,6 @@ class Plot_2D(object):
             self.corner_lat = np.copy(ds_scrip.grid_corner_lat.values)
             self.center_lon = np.copy(ds_scrip.grid_center_lon.values)
             self.center_lat = np.copy(ds_scrip.grid_center_lat.values)
-
-            # # n_nodes; avg over the corner node values 
-            # if len(self.var) != uxgrid.n_node:
-            #     print('made it here')
-            #     from scipy.spatial import cKDTree
-
-            #     if self.model_lat is None or self.model_lon is None:
-            #         raise ValueError(
-            #             "SE model data is missing 'latitude'/'longitude' coordinates"
-            #             "needed to align ncol ordering with the grid file's nodes."
-            #         )
-                    
-            #     mlon = np.where(self.model_lon > 180, self.model_lon - 360, self.model_lon)
-            #     flon = np.where(self.center_lon > 180, self.center_lon - 360, self.center_lon)
-
-            #     tree = cKDTree(np.column_stack([flon, self.center_lat]))
-            #     _, face_for_ncol = tree.query(np.column_stack([mlon, self.model_lat]))
-            #     face_sum = np.zeros(uxgrid.n_face)
-            #     face_count = np.zeros(uxgrid.n_face)
-            #     np.add.at(face_sum, face_for_ncol, self.var)
-            #     np.add.at(face_count, face_for_ncol, 1)
-            #     face_var = np.where(face_count > 0, face_sum / np.maximum(face_count, 1), np.nan)
-            #     self.var = face_var
 
         # Color map check
         if cmap is None:
@@ -795,44 +728,6 @@ class Plot_2D(object):
 
         # Call 2D plot code
         self.plot()
-
-    # def _get_corner_lon_2d(self, uxgrid):
-    #     """Convert node coordinates to 2D corner array for compatibility with SCRIP format"""
-    #     n_face = uxgrid.n_face
-    #     n_corners = uxgrid.face_node_connectivity.shape[1]
-    #     corner_lon_2d = np.zeros((n_face, n_corners))
-        
-    #     face_node_conn = uxgrid.face_node_connectivity.values
-    #     node_lon = uxgrid.node_lon.values
-        
-    #     for i in range(n_face):
-    #         for j in range(n_corners):
-    #             node_idx = face_node_conn[i, j]
-    #             if node_idx >= 0:
-    #                 corner_lon_2d[i, j] = node_lon[node_idx]
-    #             else:
-    #                 corner_lon_2d[i, j] = node_lon[face_node_conn[i, 0]]
-        
-    #     return corner_lon_2d
-    
-    # def _get_corner_lat_2d(self, uxgrid):
-    #     """Convert node coordinates to 2D corner array for compatibility with SCRIP format"""
-    #     n_face = uxgrid.n_face
-    #     n_corners = uxgrid.face_node_connectivity.shape[1]
-    #     corner_lat_2d = np.zeros((n_face, n_corners))
-        
-    #     face_node_conn = uxgrid.face_node_connectivity.values
-    #     node_lat = uxgrid.node_lat.values
-        
-    #     for i in range(n_face):
-    #         for j in range(n_corners):
-    #             node_idx = face_node_conn[i, j]
-    #             if node_idx >= 0:
-    #                 corner_lat_2d[i, j] = node_lat[node_idx]
-    #             else:
-    #                 corner_lat_2d[i, j] = node_lat[face_node_conn[i, 0]]
-        
-    #     return corner_lat_2d
     
     # ========================================================================
     # =============================== Plotting ===============================

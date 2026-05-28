@@ -12,12 +12,17 @@ Color scaling is controlled by the caller via ``norm``/``cmap`` (so linear,
 log via ``SymLogNorm``, or diff via a diverging norm/cmap all work without
 special-casing here). Data binding/alignment lives in
 :mod:`melodies_monet.util.uxarray_util`.
+
+take 1D unstructured fields; a uxarray mesh (grid file); plotting metadata to plot:
+
+- polygon collection that represents the mesh cells 
+- render directly on cartopy map axis 
+
 """
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 
 from melodies_monet.util.uxarray_util import uxda_from_columns
-
 
 def render_unstructured_field(
     ax,
@@ -37,8 +42,8 @@ def render_unstructured_field(
     cbar_label=None,
     cbar_kwargs=None,
     text_kwargs=None,
-    periodic_elements="ignore",
-):
+    periodic_elements="ignore",):
+    
     """Draw a 1-D unstructured column ``field`` as polygons on a cartopy ``ax``.
 
     Parameters
@@ -75,6 +80,7 @@ def render_unstructured_field(
     matplotlib.collections.PolyCollection
         The polygon collection added to ``ax`` (e.g. to attach a colorbar to).
     """
+    
     uxda = uxda_from_columns(field, uxgrid)
 
     poly = uxda.to_polycollection(periodic_elements=periodic_elements)

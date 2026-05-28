@@ -38,7 +38,7 @@ class model:
         self.proj = None
         self.mod_to_overpass = False
 
-        # Build in uxarray native support ; only populate if GRID FILE is provided in cesm-se 
+        # Build in uxarray native support ; populate for the scrip file provided in cesm-se 
         self.uxds = None
         self.uxgrid = None
 
@@ -255,19 +255,15 @@ class model:
             print("**** Reading CESM SE model output...")
             self.mod_kwargs.update({"var_list": list_input_var})
 
-            # grid 
-            if hasattr(self, "grid_file"):
-                print(f"Using UXArray grid file: {self.grid_file}")
-                self.mod_kwargs.update({"grid_file": self.grid_file})
-
             # scrip
-            elif hasattr(self, "scrip_file"):
+            if hasattr(self, "scrip_file"):
+                print(f"Using UXArray grid file: {self.scrip_file}")
                 if self.scrip_file.startswith("example:"):
                     from melodies_monet import tutorial
 
                     example_id = ":".join(s.strip() for s in self.scrip_file.split(":")[1:])
                     self.scrip_file = tutorial.fetch_example(example_id)
-                print("User provided scrip file. Defaulting to legacy...")
+                print(f"Using SCRIP file: {self.scrip_file}")
                 self.mod_kwargs.update({"scrip_file": self.scrip_file})
                 
             else:
@@ -279,30 +275,31 @@ class model:
                 self.obj = mio.models.cesm_se.open_mfdataset(self.files, **self.mod_kwargs)
             except AttributeError:
                 self.obj = mio.models._cesm_se_mm.open_mfdataset(self.files, **self.mod_kwargs)
+                
             # self.obj, self.obj_scrip = read_cesm_se.open_mfdataset(self.files,**self.mod_kwargs)
             # self.obj.monet.scrip = self.obj_scrip
 
-            # setting attributes for grid and scrip
-            if hasattr(self, "grid_file") and self.grid_file:
-                self.obj.attrs['mio_grid_file'] = self.grid_file
+            # setting attributes for the ugrid, scrip, exodus file that uxarray needs. 
+            # Open the unstructured grid with uxarray so plotting goes through
+            # the uxarray render path. ux.open_grid auto-detects format
+
+            _ux_path = getattr(self, "scrip_file", None)
+            
+            if _ux_path:
+                try:
+                    self.uxgrid = ux.open_grid(_ux_path)
+                    print("**** Opened uxarray grid:", _ux_path)
+                except Exception as e:
+                    self.uxgrid = None
+                    warnings.warn(f"Could not open uxarray grid from {_ux_path!r}; "
+                        f"continuing with the legacy plotting path. Reason: {e}")
+
+            # if hasattr(self, "grid_file") and self.grid_file:
+            #     self.obj.attrs['mio_grid_file'] = self.grid_file
             if hasattr(self, "scrip_file") and self.scrip_file:
                 self.obj.attrs['mio_scrip_file'] = self.scrip_file
             
             self.obj.attrs['mio_has_unstructured_grid'] = True
-
-            # grid file is provided; data needs to be binded to uxarray grid 
-            # to handle plotting throuigh uxarray natively 
-
-            if hasattr(self, "grid_file") and self.grid_file:
-                try:
-                    self.uxgrid = ux.open_grid(self.grid_file)
-                    print("**** Opened uxarray grid:", self.grid_file)
-                except Exception as e:
-                    self.uxgrid = None
-                    warnings.warn(
-                        "Could not open uxarray grid from grid_file "
-                        f"({self.grid_file!r}); continuing with the legacy "
-                        f"plotting path. Reason: {e}")
 
         elif "camx" in self.model.lower():
             self.mod_kwargs.update({"var_list": list_input_var})

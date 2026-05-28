@@ -35,7 +35,9 @@ model:
       - /glade/campaign/acom/acom-da/conus_outputs/f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.ERA5_ref_dust_M1.1.002/H1/f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.ERA5_ref_dust_M1.1.002.cam.h1.2024-01-01-03600.nc
 
     mod_type: 'cesm_se'
-    grid_file: "/glade/campaign/acom/acom-da/conus_outputs/grid/ne0CONUS_ne30x8_EXODUS.nc" # for unstructured grids, this can be the raw grid itself and NOT the script file
+    scrip_file: "/glade/campaign/acom/MUSICA/grids/ne0CONUSne30x8/ne0CONUS_ne30x8_np4_SCRIP.nc"
+    
+    #"/glade/campaign/acom/acom-da/conus_outputs/grid/ne0CONUS_ne30x8_EXODUS.nc" # for unstructured grids, this can be the raw grid itself and NOT the script file
     radius_of_influence: 27794 #meters: horizontal resolution * 1.5
     mapping: #model species name : obs species name
       airnow:

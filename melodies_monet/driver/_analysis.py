@@ -346,18 +346,18 @@ class analysis:
                 
                     model_cfg = self.control_dict["model"][mod]
                     
-                    if "grid_file" in model_cfg:
-                        m.grid_file = model_cfg["grid_file"]
-                        print("Grid file", m.grid_file)
+                    # if "grid_file" in model_cfg:
+                    #     m.grid_file = model_cfg["grid_file"]
+                    #     print("Grid file", m.grid_file)
                 
-                    elif "scrip_file" in model_cfg:
+                    if "scrip_file" in model_cfg:
                         m.scrip_file = model_cfg["scrip_file"]
                         print("Scrip file", m.scrip_file)
                 
                     else:
                 
                         raise ValueError(
-                            '"grid_file" or "scrip_file" must be provided '
+                            '"scrip_file" must be provided '
                             'for CESM-SE unstructured grid output!'
                         )
 
