@@ -176,3 +176,62 @@ def uxda_from_columns(da, uxgrid):
         )[name]
 
     return ux.UxDataArray(aligned, uxgrid=uxgrid)
+
+def sample_unstructured_at_points(modobj, target_lon, target_lat):
+    """Nearest-neighbor sample a model on a 1-D unstructured column dim at
+    arbitrary ``(lon, lat)`` target points.
+
+    Reusable beyond the satellite pipeline: any caller with a list of target
+    points (swath pixels, AirNow stations, sondes, ...) can sample an
+    unstructured model at those locations without xESMF (which OOMs on large
+    ``ncol`` sources because it treats them as degenerate structured grids).
+
+    Parameters
+    ----------
+    modobj : xarray.Dataset
+        Model output on a 1-D unstructured column dim with 1-D
+        ``longitude``/``latitude`` coordinates (e.g. CESM-SE after the
+        rename/promote in :mod:`melodies_monet.driver._model`).
+    target_lon, target_lat : 1-D array-like
+        Lon/lat of the target points. Either convention (0..360 or
+        -180..180) works; both sides are normalized to -180..180 before the
+        KDTree query.
+
+    Returns
+    -------
+    xarray.Dataset
+        Same data_vars as ``modobj`` but with the column dim replaced by a
+        1-D ``target`` dim of length ``len(target_lon)``. Other dims
+        (time, z, ...) and attrs are preserved.
+    """
+    
+    from scipy.spatial import cKDTree
+
+    modobj = modobj.load()
+    
+    mlon = np.asarray(modobj["longitude"].values)
+    mlat = np.asarray(modobj["latitude"].values)
+    mlon = ((mlon + 180.0) % 360.0) - 180.0
+
+    tlon = np.asarray(target_lon, dtype=float)
+    tlat = np.asarray(target_lat, dtype=float)
+    tlon = ((tlon + 180.0) % 360.0) - 180.0
+
+    # cKDTree.query rejects NaN/Inf inputs. Real swath data has them on edge
+    # pixels / fill values; query only finite targets and mask the rest below.
+    valid = np.isfinite(tlon) & np.isfinite(tlat)
+
+    tree = cKDTree(np.column_stack([mlon, mlat]))
+    idx = np.zeros(tlon.shape[0], dtype=np.intp)
+    if valid.any():
+        _, idx[valid] = tree.query(np.column_stack([tlon[valid], tlat[valid]]))
+
+    col_dim = modobj["longitude"].dims[0]
+    sampled = modobj.isel({col_dim: idx}).rename({col_dim: "target"})
+
+    if not valid.all():
+        # NaN out the invalid target positions
+        sampled = sampled.where(xr.DataArray(valid, dims=["target"]))
+
+    return sampled
+    

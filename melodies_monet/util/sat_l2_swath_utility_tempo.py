@@ -9,6 +9,7 @@
 
 import collections
 import glob
+import gc
 import logging
 import warnings
 
@@ -69,6 +70,38 @@ def speedup_regridding(dset, variables="all"):
             dtype = dset[v].dtype
             dset[v] = dset[v].astype(dtype, order="C")
 
+def _nearest_mod2swath(modobj, obsobj):
+    """Sample an unstructured model at swath pixel locations.
+
+    Thin swath-specific wrapper around
+    :func:`melodies_monet.util.uxarray_util.sample_unstructured_at_points`:
+    it flattens the 2-D swath ``lon``/``lat`` to 1-D target points, samples
+    the model, then reshapes the result back to the swath's ``(x, y)`` dims
+    and attaches ``lon``/``lat`` as 2-D coords (matching the obs convention so
+    downstream asserts on ``modobj["lon"]``/``["lat"]`` still work).
+    """
+    from melodies_monet.util.uxarray_util import sample_unstructured_at_points
+
+    olon = np.asarray(obsobj["lon"].values)
+    olat = np.asarray(obsobj["lat"].values)
+    nx, ny = olon.shape
+
+    sampled = sample_unstructured_at_points(modobj, olon.ravel(), olat.ravel())
+
+    out = xr.Dataset(attrs=dict(modobj.attrs))
+    for v in sampled.data_vars:
+        arr = sampled[v].values  # last dim is "target" of length nx*ny
+        new_shape = arr.shape[:-1] + (nx, ny)
+        new_dims = sampled[v].dims[:-1] + ("x", "y")
+        out[v] = xr.DataArray(
+            arr.reshape(new_shape), dims=new_dims, attrs=dict(sampled[v].attrs)
+        )
+
+    out = out.assign_coords(
+        lon=(("x", "y"), olon),
+        lat=(("x", "y"), olat),
+    )
+    return out
 
 def tempo_interp_mod2swath(obsobj, modobj, method="conservative", weights=None):
     """Interpolate model to satellite swath/swaths
@@ -94,6 +127,10 @@ def tempo_interp_mod2swath(obsobj, modobj, method="conservative", weights=None):
     """
 
     mod_at_swathtime = modobj.interp(time=obsobj.time.mean())
+
+    if mod_at_swathtime.attrs.get("mio_has_unstructured_grid", False):
+        return _nearest_mod2swath(mod_at_swathtime, obsobj)
+            
     if weights is None:
         regridder = xe.Regridder(
             mod_at_swathtime,
@@ -664,6 +701,15 @@ def regrid_and_apply_weights(
                 output_multiple[ref_time] = output_multiple[ref_time].rename(
                     {"lat": "latitude", "lon": "longitude"}
                 )
+            
+            # better memory handling 
+            output_multiple[ref_time] = output_multiple[ref_time].load()
+            gc.collect()
+
+            import psutil, os
+            proc = psutil.Process(os.getpid())
+            print(f"  rss={proc.memory_info().rss / 1e9:.2f} GB")
+
         return output_multiple
     raise TypeError("Obsobj must be xr.Dataset or dict")
 
@@ -737,6 +783,10 @@ def back_to_modgrid(
     if grid_path is not None:
         grid = xr.open_dataset(grid_path)
         regridder = xe.Regridder(concatenated, grid, method=method, unmapped_to_nan=True)
+        out_regridded = regridder(concatenated)
+    elif modobj.attrs.get("mio_has_unstructured_grid", False):
+        # Unstructured target: bypass xESMF (which OOMs on 1-D ncol targets).
+        out_regridded = _unstructured_back_to_modgrid(concatenated, modobj)
     else:
         regridder = xe.Regridder(concatenated, modobj, method=method, unmapped_to_nan=True)
     out_regridded = regridder(concatenated)

@@ -252,7 +252,14 @@ class model:
        
         # CAM-chem-SE grid or MUSICAv0
         elif "cesm_se" in self.model.lower():
+            # cesm se uses sigma pressure coords. need to add pres_pa_mid and temperature_k
+            # pres_pa_mid, temp_k etc handled in the cesm_se_reader 
             print("**** Reading CESM SE model output...")
+
+            for _v in ("hyam", "hybm", "PS", "P0", "T", "PDELDRY"):
+                if _v not in list_input_var:
+                    list_input_var.append(_v)
+                    
             self.mod_kwargs.update({"var_list": list_input_var})
 
             # scrip
@@ -265,12 +272,10 @@ class model:
                     self.scrip_file = tutorial.fetch_example(example_id)
                 print(f"Using SCRIP file: {self.scrip_file}")
                 self.mod_kwargs.update({"scrip_file": self.scrip_file})
-                
             else:
                 raise ValueError(
                     'CESM-SE requires either "grid_file" '
                     'or "scrip_file" in the YAML config.')
-        
             try:
                 self.obj = mio.models.cesm_se.open_mfdataset(self.files, **self.mod_kwargs)
             except AttributeError:
@@ -284,7 +289,6 @@ class model:
             # the uxarray render path. ux.open_grid auto-detects format
 
             _ux_path = getattr(self, "scrip_file", None)
-            
             if _ux_path:
                 try:
                     self.uxgrid = ux.open_grid(_ux_path)
@@ -313,6 +317,61 @@ class model:
             _promote = [c for c in ("longitude", "latitude") if c in self.obj.data_vars]
             if _promote:
                 self.obj = self.obj.set_coords(_promote)
+
+            # # derive pres_pad mid from cesm_se native variables
+            # if "pres_pa_mid" not in self.obj.variables:
+            #     _need = {"hyam", "hybm", "PS"}
+            #     if _need.issubset(set(self.obj.variables)):
+            #         _P0 = (
+            #             float(self.obj["P0"].values)
+            #             if "P0" in self.obj.variables
+            #             else 100000.0
+            #         )
+            #         _p_mid = self.obj["hyam"] * _P0 + self.obj["hybm"] * self.obj["PS"]
+            #         _p_mid.attrs.update({
+            #             "units": "Pa",
+            #             "long_name": "Pressure at mid-level",
+            #             "description": "hyam*P0 + hybm*PS",
+            #         })
+            #         self.obj["pres_pa_mid"] = _p_mid
+            #     else:
+            #         warnings.warn(
+            #             "CESM-SE: cannot derive 'pres_pa_mid' -- missing one of "
+            #             f"{sorted(_need - set(self.obj.variables))}. Downstream "
+            #             "code that needs pressure (e.g. satellite pairing) will "
+            #             "fail until this is loaded."
+            #         )
+
+            #  # derive temperature_k from cesm_se native variables
+            # if "temperature_k" not in self.obj.variables and "T" in self.obj.variables:
+            #     self.obj["temperature_k"] = self.obj["T"]
+            #     self.obj["temperature_k"].attrs.setdefault("units", "K")
+
+            # # dz_m: layer thickness in meters via hydrostatic balance from
+            # # https://github.com/PeizhiHao71/monetio_cesm_se_regrid/blob/cesm-se-regrid-support/monetio/models/_cesm_se_mm.py 
+            # # PDELDRY (dry pressure thickness). Matches monetio's
+            # # _cesm_se_mm.py convention (`_calc_layer_thickness_mid`) and
+            # # enables the satellite partial-column path
+            # # (sat_l2_swath_utility_tempo.py guards on `if "dz_m" in
+            # # modobj.keys():`). Without it the pipeline falls back to a
+            # # hydrostatic-only approximation with a warning.
+
+            # if "dz_m" not in self.obj.variables and all(
+            #     _v in self.obj.variables
+            #     for _v in ("PDELDRY", "pres_pa_mid", "temperature_k")
+            # ):
+            #     _Rd = 287.04   # J/(kg*K), dry air
+            #     _g = 9.80665   # m/s^2
+            #     _dz = (
+            #         self.obj["PDELDRY"] * _Rd * self.obj["temperature_k"]
+            #         / (self.obj["pres_pa_mid"] * _g)
+            #     )
+            #     _dz.attrs.update({
+            #         "units": "m",
+            #         "long_name": "Layer thickness",
+            #         "description": "PDELDRY * Rd * T / (P_mid * g)",
+            #     })
+            #     self.obj["dz_m"] = _dz
 
         elif "camx" in self.model.lower():
             self.mod_kwargs.update({"var_list": list_input_var})

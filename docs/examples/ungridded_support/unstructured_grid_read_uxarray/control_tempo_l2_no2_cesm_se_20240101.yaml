@@ -35,7 +35,10 @@ obs:
       # peizhi
       #/glade/campaign/acom/acom-da/sma/TEMPO_NO2_V01/L2/TEMPO_NO2_L2_V01_20240101T*.nc
       # jerrold
-      /glade/derecho/scratch/jjacdan/TEMPO/TEMPO_NO2_L2_V03_2024010[1]T*.nc
+      # /glade/derecho/scratch/jjacdan/TEMPO/TEMPO_NO2_L2_V03_2024010[1]T*.nc
+      /glade/derecho/scratch/jjacdan/TEMPO/TEMPO_NO2_L2_V03_20240101T125157Z_S001G01.nc
+      #- /glade/derecho/scratch/jjacdan/TEMPO/TEMPO_NO2_L2_V03_20240101T125837Z_S001G02.nc
+      #- /glade/derecho/scratch/jjacdan/TEMPO/TEMPO_NO2_L2_V03_20240101T130514Z_S001G03.nc
       
     obs_type: sat_swath_clm
     sat_type: tempo_l2_no2
