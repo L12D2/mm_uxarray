@@ -19,6 +19,9 @@ take 1D unstructured fields; a uxarray mesh (grid file); plotting metadata to pl
 - render directly on cartopy map axis 
 
 """
+
+# https://uxarray.readthedocs.io/en/latest/user-guide/grid-formats.html 
+
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 
