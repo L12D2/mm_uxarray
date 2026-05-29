@@ -743,7 +743,7 @@ def regrid_and_apply_weights(
 #         "latitude": (col_dim, mlat),})
 #     return sampled
 
-def _unstructured_back_to_modgrid(concatenated, modobj, radius_deg=0.2):
+def _unstructured_back_to_modgrid(concatenated, modobj, radius_deg=0.15):
     """Project concatenated swath-paired data onto an unstructured model's
     columns via nearest-neighbor. Bypasses xESMF, which interprets a 1-D
     column target as a degenerate structured grid and tries to allocate a
