@@ -633,6 +633,7 @@ def make_spatial_dist(
     domain_name=None,
     fig_dict=None,
     text_dict=None,
+    uxgrid = None,
     debug=False,
 ):
     """Creates a plot for satellite or model data.
@@ -643,6 +644,21 @@ def make_spatial_dist(
         Dataset containing the paired data
 
     """
+
+    # detect unstructured input from cesm-se. 
+    is_unstructured = any(
+        d in dset[varname].dims for d in ("n_face", "ncol")
+    )
+    if is_unstructured and uxgrid is None:
+        grid_file = dset.attrs.get("mio_scrip_file") or dset.attrs.get("mio_grid_file")
+        if not grid_file:
+            raise ValueError(
+                "make_spatial_dist: unstructured input but no uxgrid passed "
+                "and no mio_scrip_file/mio_grid_file attr on dset."
+            )
+
+        uxgrid = ux.open_grid(grid_file)
+    
     if not debug:
         plt.ioff()
 
@@ -726,7 +742,21 @@ def make_spatial_dist(
     )
     # draw scatter plot of model and satellite differences
     # c = ax.axes.scatter(dset.longitude, dset.latitude, c=var2plot, cmap=cmap, s=2, norm=norm)
-    c = ax.axes.pcolormesh(dset.longitude, dset.latitude, var2plot, cmap=cmap, norm=norm)
+    #c = ax.axes.pcolormesh(dset.longitude, dset.latitude, var2plot, cmap=cmap, norm=norm)
+
+    # structured grids can use pccolormesh. unstructured use uxarray polygons
+    if is_unstructured:
+        from melodies_monet.plots.uxarray_render import render_unstructured_field
+
+        c = render_unstructured_field(
+            ax.axes, var2plot, uxgrid,
+            cmap=cmap, norm=norm,
+            coast=False, borders=False, states=False, gridlines=False,
+            colorbar=False,)
+    else:
+        c = ax.axes.pcolormesh(
+            dset.longitude, dset.latitude, var2plot, cmap=cmap, norm=norm,)
+    
     plt.gcf().canvas.draw()
     plt.tight_layout(pad=0)
     timestamps = (
