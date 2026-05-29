@@ -12,6 +12,7 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 import xarray as xr
+import uxarray as ux
 from monet.plots.taylordiagram import TaylorDiagram as td
 from monet.util.tools import get_epa_region_bounds as get_epa_bounds
 from monet.util.tools import get_giorgi_region_bounds as get_giorgi_bounds
@@ -800,10 +801,6 @@ def make_spatial_bias_gridded(
     For data in swath format, overplots all differences
     For data on regular grid, mean difference.
 
-    Dispatches unstructured-grid data (e.g. CESM-SE on ``n_face``/``ncol``)
-    to :func:`melodies_monet.plots.uxarray_plots.make_spatial_bias_gridded`
-    which renders via uxarray polygons instead of pcolormesh.
-
     Parameters
     ----------
     dset : xr.Dataset
@@ -831,23 +828,20 @@ def make_spatial_bias_gridded(
         satellite spatial bias plot
 
     """
-    # Dispatch unstructured data to the uxarray-native plotter so this
-    # function stays focused on the structured/pcolormesh path.
-    if uxgrid is not None or any(
-        d in dset[varname_m].dims for d in ("n_face", "ncol")
-    ):
-        from melodies_monet.plots import uxarray_plots as _uxp
 
-        return _uxp.make_spatial_bias_gridded(
-            dset,
-            varname_o=varname_o, label_o=label_o,
-            varname_m=varname_m, label_m=label_m,
-            ylabel=ylabel, vdiff=vdiff, nlevels=nlevels, proj=proj,
-            outname=outname, domain_type=domain_type, domain_name=domain_name,
-            fig_dict=fig_dict, text_dict=text_dict, uxgrid=uxgrid,
-            debug=debug, **kwargs,
-        )
+    # Detect unstructured input (CESM-SE et al). only the
+    # actual data->geometry step differs (PolyCollection vs pcolormesh).
+    is_unstructured = uxgrid is not None or any(
+        d in dset[varname_m].dims for d in ("n_face", "ncol"))
+    
+    if is_unstructured and uxgrid is None:
+        grid_file = dset.attrs.get("mio_scrip_file") or dset.attrs.get("mio_grid_file")
+        if not grid_file:
+            raise ValueError(
+                "make_spatial_bias_gridded: unstructured input but no uxgrid "
+                "passed and no mio_scrip_file/mio_grid_file attr on dset.")
 
+        uxgrid = ux.open_grid(grid_file)
     if not debug:
         plt.ioff()
 
@@ -932,11 +926,28 @@ def make_spatial_bias_gridded(
     ax = monet.plots.mapgen.draw_map(
         crs=map_kwargs["crs"], extent=map_kwargs["extent"], states=states, counties=counties
     )
+
+    # Draw the diff field. Structured -> pcolormesh; unstructured -> uxarray
+    if is_unstructured:
+        from melodies_monet.plots.uxarray_render import render_unstructured_field
+
+        c = render_unstructured_field(
+            ax.axes, diff_mod_min_obs, uxgrid,
+            cmap=cmap, norm=norm,
+            coast=False, borders=False, states=False, gridlines=False,
+            colorbar=False,
+        )
+    else:
+        c = ax.axes.pcolormesh(
+            dset.longitude, dset.latitude, diff_mod_min_obs, cmap=cmap, norm=norm,
+        )
+        
     # draw scatter plot of model and satellite differences
     # c = ax.axes.scatter(
     #     dset.longitude, dset.latitude, c=diff_mod_min_obs, cmap=cmap, s=2, norm=norm
     # )
-    c = ax.axes.pcolormesh(dset.longitude, dset.latitude, diff_mod_min_obs, cmap=cmap, norm=norm)
+    #c = ax.axes.pcolormesh(dset.longitude, dset.latitude, diff_mod_min_obs, cmap=cmap, norm=norm)
+    
     plt.gcf().canvas.draw()
     plt.tight_layout(pad=0)
     timestamps = (
