@@ -793,11 +793,16 @@ def make_spatial_bias_gridded(
     fig_dict=None,
     text_dict=None,
     debug=False,
+    uxgrid=None,
     **kwargs
 ):
     """Creates difference plot for satellite and model data.
     For data in swath format, overplots all differences
     For data on regular grid, mean difference.
+
+    Dispatches unstructured-grid data (e.g. CESM-SE on ``n_face``/``ncol``)
+    to :func:`melodies_monet.plots.uxarray_plots.make_spatial_bias_gridded`
+    which renders via uxarray polygons instead of pcolormesh.
 
     Parameters
     ----------
@@ -826,6 +831,23 @@ def make_spatial_bias_gridded(
         satellite spatial bias plot
 
     """
+    # Dispatch unstructured data to the uxarray-native plotter so this
+    # function stays focused on the structured/pcolormesh path.
+    if uxgrid is not None or any(
+        d in dset[varname_m].dims for d in ("n_face", "ncol")
+    ):
+        from melodies_monet.plots import uxarray_plots as _uxp
+
+        return _uxp.make_spatial_bias_gridded(
+            dset,
+            varname_o=varname_o, label_o=label_o,
+            varname_m=varname_m, label_m=label_m,
+            ylabel=ylabel, vdiff=vdiff, nlevels=nlevels, proj=proj,
+            outname=outname, domain_type=domain_type, domain_name=domain_name,
+            fig_dict=fig_dict, text_dict=text_dict, uxgrid=uxgrid,
+            debug=debug, **kwargs,
+        )
+
     if not debug:
         plt.ioff()
 
