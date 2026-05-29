@@ -2817,6 +2817,9 @@ class analysis:
                                     "fig_dict": fig_dict,
                                     "text_dict": text_dict,
                                     "debug": self.debug,
+                                    "uxgrid": getattr(
+                                        self.models.get(p.model), "uxgrid", None
+                                    ),
                                 },
                             }
                             make_spatial_bias_gridded(**plot_kwargs)
