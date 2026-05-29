@@ -2845,6 +2845,9 @@ class analysis:
                                 "fig_dict": fig_dict,
                                 "text_dict": text_dict,
                                 "debug": self.debug,
+                                "uxgrid": getattr(
+                                    self.models.get(p.model), "uxgrid", None
+                                ),
                             }
                             if isinstance(plot_kwargs["vmax"], str):
                                 plot_kwargs["vmax"] = float(plot_kwargs["vmax"])
