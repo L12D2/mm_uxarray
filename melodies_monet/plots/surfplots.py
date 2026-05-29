@@ -1080,18 +1080,44 @@ def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
         
     # For unstructured grid, we need a more advanced plotting code
     # Call an external function (Plot_2D)
-    if vmodel.attrs.get('mio_has_unstructured_grid',False):
-        from melodies_monet.plots.Plot_2D import Plot_2D
+    # if vmodel.attrs.get('mio_has_unstructured_grid',False):
+    #     from melodies_monet.plots.Plot_2D import Plot_2D
         
-        fig = plt.figure( figsize=fig_dict['figsize'] )
-        ax = fig.add_subplot(1,1,1,projection=proj)
+    #     fig = plt.figure( figsize=fig_dict['figsize'] )
+    #     ax = fig.add_subplot(1,1,1,projection=proj)
+    
+    if vmodel.attrs.get('mio_has_unstructured_grid', False):
+        # Resolve uxgrid: passed by the driver, or open from scrip attr
+        if uxgrid is None:
+            scrip_file = vmodel.attrs.get('mio_scrip_file', '')
+            if not scrip_file:
+                raise ValueError(
+                    "surfplots.make_spatial_overlay: unstructured model but no "
+                    "uxgrid passed and no mio_scrip_file attr."
+                )
+            uxgrid = ux.open_grid(scrip_file)
 
         #grid_file = vmodel.attrs.get('mio_grid_file', '')
-        scrip_file = vmodel.attrs.get('mio_scrip_file', '')
+        #scrip_file = vmodel.attrs.get('mio_scrip_file', '')
+        
+        from melodies_monet.plots.uxarray_render import render_unstructured_field
 
+        states = fig_dict.get('states', True)
+        counties = fig_dict.get('counties', False)
+        ax = monet.plots.mapgen.draw_map(
+            crs=proj, extent=[lonmin, lonmax, latmin, latmax],
+            states=states, counties=counties,
+        )
+        render_unstructured_field(
+            ax.axes, vmodel_mean, uxgrid,
+            cmap=cmap, norm=norm,
+            coast=False, borders=False, states=False, gridlines=False,
+            colorbar=True, cbar_label=ylabel, text_kwargs=text_kwargs,
+        )
+        
         # print what exists
         #print(f"grid_file: {grid_file}")
-        print(f"scrip_file: {scrip_file}")
+        #print(f"scrip_file: {scrip_file}")
         
         # _ = Plot_2D( vmodel_mean, scrip_file=scrip_file, grid_file = grid_file, cmap=cmap, #colorticks=clevel, colorlabels=clevel,
         #                cmin=vmin, cmax=vmax, lon_range=[lonmin,lonmax], lat_range=[latmin,latmax],
@@ -1099,24 +1125,24 @@ def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
 
         # plot uxgrid natively here rather than from plot_2D
         # this sends all grid types exodus, ugrid, scrip to the uxarray renderer
-        if uxgrid is not None:
-            from melodies_monet.plots.uxarray_render import render_unstructured_field
+        # if uxgrid is not None:
+        #     from melodies_monet.plots.uxarray_render import render_unstructured_field
 
-            if uxgrid is None:
-                uxgrid = ux.open_grid(scrip_file)
+        #     if uxgrid is None:
+        #         uxgrid = ux.open_grid(scrip_file)
 
-            render_unstructured_field(
-                ax, vmodel_mean, uxgrid,
-                cmap=cmap, norm=norm,
-                extent=[lonmin, lonmax, latmin, latmax],
-                states=fig_dict.get('states', True),
-                cbar_label=ylabel, text_kwargs=text_kwargs,
-            )
-        else:
-            from melodies_monet.plots.Plot_2D import Plot_2D
-            _ = Plot_2D(vmodel_mean, scrip_file=scrip_file, cmap=cmap,
-                           cmin=vmin, cmax=vmax, lon_range=[lonmin,lonmax], lat_range=[latmin,latmax],
-                           ax=ax, state=fig_dict['states'])
+        #     render_unstructured_field(
+        #         ax, vmodel_mean, uxgrid,
+        #         cmap=cmap, norm=norm,
+        #         extent=[lonmin, lonmax, latmin, latmax],
+        #         states=fig_dict.get('states', True),
+        #         cbar_label=ylabel, text_kwargs=text_kwargs,
+        #     )
+        # else:
+        #     from melodies_monet.plots.Plot_2D import Plot_2D
+        #     _ = Plot_2D(vmodel_mean, scrip_file=scrip_file, cmap=cmap,
+        #                    cmin=vmin, cmax=vmax, lon_range=[lonmin,lonmax], lat_range=[latmin,latmax],
+        #                    ax=ax, state=fig_dict['states'])
 
     else:
         #I add extend='both' here because the colorbar is setup to plot the values outside the range
