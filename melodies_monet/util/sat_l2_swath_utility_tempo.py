@@ -743,7 +743,7 @@ def regrid_and_apply_weights(
 #         "latitude": (col_dim, mlat),})
 #     return sampled
 
-def _unstructured_back_to_modgrid(concatenated, modobj, radius_deg=0.15):
+def _unstructured_back_to_modgrid(concatenated, modobj, radius_deg=0.1):
     """Project concatenated swath-paired data onto an unstructured model's
     columns via nearest-neighbor. Bypasses xESMF, which interprets a 1-D
     column target as a degenerate structured grid and tries to allocate a
@@ -763,19 +763,30 @@ def _unstructured_back_to_modgrid(concatenated, modobj, radius_deg=0.15):
     mlon = np.asarray(modobj["longitude"].values)
     mlat = np.asarray(modobj["latitude"].values)
 
-    sampled = sample_unstructured_at_points(flat, mlon, mlat)
+    print(f"DEBUG modobj['longitude'].dims = {modobj['longitude'].dims}, "
+    f"shape = {modobj['longitude'].shape}")
+
+    #sampled = sample_unstructured_at_points(flat, mlon, mlat)
+    
     # Within-radius averaging: each model column gets the *mean* of all
-    # swath pixels falling within `radius_deg` of it (poor-man's area-
-    # weighted aggregation -- proper conservative regrid is the eventual
+    # swath pixels falling within `radius_deg`. proper conservative regrid is the eventual
     # xregrid path). Targets with no swath pixel in range -> NaN, so a
     # sparsely-sampled day shows only the actually-observed model columns
     # instead of nearest-neighbor smear from distant pixels. 0.2 deg ~=
     # ~20 km at mid-latitudes, slightly wider than typical TEMPO pixel
     # size + ne0CONUS column spacing so most model columns near the swath
     # path get aggregated from several pixels.
+    
     sampled = sample_unstructured_at_points(
         flat, mlon, mlat, radius=radius_deg
     )
+
+    col_dim = modobj["longitude"].dims[0]
+    sampled = sampled.rename({"target": col_dim})
+    sampled = sampled.assign_coords({
+        "longitude": (col_dim, mlon),
+        "latitude": (col_dim, mlat),
+    })
 
     return sampled
     

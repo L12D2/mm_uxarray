@@ -537,7 +537,67 @@ def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
                 )
     
             uxgrid = ux.open_grid(grid_file)
+            
         from melodies_monet.plots.uxarray_render import render_unstructured_field
+
+        if _df_is_ds:
+            # Satellite path: obs + model both live on the same model
+            # n_face grid after back_to_modgrid. show them side-
+            # by-side with a shared color scale
+            obs_field = df[column_o]
+            if "time" in obs_field.dims:
+                obs_field = obs_field.mean("time")
+            obs_field = obs_field.squeeze()
+
+            mod_field = vmodel_mean 
+
+            _proj = proj if proj is not None else ccrs.PlateCarree()
+            figsize = map_kwargs.get("figsize", [16, 6])
+            fig, axes = plt.subplots(
+                1, 2, figsize=figsize,
+                subplot_kw={"projection": _proj},
+            )
+
+            # Obs (left)
+            render_unstructured_field(
+                axes[0], obs_field, uxgrid,
+                cmap=cmap, norm=norm,
+                extent=map_kwargs["extent"],
+                coast=True, borders=True,
+                states=map_kwargs.get("states", True),
+                gridlines=True, colorbar=False,
+            )
+            axes[0].set_title(label_o, fontweight="bold", **text_kwargs)
+
+            # Model (right)
+            poly = render_unstructured_field(
+                axes[1], mod_field, uxgrid,
+                cmap=cmap, norm=norm,
+                extent=map_kwargs["extent"],
+                coast=True, borders=True,
+                states=map_kwargs.get("states", True),
+                gridlines=True, colorbar=False,
+            )
+            axes[1].set_title(label_m, fontweight="bold", **text_kwargs)
+            
+            # Shared colorbar spanning both panels.
+            cbar = fig.colorbar(
+                poly, ax=axes.tolist(),
+                shrink=0.8, pad=0.04, extend="both",
+            )
+            cbar.set_label(ylabel, fontweight="bold", **text_kwargs)
+            cbar.ax.tick_params(labelsize=text_kwargs["fontsize"] * 0.8)
+
+            # Domain super-title (e.g. "CONUS:")
+            _suptitle = (title_add or "").rstrip(":").rstrip().strip()
+            if _suptitle:
+                fig.suptitle(_suptitle, fontweight="bold", **text_kwargs)
+
+            savefig(
+                outname + ".png", loc=4, logo_height=100,
+                bbox_inches="tight", dpi=150,
+            )
+            return axes[1]
 
         states = map_kwargs.get("states", True)
         counties = map_kwargs.get("counties", False)
@@ -774,9 +834,16 @@ def make_spatial_bias_gridded(df, column_o=None, label_o=None, column_m=None,
     #Take the difference for the model output - the sat output
 
     diff_mod_min_obs = (df[column_m] - df[column_o]).squeeze()
-    #Take mean over time, 
-    if len(diff_mod_min_obs.dims) == 3:
-        diff_mod_min_obs = diff_mod_min_obs.mean('time')
+    # #Take mean over time, 
+    # if len(diff_mod_min_obs.dims) == 3:
+    #     diff_mod_min_obs = diff_mod_min_obs.mean('time')
+
+    # Reduce away time so the renderer (uxarray polygons or pcolormesh)
+    # gets a single map regardless of timestep count.
+    diff_mod_min_obs = df[column_m] - df[column_o]
+    if "time" in diff_mod_min_obs.dims:
+        diff_mod_min_obs = diff_mod_min_obs.mean("time")
+    diff_mod_min_obs = diff_mod_min_obs.squeeze()
     
     #Determine the domain
     if domain_type == 'all' and domain_name == 'CONUS':

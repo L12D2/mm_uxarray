@@ -2973,9 +2973,18 @@ class analysis:
                             # So get the variable name again since pairing one could be _new.
                             # JianHe: only make overplay plots for non-regulatory variables for now
                             if not cal_reg:
+                                # for sat pairings, the column integrated values live in pairdf not vmodel 
+                                _is_sat = (
+                                    self.obs[p.obs].sat_type is not None
+                                    # need to add a condition for tropomi as well
+                                    and self.obs[p.obs].sat_type.startswith("tempo_l2")
+                                )
+                                
+                                _model_source = pairdf if _is_sat else vmodel
+                                
                                 splots.make_spatial_overlay(
                                     pairdf,
-                                    vmodel,
+                                    _model_source,
                                     column_o=obsvar,
                                     label_o=p.obs,
                                     column_m=p.model_vars[index],

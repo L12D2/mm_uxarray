@@ -696,6 +696,14 @@ def make_spatial_dist(
     # if len(var2plot.dims) == 3:
     #     var2plot = var2plot.mean("time")
 
+    #  hand the renderer a single 2-D map
+    # (pcolormesh) or 1-D column field (uxarray polygons). Works for both
+    # structured (time, lat, lon) and unstructured (time, n_face)
+    var2plot = dset[varname]
+    if "time" in var2plot.dims:
+        var2plot = var2plot.mean("time")
+    var2plot = var2plot.squeeze()
+    
     # Determine the domain
     if domain_type == "all" and domain_name == "CONUS":
         latmin = 25.0
@@ -905,9 +913,17 @@ def make_spatial_bias_gridded(
     # Take the difference for the model output - the sat output
 
     diff_mod_min_obs = (dset[varname_m] - dset[varname_o]).squeeze()
-    # Take mean over time,
-    if len(diff_mod_min_obs.dims) == 3:
+    # # Take mean over time,
+    # if len(diff_mod_min_obs.dims) == 3:
+    #     diff_mod_min_obs = diff_mod_min_obs.mean("time")
+
+    # Reduce away time so the renderer (uxarray polygons or pcolormesh)
+    # gets a single 1-D / 2-D map. 
+    
+    diff_mod_min_obs = dset[varname_m] - dset[varname_o]
+    if "time" in diff_mod_min_obs.dims:
         diff_mod_min_obs = diff_mod_min_obs.mean("time")
+    diff_mod_min_obs = diff_mod_min_obs.squeeze()
 
     # Determine the domain
     if domain_type == "all" and domain_name == "CONUS":
