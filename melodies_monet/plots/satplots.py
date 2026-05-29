@@ -17,6 +17,7 @@ from monet.plots.taylordiagram import TaylorDiagram as td
 from matplotlib.colors import ListedColormap
 from monet.util.tools import get_epa_region_bounds as get_epa_bounds 
 import math
+import uxarray as ux
 from melodies_monet.plots import savefig
 
 def make_24hr_regulatory(df, col=None):
@@ -372,11 +373,15 @@ def make_taylor(df,df_reg=None, column_o=None, label_o='Obs', column_m=None, lab
     ax.axis["right"].major_ticklabels.set_fontsize(text_kwargs['fontsize']*0.8)
     return dia
 
-def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None, 
-                      label_m=None, ylabel = None, vmin=None,
-                      vmax = None, nlevels = None, proj = None, outname = 'plot', 
-                      domain_type=None, domain_name=None, fig_dict=None, 
-                      text_dict=None,debug=False):
+# driver calls splots.make_spatial_overlay and then resolves to sat plots. 
+# sat plots does not have ucomp and vcomp. so silently fail it. 
+
+def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
+                      label_m=None, ylabel=None, vmin=None,
+                      vmax=None, nlevels=None, proj=None, outname='plot',
+                      u_comp=None, v_comp=None, wind_barb=False,
+                      domain_type=None, domain_name=None, fig_dict=None,
+                      text_dict=None, debug=False, uxgrid=None):
         
     """Creates spatial overlay plot. 
     
@@ -444,8 +449,15 @@ def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
     if ylabel is None:
         ylabel = column_o
     
-    #Take the mean for each siteid
-    df_mean=df.groupby(['siteid'],as_index=False).mean(numeric_only=True)
+    # #Take the mean for each siteid
+    # df_mean=df.groupby(['siteid'],as_index=False).mean(numeric_only=True)
+
+    # satellite paired data is xarray not a pandas df. need to guard against it
+    _df_is_ds = hasattr(df, "data_vars")
+    if _df_is_ds:
+        df_mean = None
+    else:
+        df_mean = df.groupby(['siteid'], as_index=False).mean(numeric_only=True)
     
     #Take the mean over time for the model output
     vmodel_mean = vmodel[column_m].mean(dim='time').squeeze()
@@ -461,10 +473,15 @@ def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
         latmin,lonmin,latmax,lonmax,_ = get_epa_bounds(index=None,acronym=domain_name)
         title_add = 'EPA Region ' + domain_name + ': '
     else:
-        latmin= math.floor(min(df.latitude))
-        lonmin= math.floor(min(df.longitude))
-        latmax= math.ceil(max(df.latitude))
-        lonmax= math.ceil(max(df.longitude))
+        # float should work for both 1D coords for sat datasets and pandas
+        latmin = math.floor(float(df.latitude.min()))
+        lonmin = math.floor(float(df.longitude.min()))
+        latmax = math.ceil(float(df.latitude.max()))
+        lonmax = math.ceil(float(df.longitude.max()))
+        # latmin= math.floor(min(df.latitude))
+        # lonmin= math.floor(min(df.longitude))
+        # latmax= math.ceil(max(df.latitude))
+        # lonmax= math.ceil(max(df.longitude))
         title_add = domain_name + ': '
     
     #Map the model output first.
@@ -479,9 +496,16 @@ def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
     #With pcolormesh, a Warning shows because nearest interpolation may not work for non-monotonically increasing regions.
     #Because I do not want to pull in the edges of the lat lon for every model I switch to contourf.
     #First determine colorbar, so can use the same for both contourf and scatter
+    
     if vmin is None and vmax is None:
-        vmin = np.min((vmodel_mean.quantile(0.01), df_mean[column_o].quantile(0.01)))
-        vmax = np.max((vmodel_mean.quantile(0.99), df_mean[column_o].quantile(0.99)))
+        # obs source for color limits: df_mean[column_o] (station path) or
+        # df[column_o] (sat Dataset path)
+        _obs_for_limits = df_mean[column_o] if df_mean is not None else df[column_o]
+        vmin = float(np.min((vmodel_mean.quantile(0.01), _obs_for_limits.quantile(0.01))))
+        vmax = float(np.max((vmodel_mean.quantile(0.99), _obs_for_limits.quantile(0.99))))
+        
+        # vmin = np.min((vmodel_mean.quantile(0.01), df_mean[column_o].quantile(0.01)))
+        # vmax = np.max((vmodel_mean.quantile(0.99), df_mean[column_o].quantile(0.99)))
         
     if nlevels is None:
         nlevels = 21
@@ -490,18 +514,66 @@ def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
     cmap = mpl.cm.get_cmap('Spectral_r',nlevels-1) 
     norm = mpl.colors.BoundaryNorm(clevel, ncolors=cmap.N, clip=False)
         
-    #I add extend='both' here because the colorbar is setup to plot the values outside the range
-    ax = vmodel_mean.monet.quick_contourf(cbar_kwargs=cbar_kwargs, figsize=map_kwargs['figsize'], map_kws=map_kwargs,
-                                robust=True, norm=norm, cmap=cmap, levels=clevel, extend='both') 
+    # #I add extend='both' here because the colorbar is setup to plot the values outside the range
+    # ax = vmodel_mean.monet.quick_contourf(cbar_kwargs=cbar_kwargs, figsize=map_kwargs['figsize'], map_kws=map_kwargs,
+    #                             robust=True, norm=norm, cmap=cmap, levels=clevel, extend='both') 
+
+    # Structured -> quick_contourf (2-D lat/lon mesh). Unstructured (CESM-SE
+    # ncol/n_face) goes via monet.draw_map + uxarray PolyCollection so we
+
+    is_unstructured = uxgrid is not None or any(
+        d in vmodel_mean.dims for d in ("n_face", "ncol")
+    )
+    if is_unstructured:
+        if uxgrid is None:
+            grid_file = (
+                vmodel.attrs.get("mio_scrip_file")
+                or vmodel.attrs.get("mio_grid_file")
+            )
+            if not grid_file:
+                raise ValueError(
+                    "satplots.make_spatial_overlay: unstructured model but no "
+                    "uxgrid passed and no mio_scrip_file/mio_grid_file attr."
+                )
+    
+            uxgrid = ux.open_grid(grid_file)
+        from melodies_monet.plots.uxarray_render import render_unstructured_field
+
+        states = map_kwargs.get("states", True)
+        counties = map_kwargs.get("counties", False)
+        ax = monet.plots.mapgen.draw_map(
+            crs=map_kwargs["crs"], extent=map_kwargs["extent"],
+            states=states, counties=counties,
+        )
+        render_unstructured_field(
+            ax.axes, vmodel_mean, uxgrid,
+            cmap=cmap, norm=norm,
+            coast=False, borders=False, states=False, gridlines=False,
+            colorbar=True, cbar_label=ylabel, text_kwargs=text_kwargs,
+        )
+    else:
+        #I add extend='both' here because the colorbar is setup to plot the values outside the range
+        ax = vmodel_mean.monet.quick_contourf(cbar_kwargs=cbar_kwargs, figsize=map_kwargs['figsize'], map_kws=map_kwargs,
+                                    robust=True, norm=norm, cmap=cmap, levels=clevel, extend='both')
     
     plt.gcf().canvas.draw() 
     plt.tight_layout(pad=0)
     plt.title(title_add + label_o + ' overlaid on ' + label_m,fontweight='bold',**text_kwargs)
      
-    ax.axes.scatter(df_mean.longitude.values, df_mean.latitude.values,s=30,c=df_mean[column_o], 
-                    transform=ccrs.PlateCarree(), edgecolor='b', linewidth=.50, norm=norm, 
-                    cmap=cmap)
-    ax.axes.set_extent(map_kwargs['extent'],crs=ccrs.PlateCarree())    
+    # ax.axes.scatter(df_mean.longitude.values, df_mean.latitude.values,s=30,c=df_mean[column_o], 
+    #                 transform=ccrs.PlateCarree(), edgecolor='b', linewidth=.50, norm=norm, 
+    #                 cmap=cmap)
+    # ax.axes.set_extent(map_kwargs['extent'],crs=ccrs.PlateCarree())    
+
+    # Obs overlay -- station path scatters per-site values. For sat data
+    # (df is xr.Dataset), obs already lives on the same n_face grid as the
+    # model after back_to_modgrid; 
+    if df_mean is not None:
+        ax.axes.scatter(df_mean.longitude.values, df_mean.latitude.values, s=30,
+                        c=df_mean[column_o], transform=ccrs.PlateCarree(),
+                        edgecolor='b', linewidth=.50, norm=norm, cmap=cmap)
+    ax.axes.set_extent(map_kwargs['extent'], crs=ccrs.PlateCarree())    
+
     
     #Uncomment these lines if you update above just to verify colorbars are identical.
     #Also specify plot above scatter = ax.axes.scatter etc.
