@@ -219,19 +219,30 @@ def sample_unstructured_at_points(modobj, target_lon, target_lat):
 
     # cKDTree.query rejects NaN/Inf inputs. Real swath data has them on edge
     # pixels / fill values; query only finite targets and mask the rest below.
-    valid = np.isfinite(tlon) & np.isfinite(tlat)
+    # valid = np.isfinite(tlon) & np.isfinite(tlat)
 
-    tree = cKDTree(np.column_stack([mlon, mlat]))
+    svalid = np.isfinite(mlon) & np.isfinite(mlat)
+    if not svalid.any():
+        raise ValueError(
+            "sample_unstructured_at_points: no finite source points to build "
+            "the KDTree from."
+        )
+    src_orig_idx = np.where(svalid)[0]
+    tree = cKDTree(np.column_stack([mlon[svalid], mlat[svalid]]))
+
+    #tree = cKDTree(np.column_stack([mlon, mlat]))
+    tvalid = np.isfinite(tlon) & np.isfinite(tlat)
     idx = np.zeros(tlon.shape[0], dtype=np.intp)
-    if valid.any():
-        _, idx[valid] = tree.query(np.column_stack([tlon[valid], tlat[valid]]))
+    if tvalid.any():
+        _, idx_in_valid = tree.query(np.column_stack([tlon[tvalid], tlat[tvalid]]))
+        idx[tvalid] = src_orig_idx[idx_in_valid]
 
     col_dim = modobj["longitude"].dims[0]
     sampled = modobj.isel({col_dim: idx}).rename({col_dim: "target"})
 
-    if not valid.all():
+    if not tvalid.all():
         # NaN out the invalid target positions
-        sampled = sampled.where(xr.DataArray(valid, dims=["target"]))
+        sampled = sampled.where(xr.DataArray(tvalid, dims=["target"]))
 
     return sampled
     

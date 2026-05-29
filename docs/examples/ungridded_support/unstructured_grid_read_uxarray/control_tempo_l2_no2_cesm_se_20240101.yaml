@@ -24,7 +24,7 @@ analysis:
   read:
     paired:
       method: 'netcdf'
-      filenames: {tempo_l2_no2_cesm_se: ['tempo_l2_no2_cesm_se']}
+      filenames: {tempo_l2_no2_cam-chem-se: ['tempo_l2_no2_cam-chem-se']}
   debug: false
 
 obs:
@@ -81,7 +81,7 @@ plots:
     domain_type: ["all"] #, "auto-region:giorgi", "auto-region:custom"]
     domain_name: ["CONUS"] #, "CNA", "custom"]
     # domain_box: [37, -108, 40, -102]
-    data: ["tempo_l2_no2_cesm_se"]
+    data: ["tempo_l2_no2_cam-chem-se"]
     data_proc:
       ts_offset: (-4, 'h')
       ts_avg_window: 'h'
@@ -96,7 +96,7 @@ plots:
       fontsize: 16
     domain_type: ['all', 'all']
     domain_name: ['CONUS', 'model']
-    data: ['tempo_l2_no2_cesm_se']
+    data: ['tempo_l2_no2_cam-chem-se']
     data_proc:
       set_axis: true
 
@@ -109,7 +109,7 @@ plots:
       fontsize: 16
     domain_type: ['all', 'all']
     domain_name: ['CONUS', 'model']
-    data: ['tempo_l2_no2_cesm_se']
+    data: ['tempo_l2_no2_cam-chem-se']
     data_proc:
       set_axis: true
       vmax: 1e16
@@ -117,7 +117,7 @@ plots:
 
   plot_grp4:
     type: 'taylor'
-    data: ['tempo_l2_no2_cesm_se']
+    data: ['tempo_l2_no2_cam-chem-se']
     domain_type: ['all']
     domain_name: ['CONUS']
     data_proc:

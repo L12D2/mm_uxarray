@@ -136,7 +136,13 @@ def make_timeseries(
         plot_dict["label"] = varname
     # scale the fontsize for the x and y labels by the text_kwargs
     plot_dict["fontsize"] = text_kwargs["fontsize"] * 0.8
-
+    
+    # Spatial dims to reduce over per timestep. Hardcoding ("y", "x") only
+    # works for structured swath output; unstructured paired data (CESM-SE
+    # back_to_modgrid) returns an "n_face" or "ncol" spatial dim 
+    # Average over whatever non-time dims are present.
+    spatial_dims = [d for d in dset[varname].dims if d != "time"]
+    
     # Then, if no plot has been created yet, create a plot and plot the obs.
     if ax is None:
         # First define the colors for the observations.
@@ -155,7 +161,8 @@ def make_timeseries(
         print(plot_kwargs)
 
         if avg_window is None:
-            dset[varname].mean(dim=("y", "x"), skipna=True).plot.line(
+            #dset[varname].mean(dim=("y", "x"), skipna=True).plot.line
+            dset[varname].mean(dim=spatial_dims, skipna=True).plot.line(
                 x="time",
                 ax=ax,
                 color=plot_kwargs["color"],
@@ -166,7 +173,8 @@ def make_timeseries(
                 label=plot_kwargs["label"],
             )
         else:
-            dset[varname].resample(time=avg_window).mean().mean(dim=("y", "x")).plot.line(
+            #dset[varname].resample(time=avg_window).mean().mean(dim=("y", "x")).plot.line
+             dset[varname].resample(time=avg_window).mean().mean(dim=spatial_dims).plot.line(
                 x="time",
                 ax=ax,
                 color=plot_kwargs["color"],
@@ -187,7 +195,8 @@ def make_timeseries(
         else:
             plot_kwargs = obs_dict
         if avg_window is None:
-            dset[varname].mean(dim=("y", "x")).plot.line(
+            dset[varname].mean(dim=spatial_dims).plot.line(
+            #dset[varname].mean(dim=("y", "x")).plot.line(
                 x="time",
                 ax=ax,
                 color=plot_kwargs["color"],
@@ -198,7 +207,8 @@ def make_timeseries(
                 label=plot_kwargs["label"],
             )
         else:
-            dset[varname].resample(time=avg_window).mean().mean(dim=("y", "x")).plot.line(
+            #dset[varname].resample(time=avg_window).mean().mean(dim=("y", "x")).plot.line(
+            dset[varname].resample(time=avg_window).mean().mean(dim=spatial_dims).plot.line(
                 x="time",
                 ax=ax,
                 color=plot_kwargs["color"],
