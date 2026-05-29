@@ -256,9 +256,9 @@ class model:
             # pres_pa_mid, temp_k etc handled in the cesm_se_reader 
             print("**** Reading CESM SE model output...")
 
-            for _v in ("hyam", "hybm", "PS", "P0", "T", "PDELDRY"):
-                if _v not in list_input_var:
-                    list_input_var.append(_v)
+            # for _v in ("hyam", "hybm", "PS", "P0", "T", "PDELDRY"):
+            #     if _v not in list_input_var:
+            #         list_input_var.append(_v)
                     
             self.mod_kwargs.update({"var_list": list_input_var})
 

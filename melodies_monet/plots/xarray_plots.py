@@ -646,9 +646,10 @@ def make_spatial_dist(
     """
 
     # detect unstructured input from cesm-se. 
-    is_unstructured = any(
+    is_unstructured = uxgrid is not None or any(
         d in dset[varname].dims for d in ("n_face", "ncol")
     )
+
     if is_unstructured and uxgrid is None:
         grid_file = dset.attrs.get("mio_scrip_file") or dset.attrs.get("mio_grid_file")
         if not grid_file:
@@ -683,10 +684,17 @@ def make_spatial_dist(
 
     # Take the difference for the model output - the sat output
 
-    var2plot = dset[varname]  # Take mean over time,
-
-    if len(var2plot.dims) == 3:
+    #  hand the renderer a single 2-D map
+    # (pcolormesh) or 1-D column field (uxarray polygons). h
+    # structured (time, lat, lon) and unstructured (time, n_face) shapes
+    
+    var2plot = dset[varname]
+    if "time" in var2plot.dims:
         var2plot = var2plot.mean("time")
+    var2plot = var2plot.squeeze()
+    
+    # if len(var2plot.dims) == 3:
+    #     var2plot = var2plot.mean("time")
 
     # Determine the domain
     if domain_type == "all" and domain_name == "CONUS":

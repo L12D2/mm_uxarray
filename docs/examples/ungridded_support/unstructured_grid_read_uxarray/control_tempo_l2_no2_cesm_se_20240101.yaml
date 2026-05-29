@@ -31,7 +31,7 @@ obs:
   tempo_l2_no2:
     debug: false
     filename: 
-      /glade/derecho/scratch/jjacdan/TEMPO/TEMPO_NO2_L2_V03_20240101T12*Z_S001G0[1-3].nc
+       /glade/derecho/scratch/jjacdan/TEMPO/TEMPO_NO2_L2_V03_20240101T12*Z_S001G0[1-3].nc
       #/glade/campaign/acom/acom-da/sma/TEMPO_NO2_V03/TEMPO_NO2_L2_V03_20240102*_S*
       # peizhi
       #/glade/campaign/acom/acom-da/sma/TEMPO_NO2_V01/L2/TEMPO_NO2_L2_V01_20240101T*.nc
@@ -49,6 +49,8 @@ obs:
         var_applied: ['vertical_column_troposphere']
       vertical_column_troposphere:
         ylabel_plot: 'NO2 trop. column'
+        vmin_plot: -4
+        vmax_plot: 4 #10000000000000000
       pressure: {}
       tropopause_pressure: {}
       scattering_weights: {}
@@ -117,6 +119,22 @@ plots:
       vmin: 0
 
   plot_grp4:
+    type: 'spatial_overlay' # plot type
+    fig_kwargs: #For all spatial plots, specify map_kwargs here too.
+      states: true
+      figsize: [10, 5] # figure size 
+    text_kwargs: #Opt
+      fontsize: 16.
+    domain_type: ['all', 'all']
+    domain_name: ['CONUS', 'model']
+    data: ['tempo_l2_no2_cam-chem-se'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
+    data_proc:
+      rem_obs_nan: true # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
+      set_axis: true 
+      vmax: 1e16
+      vmin: 0
+      
+  plot_grp5:
     type: 'taylor'
     data: ['tempo_l2_no2_cam-chem-se']
     domain_type: ['all']
