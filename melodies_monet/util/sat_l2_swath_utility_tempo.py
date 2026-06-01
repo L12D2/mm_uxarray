@@ -21,6 +21,25 @@ numba_logger = logging.getLogger("numba")
 numba_logger.setLevel(logging.WARNING)
 
 
+def _get_lat_lon_names(ds):
+    """Helper to get the correct lat/lon coordinate names from a dataset.
+    
+    Supports both 'latitude'/'longitude' and 'lat'/'lon' naming conventions.
+    Returns tuple of (lat_name, lon_name).
+    Raises ValueError if neither convention is found.
+    """
+    if "latitude" in ds.variables and "longitude" in ds.variables:
+        return "latitude", "longitude"
+    elif "lat" in ds.variables and "lon" in ds.variables:
+        return "lat", "lon"
+    else:
+        raise ValueError(
+            f"Could not find coordinate names. Expected either "
+            f"('latitude', 'longitude') or ('lat', 'lon'). "
+            f"Available variables: {list(ds.variables)}"
+        )
+
+
 def calc_grid_corners(ds, lat="latitude", lon="longitude"):
     """Adds latitude and longitude bounds inplace.
     If the grid is rectilinear, it should be quite precise.
@@ -134,6 +153,8 @@ def _calc_dp(obsobj):
 
     # REMINDER: pressure is higher at lower vertical levels: dp is positive
     # only if defined as lower - higher.
+    lat_name, lon_name = _get_lat_lon_names(obsobj)
+    
     dp_vals = (
         obsobj["pressure"].isel(swt_level_stagg=slice(None, -1)).values
         - obsobj["pressure"].isel(swt_level_stagg=slice(1, None)).values
@@ -142,8 +163,8 @@ def _calc_dp(obsobj):
         data=dp_vals,
         dims=("swt_level", "x", "y"),
         coords={
-            "lon": (("x", "y"), obsobj["lon"].values),
-            "lat": (("x", "y"), obsobj["lat"].values),
+            "lon": (("x", "y"), obsobj[lon_name].values),
+            "lat": (("x", "y"), obsobj[lat_name].values),
         },
         attrs={
             "units": "Pa",
@@ -260,8 +281,11 @@ def interp_vertical_mod2swath(obsobj, modobj, variables="NO2_col"):
     xr.Dataset
         Model data (interpolated to TEMPO vertical layers
     """
-    assert np.all(modobj["lon"].fillna(0).values == obsobj["lon"].fillna(0).values)
-    assert np.all(modobj["lat"].fillna(0).values == obsobj["lat"].fillna(0).values)
+    obs_lat_name, obs_lon_name = _get_lat_lon_names(obsobj)
+    mod_lat_name, mod_lon_name = _get_lat_lon_names(modobj)
+    
+    assert np.all(modobj[mod_lon_name].fillna(0).values == obsobj[obs_lon_name].fillna(0).values)
+    assert np.all(modobj[mod_lat_name].fillna(0).values == obsobj[obs_lat_name].fillna(0).values)
 
     modsatlayers = xr.Dataset()
     p_mid_tempo = (
@@ -271,8 +295,8 @@ def interp_vertical_mod2swath(obsobj, modobj, variables="NO2_col"):
     p_orig = modobj["pres_pa_mid"].values
     dimensions = ("z", "x", "y")
     coords = {
-        "lon": (("x", "y"), modobj["lon"].values),
-        "lat": (("x", "y"), modobj["lat"].values),
+        "lon": (("x", "y"), modobj[mod_lon_name].values),
+        "lat": (("x", "y"), modobj[mod_lat_name].values),
     }
     for var in list(variables):
         interpolated = _interp_vert(p_orig, p_mid_tempo, modobj[var].values)
@@ -480,13 +504,16 @@ def is_nonpairable(obsobj, k, modobj):
     ------
     collections.OrderedDict[str, xr.Dataset]
     """
-    if obsobj[k]["lon"].max() < modobj["longitude"].min():
+    obs_lat_name, obs_lon_name = _get_lat_lon_names(obsobj[k])
+    mod_lat_name, mod_lon_name = _get_lat_lon_names(modobj)
+    
+    if obsobj[k][obs_lon_name].max() < modobj[mod_lon_name].min():
         return True
-    elif obsobj[k]["lon"].min() > modobj["longitude"].max():
+    elif obsobj[k][obs_lon_name].min() > modobj[mod_lon_name].max():
         return True
-    elif obsobj[k]["lat"].max() < modobj["latitude"].min():
+    elif obsobj[k][obs_lat_name].max() < modobj[mod_lat_name].min():
         return True
-    elif obsobj[k]["lat"].min() > modobj["latitude"].max():
+    elif obsobj[k][obs_lat_name].min() > modobj[mod_lat_name].max():
         return True
     return False
 
@@ -528,7 +555,8 @@ def _regrid_and_apply_weights(
         if "lat_b" not in modobj:
             calc_grid_corners(modobj)
         if "lat_b" not in obsobj:
-            calc_grid_corners(obsobj, lat="lat", lon="lon")
+            obs_lat_name, obs_lon_name = _get_lat_lon_names(obsobj)
+            calc_grid_corners(obsobj, lat=obs_lat_name, lon=obs_lon_name)
     modobj_hs = tempo_interp_mod2swath(obsobj, modobj, method=method, weights=weights)
     if "dz_m" in modobj.keys():
         modobj_hs["altitude"] = calc_altitude_from_thickness(modobj_hs["dz_m"])
