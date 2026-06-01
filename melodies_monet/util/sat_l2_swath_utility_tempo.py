@@ -73,35 +73,27 @@ def speedup_regridding(dset, variables="all"):
 def _nearest_mod2swath(modobj, obsobj):
     """Sample an unstructured model at swath pixel locations.
 
-    Thin swath-specific wrapper around
-    :func:`melodies_monet.util.uxarray_util.sample_unstructured_at_points`:
-    it flattens the 2-D swath ``lon``/``lat`` to 1-D target points, samples
-    the model, then reshapes the result back to the swath's ``(x, y)`` dims
-    and attaches ``lon``/``lat`` as 2-D coords (matching the obs convention so
-    downstream asserts on ``modobj["lon"]``/``["lat"]`` still work).
+    Thin wrapper around :func:`melodies_monet.util.regrid.regrid` for the
+    forward (model -> swath) direction: the 2-D swath ``(x, y)`` lon/lat
+    are the targets, and the model column centers are the cKDTree source.
+    Downstream swath code (vertical interp, apply weights) expects
+    ``lon``/``lat`` (short names) on ``(x, y)``, so we rename the
+    long-name coords ``regrid`` attaches back to the swath convention.
+    
     """
-    from melodies_monet.util.uxarray_util import sample_unstructured_at_points
+    from melodies_monet.util.regrid import regrid
 
-    olon = np.asarray(obsobj["lon"].values)
-    olat = np.asarray(obsobj["lat"].values)
-    nx, ny = olon.shape
-
-    sampled = sample_unstructured_at_points(modobj, olon.ravel(), olat.ravel())
-
-    out = xr.Dataset(attrs=dict(modobj.attrs))
-    for v in sampled.data_vars:
-        arr = sampled[v].values  # last dim is "target" of length nx*ny
-        new_shape = arr.shape[:-1] + (nx, ny)
-        new_dims = sampled[v].dims[:-1] + ("x", "y")
-        out[v] = xr.DataArray(
-            arr.reshape(new_shape), dims=new_dims, attrs=dict(sampled[v].attrs)
-        )
-
-    out = out.assign_coords(
-        lon=(("x", "y"), olon),
-        lat=(("x", "y"), olat),
+    out = regrid(
+        modobj,
+        target={
+            "lon": np.asarray(obsobj["lon"].values),
+            "lat": np.asarray(obsobj["lat"].values),
+        },
+        method="nearest_s2d",
+        target_dims=("x", "y"),
     )
-    return out
+
+    return out.rename({"longitude": "lon", "latitude": "lat"})
 
 def tempo_interp_mod2swath(obsobj, modobj, method="conservative", weights=None):
     """Interpolate model to satellite swath/swaths
@@ -744,51 +736,45 @@ def regrid_and_apply_weights(
 #     return sampled
 
 def _unstructured_back_to_modgrid(concatenated, modobj, radius_deg=0.1):
-    """Project concatenated swath-paired data onto an unstructured model's
-    columns via nearest-neighbor. Bypasses xESMF, which interprets a 1-D
-    column target as a degenerate structured grid and tries to allocate a
-    (swath_pixels x n_columns)
+    """Project swath-paired data onto an unstructured model's columns.
 
-    Reuses :func:`melodies_monet.util.uxarray_util.sample_unstructured_at_points`
-    by flattening the swath ``(x, y)`` plane into a 1-D ``pixel`` "source"
-    dim and querying at the model column ``(lon, lat)`` locations.
+    Thin wrapper around :func:`melodies_monet.util.regrid.regrid` for the
+    backward (swath -> model) direction. Each model column gets the
+    *mean* of all swath pixels within ``radius_deg`` (poor-man's area-
+    weighted aggregation; columns with no pixel in range -> NaN). 0.1 deg
+    ~= ~10 km at mid-latitudes, roughly matches typical TEMPO pixel size
+    + ne0CONUS column spacing so most model columns near the swath get
+    averaged from several pixels.
+
+    The flattened swath becomes the ``regrid`` source (treated as 1-D
+    unstructured with ``longitude``/``latitude`` on a ``pixel`` dim) and
+    the model column centers are the targets.
     """
-    from melodies_monet.util.uxarray_util import sample_unstructured_at_points
-
-    # Flatten swath x, y -> pixel so the swath data looks like an unstructured
-    # source for sample_unstructured_at_points.
-    flat = concatenated.stack(pixel=("x", "y"))
-    flat = flat.reset_index("pixel", drop=True)
-
-    mlon = np.asarray(modobj["longitude"].values)
-    mlat = np.asarray(modobj["latitude"].values)
-
-    print(f"DEBUG modobj['longitude'].dims = {modobj['longitude'].dims}, "
-    f"shape = {modobj['longitude'].shape}")
-
-    #sampled = sample_unstructured_at_points(flat, mlon, mlat)
     
-    # Within-radius averaging: each model column gets the *mean* of all
-    # swath pixels falling within `radius_deg`. proper conservative regrid is the eventual
-    # xregrid path). Targets with no swath pixel in range -> NaN, so a
-    # sparsely-sampled day shows only the actually-observed model columns
-    # instead of nearest-neighbor smear from distant pixels. 0.2 deg ~=
-    # ~20 km at mid-latitudes, slightly wider than typical TEMPO pixel
-    # size + ne0CONUS column spacing so most model columns near the swath
-    # path get aggregated from several pixels.
-    
-    sampled = sample_unstructured_at_points(
-        flat, mlon, mlat, radius=radius_deg
+    from melodies_monet.util.regrid import regrid
+
+    # Flatten swath (x, y) -> 1-D "pixel" with longitude/latitude as coords
+    # so regrid() sees it as an unstructured source.
+    flat = (
+        concatenated
+        .stack(pixel=("x", "y"))
+        .reset_index("pixel", drop=True)
     )
+    if "lon" in flat.variables and "longitude" not in flat.variables:
+        flat = flat.rename({"lon": "longitude", "lat": "latitude"})
+    flat = flat.set_coords(["longitude", "latitude"])
 
+    mlon = np.asarray(modobj["longitude"].values).ravel()
+    mlat = np.asarray(modobj["latitude"].values).ravel()
     col_dim = modobj["longitude"].dims[0]
-    sampled = sampled.rename({"target": col_dim})
-    sampled = sampled.assign_coords({
-        "longitude": (col_dim, mlon),
-        "latitude": (col_dim, mlat),
-    })
 
-    return sampled
+    return regrid(
+        flat,
+        target={"lon": mlon, "lat": mlat},
+        method="radius_mean",
+        radius=radius_deg,
+        target_dims=(col_dim,),
+    )
     
 def back_to_modgrid(
     paireddict,
