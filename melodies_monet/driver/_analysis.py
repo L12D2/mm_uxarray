@@ -437,6 +437,8 @@ class analysis:
                 
                 if 'sat_method' in self.control_dict['obs'][obs].keys():
                     o.sat_method = self.control_dict['obs'][obs]['sat_method']
+                if 'regrid_method' in self.control_dict['obs'][obs].keys():
+                    o.regrid_method = self.control_dict['obs'][obs]['regrid_method']
                 if load_files:
                     if o.obs_type in [
                         "sat_swath_sfc",
