@@ -33,6 +33,7 @@ model:
   cam-chem-se:
     files:
       - /glade/campaign/acom/acom-da/conus_outputs/f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.ERA5_ref_dust_M1.1.002/H1/f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.ERA5_ref_dust_M1.1.002.cam.h1.2024-01-01-03600.nc
+      #- /glade/campaign/acom/acom-weather/wenfut/MPAS_ASIAAQ/model_output/ASIA-AQ-MPAS_2024_x20.835586.grid_asiaaq_g17_mg17_58L/atm/hist/ASIA-AQ-MPAS_2024_x20.835586.grid_asiaaq_g17_mg17_58L.cam.h2i.2024-01-01-10800.nc
 
     mod_type: 'cesm_se'
     scrip_file: "/glade/campaign/acom/MUSICA/grids/ne0CONUSne30x8/ne0CONUS_ne30x8_np4_SCRIP.nc"
