@@ -95,6 +95,90 @@ def _nearest_mod2swath(modobj, obsobj):
 
     return out.rename({"longitude": "lon", "latitude": "lat"})
 
+def _swath_corner_bounds(obsobj):
+    """Return (lon_bounds, lat_bounds) DataArrays for a TEMPO swath.
+
+    Handles the naming variants: TEMPO V03 ``latitude_bounds`` /
+    ``longitude_bounds``, generic ``lat_bounds`` / ``lon_bounds``, or the
+    ``calc_grid_corners`` output ``lat_b`` / ``lon_b``.
+    """
+    for lon_n, lat_n in (
+        ("longitude_bounds", "latitude_bounds"),
+        ("lon_bounds", "lat_bounds"),
+        ("lon_b", "lat_b"),
+    ):
+        if lon_n in obsobj.variables and lat_n in obsobj.variables:
+            return obsobj[lon_n], obsobj[lat_n]
+    return None, None
+
+def _carry_swath_bounds(output, obs_src):
+    """Merge swath corner bounds from ``obs_src`` into ``output`` if present.
+
+    Lets the backward (swath -> model) conservative path rebuild the swath
+    mesh later: the paired output otherwise drops the bounds.
+    """
+    lon_b, lat_b = _swath_corner_bounds(obs_src)
+    if lon_b is None:
+        return output
+    extra = xr.Dataset({lon_b.name: lon_b, lat_b.name: lat_b})
+    return xr.merge([output, extra], compat="override")
+
+
+def _conservative_mod2swath(modobj, obsobj, method="conservative"):
+    """Conservatively regrid an unstructured model onto a TEMPO swath.
+
+    Builds a uxarray Grid from the swath pixel corner bounds
+    (``longitude_bounds``/``latitude_bounds``, shape ``(x, y, corner)``),
+    then uses xregrid mesh-to-mesh conservative regridding from the model's
+    (depadded SCRIP) mesh onto the swath cells. Result is reshaped back to
+    the swath ``(..., x, y)`` layout with ``lon``/``lat`` coords, matching
+    the convention downstream vertical-interp / apply-weights code expects.
+    """
+    from melodies_monet.util.regrid_util import regrid
+    from melodies_monet.util.uxarray_util import uxgrid_from_corner_bounds
+
+    lon_b, lat_b = _swath_corner_bounds(obsobj)
+    if lon_b is None:
+        raise ValueError(
+            "_conservative_mod2swath: swath has no corner bounds "
+            "(latitude_bounds/longitude_bounds). Conservative regridding "
+            f"needs them. Available: {list(obsobj.variables)}."
+        )
+
+    olon = np.asarray(obsobj["lon"].values)
+    olat = np.asarray(obsobj["lat"].values)
+    nx, ny = olon.shape
+
+    # Flatten (x, y, corner) -> (x*y, corner) in C order; the n_face order of
+    # the resulting mesh is row-major over (x, y), so reshape back the same way.
+    clon = np.asarray(lon_b.values).reshape(nx * ny, -1)
+    clat = np.asarray(lat_b.values).reshape(nx * ny, -1)
+    swath_grid = uxgrid_from_corner_bounds(clon, clat)
+
+    scrip = modobj.attrs.get("mio_scrip_file")
+    out = regrid(modobj, method=method, src_grid=scrip, target_grid=swath_grid)
+
+    # out is on n_face (= nx*ny). Reshape each var back to (x, y).
+    result = xr.Dataset(attrs=dict(modobj.attrs))
+    for v in out.data_vars:
+        da = out[v]
+        if "n_face" not in da.dims:
+            result[v] = da
+            continue
+        transposed = da.transpose(..., "n_face")
+        arr = np.asarray(transposed.values)
+        new_shape = arr.shape[:-1] + (nx, ny)
+        new_dims = transposed.dims[:-1] + ("x", "y")
+        result[v] = xr.DataArray(
+            arr.reshape(new_shape), dims=new_dims, attrs=dict(da.attrs)
+        )
+
+    result = result.assign_coords(
+        lon=(("x", "y"), olon),
+        lat=(("x", "y"), olat),
+    )
+    return result
+
 def tempo_interp_mod2swath(obsobj, modobj, method="conservative", weights=None):
     """Interpolate model to satellite swath/swaths
 
@@ -121,6 +205,10 @@ def tempo_interp_mod2swath(obsobj, modobj, method="conservative", weights=None):
     mod_at_swathtime = modobj.interp(time=obsobj.time.mean())
 
     if mod_at_swathtime.attrs.get("mio_has_unstructured_grid", False):
+        # Unstructured model. Conservative/bilinear -> true area-weighted
+        # mesh-to-mesh via xregrid (mass-conserving). nearest -> fast cKDTree.
+        if method in ("conservative", "conservative_normed", "bilinear", "patch"):
+            return _conservative_mod2swath(mod_at_swathtime, obsobj, method=method)
         return _nearest_mod2swath(mod_at_swathtime, obsobj)
             
     if weights is None:
@@ -657,6 +745,7 @@ def regrid_and_apply_weights(
             output = xr.merge([output, obsobj[sat_species_name]])
         if "lat" in output.variables:
             output = output.rename({"lat": "latitude", "lon": "longitude"})
+        output = _carry_swath_bounds(output, obsobj)
         return output
     if isinstance(obsobj, dict):
         output_multiple = {}
@@ -693,6 +782,11 @@ def regrid_and_apply_weights(
                 output_multiple[ref_time] = output_multiple[ref_time].rename(
                     {"lat": "latitude", "lon": "longitude"}
                 )
+
+            # better memory handling 
+            output_multiple[ref_time] = _carry_swath_bounds(
+                output_multiple[ref_time], obsobj[ref_time]
+            )
             
             # better memory handling 
             output_multiple[ref_time] = output_multiple[ref_time].load()
@@ -705,35 +799,48 @@ def regrid_and_apply_weights(
         return output_multiple
     raise TypeError("Obsobj must be xr.Dataset or dict")
 
-# uncomment when xeregrid stsuff can be figured out 
-# def _unstructured_back_to_modgrid(concatenated, modobj):
-#     """Project concatenated swath-paired data onto an unstructured model's
-#     columns via nearest-neighbor. Bypasses xESMF, which interprets a 1-D
-#     column target as a degenerate structured grid and tries to allocate a
-#     (swath_pixels x n_columns)
+def _conservative_swath2mod(concatenated, modobj, method="conservative"):
+    """Conservatively regrid swath-paired data onto unstructured model columns.
 
-#     Reuses :func:`melodies_monet.util.uxarray_util.sample_unstructured_at_points`
-#     by flattening the swath ``(x, y)`` plane into a 1-D ``pixel`` "source"
-#     dim and querying at the model column ``(lon, lat)`` locations.
-#     """
-#     from melodies_monet.util.uxarray_util import sample_unstructured_at_points
+    Builds a uxarray Grid from the swath pixel corner bounds (carried
+    through by :func:`_carry_swath_bounds`), wraps the paired swath data on
+    it, and uses xregrid mesh-to-mesh conservative regridding onto the
+    model's (depadded SCRIP) mesh. Result is on the model column dim.
+    """
+    from melodies_monet.util.regrid_util import regrid
+    from melodies_monet.util.uxarray_util import (
+        clean_uxgrid_from_scrip,
+        uxgrid_from_corner_bounds,
+    )
 
-#     # Flatten swath x, y -> pixel so the swath data looks like an unstructured
-#     # source for sample_unstructured_at_points.
-#     flat = concatenated.stack(pixel=("x", "y"))
-#     flat = flat.reset_index("pixel", drop=True)
+    lon_b, lat_b = _swath_corner_bounds(concatenated)
+    if lon_b is None:
+        raise ValueError(
+            "_conservative_swath2mod: no swath corner bounds on paired data."
+        )
 
-#     mlon = np.asarray(modobj["longitude"].values)
-#     mlat = np.asarray(modobj["latitude"].values)
+    # Centers just to recover (nx, ny) and the flatten order.
+    if "longitude" in concatenated.variables:
+        olon = np.asarray(concatenated["longitude"].values)
+    else:
+        olon = np.asarray(concatenated["lon"].values)
+    nx, ny = olon.shape
 
-#     sampled = sample_unstructured_at_points(flat, mlon, mlat)
+    clon = np.asarray(lon_b.values).reshape(nx * ny, -1)
+    clat = np.asarray(lat_b.values).reshape(nx * ny, -1)
+    swath_grid = uxgrid_from_corner_bounds(clon, clat)
 
-#     col_dim = modobj["longitude"].dims[0]
-#     sampled = sampled.rename({"target": col_dim})
-#     sampled = sampled.assign_coords({
-#         "longitude": (col_dim, mlon),
-#         "latitude": (col_dim, mlat),})
-#     return sampled
+    # Flatten paired data to n_face (row-major over (x, y)) and wrap on the
+    # swath mesh as the regrid source. Drop the bounds/center vars -- they're
+    # geometry, not data to regrid.
+    drop = [v for v in (lon_b.name, lat_b.name, "longitude", "latitude",
+                         "lon", "lat") if v in concatenated.variables]
+    flat = (
+        concatenated.drop_vars(drop, errors="ignore")
+        .stack(n_face=("x", "y"))
+        .reset_index("n_face", drop=True)
+    )
+    src_uxds = ux.UxDataset(flat, uxgrid=swath_grid)
 
 def _unstructured_back_to_modgrid(concatenated, modobj, radius_deg=0.1):
     """Project swath-paired data onto an unstructured model's columns.
@@ -752,6 +859,17 @@ def _unstructured_back_to_modgrid(concatenated, modobj, radius_deg=0.1):
     """
     
     from melodies_monet.util.regrid_util import regrid
+
+    if method in ("conservative", "conservative_normed", "bilinear", "patch"):
+        lon_b, _ = _swath_corner_bounds(concatenated)
+        if lon_b is not None:
+            return _conservative_swath2mod(concatenated, modobj, method=method)
+        warnings.warn(
+            "_unstructured_back_to_modgrid: conservative requested but the "
+            "paired swath has no corner bounds; falling back to radius_mean. "
+            "(Bounds are carried by _carry_swath_bounds in "
+            "regrid_and_apply_weights -- check they survived.)"
+        )
 
     # Flatten swath (x, y) -> 1-D "pixel" with longitude/latitude as coords
     # so regrid() sees it as an unstructured source.
@@ -848,7 +966,10 @@ def back_to_modgrid(
         out_regridded = regridder(concatenated)
     elif modobj.attrs.get("mio_has_unstructured_grid", False):
         # Unstructured target: bypass xESMF (which OOMs on 1-D ncol targets).
-        out_regridded = _unstructured_back_to_modgrid(concatenated, modobj)
+        # Conservative goes mesh-to-mesh via xregrid; else cKDTree radius-mean.
+        out_regridded = _unstructured_back_to_modgrid(
+            concatenated, modobj, method=method
+        )
     else:
         regridder = xe.Regridder(concatenated, modobj, method=method, unmapped_to_nan=True)
         out_regridded = regridder(concatenated)
