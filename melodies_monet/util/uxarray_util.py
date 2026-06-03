@@ -61,7 +61,45 @@ def clean_uxgrid_from_scrip(scrip_path, fill_value=-1):
         clat = np.rad2deg(clat)
         clon = np.rad2deg(clon)
 
-    nf, mc = clat.shape
+    grid = uxgrid_from_corner_bounds(clon, clat, fill_value=fill_value)
+    _CLEAN_UXGRID_CACHE[scrip_path] = grid
+    return grid
+
+def uxgrid_from_corner_bounds(corner_lon, corner_lat, fill_value=-1):
+    """Build a degeneracy-free uxarray Grid from per-face corner bounds.
+
+    Generalizes the SCRIP depad to any source of per-cell corner arrays —
+    including a TEMPO swath whose pixel corners come from
+    ``longitude_bounds``/``latitude_bounds``. Each face's repeated/padded
+    corners are collapsed to its true polygon (so ESMF accepts the mesh for
+    conservative regridding), and nodes shared between faces are deduped to
+    a single global node list.
+
+    NOT cached — callers with a static mesh (e.g. a model SCRIP) should
+    cache the result themselves; swath grids change per granule.
+
+    Parameters
+    ----------
+    corner_lon, corner_lat : array-like
+        Corner coordinates in **degrees**, shape ``(n_face, n_corners)``.
+        (Flatten any ``(x, y, n_corners)`` swath bounds to this first.)
+    fill_value : int
+        Sentinel for unused slots in the ragged face-node connectivity.
+
+    Returns
+    -------
+    uxarray.Grid
+        Clean grid with variable-length ``face_node_connectivity``.
+    """
+    
+    clon = np.asarray(corner_lon, dtype=float)
+    clat = np.asarray(corner_lat, dtype=float)
+    if clon.shape != clat.shape or clon.ndim != 2:
+        raise ValueError(
+            "uxgrid_from_corner_bounds: corner_lon/corner_lat must both be "
+            f"2-D (n_face, n_corners). Got {clon.shape}, {clat.shape}."
+        )
+    nf, mc = clon.shape
 
     # Global node dedup via a rounded (lon, lat) key.
     key = np.round(np.stack([clon.ravel(), clat.ravel()], axis=1), 6)
@@ -70,7 +108,7 @@ def clean_uxgrid_from_scrip(scrip_path, fill_value=-1):
     node_lat = uniq[:, 1].astype(float)
     inv = inv.reshape(nf, mc)
 
-    # Per-face consecutive dedup (SCRIP pads by repeating corners); drop a
+    # Per-face consecutive dedup (corners are padded by repetition); drop a
     # closing duplicate if last kept == first.
     face_conn = np.full((nf, mc), fill_value, dtype=np.int64)
     for i in range(nf):
@@ -83,14 +121,12 @@ def clean_uxgrid_from_scrip(scrip_path, fill_value=-1):
             keep.pop()
         face_conn[i, : len(keep)] = keep
 
-    grid = ux.Grid.from_topology(
+    return ux.Grid.from_topology(
         node_lon=node_lon,
         node_lat=node_lat,
         face_node_connectivity=face_conn,
         fill_value=fill_value,
     )
-    _CLEAN_UXGRID_CACHE[scrip_path] = grid
-    return grid
 
 def _coord(obj, names):
     """Return ``(name, coord)`` for the first of ``names`` present on ``obj``.
@@ -248,75 +284,6 @@ def uxda_from_columns(da, uxgrid):
 
     return ux.UxDataArray(aligned, uxgrid=uxgrid)
 
-# uncomment when can figure out xregrid 
-# def sample_unstructured_at_points(modobj, target_lon, target_lat):
-#     """Nearest-neighbor sample a model on a 1-D unstructured column dim at
-#     arbitrary ``(lon, lat)`` target points.
-
-#     Reusable beyond the satellite pipeline: any caller with a list of target
-#     points (swath pixels, AirNow stations, sondes, ...) can sample an
-#     unstructured model at those locations without xESMF (which OOMs on large
-#     ``ncol`` sources because it treats them as degenerate structured grids).
-
-#     Parameters
-#     ----------
-#     modobj : xarray.Dataset
-#         Model output on a 1-D unstructured column dim with 1-D
-#         ``longitude``/``latitude`` coordinates (e.g. CESM-SE after the
-#         rename/promote in :mod:`melodies_monet.driver._model`).
-#     target_lon, target_lat : 1-D array-like
-#         Lon/lat of the target points. Either convention (0..360 or
-#         -180..180) works; both sides are normalized to -180..180 before the
-#         KDTree query.
-
-#     Returns
-#     -------
-#     xarray.Dataset
-#         Same data_vars as ``modobj`` but with the column dim replaced by a
-#         1-D ``target`` dim of length ``len(target_lon)``. Other dims
-#         (time, z, ...) and attrs are preserved.
-#     """
-    
-#     from scipy.spatial import cKDTree
-
-#     modobj = modobj.load()
-    
-#     mlon = np.asarray(modobj["longitude"].values)
-#     mlat = np.asarray(modobj["latitude"].values)
-#     mlon = ((mlon + 180.0) % 360.0) - 180.0
-
-#     tlon = np.asarray(target_lon, dtype=float)
-#     tlat = np.asarray(target_lat, dtype=float)
-#     tlon = ((tlon + 180.0) % 360.0) - 180.0
-
-#     # cKDTree.query rejects NaN/Inf inputs. Real swath data has them on edge
-#     # pixels / fill values; query only finite targets and mask the rest below.
-#     # valid = np.isfinite(tlon) & np.isfinite(tlat)
-
-#     svalid = np.isfinite(mlon) & np.isfinite(mlat)
-#     if not svalid.any():
-#         raise ValueError(
-#             "sample_unstructured_at_points: no finite source points to build "
-#             "the KDTree from."
-#         )
-#     src_orig_idx = np.where(svalid)[0]
-#     tree = cKDTree(np.column_stack([mlon[svalid], mlat[svalid]]))
-
-#     #tree = cKDTree(np.column_stack([mlon, mlat]))
-#     tvalid = np.isfinite(tlon) & np.isfinite(tlat)
-#     idx = np.zeros(tlon.shape[0], dtype=np.intp)
-#     if tvalid.any():
-#         _, idx_in_valid = tree.query(np.column_stack([tlon[tvalid], tlat[tvalid]]))
-#         idx[tvalid] = src_orig_idx[idx_in_valid]
-
-#     col_dim = modobj["longitude"].dims[0]
-#     sampled = modobj.isel({col_dim: idx}).rename({col_dim: "target"})
-
-#     if not tvalid.all():
-#         # NaN out the invalid target positions
-#         sampled = sampled.where(xr.DataArray(tvalid, dims=["target"]))
-
-#     return sampled
 
 def sample_unstructured_at_points(
     modobj, target_lon, target_lat, max_distance=None, radius=None,):

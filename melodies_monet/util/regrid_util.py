@@ -120,13 +120,15 @@ def filename_regrid(filename, regridder):
 # ==========================================================================
 # Model-agnostic regridder (dispatches to ckdtree or xregrid)
 # ==========================================================================
+
 def regrid(
     src,
-    target,
+    target = None,
     method="nearest_s2d",
     src_lon=None,
     src_lat=None,
     src_grid=None,
+    target_grid=None,
     target_dims=None,
     max_distance=None,
     radius=None,
@@ -160,12 +162,19 @@ def regrid(
     src_lon, src_lat : str, optional
         Names of source longitude/latitude coords (ckdtree only).
         Auto-detected if not given.
-    src_grid : str, optional
-        Path to the source mesh (SCRIP) for unstructured xregrid sources.
-        SCRIP corners are depadded into a clean UGRID (see
-        :func:`melodies_monet.util.uxarray_util.clean_uxgrid_from_scrip`)
-        so ESMF accepts the degenerate-corner ne0CONUS mesh. Required for
-        conservative/bilinear unless ``src`` is already a UxDataset.
+    src_grid : str or uxarray.Grid, optional
+        Source mesh for unstructured xregrid sources: a SCRIP path (depadded
+        into a clean UGRID via
+        :func:`melodies_monet.util.uxarray_util.clean_uxgrid_from_scrip`) or a
+        pre-built ``uxarray.Grid``. Required for conservative/bilinear unless
+        ``src`` is already a UxDataset.
+    target_grid : uxarray.Grid, optional
+        Unstructured **target** mesh (xregrid only). Use this for a curvilinear
+        target like a TEMPO swath: build a ``uxarray.Grid`` from the pixel
+        corner bounds (see
+        :func:`melodies_monet.util.uxarray_util.uxgrid_from_corner_bounds`)
+        and pass it here. Output lands on that grid's ``n_face`` dim. When
+        given, ``target`` is ignored.
     target_dims : tuple of str, optional
         Output spatial dim names (ckdtree only).
     max_distance : float, optional
@@ -213,61 +222,83 @@ def regrid(
         )
 
     if backend == "xregrid":
-        return _regrid_xregrid(src, target, method, src_grid=src_grid)
+        return _regrid_xregrid(
+            src, target, method, src_grid=src_grid, target_grid=target_grid,
+        )
 
     raise NotImplementedError(
         f"regrid: backend={backend!r} not implemented. "
         "Available: 'ckdtree', 'xregrid'."
     )
 
-def _regrid_xregrid(src, target, method, src_grid=None):
-    """xregrid/ESMF backend for conservative & bilinear regridding.
+def _as_src_uxds(src, src_grid):
+    """Resolve a source to a UxDataset (clean uxgrid + data on n_face)."""
+    import uxarray as ux
 
-    Builds a clean source uxgrid (depadding SCRIP if ``src_grid`` is a path),
-    wraps ``src`` on it, builds a rectilinear target grid, and runs xregrid.
-    """
-
-    # --- Source: resolve / build a clean uxgrid and wrap src on it. ---
     if hasattr(src, "uxgrid") and src_grid is None:
-        src_uxds = src
-    else:
-        if src_grid is None:
-            raise ValueError(
-                "regrid (xregrid backend): conservative/bilinear on an "
-                "unstructured source needs src_grid=<SCRIP path>, or pass a "
-                "UxDataset as src."
-            )
+        return src
+
+    if src_grid is None:
+        raise ValueError(
+            "regrid (xregrid backend): conservative/bilinear on an "
+            "unstructured source needs src_grid=<SCRIP path or uxarray.Grid>, "
+            "or pass a UxDataset as src."
+        )
+    if isinstance(src_grid, str):
         from melodies_monet.util.uxarray_util import clean_uxgrid_from_scrip
         uxgrid = clean_uxgrid_from_scrip(src_grid)
-        # Find the column dim whose length matches the mesh's n_face.
-        col_dim = None
-        for d, n in src.sizes.items():
-            if n == uxgrid.n_face:
-                col_dim = d
-                break
-        if col_dim is None:
-            raise ValueError(
-                f"regrid (xregrid backend): no src dim matches mesh n_face="
-                f"{uxgrid.n_face}. src dims: {dict(src.sizes)}."
-            )
-        src_ds = src if hasattr(src, "data_vars") else src.to_dataset()
-        if col_dim != "n_face":
-            src_ds = src_ds.rename({col_dim: "n_face"})
-        src_uxds = ux.UxDataset(src_ds, uxgrid=uxgrid)
+    else:
+        uxgrid = src_grid  # assume a uxarray.Grid
 
-    # --- Target: rectilinear grid from 1-D lon/lat axes. ---
+    # Find the column dim whose length matches the mesh's n_face.
+    col_dim = None
+    for d, n in src.sizes.items():
+        if n == uxgrid.n_face:
+            col_dim = d
+            break
+    if col_dim is None:
+        raise ValueError(
+            f"regrid (xregrid backend): no src dim matches mesh n_face="
+            f"{uxgrid.n_face}. src dims: {dict(src.sizes)}."
+        )
+    src_ds = src if hasattr(src, "data_vars") else src.to_dataset()
+    if col_dim != "n_face":
+        src_ds = src_ds.rename({col_dim: "n_face"})
+    return ux.UxDataset(src_ds, uxgrid=uxgrid)
+    
+def _regrid_xregrid(src, target, method, src_grid=None, target_grid=None):
+    """xregrid/ESMF backend for conservative & bilinear regridding.
+
+    Source is resolved to a clean UxDataset. Target is either an
+    unstructured mesh (``target_grid``, e.g. a swath built from pixel
+    corner bounds) or a rectilinear grid from 1-D ``target`` lon/lat axes.
+    """
+    src_uxds = _as_src_uxds(src, src_grid)
+
+    # --- Unstructured target (e.g. TEMPO swath). ---
+    if target_grid is not None:
+        # Empty UxDataset carrying just the target mesh; xregrid detects it
+        # as unstructured via .uxgrid and regrids src onto its n_face.
+        tgt_uxds = ux.UxDataset(xr.Dataset(), uxgrid=target_grid)
+        rg = Regridder(src_uxds, tgt_uxds, method=method)
+        return rg(src_uxds)
+
+    # --- Rectilinear target from 1-D lon/lat axes. ---
+    if target is None:
+        raise ValueError(
+            "regrid (xregrid backend): provide either target_grid (mesh) or "
+            "target={'lon': 1d, 'lat': 1d} (rectilinear)."
+        )
     tlon = np.asarray(target["lon"])
     tlat = np.asarray(target["lat"])
+    
     if tlon.ndim != 1 or tlat.ndim != 1:
         raise NotImplementedError(
-            "regrid (xregrid backend): target lon/lat must be 1-D rectilinear "
-            f"axes for now (got shapes {tlon.shape}, {tlat.shape}). "
-            "2-D/curvilinear conservative targets are not yet supported."
+            "regrid (xregrid backend): rectilinear target lon/lat must be 1-D "
+            f"(got shapes {tlon.shape}, {tlat.shape}). For a curvilinear "
+            "target, build a uxarray.Grid and pass target_grid instead."
         )
-    target_ds = xr.Dataset(
-        coords={"lon": ("lon", tlon), "lat": ("lat", tlat)}
-    )
-
+    target_ds = xr.Dataset(coords={"lon": ("lon", tlon), "lat": ("lat", tlat)})
     rg = Regridder(src_uxds, target_ds, method=method, periodic=True)
     return rg(src_uxds)
 

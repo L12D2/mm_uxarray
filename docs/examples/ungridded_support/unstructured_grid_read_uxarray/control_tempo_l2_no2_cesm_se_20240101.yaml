@@ -29,6 +29,7 @@ analysis:
 
 obs:
   tempo_l2_no2:
+    regrid_method: conservative
     debug: false
     filename: 
 
