@@ -81,7 +81,7 @@ def _nearest_mod2swath(modobj, obsobj):
     long-name coords ``regrid`` attaches back to the swath convention.
     
     """
-    from melodies_monet.util.regrid import regrid
+    from melodies_monet.util.regrid_util import regrid
 
     out = regrid(
         modobj,
@@ -751,7 +751,7 @@ def _unstructured_back_to_modgrid(concatenated, modobj, radius_deg=0.1):
     the model column centers are the targets.
     """
     
-    from melodies_monet.util.regrid import regrid
+    from melodies_monet.util.regrid_util import regrid
 
     # Flatten swath (x, y) -> 1-D "pixel" with longitude/latitude as coords
     # so regrid() sees it as an unstructured source.

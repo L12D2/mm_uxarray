@@ -1,0 +1,4 @@
+20260603 125711.304 ERROR            PET0 /home/conda/feedstock_root/build_artifacts/bld/rattler-build_esmf_1774699917/work/src/Infrastructure/Mesh/src/ESMCI_Mesh_Glue.C:3563 ESMCI_getlocalelemcoords() Arguments are incompatible  -  - elem_coordinates not found in Mesh
+20260603 125711.304 ERROR            PET0 /home/conda/feedstock_root/build_artifacts/bld/rattler-build_esmf_1774699917/work/src/Infrastructure/Mesh/src/ESMCI_Mesh_Glue.C:3578 ESMCI_getlocalelemcoords() Arguments are incompatible  - Internal subroutine call returned Error
+20260603 125711.304 ERROR            PET0 ESMC_Mesh.C:345 ESMC_MeshGetElemCoord() Arguments are incompatible  - Internal subroutine call returned Error
+20260603 130000.838 INFO             PET0  Finalizing ESMF

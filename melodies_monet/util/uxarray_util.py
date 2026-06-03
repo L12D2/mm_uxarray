@@ -20,6 +20,78 @@ import numpy as np
 import uxarray as ux
 import xarray as xr
 
+# Cache clean uxgrids built from SCRIP files (keyed by path). Depadding a
+# 174k-face SCRIP takes a few seconds, so build once per process.
+_CLEAN_UXGRID_CACHE = {}
+
+def clean_uxgrid_from_scrip(scrip_path, fill_value=-1):
+    """Build a degeneracy-free uxarray Grid from a SCRIP file.
+
+    SCRIP stores every cell padded to ``grid_corners`` slots by *repeating*
+    corners (e.g. a quad in a 10-corner array repeats one corner 6×). Those
+    repeated corners are degenerate and make ESMF refuse to build
+    conservative weights. This depads each face to its true polygon
+    (4/6/8/10-gon for ne0CONUS dual cells) so ESMF/xregrid can do true
+    area-weighted conservative regridding.
+
+    Result is cached by ``scrip_path``.
+
+    Parameters
+    ----------
+    scrip_path : str
+        Path to a SCRIP-format grid file (``grid_corner_lat``/
+        ``grid_corner_lon`` of shape ``(n_face, n_corners)``).
+    fill_value : int
+        Sentinel for unused slots in the ragged face-node connectivity.
+
+    Returns
+    -------
+    uxarray.Grid
+        Clean grid with variable-length ``face_node_connectivity``.
+    """
+    hit = _CLEAN_UXGRID_CACHE.get(scrip_path)
+    if hit is not None:
+        return hit
+
+    s = xr.open_dataset(scrip_path)
+    clat = np.asarray(s["grid_corner_lat"].values)  # (n_face, n_corners)
+    clon = np.asarray(s["grid_corner_lon"].values)
+    units = str(s["grid_corner_lat"].attrs.get("units", "")).lower()
+    if "rad" in units:
+        clat = np.rad2deg(clat)
+        clon = np.rad2deg(clon)
+
+    nf, mc = clat.shape
+
+    # Global node dedup via a rounded (lon, lat) key.
+    key = np.round(np.stack([clon.ravel(), clat.ravel()], axis=1), 6)
+    uniq, inv = np.unique(key, axis=0, return_inverse=True)
+    node_lon = uniq[:, 0].astype(float)
+    node_lat = uniq[:, 1].astype(float)
+    inv = inv.reshape(nf, mc)
+
+    # Per-face consecutive dedup (SCRIP pads by repeating corners); drop a
+    # closing duplicate if last kept == first.
+    face_conn = np.full((nf, mc), fill_value, dtype=np.int64)
+    for i in range(nf):
+        row = inv[i]
+        keep = [int(row[0])]
+        for j in range(1, mc):
+            if int(row[j]) != keep[-1]:
+                keep.append(int(row[j]))
+        if len(keep) > 1 and keep[-1] == keep[0]:
+            keep.pop()
+        face_conn[i, : len(keep)] = keep
+
+    grid = ux.Grid.from_topology(
+        node_lon=node_lon,
+        node_lat=node_lat,
+        face_node_connectivity=face_conn,
+        fill_value=fill_value,
+    )
+    _CLEAN_UXGRID_CACHE[scrip_path] = grid
+    return grid
+
 def _coord(obj, names):
     """Return ``(name, coord)`` for the first of ``names`` present on ``obj``.
 
@@ -32,7 +104,6 @@ def _coord(obj, names):
         if name in getattr(obj, "data_vars", {}):
             return name, obj[name]
     return None, None
-
 
 def _spatial_dim(obj):
     """Return ``(dim_name, lon_coord_name)`` for the unstructured column dim.
