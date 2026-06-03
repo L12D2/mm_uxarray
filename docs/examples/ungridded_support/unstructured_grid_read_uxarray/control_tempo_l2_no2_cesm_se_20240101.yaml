@@ -55,6 +55,10 @@ obs:
       scattering_weights: {}
       amf_troposphere: {}
 
+      # conservative gridding needs these added. 
+      latitude_bounds: {}
+      longitude_bounds: {}
+
 model:
   cam-chem-se:
     files:

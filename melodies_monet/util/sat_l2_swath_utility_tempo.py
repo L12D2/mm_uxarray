@@ -158,14 +158,16 @@ def _conservative_mod2swath(modobj, obsobj, method="conservative"):
     scrip = modobj.attrs.get("mio_scrip_file")
     out = regrid(modobj, method=method, src_grid=scrip, target_grid=swath_grid)
 
-    # out is on n_face (= nx*ny). Reshape each var back to (x, y).
+    # out is on the swath face dim (= nx*ny). Identify it by size match
+    # (robust to its name), reshape each var back to (x, y).
+    n_face = nx * ny
     result = xr.Dataset(attrs=dict(modobj.attrs))
     for v in out.data_vars:
         da = out[v]
-        if "n_face" not in da.dims:
-            result[v] = da
-            continue
-        transposed = da.transpose(..., "n_face")
+        face_dim = next((d for d in da.dims if da.sizes[d] == n_face), None)
+        if face_dim is None:
+            continue  # skip grid/node artifacts that aren't on the faces
+        transposed = da.transpose(..., face_dim)
         arr = np.asarray(transposed.values)
         new_shape = arr.shape[:-1] + (nx, ny)
         new_dims = transposed.dims[:-1] + ("x", "y")
@@ -178,6 +180,61 @@ def _conservative_mod2swath(modobj, obsobj, method="conservative"):
         lat=(("x", "y"), olat),
     )
     return result
+
+def _unstructured_back_to_modgrid(
+    concatenated, modobj, method="radius_mean", radius_deg=0.1,):
+    
+    """Project swath-paired data onto an unstructured model's columns.
+    Two modes:
+
+    - ``method`` in (conservative, bilinear, ...) and swath corner bounds
+      are present -> true area-weighted mesh-to-mesh regrid via xregrid
+      (:func:`_conservative_swath2mod`). **Mass-conserving.**
+    - otherwise -> cKDTree within-radius mean: each model column gets the
+      mean of all swath pixels within ``radius_deg`` (poor-man's area
+      weighting; columns with no pixel in range -> NaN). 0.1 deg ~= ~10 km.
+    """
+    from melodies_monet.util.regrid_util import regrid
+
+    if method in ("bilinear", "patch"):
+        warnings.warn(
+            f"_unstructured_back_to_modgrid: method={method!r} is not supported "
+            "for cell-data swath->model regridding (needs node data). Use "
+            "'conservative'. Falling back to radius_mean."
+        )
+    elif method in ("conservative", "conservative_normed"):
+        lon_b, _ = _swath_corner_bounds(concatenated)
+        if lon_b is not None:
+            return _conservative_swath2mod(concatenated, modobj, method=method)
+        warnings.warn(
+            "_unstructured_back_to_modgrid: conservative requested but the "
+            "paired swath has no corner bounds; falling back to radius_mean. "
+            "(Bounds are carried by _carry_swath_bounds in "
+            "regrid_and_apply_weights -- check they survived.)"
+        )
+
+    # Flatten swath (x, y) -> 1-D "pixel" with longitude/latitude as coords
+    # so regrid() sees it as an unstructured source.
+    flat = (
+        concatenated
+        .stack(pixel=("x", "y"))
+        .reset_index("pixel", drop=True)
+    )
+    if "lon" in flat.variables and "longitude" not in flat.variables:
+        flat = flat.rename({"lon": "longitude", "lat": "latitude"})
+    flat = flat.set_coords(["longitude", "latitude"])
+
+    mlon = np.asarray(modobj["longitude"].values).ravel()
+    mlat = np.asarray(modobj["latitude"].values).ravel()
+    col_dim = modobj["longitude"].dims[0]
+
+    return regrid(
+        flat,
+        target={"lon": mlon, "lat": mlat},
+        method="radius_mean",
+        radius=radius_deg,
+        target_dims=(col_dim,),
+    )
 
 def tempo_interp_mod2swath(obsobj, modobj, method="conservative", weights=None):
     """Interpolate model to satellite swath/swaths
@@ -661,7 +718,9 @@ def _regrid_and_apply_weights(
         assert tempo_sp == "HCHO", "TEMPO species must be HCHO or NO2."
         apply_weights = apply_weights_mod2tempo_hcho
         apply_weights_hydrostatic = apply_weights_mod2tempo_hcho_hydrostatic
-    if method == "conservative":
+    if method == "conservative" and not modobj.attrs.get(
+        "mio_has_unstructured_grid", False
+    ):
         if "lat_b" not in modobj:
             calc_grid_corners(modobj)
         if "lat_b" not in obsobj:
@@ -799,6 +858,49 @@ def regrid_and_apply_weights(
         return output_multiple
     raise TypeError("Obsobj must be xr.Dataset or dict")
 
+# def _conservative_swath2mod(concatenated, modobj, method="conservative"):
+#     """Conservatively regrid swath-paired data onto unstructured model columns.
+
+#     Builds a uxarray Grid from the swath pixel corner bounds (carried
+#     through by :func:`_carry_swath_bounds`), wraps the paired swath data on
+#     it, and uses xregrid mesh-to-mesh conservative regridding onto the
+#     model's (depadded SCRIP) mesh. Result is on the model column dim.
+#     """
+#     from melodies_monet.util.regrid_util import regrid
+#     from melodies_monet.util.uxarray_util import (
+#         clean_uxgrid_from_scrip,
+#         uxgrid_from_corner_bounds,
+#     )
+
+#     lon_b, lat_b = _swath_corner_bounds(concatenated)
+#     if lon_b is None:
+#         raise ValueError(
+#             "_conservative_swath2mod: no swath corner bounds on paired data."
+#         )
+
+#     # Centers just to recover (nx, ny) and the flatten order.
+#     if "longitude" in concatenated.variables:
+#         olon = np.asarray(concatenated["longitude"].values)
+#     else:
+#         olon = np.asarray(concatenated["lon"].values)
+#     nx, ny = olon.shape
+
+#     clon = np.asarray(lon_b.values).reshape(nx * ny, -1)
+#     clat = np.asarray(lat_b.values).reshape(nx * ny, -1)
+#     swath_grid = uxgrid_from_corner_bounds(clon, clat)
+
+#     # Flatten paired data to n_face (row-major over (x, y)) and wrap on the
+#     # swath mesh as the regrid source. Drop the bounds/center vars -- they're
+#     # geometry, not data to regrid.
+#     drop = [v for v in (lon_b.name, lat_b.name, "longitude", "latitude",
+#                          "lon", "lat") if v in concatenated.variables]
+#     flat = (
+#         concatenated.drop_vars(drop, errors="ignore")
+#         .stack(n_face=("x", "y"))
+#         .reset_index("n_face", drop=True)
+#     )
+#     src_uxds = ux.UxDataset(flat, uxgrid=swath_grid)
+
 def _conservative_swath2mod(concatenated, modobj, method="conservative"):
     """Conservatively regrid swath-paired data onto unstructured model columns.
 
@@ -807,6 +909,7 @@ def _conservative_swath2mod(concatenated, modobj, method="conservative"):
     it, and uses xregrid mesh-to-mesh conservative regridding onto the
     model's (depadded SCRIP) mesh. Result is on the model column dim.
     """
+    import uxarray as ux
     from melodies_monet.util.regrid_util import regrid
     from melodies_monet.util.uxarray_util import (
         clean_uxgrid_from_scrip,
@@ -842,58 +945,22 @@ def _conservative_swath2mod(concatenated, modobj, method="conservative"):
     )
     src_uxds = ux.UxDataset(flat, uxgrid=swath_grid)
 
-def _unstructured_back_to_modgrid(concatenated, modobj, radius_deg=0.1):
-    """Project swath-paired data onto an unstructured model's columns.
+    model_grid = clean_uxgrid_from_scrip(modobj.attrs["mio_scrip_file"])
+    out = regrid(src_uxds, method=method, target_grid=model_grid)
 
-    Thin wrapper around :func:`melodies_monet.util.regrid.regrid` for the
-    backward (swath -> model) direction. Each model column gets the
-    *mean* of all swath pixels within ``radius_deg`` (poor-man's area-
-    weighted aggregation; columns with no pixel in range -> NaN). 0.1 deg
-    ~= ~10 km at mid-latitudes, roughly matches typical TEMPO pixel size
-    + ne0CONUS column spacing so most model columns near the swath get
-    averaged from several pixels.
-
-    The flattened swath becomes the ``regrid`` source (treated as 1-D
-    unstructured with ``longitude``/``latitude`` on a ``pixel`` dim) and
-    the model column centers are the targets.
-    """
-    
-    from melodies_monet.util.regrid_util import regrid
-
-    if method in ("conservative", "conservative_normed", "bilinear", "patch"):
-        lon_b, _ = _swath_corner_bounds(concatenated)
-        if lon_b is not None:
-            return _conservative_swath2mod(concatenated, modobj, method=method)
-        warnings.warn(
-            "_unstructured_back_to_modgrid: conservative requested but the "
-            "paired swath has no corner bounds; falling back to radius_mean. "
-            "(Bounds are carried by _carry_swath_bounds in "
-            "regrid_and_apply_weights -- check they survived.)"
-        )
-
-    # Flatten swath (x, y) -> 1-D "pixel" with longitude/latitude as coords
-    # so regrid() sees it as an unstructured source.
-    flat = (
-        concatenated
-        .stack(pixel=("x", "y"))
-        .reset_index("pixel", drop=True)
-    )
-    if "lon" in flat.variables and "longitude" not in flat.variables:
-        flat = flat.rename({"lon": "longitude", "lat": "latitude"})
-    flat = flat.set_coords(["longitude", "latitude"])
-
-    mlon = np.asarray(modobj["longitude"].values).ravel()
-    mlat = np.asarray(modobj["latitude"].values).ravel()
+    # Rename the output's model-face dim (identified by size match) to the
+    # model's column dim, so it aligns with modobj for stats/plots.
     col_dim = modobj["longitude"].dims[0]
+    n_col = int(model_grid.n_face)
+    out_face_dim = next((d for d in out.dims if out.sizes[d] == n_col), None)
+    if out_face_dim is not None and out_face_dim != col_dim:
+        out = out.rename({out_face_dim: col_dim})
+    out = out.assign_coords({
+        "longitude": (col_dim, np.asarray(modobj["longitude"].values).ravel()),
+        "latitude": (col_dim, np.asarray(modobj["latitude"].values).ravel()),
+    })
+    return out
 
-    return regrid(
-        flat,
-        target={"lon": mlon, "lat": mlat},
-        method="radius_mean",
-        radius=radius_deg,
-        target_dims=(col_dim,),
-    )
-    
 def back_to_modgrid(
     paireddict,
     modobj,

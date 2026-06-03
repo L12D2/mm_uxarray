@@ -277,11 +277,22 @@ def _regrid_xregrid(src, target, method, src_grid=None, target_grid=None):
 
     # --- Unstructured target (e.g. TEMPO swath). ---
     if target_grid is not None:
-        # Empty UxDataset carrying just the target mesh; xregrid detects it
-        # as unstructured via .uxgrid and regrids src onto its n_face.
-        tgt_uxds = ux.UxDataset(xr.Dataset(), uxgrid=target_grid)
+        # xregrid places output on whatever location the target carries data.
+        # An EMPTY UxDataset target makes it default to NODES (n_node), which
+        # is wrong for cell/face values. Seed the target with a face-located
+        # placeholder so the result lands on n_face; drop it afterward.
+        n_face = int(target_grid.n_face)
+        tgt_uxds = ux.UxDataset(
+            {"_mm_face_loc": (("n_face",), np.zeros(n_face, dtype="float32"))},
+            uxgrid=target_grid,
+        )
         rg = Regridder(src_uxds, tgt_uxds, method=method)
-        return rg(src_uxds)
+
+        out = rg(src_uxds)
+
+        if hasattr(out, "data_vars") and "_mm_face_loc" in out.data_vars:
+            out = out.drop_vars("_mm_face_loc")
+        return out
 
     # --- Rectilinear target from 1-D lon/lat axes. ---
     if target is None:
