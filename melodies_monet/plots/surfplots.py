@@ -194,7 +194,7 @@ def map_projection(m, *, model_name=None):
             central_longitude=m.obj.cen_lon, central_latitude=m.obj.cen_lat)
     elif mod in {'ufs'} and m.is_global is True: # added global option for ufs-chem here 
         proj = ccrs.PlateCarree()
-    elif mod in {'cesm_fv', 'cesm_se', 'raqms'}:
+    elif mod in {'cesm_fv', 'cesm_se', 'raqms', 'mpas'}:
         proj = ccrs.PlateCarree()
     elif mod == 'random':
         proj = ccrs.PlateCarree()

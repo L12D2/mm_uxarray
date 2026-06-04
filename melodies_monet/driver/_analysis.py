@@ -342,7 +342,7 @@ class analysis:
                     m.plot_kwargs = self.control_dict["model"][mod]["plot_kwargs"]
 
                 # unstructured grid check
-                if m.model in ["cesm_se"]:
+                if any(k in str(m.model).lower() for k in ("cesm_se", "mpas")):
                 
                     model_cfg = self.control_dict["model"][mod]
                     

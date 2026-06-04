@@ -45,7 +45,7 @@ def render_unstructured_field(
     cbar_label=None,
     cbar_kwargs=None,
     text_kwargs=None,
-    periodic_elements="ignore",):
+    periodic_elements="split",):
     
     """Draw a 1-D unstructured column ``field`` as polygons on a cartopy ``ax``.
 
@@ -74,9 +74,15 @@ def render_unstructured_field(
         Overrides for ``figure.colorbar`` (default shrink/pad/extend).
     text_kwargs : dict, optional
         Passed to the colorbar label text.
-    periodic_elements : {"ignore", "split", "exclude"}
-        Antimeridian handling. "ignore" is correct (and fastest) for regional
-        grids; use "split" for global grids.
+    periodic_elements : {"split", "exclude", "ignore"}
+        Antimeridian (±180°) handling for cells that straddle the seam.
+        - "split" (default): split wrapping cells into correct polygons.
+          Required for GLOBAL meshes (e.g. MPAS, ne0CONUS) -- otherwise
+          wrapped cells smear as full-width horizontal bands across the plot.
+        - "exclude": drop wrapping cells (a thin gap at ±180° only; faster).
+        - "ignore": draw as-is -- ONLY safe for a purely regional mesh that
+          never crosses ±180°. Produces horizontal-stripe artifacts on any
+          mesh with antimeridian-crossing cells.
 
     Returns
     -------
