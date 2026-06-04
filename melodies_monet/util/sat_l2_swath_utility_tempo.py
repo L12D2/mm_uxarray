@@ -21,6 +21,30 @@ import xesmf as xe
 numba_logger = logging.getLogger("numba")
 numba_logger.setLevel(logging.WARNING)
 
+# Regridding methods valid for unstructured (cell-data) models such as
+# CESM-SE / MUSICA. ESMF 'bilinear' and 'patch' interpolate from mesh
+# NODES, but model output lives on cell centers (faces) -- DO NOT USE. 
+# Conservative (face-to-face, mass-conserving) is recommended;
+# the nearest family is the fast, non-conserving alternative.
+
+_UNSTRUCT_CONSERVATIVE = ("conservative", "conservative_normed")
+_UNSTRUCT_NEAREST = ("nearest_s2d", "nearest_d2s", "radius_mean")
+_UNSTRUCT_SUPPORTED = _UNSTRUCT_CONSERVATIVE + _UNSTRUCT_NEAREST
+
+def _unsupported_method_error(method, where):
+    """ValueError explaining which regrid methods unstructured
+    models support, and why bilinear/patch don't."""
+    return ValueError(
+        f"{where}: regrid_method={method!r} is not supported for unstructured "
+        "(cell-data) models such as CESM-SE / MUSICA.\n"
+        "ESMF 'bilinear' and 'patch' interpolate from mesh NODES, but the "
+        "model output is on cell centers (faces), so those methods cannot be "
+        "applied.\n"
+        "Supported methods (set 'regrid_method:' in the obs YAML block):\n"
+        "  - 'conservative'  (RECOMMENDED) true area-weighted, mass-conserving\n"
+        "  - 'nearest_s2d' / 'nearest_d2s'  fast nearest-neighbor (not conserving)\n"
+        "  - 'radius_mean'  within-radius average (swath->model direction)"
+    )
 
 def calc_grid_corners(ds, lat="latitude", lon="longitude"):
     """Adds latitude and longitude bounds inplace.
@@ -196,13 +220,7 @@ def _unstructured_back_to_modgrid(
     """
     from melodies_monet.util.regrid_util import regrid
 
-    if method in ("bilinear", "patch"):
-        warnings.warn(
-            f"_unstructured_back_to_modgrid: method={method!r} is not supported "
-            "for cell-data swath->model regridding (needs node data). Use "
-            "'conservative'. Falling back to radius_mean."
-        )
-    elif method in ("conservative", "conservative_normed"):
+    if method in _UNSTRUCT_CONSERVATIVE:
         lon_b, _ = _swath_corner_bounds(concatenated)
         if lon_b is not None:
             return _conservative_swath2mod(concatenated, modobj, method=method)
@@ -212,6 +230,9 @@ def _unstructured_back_to_modgrid(
             "(Bounds are carried by _carry_swath_bounds in "
             "regrid_and_apply_weights -- check they survived.)"
         )
+    elif method not in _UNSTRUCT_NEAREST:
+        # bilinear / patch / anything else hard error with guidance.
+        raise _unsupported_method_error(method, "_unstructured_back_to_modgrid")
 
     # Flatten swath (x, y) -> 1-D "pixel" with longitude/latitude as coords
     # so regrid() sees it as an unstructured source.
@@ -262,12 +283,16 @@ def tempo_interp_mod2swath(obsobj, modobj, method="conservative", weights=None):
     mod_at_swathtime = modobj.interp(time=obsobj.time.mean())
 
     if mod_at_swathtime.attrs.get("mio_has_unstructured_grid", False):
-        # Unstructured model. Conservative/bilinear -> true area-weighted
-        # mesh-to-mesh via xregrid (mass-conserving). nearest -> fast cKDTree.
-        if method in ("conservative", "conservative_normed", "bilinear", "patch"):
+        # Unstructured model. conservative and true area-weighted mesh-to-mesh
+        # via xregrid (mass-conserving). nearest goes via fast cKDTree. bilinear/
+        # patch are NOT supported (ESMF needs node-located data).
+        if method in _UNSTRUCT_CONSERVATIVE:
             return _conservative_mod2swath(mod_at_swathtime, obsobj, method=method)
-        return _nearest_mod2swath(mod_at_swathtime, obsobj)
-            
+        
+        if method in _UNSTRUCT_NEAREST:
+            return _nearest_mod2swath(mod_at_swathtime, obsobj)
+        raise _unsupported_method_error(method, "tempo_interp_mod2swath")
+                    
     if weights is None:
         regridder = xe.Regridder(
             mod_at_swathtime,

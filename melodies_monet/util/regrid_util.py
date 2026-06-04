@@ -275,6 +275,16 @@ def _regrid_xregrid(src, target, method, src_grid=None, target_grid=None):
     """
     src_uxds = _as_src_uxds(src, src_grid)
 
+    # crash and say bilinear and patch cannot work with unstructured source
+    if method in ("bilinear", "patch") and hasattr(src_uxds, "uxgrid"):
+        raise ValueError(
+            f"regrid: method={method!r} is not supported for an unstructured "
+            "(cell-data) source. ESMF bilinear/patch interpolate from mesh "
+            "nodes, but the source values are on cell faces. Use "
+            "'conservative' (mass-conserving) instead, or a nearest method "
+            "via the ckdtree backend."
+        )
+
     # --- Unstructured target (e.g. TEMPO swath). ---
     if target_grid is not None:
         # xregrid places output on whatever location the target carries data.
