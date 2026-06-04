@@ -346,16 +346,22 @@ class analysis:
                 
                     model_cfg = self.control_dict["model"][mod]
                     
-                    # if "grid_file" in model_cfg:
-                    #     m.grid_file = model_cfg["grid_file"]
-                    #     print("Grid file", m.grid_file)
-                
                     if "scrip_file" in model_cfg:
                         m.scrip_file = model_cfg["scrip_file"]
                         print("Scrip file", m.scrip_file)
-                
-                    else:
-                
+
+                    if "mesh_file" in model_cfg:
+                        m.mesh_file = model_cfg["mesh_file"]
+                        print("Mesh file", m.mesh_file)
+                    
+                    # Unstructured model output (CESM-SE / MPAS) needs a grid:
+                    # SCRIP (CESM-SE) or a native mesh (MPAS init file).
+                    _is_unstructured = any(
+                        k in str(m.model).lower() for k in ("cesm_se", "mpas")
+                    )
+                    if _is_unstructured and not (
+                        getattr(m, "scrip_file", None) or getattr(m, "mesh_file", None)
+                    ):
                         raise ValueError(
                             '"scrip_file" must be provided '
                             'for CESM-SE unstructured grid output!'
@@ -366,10 +372,9 @@ class analysis:
                 if proj_in == "None":
                     print(
                         f"NOTE: model.{mod}.projection is {proj_in!r} (str), "
-                        "but we assume you want `None` (Python null sentinel). "
-                        "To avoid this warning, "
-                        "update your control file to remove the projection setting "
-                        "or set to `~` or `null` if you want null value in YAML."
+                            'Unstructured model output (mod_type cesm_se or mpas) '
+                            'requires "scrip_file" (SCRIP, e.g. CESM-SE) or '
+                            '"mesh_file" (MPAS mesh/init file) in the YAML config.'
                     )
                     proj_in = None
                 if proj_in is not None:
@@ -961,6 +966,9 @@ class analysis:
                             "pres_pa_mid", "dz_m", "temperature_k",]
                         _sat_vars = [v for v in _sat_needed if v in mod.obj.variables]
                         mod_obj_for_sat = mod.obj[_sat_vars]
+
+                        # speed up by loading once. monetio v1 might fix this? 
+                        mod_obj_for_sat = mod_obj_for_sat.load()
                         
                         paired_data_atswath = sutil.regrid_and_apply_weights(
                             obs.obj, mod_obj_for_sat, species=mod_sp, method=regrid_method, tempo_sp=sat_sp)

@@ -128,6 +128,50 @@ def uxgrid_from_corner_bounds(corner_lon, corner_lat, fill_value=-1):
         fill_value=fill_value,
     )
 
+def open_uxgrid(grid_file, fill_value=-1):
+    """Open any unstructured grid file as a clean uxarray Grid (cached).
+
+    Dispatches by format so callers don't care whether the model ships a
+    padded SCRIP (ne0CONUS / CESM-SE) or a native mesh (MPAS):
+
+    - **SCRIP** (has ``grid_corner_lat``/``grid_corner_lon``): the corners are
+      padded to a fixed width by *repeating* nodes, which ESMF rejects for
+      conservative regridding. Depad them via :func:`clean_uxgrid_from_scrip`.
+    - **MPAS / UGRID / EXODUS**: uxarray reads these natively
+      (``ux.open_grid``) -- clean Voronoi/polygon cells, no padding, lon/lat
+      unit handling (e.g. MPAS radians) done internally. No depad needed.
+
+    Parameters
+    ----------
+    grid_file : str
+        Path to a SCRIP, MPAS, UGRID, or EXODUS grid/mesh file.
+    fill_value : int
+        Fill sentinel for the SCRIP depad path.
+
+    Returns
+    -------
+    uxarray.Grid
+    """
+    hit = _CLEAN_UXGRID_CACHE.get(grid_file)
+    if hit is not None:
+        return hit
+
+    with xr.open_dataset(grid_file) as ds:
+        is_scrip = (
+            "grid_corner_lat" in ds.variables
+            and "grid_corner_lon" in ds.variables
+        )
+
+    if is_scrip:
+        # clean_uxgrid_from_scrip caches under the same key as well.
+        grid = clean_uxgrid_from_scrip(grid_file, fill_value=fill_value)
+    else:
+        # MPAS / UGRID / EXODUS -> uxarray auto-detects and gives clean cells.
+        grid = ux.open_grid(grid_file)
+
+    _CLEAN_UXGRID_CACHE[grid_file] = grid
+    return grid
+
 def _coord(obj, names):
     """Return ``(name, coord)`` for the first of ``names`` present on ``obj``.
 

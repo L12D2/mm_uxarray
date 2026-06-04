@@ -50,6 +50,7 @@ rectilinear grid:
 """
 
 import os
+import gc
 import xarray as xr
 import numpy as np
 import uxarray as ux
@@ -60,6 +61,53 @@ _LAT_NAMES = ("latitude", "lat", "Latitude")
 
 _CKDTREE_METHODS = ("nearest_s2d", "nearest_d2s", "radius_mean")
 _XREGRID_METHODS = ("conservative", "conservative_normed", "bilinear", "patch")
+
+def _release_esmf(rg):
+    """Best-effort release of ESMF-side memory held by an xregrid Regridder.
+
+    ESMF (esmpy) allocates meshes/routehandles in a Fortran heap that Python's
+    GC does NOT reclaim when the Regridder goes out of scope. In the TEMPO
+    pairing loop a new Regridder is built per granule per direction (forward
+    and backward), each constructing ESMF meshes for the 174k-face model and
+    ~270k-cell swath -- so without explicit destruction the process leaks
+    hundreds of MB per granule (observed: 150+ GB over a multi-day run).
+
+    We try every destroy hook xregrid/esmpy might expose, drop the heavy
+    attributes (sparse weight matrices), then force a GC pass.
+    """
+    if rg is None:
+        return
+
+    def _safe_get(obj, name):
+        try:
+            return getattr(obj, name, None)
+        except Exception:
+            return None
+
+    # Destroy ESMF objects the Regridder may hold (names vary across versions).
+    objs = [rg, _safe_get(rg, "regrid"), _safe_get(rg, "_regrid"),
+            _safe_get(rg, "esmf_regrid")]
+    for obj in objs:
+        if obj is None:
+            continue
+        for attr in ("destroy", "_destroy", "free", "release"):
+            fn = _safe_get(obj, attr)
+            if callable(fn):
+                try:
+                    fn()
+                except Exception:
+                    pass
+    # Drop heavy cached arrays by clearing the INSTANCE dict directly
+    inst = getattr(rg, "__dict__", {})
+    for attr in ("_weights_matrix", "_total_weights", "_regrid", "regrid",
+                 "esmf_regrid"):
+        if attr in inst:
+            try:
+                inst[attr] = None
+            except Exception:
+                pass
+    del rg
+    gc.collect()
 
 # ==========================================================================
 # Config-driven xESMF regridder (structured obs/model path)
@@ -245,8 +293,8 @@ def _as_src_uxds(src, src_grid):
             "or pass a UxDataset as src."
         )
     if isinstance(src_grid, str):
-        from melodies_monet.util.uxarray_util import clean_uxgrid_from_scrip
-        uxgrid = clean_uxgrid_from_scrip(src_grid)
+        from melodies_monet.util.uxarray_util import open_uxgrid
+        uxgrid = open_uxgrid(src_grid)
     else:
         uxgrid = src_grid  # assume a uxarray.Grid
 
@@ -300,6 +348,10 @@ def _regrid_xregrid(src, target, method, src_grid=None, target_grid=None):
 
         out = rg(src_uxds)
 
+        # free memory
+        out = out.compute()
+        _release_esmf(rg)
+
         if hasattr(out, "data_vars") and "_mm_face_loc" in out.data_vars:
             out = out.drop_vars("_mm_face_loc")
         return out
@@ -321,7 +373,9 @@ def _regrid_xregrid(src, target, method, src_grid=None, target_grid=None):
         )
     target_ds = xr.Dataset(coords={"lon": ("lon", tlon), "lat": ("lat", tlat)})
     rg = Regridder(src_uxds, target_ds, method=method, periodic=True)
-    return rg(src_uxds)
+    out = rg(src_uxds).compute()
+    _release_esmf(rg)
+    return out
 
 
 def _resolve_coord_name(obj, given, candidates, kind):

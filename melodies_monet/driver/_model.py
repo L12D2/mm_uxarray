@@ -251,52 +251,45 @@ class model:
                 self.obj = mio.models._cesm_fv_mm.open_mfdataset(self.files, **self.mod_kwargs)
        
         # CAM-chem-SE grid or MUSICAv0
-        elif "cesm_se" in self.model.lower():
-            print("**** Reading CESM SE model output...")
-                    
+        elif "cesm_se" in self.model.lower() or "mpas" in self.model.lower():
+            print("**** Reading CAM unstructured model output (cesm_se / mpas)...")
             self.mod_kwargs.update({"var_list": list_input_var})
 
-            # scrip
-            if hasattr(self, "scrip_file"):
-                print(f"Using UXArray grid file: {self.scrip_file}")
-                if self.scrip_file.startswith("example:"):
-                    from melodies_monet import tutorial
-
-                    example_id = ":".join(s.strip() for s in self.scrip_file.split(":")[1:])
-                    self.scrip_file = tutorial.fetch_example(example_id)
-                print(f"Using SCRIP file: {self.scrip_file}")
-                self.mod_kwargs.update({"scrip_file": self.scrip_file})
-            else:
+            # Grid geometry: SCRIP (CESM-SE) or native MPAS mesh/init file.
+            scrip = getattr(self, "scrip_file", None)
+            mesh = getattr(self, "mesh_file", None)
+            if scrip and scrip.startswith("example:"):
+                from melodies_monet import tutorial
+                example_id = ":".join(s.strip() for s in scrip.split(":")[1:])
+                scrip = self.scrip_file = tutorial.fetch_example(example_id)
+            ux_grid_path = scrip or mesh
+            if ux_grid_path is None:
                 raise ValueError(
-                    'CESM-SE requires either "grid_file" '
-                    'or "scrip_file" in the YAML config.')
-            try:
-                self.obj = mio.models.cesm_se.open_mfdataset(self.files, **self.mod_kwargs)
-            except AttributeError:
-                self.obj = mio.models._cesm_se_mm.open_mfdataset(self.files, **self.mod_kwargs)
-                
-            # self.obj, self.obj_scrip = read_cesm_se.open_mfdataset(self.files,**self.mod_kwargs)
-            # self.obj.monet.scrip = self.obj_scrip
+                    'CAM unstructured output (cesm_se / mpas) requires '
+                    '"scrip_file" (SCRIP, e.g. CESM-SE) or "mesh_file" '
+                    '(MPAS mesh/init file) in the YAML config.')
 
-            # setting attributes for the ugrid, scrip, exodus file that uxarray needs. 
-            # Open the unstructured grid with uxarray so plotting goes through
-            # the uxarray render path. ux.open_grid auto-detects format
+            if scrip:
+                self.mod_kwargs.update({"scrip_file": scrip})
+            if mesh:
+                self.mod_kwargs.update({"mesh_file": mesh})
+            print(f"Using unstructured grid file: {ux_grid_path}")
 
-            _ux_path = getattr(self, "scrip_file", None)
-            if _ux_path:
-                try:
-                    self.uxgrid = ux.open_grid(_ux_path)
-                    print("**** Opened uxarray grid:", _ux_path)
-                except Exception as e:
-                    self.uxgrid = None
-                    warnings.warn(f"Could not open uxarray grid from {_ux_path!r}; "
-                        f"continuing with the legacy plotting path. Reason: {e}")
-
-            # if hasattr(self, "grid_file") and self.grid_file:
-            #     self.obj.attrs['mio_grid_file'] = self.grid_file
-            if hasattr(self, "scrip_file") and self.scrip_file:
-                self.obj.attrs['mio_scrip_file'] = self.scrip_file
+            from monetio.models import _cam_unstructured
+            self.obj = _cam_unstructured.open_mfdataset(self.files, **self.mod_kwargs)
             
+            try:
+                self.uxgrid = ux.open_grid(ux_grid_path)
+                print("**** Opened uxarray grid:", ux_grid_path)
+            except Exception as e:
+                self.uxgrid = None
+                warnings.warn(f"Could not open uxarray grid from {ux_grid_path!r}; "
+                    f"continuing with the legacy plotting path. Reason: {e}")
+            if scrip:
+                self.obj.attrs['mio_scrip_file'] = scrip
+            if mesh:
+                self.obj.attrs['mio_mesh_file'] = mesh
+                
             self.obj.attrs['mio_has_unstructured_grid'] = True
 
             # insert this here for the unstructured grid stuff. This renaming may be breakng somewhere else, but gets it out of the 
@@ -311,61 +304,6 @@ class model:
             _promote = [c for c in ("longitude", "latitude") if c in self.obj.data_vars]
             if _promote:
                 self.obj = self.obj.set_coords(_promote)
-
-            # # derive pres_pad mid from cesm_se native variables
-            # if "pres_pa_mid" not in self.obj.variables:
-            #     _need = {"hyam", "hybm", "PS"}
-            #     if _need.issubset(set(self.obj.variables)):
-            #         _P0 = (
-            #             float(self.obj["P0"].values)
-            #             if "P0" in self.obj.variables
-            #             else 100000.0
-            #         )
-            #         _p_mid = self.obj["hyam"] * _P0 + self.obj["hybm"] * self.obj["PS"]
-            #         _p_mid.attrs.update({
-            #             "units": "Pa",
-            #             "long_name": "Pressure at mid-level",
-            #             "description": "hyam*P0 + hybm*PS",
-            #         })
-            #         self.obj["pres_pa_mid"] = _p_mid
-            #     else:
-            #         warnings.warn(
-            #             "CESM-SE: cannot derive 'pres_pa_mid' -- missing one of "
-            #             f"{sorted(_need - set(self.obj.variables))}. Downstream "
-            #             "code that needs pressure (e.g. satellite pairing) will "
-            #             "fail until this is loaded."
-            #         )
-
-            #  # derive temperature_k from cesm_se native variables
-            # if "temperature_k" not in self.obj.variables and "T" in self.obj.variables:
-            #     self.obj["temperature_k"] = self.obj["T"]
-            #     self.obj["temperature_k"].attrs.setdefault("units", "K")
-
-            # # dz_m: layer thickness in meters via hydrostatic balance from
-            # # https://github.com/PeizhiHao71/monetio_cesm_se_regrid/blob/cesm-se-regrid-support/monetio/models/_cesm_se_mm.py 
-            # # PDELDRY (dry pressure thickness). Matches monetio's
-            # # _cesm_se_mm.py convention (`_calc_layer_thickness_mid`) and
-            # # enables the satellite partial-column path
-            # # (sat_l2_swath_utility_tempo.py guards on `if "dz_m" in
-            # # modobj.keys():`). Without it the pipeline falls back to a
-            # # hydrostatic-only approximation with a warning.
-
-            # if "dz_m" not in self.obj.variables and all(
-            #     _v in self.obj.variables
-            #     for _v in ("PDELDRY", "pres_pa_mid", "temperature_k")
-            # ):
-            #     _Rd = 287.04   # J/(kg*K), dry air
-            #     _g = 9.80665   # m/s^2
-            #     _dz = (
-            #         self.obj["PDELDRY"] * _Rd * self.obj["temperature_k"]
-            #         / (self.obj["pres_pa_mid"] * _g)
-            #     )
-            #     _dz.attrs.update({
-            #         "units": "m",
-            #         "long_name": "Layer thickness",
-            #         "description": "PDELDRY * Rd * T / (P_mid * g)",
-            #     })
-            #     self.obj["dz_m"] = _dz
 
         elif "camx" in self.model.lower():
             self.mod_kwargs.update({"var_list": list_input_var})

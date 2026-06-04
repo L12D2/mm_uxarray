@@ -179,8 +179,10 @@ def _conservative_mod2swath(modobj, obsobj, method="conservative"):
     clat = np.asarray(lat_b.values).reshape(nx * ny, -1)
     swath_grid = uxgrid_from_corner_bounds(clon, clat)
 
-    scrip = modobj.attrs.get("mio_scrip_file")
-    out = regrid(modobj, method=method, src_grid=scrip, target_grid=swath_grid)
+    # model grid file (e.g. SCRIP) or the native MPAS native mesh 
+    grid_file = (modobj.attrs.get("mio_scrip_file")
+                 or modobj.attrs.get("mio_mesh_file"))
+    out = regrid(modobj, method=method, src_grid=grid_file, target_grid=swath_grid)
 
     # out is on the swath face dim (= nx*ny). Identify it by size match
     # (robust to its name), reshape each var back to (x, y).
@@ -883,49 +885,6 @@ def regrid_and_apply_weights(
         return output_multiple
     raise TypeError("Obsobj must be xr.Dataset or dict")
 
-# def _conservative_swath2mod(concatenated, modobj, method="conservative"):
-#     """Conservatively regrid swath-paired data onto unstructured model columns.
-
-#     Builds a uxarray Grid from the swath pixel corner bounds (carried
-#     through by :func:`_carry_swath_bounds`), wraps the paired swath data on
-#     it, and uses xregrid mesh-to-mesh conservative regridding onto the
-#     model's (depadded SCRIP) mesh. Result is on the model column dim.
-#     """
-#     from melodies_monet.util.regrid_util import regrid
-#     from melodies_monet.util.uxarray_util import (
-#         clean_uxgrid_from_scrip,
-#         uxgrid_from_corner_bounds,
-#     )
-
-#     lon_b, lat_b = _swath_corner_bounds(concatenated)
-#     if lon_b is None:
-#         raise ValueError(
-#             "_conservative_swath2mod: no swath corner bounds on paired data."
-#         )
-
-#     # Centers just to recover (nx, ny) and the flatten order.
-#     if "longitude" in concatenated.variables:
-#         olon = np.asarray(concatenated["longitude"].values)
-#     else:
-#         olon = np.asarray(concatenated["lon"].values)
-#     nx, ny = olon.shape
-
-#     clon = np.asarray(lon_b.values).reshape(nx * ny, -1)
-#     clat = np.asarray(lat_b.values).reshape(nx * ny, -1)
-#     swath_grid = uxgrid_from_corner_bounds(clon, clat)
-
-#     # Flatten paired data to n_face (row-major over (x, y)) and wrap on the
-#     # swath mesh as the regrid source. Drop the bounds/center vars -- they're
-#     # geometry, not data to regrid.
-#     drop = [v for v in (lon_b.name, lat_b.name, "longitude", "latitude",
-#                          "lon", "lat") if v in concatenated.variables]
-#     flat = (
-#         concatenated.drop_vars(drop, errors="ignore")
-#         .stack(n_face=("x", "y"))
-#         .reset_index("n_face", drop=True)
-#     )
-#     src_uxds = ux.UxDataset(flat, uxgrid=swath_grid)
-
 def _conservative_swath2mod(concatenated, modobj, method="conservative"):
     """Conservatively regrid swath-paired data onto unstructured model columns.
 
@@ -937,7 +896,7 @@ def _conservative_swath2mod(concatenated, modobj, method="conservative"):
     import uxarray as ux
     from melodies_monet.util.regrid_util import regrid
     from melodies_monet.util.uxarray_util import (
-        clean_uxgrid_from_scrip,
+        open_uxgrid,
         uxgrid_from_corner_bounds,
     )
 
@@ -984,7 +943,9 @@ def _conservative_swath2mod(concatenated, modobj, method="conservative"):
     )
     src_uxds = ux.UxDataset(flat, uxgrid=swath_grid)
 
-    model_grid = clean_uxgrid_from_scrip(modobj.attrs["mio_scrip_file"])
+    _grid_file = (modobj.attrs.get("mio_scrip_file")
+                  or modobj.attrs.get("mio_mesh_file"))
+    model_grid = open_uxgrid(_grid_file)
     out = regrid(src_uxds, method=method, target_grid=model_grid)
 
     cov = out["_mm_cov"]
