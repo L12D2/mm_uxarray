@@ -943,13 +943,31 @@ def _conservative_swath2mod(concatenated, modobj, method="conservative"):
         .stack(n_face=("x", "y"))
         .reset_index("n_face", drop=True)
     )
+    # Drop coords riding on the swath spatial dim (time, scan_num, ...).
+    # xregrid copies source coords to the output; a coord on the swath
+    # n_face (270336) collides with the model-grid output n_face (174098).
+    flat = flat.drop_vars(
+        [c for c in flat.coords if "n_face" in flat[c].dims], errors="ignore"
+    )
+
+    # Coverage tracer: ones regridded with the SAME weights = fraction of
+    # each model column covered by swath cells. Divide data by it to get the
+    # true area-average over the covered part, and send uncovered (coverage 0)
+    # columns to NaN instead of a spurious 0.
+    flat = flat.assign(
+        _mm_cov=(("n_face",), np.ones(flat.sizes["n_face"], dtype="float64"))
+    )
     src_uxds = ux.UxDataset(flat, uxgrid=swath_grid)
 
     model_grid = clean_uxgrid_from_scrip(modobj.attrs["mio_scrip_file"])
     out = regrid(src_uxds, method=method, target_grid=model_grid)
 
-    # Rename the output's model-face dim (identified by size match) to the
-    # model's column dim, so it aligns with modobj for stats/plots.
+    cov = out["_mm_cov"]
+    out = out.drop_vars("_mm_cov")
+    cov_ok = cov > 1e-6
+    out = (out / cov).where(cov_ok)
+
+    # Rename the output's model-face dim ...
     col_dim = modobj["longitude"].dims[0]
     n_col = int(model_grid.n_face)
     out_face_dim = next((d for d in out.dims if out.sizes[d] == n_col), None)

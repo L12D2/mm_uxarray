@@ -102,7 +102,7 @@ def uxgrid_from_corner_bounds(corner_lon, corner_lat, fill_value=-1):
     nf, mc = clon.shape
 
     # Global node dedup via a rounded (lon, lat) key.
-    key = np.round(np.stack([clon.ravel(), clat.ravel()], axis=1), 6)
+    key = np.round(np.stack([clon.ravel(), clat.ravel()], axis=1), 4)
     uniq, inv = np.unique(key, axis=0, return_inverse=True)
     node_lon = uniq[:, 0].astype(float)
     node_lat = uniq[:, 1].astype(float)

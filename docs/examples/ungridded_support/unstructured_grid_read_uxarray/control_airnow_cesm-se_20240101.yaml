@@ -57,6 +57,7 @@ model:
 # Observation definitions
 obs:
   airnow: # obs label
+    regrid_method: conservative
     use_airnow: true
     filename: /glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/output/airnow_camchemse/AirNow_20240101_20240201.nc
 
