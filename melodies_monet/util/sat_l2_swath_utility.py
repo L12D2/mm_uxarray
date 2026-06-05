@@ -554,6 +554,15 @@ def regrid_and_apply_weights_tropomi(obsobj, modobj, species=["NO2"],
         # Select the model to this granule's overpass time
         if "time" in modobj.dims and gtime is not None:
             tsel = gtime if np.ndim(gtime) == 0 else np.asarray(gtime).ravel()[0]
+
+            # fix the time issue later 
+            mtimes = modobj["time"].values
+            tmin, tmax = mtimes.min(), mtimes.max()
+            if tsel < tmin:
+                tsel = tmin
+            elif tsel > tmax:
+                tsel = tmax
+                
             try:
                 mod_t = modobj.interp(time=tsel)
             except Exception:

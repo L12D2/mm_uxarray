@@ -65,9 +65,7 @@ obs:
       
       #/glade/campaign/acom/acom-weather/amirrezaei/tropomi_no2/2024/S5P_OFFL_L2__NO2____20240101T074458_20240101T092629_32219_03_020600_20240102T234600.nc
       #/glade/campaign/acom/acom-weather/amirrezaei/tropomi_no2/2024/S5P_OFFL_L2__NO2____2024010[3]T*.nc
-
-      #/glade/campaign/acom/acom-weather/amirrezaei/tropomi_no2/2024/S5P_OFFL_L2__NO2____20240101T[01][179]*.nc
-      
+  
     #sat_method: apply_ak
     #apply_ak: true
     # variables:
@@ -100,11 +98,13 @@ plots:
       cmap: 'Spectral_r'
     text_kwargs:
       fontsize: 16
-    domain_type: ["all"]       #"auto-region:box"]
-    domain_name: ["ASIA-AQ"]   #, "Thailand"]
-    domain_info:
-      Thailand:
-        bounds: [97, 106, 5, 20]
+    # domain_type: ["all"]       #"auto-region:box"]
+    # domain_name: ["ASIA-AQ"]   #, "Thailand"]
+    domain_type: ['all', 'all']
+    domain_name: ['CONUS', 'model']
+    # domain_info:
+    #   Thailand:
+    #     bounds: [97, 106, 5, 20]
     data: ['tropomi_l2_no2_mpas']
     data_proc:
       set_axis: false
@@ -119,11 +119,13 @@ plots:
       cmap: 'RdBu_r'
     text_kwargs:
       fontsize: 16
-    domain_type: ["all"]       #"auto-region:box"]
-    domain_name: ["ASIA-AQ"]   #, "Thailand"]
-    domain_info:
-      Thailand:
-        bounds: [97, 106, 5, 20]
+    # domain_type: ["all"]       #"auto-region:box"]
+    # domain_name: ["ASIA-AQ"]   #, "Thailand"]
+    domain_type: ['all', 'all']
+    domain_name: ['CONUS', 'model']
+    # domain_info:
+    #   Thailand:
+    #     bounds: [97, 106, 5, 20]
     data: ['tropomi_l2_no2_mpas']
     data_proc:
       set_axis: false
@@ -138,11 +140,13 @@ plots:
       markersize: 10.
     text_kwargs:
       fontsize: 18.
-    domain_type: ["all"]       #"auto-region:box"]
-    domain_name: ["ASIA-AQ"]   #, "Thailand"]
-    domain_info:
-      Thailand:
-        bounds: [97, 106, 5, 20]
+    # domain_type: ["all"]       #"auto-region:box"]
+    # domain_name: ["ASIA-AQ"]   #, "Thailand"]
+    domain_type: ['all', 'all']
+    domain_name: ['CONUS', 'model']
+    # domain_info:
+    #   Thailand:
+    #     bounds: [97, 106, 5, 20]
     data: ["tropomi_l2_no2_mpas"]
     data_proc:
       set_axis: false
