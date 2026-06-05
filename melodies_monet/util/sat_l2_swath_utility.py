@@ -290,3 +290,303 @@ def cal_amf_wrfchem(scatw, wrfpreslayer, tpreslev, troppres, wrfno2layer_molec, 
 
     return ratio 
 
+# Conservative / unstructured TROPOMI NO2 operator (model -> TROPOMI column)
+# Reuses the model-agnostic regrid() (regrid_util) + uxarray helpers
+
+def _to_molmol(da):
+    """Return model mixing ratio in mol/mol, deciding by VALUE MAGNITUDE.
+
+    The CAM-unstructured reader scales NO2 to ppbV (~0.01-300) but can leave
+    the units attribute as 'mol/mol' (stale-attr bug). mol/mol NO2 is
+    ~1e-9-1e-7, so a max above ~1e-3 means the values are really ppbV.
+    """
+    mx = float(np.nanmax(np.abs(da.values)))
+    return da * 1e-9 if mx > 1e-3 else da
+
+def interp_vertical_mod2tropomi(obsobj, modobj_swath, variables=("NO2",)):
+    """Interpolate model mixing ratio (intensive) onto TROPOMI's layers.
+    
+    interpolate the model *concentration* in log-pressure onto those layers; the partial
+    column is integrated afterward (in :func:`apply_weights_mod2tropomi_no2`)
+    using TROPOMI's own layer thickness 
+    
+    Parameters
+    ----------
+    obsobj : xr.Dataset
+        One TROPOMI granule (time squeezed) with ``pres_pa_mid`` (z, y, x).
+    modobj_swath : xr.Dataset
+        Model already regridded to the swath pixels, with ``pres_pa_mid``
+        (z_mod, y, x) and the requested ``variables``.
+
+    Returns
+    -------
+    xr.Dataset
+        ``variables`` interpolated onto TROPOMI's z layers, dims (z, y, x).
+    """
+    
+    p_mod = np.asarray(modobj_swath["pres_pa_mid"].transpose("z", "y", "x").values)
+    p_trop = np.asarray(obsobj["pres_pa_mid"].transpose("z", "y", "x").values)
+    nz_t, ny, nx = p_trop.shape
+    out = xr.Dataset()
+    for var in list(variables):
+        src = np.asarray(modobj_swath[var].transpose("z", "y", "x").values)
+        dest = np.full((nz_t, ny, nx), np.nan, dtype=float)
+        for j in range(ny):
+            for i in range(nx):
+                mp = p_mod[:, j, i]; mc = src[:, j, i]; tp = p_trop[:, j, i]
+                good = np.isfinite(mp) & np.isfinite(mc)
+                if good.sum() < 2 or not np.isfinite(tp).any():
+                    continue
+                order = np.argsort(mp[good])
+                dest[:, j, i] = np.interp(
+                    np.log10(tp), np.log10(mp[good][order]), mc[good][order],
+                    left=np.nan, right=np.nan,
+                )
+        out[var] = xr.DataArray(dest, dims=("z", "y", "x"))
+    return out
+
+def apply_weights_mod2tropomi_no2(obsobj, modobj_on_tropomi_layers, species="NO2"):
+    """Apply the TROPOMI averaging kernel to a model NO2 profile.
+
+    Mirrors :func:`apply_weights_mod2tempo_no2` but uses TROPOMI's
+    averaging kernel instead of scattering weights:
+
+      AK_trop = averaging_kernel * (amf_total / amf_troposphere)
+      subcol  = vmr * (dp/g) * (NA/M_air) / 1e4         # molec/cm2 per layer
+      VCD     = sum over tropospheric layers (p >= tropopause) of AK_trop*subcol
+
+    Parameters
+    ----------
+    obsobj : xr.Dataset
+        One TROPOMI granule (time squeezed): averaging_kernel (z,y,x),
+        air_mass_factor_troposphere/_total (y,x), pres_pa_mid (z,y,x),
+        pres_pa_int (z_stagg,y,x), tm5_tropopause_pressure (y,x).
+    modobj_on_tropomi_layers : xr.Dataset
+        Model ``species`` mixing ratio on TROPOMI's z layers (z,y,x), from
+        :func:`interp_vertical_mod2tropomi`. Units auto-detected (ppbV/mol/mol).
+
+    Returns
+    -------
+    xr.DataArray
+        Model NO2 tropospheric column with the AK applied, molec/cm2, (y, x).
+    """
+    g, M_air, NA = 9.80665, 0.0289644, 6.022e23
+
+    vmr = _to_molmol(modobj_on_tropomi_layers[species]).transpose("z", "y", "x")
+
+    pint = obsobj["pres_pa_int"].transpose("z_stagg", "y", "x")
+    dp = np.abs(
+        pint.isel(z_stagg=slice(0, -1)).values
+        - pint.isel(z_stagg=slice(1, None)).values
+    )
+    dp = xr.DataArray(dp, dims=("z", "y", "x"))
+    subcol = vmr * dp * (NA / (g * M_air) / 1e4)            # molec/cm2 per layer
+
+    ak = obsobj["averaging_kernel"].transpose("z", "y", "x")
+    ak_trop = ak * (obsobj["air_mass_factor_total"]
+                    / obsobj["air_mass_factor_troposphere"])
+    trop = (obsobj["pres_pa_mid"].transpose("z", "y", "x")
+            >= obsobj["tm5_tropopause_pressure"])
+
+    vcd = (ak_trop * subcol).where(trop).sum("z", skipna=True)
+    vcd = vcd.where(np.isfinite(vmr.isel(z=0)))
+    vcd.attrs = {
+        "units": "molecules/cm2",
+        "description": "model NO2 tropospheric column after applying TROPOMI averaging kernel",
+        "history": "Created by MELODIES-MONET, apply_weights_mod2tropomi_no2",
+    }
+    return vcd.where(np.isfinite(vcd))
+
+# Orchestrator: conservative/unstructured TROPOMI NO2 pairing.
+# Mirrors the TEMPO regrid_and_apply_weights flow but with the TROPOMI
+# averaging-kernel operator. Reuses only the shared, product-agnostic regrid
+# primitives (regrid_util.regrid, uxarray_util.open_uxgrid /
+# uxgrid_from_corner_bounds) -- no dependency on the TEMPO utility.
+
+_TROPOMI_NO2_VAR = "nitrogendioxide_tropospheric_column"
+_MOL_M2_TO_MOLEC_CM2 = 6.02214e19
+_CONSERVATIVE = ("conservative", "conservative_normed")
+
+def _tropomi_swath_mesh(o):
+    """Build a uxarray Grid from a TROPOMI granule's pixel corner bounds.
+
+    Returns (grid, (ny, nx)). Flatten order is row-major over (y, x), matching
+    how the n_face result is reshaped back.
+    """
+    from melodies_monet.util.uxarray_util import uxgrid_from_corner_bounds
+
+    olon = np.asarray(o["longitude"].values)  # (y, x)
+    ny, nx = olon.shape
+    clon = np.asarray(o["longitude_bounds"].values).reshape(ny * nx, -1)
+    clat = np.asarray(o["latitude_bounds"].values).reshape(ny * nx, -1)
+    return uxgrid_from_corner_bounds(clon, clat), (ny, nx)
+
+
+def _mod2tropomi_swath(modobj, o, method, mod_vars, grid_file):
+    """Regrid model fields onto the TROPOMI swath pixels (y, x).
+
+    conservative -> mesh-to-mesh via xregrid (model SCRIP/MPAS mesh -> swath
+    cells from bounds); nearest/radius -> cKDTree at pixel centers. Returns a
+    Dataset with each requested var on (..., y, x).
+    """
+    from melodies_monet.util.regrid_util import regrid
+
+    msrc = modobj[[v for v in mod_vars if v in modobj.variables]]
+    olon = np.asarray(o["longitude"].values)
+    olat = np.asarray(o["latitude"].values)
+    ny, nx = olon.shape
+
+    if method in _CONSERVATIVE:
+        swath_grid, _ = _tropomi_swath_mesh(o)
+        out = regrid(msrc, method=method, src_grid=grid_file, target_grid=swath_grid)
+        nface = ny * nx
+        res = xr.Dataset()
+        for v in out.data_vars:
+            da = out[v]
+            fd = next((d for d in da.dims if da.sizes[d] == nface), None)
+            if fd is None:
+                continue
+            t = da.transpose(..., fd)
+            arr = np.asarray(t.values).reshape(t.shape[:-1] + (ny, nx))
+            res[v] = xr.DataArray(arr, dims=t.dims[:-1] + ("y", "x"),
+                                  attrs=dict(da.attrs))
+        res = res.assign_coords(longitude=(("y", "x"), olon),
+                                latitude=(("y", "x"), olat))
+        return res
+
+    # nearest family
+    out = regrid(msrc, target={"lon": olon, "lat": olat},
+                 method=method, target_dims=("y", "x"))
+    return out
+
+
+def _tropomi_swath2mod(swath, modobj, method, data_vars):
+    """Regrid swath-paired fields (y, x) onto the unstructured model columns.
+
+    conservative -> mesh-to-mesh via xregrid (swath cells -> model mesh);
+    else -> cKDTree within-radius mean. Returns a Dataset on the model
+    column dim with longitude/latitude attached.
+    """
+    import uxarray as ux
+    from melodies_monet.util.regrid_util import regrid
+    from melodies_monet.util.uxarray_util import open_uxgrid
+
+    col_dim = modobj["longitude"].dims[0]
+    mlon = np.asarray(modobj["longitude"].values).ravel()
+    mlat = np.asarray(modobj["latitude"].values).ravel()
+    grid_file = (modobj.attrs.get("mio_scrip_file")
+                 or modobj.attrs.get("mio_mesh_file"))
+
+    if method in _CONSERVATIVE and "longitude_bounds" in swath.variables:
+        swath_grid, (ny, nx) = _tropomi_swath_mesh(swath)
+        flat = (
+            swath[data_vars]
+            .stack(n_face=("y", "x"))
+            .reset_index("n_face", drop=True)
+        )
+        flat = flat.drop_vars(
+            [c for c in flat.coords if "n_face" in flat[c].dims], errors="ignore"
+        )
+        src = ux.UxDataset(flat, uxgrid=swath_grid)
+        model_grid = open_uxgrid(grid_file)
+        out = regrid(src, method=method, target_grid=model_grid)
+        n_col = int(model_grid.n_face)
+        d = next((dd for dd in out.dims if out.sizes[dd] == n_col), None)
+        if d is not None and d != col_dim:
+            out = out.rename({d: col_dim})
+        return out.assign_coords({"longitude": (col_dim, mlon),
+                                  "latitude": (col_dim, mlat)})
+
+    # nearest / radius_mean fallback
+    flat = (
+        swath[data_vars]
+        .stack(pixel=("y", "x"))
+        .reset_index("pixel", drop=True)
+        .set_coords(["longitude", "latitude"])
+    )
+    return regrid(flat, target={"lon": mlon, "lat": mlat},
+                  method="radius_mean", radius=0.1, target_dims=(col_dim,))
+
+
+def regrid_and_apply_weights_tropomi(obsobj, modobj, species=["NO2"],
+                                     method="conservative"):
+    """Pair an unstructured model with TROPOMI L2 NO2 (AK applied).
+
+    For each granule: forward-regrid model -> swath, interpolate the model
+    profile onto TROPOMI's layers, apply the averaging kernel, then
+    regrid the AK'd model column AND the obs column back onto the model
+    grid. Granules are concatenated along ``time``.
+
+    Parameters
+    ----------
+    obsobj : dict[str, list[xr.Dataset]]
+        Output of the generic TROPOMI reader (tropomi_l2.open_datasets):
+        keyed by date, each value a list of orbit granules.
+    modobj : xr.Dataset
+        Unstructured model with longitude/latitude on its column dim,
+        NO2 (ppbV or mol/mol), pres_pa_mid, and mio_scrip_file/mio_mesh_file.
+    species : list[str]
+        Model species name(s); species[0] is paired.
+    method : str
+        Regrid method (conservative recommended; nearest_s2d/radius_mean ok).
+
+    Returns
+    -------
+    xr.Dataset
+        Paired model + obs NO2 tropospheric columns (molec/cm2) on the model
+        column dim, stacked along ``time`` (one entry per granule).
+    """
+    sp = species[0]
+    grid_file = (modobj.attrs.get("mio_scrip_file")
+                 or modobj.attrs.get("mio_mesh_file"))
+
+    # Flatten dict[date -> list[granule]] to a flat granule list.
+    granules = []
+    for v in obsobj.values():
+        granules.extend(v if isinstance(v, list) else [v])
+
+    out_list = []
+    for o in granules:
+        if "time" in o.dims:
+            o = o.squeeze("time", drop=False)
+        gtime = o["time"].values if "time" in o.coords else None
+
+        # Select the model to this granule's overpass time
+        if "time" in modobj.dims and gtime is not None:
+            tsel = gtime if np.ndim(gtime) == 0 else np.asarray(gtime).ravel()[0]
+            try:
+                mod_t = modobj.interp(time=tsel)
+            except Exception:
+                mod_t = modobj.sel(time=tsel, method="nearest")
+        elif "time" in modobj.dims:
+            mod_t = modobj.isel(time=0)
+        else:
+            mod_t = modobj
+            
+        # forward model to swath (NO2 + model pressure for the vertical interp)
+        on_swath = _mod2tropomi_swath(
+            mod_t, o, method, ["NO2", "pres_pa_mid"], grid_file
+        )
+        # model vmr onto TROPOMI's 34 layers
+        no2_t = interp_vertical_mod2tropomi(o, on_swath, ["NO2"])
+        # averaging-kernel applied model column (molec/cm2), (y, x)
+        model_col = apply_weights_mod2tropomi_no2(o, no2_t, "NO2")
+        obs_col = o[_TROPOMI_NO2_VAR] * _MOL_M2_TO_MOLEC_CM2  # molec/cm2
+
+        swath = xr.Dataset(
+            {sp: model_col, _TROPOMI_NO2_VAR: obs_col,
+             "latitude_bounds": o["latitude_bounds"],
+             "longitude_bounds": o["longitude_bounds"]},
+            coords={"longitude": o["longitude"], "latitude": o["latitude"]},
+        )
+
+        on_mod = _tropomi_swath2mod(swath, modobj, method, [sp, _TROPOMI_NO2_VAR])
+        if gtime is not None:
+            tval = gtime if np.ndim(gtime) == 0 else np.asarray(gtime).ravel()[0]
+            on_mod = on_mod.expand_dims(time=[np.datetime64(tval)])
+        out_list.append(on_mod)
+
+    if not out_list:
+        return xr.Dataset()
+    return xr.concat(out_list, dim="time")
+    

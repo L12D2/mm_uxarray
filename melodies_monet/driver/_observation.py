@@ -275,15 +275,20 @@ class observation:
                 #   with variables: Latitude, Longitude, Scan_Start_Time, parameters, ...
             elif self.sat_type == "tropomi_l2_no2":
                 # from monetio import tropomi_l2_no2
-                print("Reading TROPOMI L2 NO2")
-                try:
+                if self.sat_method == "replace_apriori":
+                    # Legacy NO2-specific reader (Meng): preslev/troppres,
+                    print("Reading TROPOMI L2 NO2 (replace_apriori, legacy reader)")
                     self.obj = mio.sat.tropomi_l2_no2.read_trpdataset(
                         self.file, self.variable_dict, debug=self.debug
                     )
-                except AttributeError:
-                    self.obj = mio.sat._tropomi_l2_no2_mm.read_trpdataset(
-                        self.file, self.variable_dict, debug=self.debug
+                else:
+                    # Generic TROPOMI reader
+                    # consumed directly by the conservative/unstructured pairing.
+                    print("Reading TROPOMI L2 NO2 (generic reader)")
+                    self.obj = mio.sat.tropomi_l2.open_datasets(
+                        self.file, self.variable_dict
                     )
+
             elif "tempo_l2" in self.sat_type:
                 print("Reading TEMPO L2")
                 try:

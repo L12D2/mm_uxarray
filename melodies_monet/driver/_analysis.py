@@ -868,7 +868,9 @@ class analysis:
                         label = "{}_{}".format(p.obs, p.model)
                         self.paired[label] = p
 
-                    if obs.sat_type == "tropomi_l2_no2" and (obs.sat_method == None or obs.sat_method == "replace_apriori"):
+                    #if obs.sat_type == "tropomi_l2_no2" and (obs.sat_method == None or obs.sat_method == "replace_apriori"):
+                    # make this a legacy call for the hyper specific tropomi reader
+                    if obs.sat_type == "tropomi_l2_no2" and obs.sat_method == "replace_apriori":
                         from melodies_monet.util import sat_l2_swath_utility as no2util
                         from melodies_monet.util import satellite_utilities as sutil
 
@@ -938,7 +940,46 @@ class analysis:
                         label = "{}_{}".format(p.obs, p.model)
 
                         self.paired[label] = p
+                    
+                    # uses the generic tropomi reader
+                    if obs.sat_type == "tropomi_l2_no2" and obs.sat_method != "replace_apriori":
+                        # Conservative / unstructured TROPOMI NO2 path (default):
+                        # generic reader + averaging-kernel operator, reusing the
+                        # same regrid engine as TEMPO. Works for CESM-SE / MPAS.
+                        from melodies_monet.util import sat_l2_swath_utility as troputil
 
+                        sp = "nitrogendioxide_tropospheric_column"
+                        key = "tropomi_l2_no2"
+                        mod_sp = [k_sp for k_sp, v in mod.mapping[key].items() if v == sp]
+
+                        regrid_method = (
+                            obs.regrid_method if obs.regrid_method is not None
+                            else "conservative"
+                        )
+
+                        _sat_needed = list(mod_sp) + [
+                            "pres_pa_mid", "dz_m", "temperature_k"]
+                        _sat_vars = [v for v in _sat_needed if v in mod.obj.variables]
+                        mod_obj_for_sat = mod.obj[_sat_vars].load()
+
+                        paired_data_atgrid = troputil.regrid_and_apply_weights_tropomi(
+                            obs.obj, mod_obj_for_sat, species=mod_sp, method=regrid_method
+                        )
+
+                        p = pair()
+                        paired_data = paired_data_atgrid.sel(
+                            time=slice(self.start_time, self.end_time)
+                        )
+                        p.type = obs.obs_type
+                        p.obs = obs.label
+                        p.model = mod.label
+                        p.model_vars = keys
+                        p.obs_vars = obs_vars
+                        p.obj = paired_data
+                        label = "{}_{}".format(p.obs, p.model)
+                        p.filename = "{}.nc".format(label)
+                        self.paired[label] = p
+                        
                     if "tempo_l2" in obs.sat_type:
                         from melodies_monet.util import sat_l2_swath_utility_tempo as sutil
 
@@ -1228,8 +1269,16 @@ class analysis:
                             modvar = modvar + "_new"
 
                         # Adjust the modvar for satellite no2 trop. column paring. M.Li
-                        if obsvar == "nitrogendioxide_tropospheric_column":
-                            modvar = modvar + "trpcol"
+                        # if obsvar == "nitrogendioxide_tropospheric_column":
+                        #     modvar = modvar + "trpcol"
+
+                        # Only rename when the paired object carries the
+                        # tropospheric-column variable (NO2trpcol)
+                        if (
+                            obsvar == "nitrogendioxide_tropospheric_column"
+                            and f"{modvar}trpcol" in p.obj
+                        ):
+                            modvar = modvar + "trpcol"   
 
                         # for pt_sfc data, convert to pandas dataframe, format, and trim
                         # Query selected points if applicable
@@ -3157,9 +3206,16 @@ class analysis:
                         if obsvar == modvar:
                             modvar = modvar + "_new"
                         # for satellite no2 trop. columns paired data, M.Li
-                        if obsvar == "nitrogendioxide_tropospheric_column":
-                            modvar = modvar + "trpcol"
+                        # if obsvar == "nitrogendioxide_tropospheric_column":
+                        #     modvar = modvar + "trpcol"
 
+                        # Only rename when the paired object carries the
+                        # tropospheric-column variable (NO2trpcol)
+                        if (
+                            obsvar == "nitrogendioxide_tropospheric_column"
+                            and f"{modvar}trpcol" in p.obj
+                        ):
+                            modvar = modvar + "trpcol"                      
                         # Query selected points if applicable
                         if domain_type != "all":
                             p_region = select_region(p.obj, domain_type, domain_name, domain_info)
