@@ -2849,7 +2849,7 @@ class analysis:
                             outname = "{}.{}".format(outname, p_label)
                             if self.obs[p.obs].sat_type is not None and self.obs[
                                 p.obs
-                            ].sat_type.startswith("tempo_l2"):
+                            ].sat_type.startswith(("tempo_l2", "tropomi")):
                                 make_spatial_bias_gridded = xrplots.make_spatial_bias_gridded
                                 plot_kwargs = {
                                     "dset": pairdf,
