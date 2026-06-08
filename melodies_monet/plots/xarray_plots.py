@@ -767,6 +767,7 @@ def make_spatial_dist(
         c = render_unstructured_field(
             ax.axes, var2plot, uxgrid,
             cmap=cmap, norm=norm,
+            extent=map_kwargs["extent"],
             coast=False, borders=False, states=False, gridlines=False,
             colorbar=False,)
     else:
@@ -988,6 +989,7 @@ def make_spatial_bias_gridded(
         c = render_unstructured_field(
             ax.axes, diff_mod_min_obs, uxgrid,
             cmap=cmap, norm=norm,
+            extent=map_kwargs["extent"],
             coast=False, borders=False, states=False, gridlines=False,
             colorbar=False,
         )

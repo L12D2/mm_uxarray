@@ -549,13 +549,25 @@ def regrid_and_apply_weights_tropomi(obsobj, modobj, species=["NO2"],
     for o in granules:
         if "time" in o.dims:
             o = o.squeeze("time", drop=False)
-        gtime = o["time"].values if "time" in o.coords else None
+        
+        # Granule overpass time for model matching. prefer "time_granule", which holds
+        # the real per-measurement times, and use its mean. Fall back to the
+        # "time" coord (midnight, start of day reference) only if "time_granule" is absent.
+        
+        if "time_granule" in o.variables:
+            tg = np.asarray(o["time_granule"].values).ravel().astype("datetime64[ns]")
+            tg = tg[~np.isnat(tg)]
+            gtime = (
+                np.array(tg.astype("int64").mean(), dtype="int64").astype("datetime64[ns]")
+                if tg.size else None
+            )
+        else:
+            gtime = o["time"].values if "time" in o.coords else None
 
         # Select the model to this granule's overpass time
         if "time" in modobj.dims and gtime is not None:
             tsel = gtime if np.ndim(gtime) == 0 else np.asarray(gtime).ravel()[0]
 
-            # fix the time issue later 
             mtimes = modobj["time"].values
             tmin, tmax = mtimes.min(), mtimes.max()
             if tsel < tmin:

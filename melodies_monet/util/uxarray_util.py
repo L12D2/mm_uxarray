@@ -402,10 +402,19 @@ def sample_unstructured_at_points(
 
     # === Within-radius averaging path (poor-man's area-weighted) ===
     if radius is not None:
-        neighbor_lists = tree.query_ball_point(
-            np.column_stack([tlon[tvalid], tlat[tvalid]]), r=radius
+        # Restrict the (expensive) ball query to targets inside the source
+        smin_lon, smax_lon = np.nanmin(mlon[svalid]), np.nanmax(mlon[svalid])
+        smin_lat, smax_lat = np.nanmin(mlat[svalid]), np.nanmax(mlat[svalid])
+        inbox = (
+            (tlon >= smin_lon - radius) & (tlon <= smax_lon + radius)
+            & (tlat >= smin_lat - radius) & (tlat <= smax_lat + radius)
         )
-        tvalid_pos = np.where(tvalid)[0]
+        tquery = tvalid & inbox
+        
+        neighbor_lists = tree.query_ball_point(
+            np.column_stack([tlon[tquery], tlat[tquery]]), r=radius
+        )
+        tvalid_pos = np.where(tquery)[0]
         out = xr.Dataset(attrs=dict(modobj.attrs))
         for v in modobj.data_vars:
             da = modobj[v]

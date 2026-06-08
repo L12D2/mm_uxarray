@@ -92,16 +92,16 @@ plots:
   plt_grp1:
     type: 'spatial_dist'
     fig_kwargs:
-      states: true
-      counties: true
+      states: false
+      counties: false
       extent: [86, 144, -14, 46]  # Lon,Lon,Lat,Lat
       cmap: 'Spectral_r'
     text_kwargs:
       fontsize: 16
     # domain_type: ["all"]       #"auto-region:box"]
     # domain_name: ["ASIA-AQ"]   #, "Thailand"]
-    domain_type: ['all', 'all']
-    domain_name: ['CONUS', 'model']
+    domain_type: ['all']
+    domain_name: ['model']
     # domain_info:
     #   Thailand:
     #     bounds: [97, 106, 5, 20]
@@ -112,17 +112,19 @@ plots:
       vmax_plot: 6.0e+15
 
   plt_grp2:
+  # make sure this respects the domain type and name settings. should default to the model grid list spatial dist and above do. i thought they both went through the same uxarray render
     type: 'gridded_spatial_bias'
     fig_kwargs:
-      states: true
-      counties: true
+      states: false
+      counties: false
+      extent: [86, 144, -14, 46]  # Lon,Lon,Lat,Lat
       cmap: 'RdBu_r'
     text_kwargs:
       fontsize: 16
     # domain_type: ["all"]       #"auto-region:box"]
     # domain_name: ["ASIA-AQ"]   #, "Thailand"]
-    domain_type: ['all', 'all']
-    domain_name: ['CONUS', 'model']
+    domain_type: ['all']
+    domain_name: ['model']
     # domain_info:
     #   Thailand:
     #     bounds: [97, 106, 5, 20]
@@ -142,8 +144,8 @@ plots:
       fontsize: 18.
     # domain_type: ["all"]       #"auto-region:box"]
     # domain_name: ["ASIA-AQ"]   #, "Thailand"]
-    domain_type: ['all', 'all']
-    domain_name: ['CONUS', 'model']
+    domain_type: ['all']
+    domain_name: ['model']
     # domain_info:
     #   Thailand:
     #     bounds: [97, 106, 5, 20]

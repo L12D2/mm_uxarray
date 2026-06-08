@@ -1635,7 +1635,7 @@ class analysis:
                             # Now proceed with plotting, call the make_timeseries function with the subsetted pairdf (if vmin2 and vmax2 are not nOne) otherwise whole df
                             if self.obs[p.obs].sat_type is not None and self.obs[
                                 p.obs
-                            ].sat_type.startswith("tempo_l2"):
+                            ].sat_type.startswith(("tempo_l2", "tropomi")):
                                 if plot_type.lower() == "timeseries":
                                     make_timeseries = xrplots.make_timeseries
                                 else:
@@ -1671,7 +1671,7 @@ class analysis:
                             # For all p_index plot the model.
                             if self.obs[p.obs].sat_type is not None and self.obs[
                                 p.obs
-                            ].sat_type.startswith("tempo_l2"):
+                            ].sat_type.startswith(("tempo_l2", "tropomi")):
                                 plot_kwargs["varname"] = modvar
                             else:
                                 plot_kwargs["column"] = modvar
@@ -2746,7 +2746,7 @@ class analysis:
                         elif plot_type.lower() == "taylor":
                             if self.obs[p.obs].sat_type is not None and self.obs[
                                 p.obs
-                            ].sat_type.startswith("tempo_l2"):
+                            ].sat_type.startswith(("tempo_l2", "tropomi")):
                                 make_taylor = xrplots.make_taylor
                                 plot_kwargs = {
                                     "dset": pairdf,
@@ -3036,7 +3036,7 @@ class analysis:
                                 _is_sat = (
                                     self.obs[p.obs].sat_type is not None
                                     # need to add a condition for tropomi as well
-                                    and self.obs[p.obs].sat_type.startswith("tempo_l2")
+                                    and self.obs[p.obs].sat_type.startswith(("tempo_l2", "tropomi"))
                                 )
                                 
                                 _model_source = pairdf if _is_sat else vmodel

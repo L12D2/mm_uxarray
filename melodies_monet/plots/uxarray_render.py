@@ -92,6 +92,23 @@ def render_unstructured_field(
     
     uxda = uxda_from_columns(field, uxgrid)
 
+    # need to subset mesh before building polygons. "set_extent" crops the view but still builds every polygon. 
+    if extent is not None:
+        try:
+            lonmin, lonmax, latmin, latmax = (float(v) for v in extent)
+            pad = 1.0 # degrees; cells straddling the edge aren't clipped
+            lon_b = (lonmin - pad, lonmax + pad)
+            lat_b = (latmin - pad, latmax + pad)
+            try:
+                uxda = uxda.subset.bounding_box(lon_b, lat_b, element="face centers")
+            except TypeError:
+                uxda = uxda.subset.bounding_box(lon_b, lat_b)
+        except Exception as e:  # noqa: BLE001
+            print(
+                f"render_unstructured_field: extent subset skipped ({e}); "
+                "rendering full mesh."
+            )
+
     poly = uxda.to_polycollection(periodic_elements=periodic_elements)
     # older uxarray returned (poly, corrected_to_gdf); newer returns poly only
     if isinstance(poly, tuple):

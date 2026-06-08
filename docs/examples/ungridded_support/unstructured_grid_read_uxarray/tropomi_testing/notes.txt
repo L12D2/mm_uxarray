@@ -1,0 +1,18 @@
+OBS:
+
+TROPOMI CO : 
+L2 data: "/glade/campaign/acom/acom-weather/amirrezaei/tropomi_co"
+L3 regridded to CAM-chem resolution (1deg*1deg) with applying quality flags and binned every 6 UTC: 
+"/glade/campaign/acom/acom-weather/amirrezaei/TROPOMI_CO_mask"
+
+TROPOMI CH4 (TROPOMI+GOSAT blended): 
+L2 data: "/glade/campaign/acom/acom-weather/amirrezaei/tropomi_ch4"
+L3 data regridded to CAM-chem resolution (1deg*1deg) and binned every 6 UTC: "/glade/campaign/acom/acom-weather/amirrezaei/TROPOMI_CH4_grid"
+
+TROPOMI HCHO:
+L3 data ( 0.25°x0.25°): "/glade/campaign/acom/acom-weather/amirrezaei/tropomi_hcho_n/BIRA_dataset_daily"
+L3 data regridded to CAM-chem resolution (1deg*1deg): "/glade/campaign/acom/acom-weather/amirrezaei/tropomi_hcho_grids"
+
+TROPOMI NO2:
+L2 data: "/glade/campaign/acom/acom-weather/amirrezaei/tropomi_no2"
+
