@@ -99,8 +99,7 @@ plots:
     data: ['airnow_cam-chem-se'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
     data_proc:
       rem_obs_nan: true # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
-      #ts_select_time: 'time_local' #Time used for avg and plotting: Options: 'time' for UTC or 'time_local'
-      ts_select_time: 'time'   
+      ts_select_time: 'time_local' #Time used for avg and plotting: Options: 'time' for UTC or 'time_local'
       
       ts_avg_window: 'h' # Options: None for no averaging or list pandas resample rule (e.g., 'h', 'D')
       set_axis: false #If select True, add vmin_plot and vmax_plot for each variable in obs.
