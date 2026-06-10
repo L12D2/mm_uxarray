@@ -1110,40 +1110,11 @@ def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
         )
         render_unstructured_field(
             ax.axes, vmodel_mean, uxgrid,
-            cmap=cmap, norm=norm,
+            cmap=cmap, norm=norm, extent=[lonmin, lonmax, latmin, latmax], # this helps speed up plotting 
             coast=False, borders=False, states=False, gridlines=False,
             colorbar=True, cbar_label=ylabel, text_kwargs=text_kwargs,
         )
         
-        # print what exists
-        #print(f"grid_file: {grid_file}")
-        #print(f"scrip_file: {scrip_file}")
-        
-        # _ = Plot_2D( vmodel_mean, scrip_file=scrip_file, grid_file = grid_file, cmap=cmap, #colorticks=clevel, colorlabels=clevel,
-        #                cmin=vmin, cmax=vmax, lon_range=[lonmin,lonmax], lat_range=[latmin,latmax],
-        #                ax=ax, state=fig_dict['states'] )
-
-        # plot uxgrid natively here rather than from plot_2D
-        # this sends all grid types exodus, ugrid, scrip to the uxarray renderer
-        # if uxgrid is not None:
-        #     from melodies_monet.plots.uxarray_render import render_unstructured_field
-
-        #     if uxgrid is None:
-        #         uxgrid = ux.open_grid(scrip_file)
-
-        #     render_unstructured_field(
-        #         ax, vmodel_mean, uxgrid,
-        #         cmap=cmap, norm=norm,
-        #         extent=[lonmin, lonmax, latmin, latmax],
-        #         states=fig_dict.get('states', True),
-        #         cbar_label=ylabel, text_kwargs=text_kwargs,
-        #     )
-        # else:
-        #     from melodies_monet.plots.Plot_2D import Plot_2D
-        #     _ = Plot_2D(vmodel_mean, scrip_file=scrip_file, cmap=cmap,
-        #                    cmin=vmin, cmax=vmax, lon_range=[lonmin,lonmax], lat_range=[latmin,latmax],
-        #                    ax=ax, state=fig_dict['states'])
-
     else:
         #I add extend='both' here because the colorbar is setup to plot the values outside the range
         ax = vmodel_mean.monet.quick_contourf(cbar_kwargs=cbar_kwargs, figsize=map_kwargs['figsize'], map_kws=map_kwargs,
