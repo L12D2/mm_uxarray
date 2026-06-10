@@ -1110,7 +1110,7 @@ def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
         )
         render_unstructured_field(
             ax.axes, vmodel_mean, uxgrid,
-            cmap=cmap, norm=norm, extent=[lonmin, lonmax, latmin, latmax], # this helps speed up plotting 
+            cmap=cmap, norm=norm, #extent=[lonmin, lonmax, latmin, latmax], # this helps speed up plotting 
             coast=False, borders=False, states=False, gridlines=False,
             colorbar=True, cbar_label=ylabel, text_kwargs=text_kwargs,
         )
