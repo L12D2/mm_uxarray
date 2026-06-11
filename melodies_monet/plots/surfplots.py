@@ -489,6 +489,10 @@ def make_timeseries(df, df_reg=None, column=None, label=None, ax=None, avg_windo
         text_kwargs = {**def_text, **text_dict}
     else:
         text_kwargs = def_text
+        
+    # plot_dict can arrive as None when a plot group has no 'default_plot_kwargs'
+    if plot_dict is None:
+        plot_dict = {}
     # set ylabel to column if not specified.
     if ylabel is None:
         ylabel = column
@@ -761,6 +765,10 @@ def make_diurnal_cycle(df, column=None, label=None, ax=None, avg_window=None, yl
         text_kwargs = {**def_text, **text_dict}
     else:
         text_kwargs = def_text
+    
+    # plot_dict can arrive as None when a plot group has no 'default_plot_kwargs'
+    if plot_dict is None:
+        plot_dict = {}
     # set ylabel to column if not specified.
     if ylabel is None:
         ylabel = column

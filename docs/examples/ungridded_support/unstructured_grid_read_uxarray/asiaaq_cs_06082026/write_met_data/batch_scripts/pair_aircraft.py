@@ -25,6 +25,7 @@ def main():
     print("[pair] opening models (lazy)...", flush=True)
     an.open_models()
     print(f"[pair] opening obs... ({time.time() - t0:.0f}s)", flush=True)
+        
     an.open_obs()
 
     print(f"[pair] pairing... ({time.time() - t0:.0f}s)", flush=True)

@@ -531,12 +531,22 @@ def make_vertprofile(df, column=None, label=None, ax=None,
             f, ax = plt.subplots(**fig_dict)    
         else: 
             f, ax = plt.subplots(figsize=(10, 6))
-       
+
+        # Drop rows with no altitude (e.g. a flight missing the altitude variable)
+        # so pd.cut doesn't produce NaN bins that break the .mid lookup
+        df = df[df[altitude_variable].notna()]
+        if df.empty:
+            print(
+                f"Warning: make_vertprofile: no valid {altitude_variable!r} values "
+                f"for {label!r}; skipping vertical profile.")
+            return ax
+            
         # Bin the altitude variable and calculate median and interquartiles
         altitude_bins = pd.cut(df[altitude_variable], bins=bins)
         
-        # Calculate the midpoints of the altitude bins
-        bin_midpoints = altitude_bins.apply(lambda x: x.mid)
+        # Calculate the midpoints of the altitude bins & guard NaN bins
+        bin_midpoints = altitude_bins.apply(
+            lambda x: x.mid if isinstance(x, pd.Interval) else np.nan)
         
         # Convert bin_midpoints to a column in the DataFrame
         df['bin_midpoints'] = bin_midpoints
@@ -638,9 +648,11 @@ def make_vertprofile(df, column=None, label=None, ax=None,
     # If plot has been created, add to the current axes
     else:
         # This means that an axis handle already exists, so use it to plot the model output
+        df = df[df[altitude_variable].notna()]
         altitude_bins = pd.cut(df[altitude_variable], bins=bins)
-        # Calculate the midpoints of the altitude bins
-        bin_midpoints = altitude_bins.apply(lambda x: x.mid)
+        # Calculate the midpoints of the altitude bins and guard NaN bins
+        bin_midpoints = altitude_bins.apply(
+            lambda x: x.mid if isinstance(x, pd.Interval) else np.nan)
         # Convert bin_midpoints to a column in the DataFrame
         df['bin_midpoints'] = bin_midpoints
         # can be .groupby(bin_midpoints) as well (qzr)

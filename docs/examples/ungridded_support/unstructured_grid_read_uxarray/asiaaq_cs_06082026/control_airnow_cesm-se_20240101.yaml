@@ -16,7 +16,7 @@ analysis:
   save:
     paired:
       method: 'netcdf'
-      prefix: 'asiaaq_sfc'
+      prefix: 'asiaaq'
       data: all
 
   # plot
@@ -24,14 +24,14 @@ analysis:
     paired:
       method: 'netcdf'
       filenames:
-        thailand_bma_cam-chem-se-era5:     ['/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/asiaaq_cs_06082026/output/asiaaq_sfc_thailand_bma_cam-chem-se-era5.nc4']
-        thailand_bma_cam-chem-se-merra2:   ['/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/asiaaq_cs_06082026/output/asiaaq_sfc_thailand_bma_cam-chem-se-merra2.nc4']
+        thailand_bma_cam-chem-se-era5:     ['/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/asiaaq_cs_06082026/output/asiaaq_thailand_bma_cam-chem-se-era5.nc4']
+        thailand_bma_cam-chem-se-merra2:   ['/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/asiaaq_cs_06082026/output/asiaaq_thailand_bma_cam-chem-se-merra2.nc4']
         
-        philippines_aws_cam-chem-se-era5:  ['/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/asiaaq_cs_06082026/output/asiaaq_sfc_philippines_aws_cam-chem-se-era5.nc4']
-        philippines_aws_cam-chem-se-merra2: ['/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/asiaaq_cs_06082026/output/asiaaq_sfc_philippines_aws_cam-chem-se-merra2.nc4']
+        philippines_aws_cam-chem-se-era5:  ['/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/asiaaq_cs_06082026/output/asiaaq_philippines_aws_cam-chem-se-era5.nc4']
+        philippines_aws_cam-chem-se-merra2: ['/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/asiaaq_cs_06082026/output/asiaaq_philippines_aws_cam-chem-se-merra2.nc4']
         
-        dc8_cam-chem-se-era5:   ['/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/asiaaq_cs_06082026/output/asiaaq_sfc_dc8_cam-chem-se-era5.nc4']
-        dc8_cam-chem-se-merra2: ['/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/asiaaq_cs_06082026/output/asiaaq_sfc_dc8_cam-chem-se-merra2.nc4']
+        dc8_cam-chem-se-era5:   ['/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/asiaaq_cs_06082026/output/asiaaq_dc8_cam-chem-se-era5.nc4']
+        dc8_cam-chem-se-merra2: ['/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/asiaaq_cs_06082026/output/asiaaq_dc8_cam-chem-se-merra2.nc4']
         
   download_maps: false
   debug: false
@@ -132,8 +132,8 @@ obs:
         unit_scale: 273.15
         unit_scale_method: '+'
         ylabel_plot: 'Temperature (K)'
-        vmin_plot: 280
-        vmax_plot: 320
+        # vmin_plot: 280
+        # vmax_plot: 320
         vdiff_plot: 5
         nlevels_plot: 20
       
@@ -141,28 +141,28 @@ obs:
         unit_scale: 1
         unit_scale_method: '*'
         ylabel_plot: 'Ozone (Ppb)'
-        vmin_plot: 0
-        vmax_plot: 100
+        # vmin_plot: 0
+        # vmax_plot: 100
         vdiff_plot: 5
-        nlevels_plot: 15
+        nlevels_plot: 20
 
       PM2.5: # check these units for thai. Multiplying by 1e9 makes them too big but docs say the si units are ug/m^3
         unit_scale: 1
         unit_scale_method: '*'
         ylabel_plot: 'PM2.5 (ug/m^3)'
-        vmin_plot: 0
-        vmax_plot: 500
+        # vmin_plot: 0
+        # vmax_plot: 500
         vdiff_plot: 5
-        nlevels_plot: 15
+        nlevels_plot: 20
         
       dewpoint_qc:
         unit_scale: 273.15
         unit_scale_method: '+'
         ylabel_plot: 'Dewpoint (K)'
-        vmin_plot: 280
-        vmax_plot: 320
+        # vmin_plot: 280
+        # vmax_plot: 320
         vdiff_plot: 5
-        nlevels_plot: 15  
+        nlevels_plot: 20  
         
   philippines_aws:
     use_airnow: true
@@ -186,7 +186,7 @@ obs:
         vmin_plot: 280
         vmax_plot: 320
         vdiff_plot: 5
-        nlevels_plot: 15  
+        nlevels_plot: 20  
 
   dc8:
     filename: /glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/asiaaq_cs_06082026/preprocessing/dc8_data/asiaaq_dc8_merge_all.nc
@@ -249,23 +249,23 @@ plots:
     data: ['philippines_aws_cam-chem-se-merra2', 'philippines_aws_cam-chem-se-era5']
     data_proc: {rem_obs_nan: true, set_axis: true}
 
-  soverlay_th:
-    type: 'spatial_overlay'
-    fig_kwargs: {states: false, counties: false, extent: [96.0, 107.0, 4.0, 22.0], figsize: [8, 6]}
-    text_kwargs: {fontsize: 16.}
-    domain_type: ['all']
-    domain_name: ['Thailand']
-    data: ['thailand_bma_cam-chem-se-merra2', "thailand_bma_cam-chem-se-era5"]
-    data_proc: {rem_obs_nan: true, set_axis: true}
+  # soverlay_th:
+  #   type: 'spatial_overlay'
+  #   fig_kwargs: {states: false, counties: false, extent: [96.0, 107.0, 4.0, 22.0], figsize: [8, 6]}
+  #   text_kwargs: {fontsize: 16.}
+  #   domain_type: ['all']
+  #   domain_name: ['Thailand']
+  #   data: ['thailand_bma_cam-chem-se-merra2', "thailand_bma_cam-chem-se-era5"]
+  #   data_proc: {rem_obs_nan: true, set_axis: true}
 
-  soverlay_ph:
-    type: 'spatial_overlay'
-    fig_kwargs: {states: false, counties: false, extent: [115.0, 128.0, 3.0, 23.0], figsize: [8, 6]}
-    text_kwargs: {fontsize: 16.}
-    domain_type: ['all']
-    domain_name: ['Philippines']
-    data: ['philippines_aws_cam-chem-se-merra2', 'philippines_aws_cam-chem-se-era5']
-    data_proc: {rem_obs_nan: true, set_axis: true}
+  # soverlay_ph:
+  #   type: 'spatial_overlay'
+  #   fig_kwargs: {states: false, counties: false, extent: [115.0, 128.0, 3.0, 23.0], figsize: [8, 6]}
+  #   text_kwargs: {fontsize: 16.}
+  #   domain_type: ['all']
+  #   domain_name: ['Philippines']
+  #   data: ['philippines_aws_cam-chem-se-merra2', 'philippines_aws_cam-chem-se-era5']
+  #   data_proc: {rem_obs_nan: true, set_axis: true}
     
   bx_th:
     type: 'boxplot'
@@ -384,12 +384,42 @@ plots:
     type: 'timeseries'
     fig_kwargs: {figsize: [12, 6]}
     text_kwargs: {fontsize: 18.}
+    default_plot_kwargs: {linewidth: 2.0, markersize: 6.}
     domain_type: ['all']
     domain_name: ['DC8']
     data: ['dc8_cam-chem-se-merra2', 'dc8_cam-chem-se-era5']
     data_proc: {rem_obs_nan: true, ts_select_time: 'time', ts_avg_window: null, set_axis: false}
 
-  vp_dc8:
+  vi_dc8:
+    type: 'violin'
+    fig_kwargs: {figsize: [12, 6]}
+    text_kwargs: {fontsize: 18.}
+    default_plot_kwargs: {linewidth: 2.0, markersize: 6.}
+    domain_type: ['all']
+    domain_name: ['DC8']
+    data: ['dc8_cam-chem-se-merra2', 'dc8_cam-chem-se-era5']
+    data_proc:
+      rem_obs_nan: True
+      set_axis: False
+    
+  vp_dc8_pa:
+    type: 'vertprofile'
+    fig_kwargs: {figsize: [10, 14]}
+    default_plot_kwargs: {linewidth: 4.0, markersize: 10.}
+    text_kwargs: {fontsize: 18.}
+    ylabel_vert: 'Pressure (Pa)'            # top-level
+    domain_type: ['all']
+    domain_name: ['DC8']
+    data: ['dc8_cam-chem-se-merra2', 'dc8_cam-chem-se-era5']
+    data_proc:
+      rem_obs_nan: True
+      set_axis: False
+      interquartile_style: 'shading'       # or 'box'
+    altitude_variable: pressure_obs            # top-level
+    vertprofile_bins:                      # dict with range:{start,stop,step}
+      range: {start: 10000, stop: 110000, step: 5000}
+
+  vp_dc8_m:
     type: 'vertprofile'
     fig_kwargs: {figsize: [10, 14]}
     default_plot_kwargs: {linewidth: 4.0, markersize: 10.}
@@ -406,9 +436,9 @@ plots:
     vertprofile_bins:                      # dict with range:{start,stop,step}
       range:
         start: 0
-        stop: 12000
+        stop: 18000
         step: 1000
-
+      
   scatter_dc8:
     type: 'scatter_density'
     fig_kwargs: {figsize: [10, 10]}

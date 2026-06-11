@@ -1,0 +1,64 @@
+
+
+analysis:
+        start_time: '2024-01-01-00:00:00'
+        end_time: '2024-01-03-00:59:00'
+        output_dir: ./output
+        debug: False
+        pairing_kwargs:
+                sat_swath_clm:
+                        apply_ak: True
+                        mod_to_overpass: True
+model:
+  cam-chem-se: 
+    files: 
+      - /glade/campaign/acom/acom-da/conus_outputs/f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.ERA5_ref_dust_M1.1.002/H1/f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.ERA5_ref_dust_M1.1.002.cam.h1.2024-01-01-03600.nc
+      - /glade/campaign/acom/acom-da/conus_outputs/f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.ERA5_ref_dust_M1.1.002/H1/f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.ERA5_ref_dust_M1.1.002.cam.h1.2024-01-02-03600.nc
+      - /glade/campaign/acom/acom-da/conus_outputs/f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.ERA5_ref_dust_M1.1.002/H1/f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.ERA5_ref_dust_M1.1.002.cam.h1.2024-01-03-03600.nc
+                
+     mod_type: 'cesm-se'
+       is_global: False
+                variables: 
+                       no2_ave:
+                               unit_scale: 1
+                               unit_scale_method: '*'
+                mapping: 
+                       tropomi: 
+                                no2_ave: nitrogendioxide_tropospheric_column
+                plot_kwargs: 
+                        color: 'purple'
+                        marker: '^'
+                        linestyle: 'dotted'
+obs:
+  tropomi_l2_no2:
+    debug: true
+    filename: /glade/campaign/acom/acom-weather/amirrezaei/tropomi_no2/2024/S5P_OFFL_L2__NO2____20240101T*.nc
+    sat_type: tropomi_l2_no2
+    obs_type: sat_swath_clm
+    
+    # no sat_method (or anything != replace_apriori) -> new conservative path
+    regrid_method: nearest_s2d #conservative     
+    variables:
+      nitrogendioxide_tropospheric_column: {}
+      averaging_kernel: {}
+      air_mass_factor_troposphere: {}
+      air_mass_factor_total: {}
+      tm5_tropopause_pressure: {}
+      latitude_bounds: {}
+      longitude_bounds: {}
+      qa_value: {}
+plots:
+        plot_grp1:
+                type: 'gridded_spatial_bias'
+                fig_kwargs:
+                        states: True
+                        figsize: [10,5]
+                text_kwargs:
+                        fontsize: 16.
+                domain_type: ['all']
+                domain_name: ['aqm_domain']
+                data: ['tropomi_ufsaqm']
+                data_proc:
+                        rem_obs_nan: True
+                        set_axis: True
+

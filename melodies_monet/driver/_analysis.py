@@ -395,6 +395,28 @@ class analysis:
                 # open the model
                 if load_files:
                     m.open_model_files(time_interval=time_interval, control_dict=self.control_dict)
+                    # coerce the model 'time' to datetime64 here, once, so every downstream path 
+                    # can compare against datetime64 obs/analysis times.
+
+                    # Normalize the model 'time' coordinate, once, for every
+                    # downstream path:
+                    # noleap cftime to datetime64 (so it compares to obs time)
+                    # floor to the hour -- CAM history tapes (e.g. h5a) can be
+                    #       stamped off-hour (:30), which makes combine_point's exact
+                    #       time-merge miss hourly obs and return all-NaN. Flooring is
+                    #       a relabel only (no data movement), so it won't null the grid.
+                    
+                    try:
+                        ti = m.obj.indexes.get("time")
+                    except Exception:
+                        ti = None
+                    if ti is not None:
+                        if hasattr(ti, "to_datetimeindex"):
+                            ti = ti.to_datetimeindex()
+                        try:
+                            m.obj["time"] = pd.DatetimeIndex(ti).floor("1h")
+                        except Exception:
+                            pass
                 self.models[m.label] = m
 
     def open_obs(self, time_interval=None, load_files=True):
@@ -934,6 +956,7 @@ class analysis:
                         if "time" in obs.obj.dims:
                             obs.obj = obs.obj.sel(time=slice(self.start_time, self.end_time))
                             obs.obj = obs.obj.swap_dims({"time": "x"})
+                            
                         if obs.sat_method == 'apply_ak':
                             model_obj = mod.obj[keys + ["pres_pa_mid", "surfpres_pa"]]
                             
@@ -3205,17 +3228,25 @@ class analysis:
 
         # Then loop over all the observations
         # first get the observational obs labels
-        pair1 = self.paired[list(self.paired.keys())[0]]
-        obs_vars = pair1.obs_vars
+        # Build the variable list as the UNION of obs_vars across every pair in the
+        # stats `data` list, so variables that exist only in some networks 
+        # still get stat tables
+        obs_vars = []
+        for _pl in pair_labels:
+            if _pl in self.paired:
+                for _v in self.paired[_pl].obs_vars:
+                    if _v not in obs_vars:
+                        obs_vars.append(_v)
         for obsvar in obs_vars:
             # Read in some plotting specifications stored with observations.
-            if self.obs[pair1.obs].variable_dict is not None:
-                if obsvar in self.obs[pair1.obs].variable_dict.keys():
-                    obs_plot_dict = self.obs[pair1.obs].variable_dict[obsvar]
-                else:
-                    obs_plot_dict = {}
-            else:
-                obs_plot_dict = {}
+            obs_plot_dict = {}
+            for _pl in pair_labels:
+                if _pl in self.paired and obsvar in self.paired[_pl].obs_vars:
+                    _obs = self.paired[_pl].obs
+                    _vd = self.obs[_obs].variable_dict if _obs in self.obs else None
+                    if _vd is not None and obsvar in _vd:
+                        obs_plot_dict = _vd[obsvar]
+                    break
 
             # JianHe: Determine if calculate regulatory values
             cal_reg = obs_plot_dict.get("regulatory", False)
@@ -3281,6 +3312,11 @@ class analysis:
                 # Finally Loop through each of the pairs
                 for p_label in pair_labels:
                     p = self.paired[p_label]
+                    
+                    # Skip pairs that don't carry this obs variable 
+                    if obsvar not in p.obs_vars:
+                        continue
+                        
                     # Create an empty list to store the stat_var
                     p_stat_list = []
 
