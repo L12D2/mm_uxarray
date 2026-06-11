@@ -1,0 +1,174 @@
+
+#-------------------------------------------------------------------
+# Universal comparison variables
+analysis:
+  start_time: '2024-03-29'          #UTC
+  end_time: '2024-03-31 23:59:00'          #UTC
+  
+  output_dir: 
+    /glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/asiaaq_cs_06082026/output
+  output_dir_save: 
+    /glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/asiaaq_cs_06082026/output
+  output_dir_read: 
+    /glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/asiaaq_cs_06082026/output
+
+  save:
+    paired:
+      method: 'netcdf'
+      prefix: '20240331'
+      data: all
+  read:
+    paired:
+      method: 'netcdf'
+      filenames: {airnow_cesm_se: ['airnow_cesm_se']}
+  download_maps: false #If off-line or on machine with download restrictions like hera set to False.
+  debug: false
+
+  
+#-------------------------------------------------------------------
+# Model definitions
+model:
+  cam-chem-se-era5:
+    files:
+      - /glade/campaign/acom/acom-weather/emmons/ASIAAQ_sims/f.e3b08.FHISTC_LTt1s.camsm11_finn27.era5.GEMSne30x8.2024.01/atm/hist/f.e3b08.FHISTC_LTt1s.camsm11_finn27.era5.GEMSne30x8.2024.01.cam.h5a.2024-03-29-03600.nc
+      - /glade/campaign/acom/acom-weather/emmons/ASIAAQ_sims/f.e3b08.FHISTC_LTt1s.camsm11_finn27.era5.GEMSne30x8.2024.01/atm/hist/f.e3b08.FHISTC_LTt1s.camsm11_finn27.era5.GEMSne30x8.2024.01.cam.h5a.2024-03-30-03600.nc
+      - /glade/campaign/acom/acom-weather/emmons/ASIAAQ_sims/f.e3b08.FHISTC_LTt1s.camsm11_finn27.era5.GEMSne30x8.2024.01/atm/hist/f.e3b08.FHISTC_LTt1s.camsm11_finn27.era5.GEMSne30x8.2024.01.cam.h5a.2024-03-31-03600.nc
+
+    mod_type: 'cesm_se'
+    scrip_file: "/glade/campaign/acom/MUSICA/grids/GEMSne30x8/GEMS01_ne30x8_np4_SCRIP.nc"
+    radius_of_influence: 200000
+        
+    mapping:
+      
+      dc8:
+        O3: 'O3'
+        CO: 'CO'
+        #NO: 'NO'
+        NO2: 'NO2'
+        T: 'temperature'
+
+    projection: ~ 
+    plot_kwargs: #Opt 
+      color: 'dodgerblue'
+      marker: '+'
+      linestyle: '-.'
+
+  cam-chem-se-merra2:
+    files:
+      - /glade/campaign/acom/acom-weather/emmons/ASIAAQ_sims/f.e3b08.FHISTC_LTt1s.camsm11_finn27.2024.merra2.ne30.01/atm/hist/f.e3b08.FHISTC_LTt1s.camsm11_finn27.2024.merra2.ne30.01.cam.h4i.2024-03-29-03600.nc
+      - /glade/campaign/acom/acom-weather/emmons/ASIAAQ_sims/f.e3b08.FHISTC_LTt1s.camsm11_finn27.2024.merra2.ne30.01/atm/hist/f.e3b08.FHISTC_LTt1s.camsm11_finn27.2024.merra2.ne30.01.cam.h4i.2024-03-30-03600.nc
+      - /glade/campaign/acom/acom-weather/emmons/ASIAAQ_sims/f.e3b08.FHISTC_LTt1s.camsm11_finn27.2024.merra2.ne30.01/atm/hist/f.e3b08.FHISTC_LTt1s.camsm11_finn27.2024.merra2.ne30.01.cam.h4i.2024-03-31-03600.nc
+      
+    mod_type: 'cesm_se'
+    scrip_file: "/glade/campaign/acom/MUSICA/grids/ne30pg3/ne30pg3_scrip_170611.nc"
+    
+    radius_of_influence: 200000
+
+    # extra_calc: # Add more complex calculations and their associated variables here.
+    #   dewpoint:
+    #     pres_calc: "PS"
+    #     specific_hum: "Q"
+        
+    mapping:
+
+      dc8:
+        O3: 'O3'
+        CO: 'CO'
+        #NO: 'NO'
+        NO2: 'NO2'
+        T: 'temperature'
+        
+    projection: ~ 
+    plot_kwargs: #Opt 
+      color: 'magenta'
+      marker: 'x'
+      linestyle: '--'
+
+      
+#-------------------------------------------------------------------
+# Observation definitions
+obs:
+
+  dc8:
+    filename: /glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/asiaaq_cs_06082026/preprocessing/dc8_data/asiaaq_dc8_merge_all.nc
+    obs_type: aircraft
+    resample: '600s'
+    
+    variables:
+      pressure_obs: {}
+      O3:  {unit_scale: 1,  unit_scale_method: '*' }
+      CO:  {unit_scale: 1,  unit_scale_method: '*' }
+      #NO:  {unit_scale: 0.001, unit_scale_method: '*' }
+      NO2: {unit_scale: 0.001, unit_scale_method: '*' }
+
+        
+        
+#-------------------------------------------------------------------
+# Define which comparisons/plots to complete:
+# Any key that is specific for a plot type will begin with ts for timeseries, ty for taylor
+# Opt: Specifying the variable or variable group is optional
+# For now all plots except time series average over the analysis window. 
+# Setting axis values - If set_axis = True in data_proc section of each plot_grp the yaxis for the plot will be set based on the values specified in the obs section for each variable. If set_axis is set to False, then defaults will be used. 'vmin_plot' and 'vmax_plot' are needed for 'timeseries', 'spatial_overlay', and 'boxplot'. 'vdiff_plot' is needed for 'spatial_bias' plots and'ty_scale' is needed for 'taylor' plots. 'nlevels' or the number of levels used in the contour plot can also optionally be provided for spatial_overlay plot. If set_axis = True and the proper limits are not provided in the obs section, a warning will print, and the plot will be created using the default limits.
+
+plots:
+
+  ts_dc8:
+    type: 'timeseries'
+    fig_kwargs: {figsize: [12, 6]}
+    text_kwargs: {fontsize: 18.}
+    domain_type: ['all']
+    domain_name: ['DC8']
+    data: ['dc8_cam-chem-se-merra2', 'dc8_cam-chem-se-era5']
+    data_proc: {rem_obs_nan: true, ts_select_time: 'time', ts_avg_window: null, set_axis: false}
+
+  vp_dc8:
+    type: 'vertprofile'
+    fig_kwargs: {figsize: [10, 14]}
+    default_plot_kwargs: {linewidth: 4.0, markersize: 10.}
+    text_kwargs: {fontsize: 18.}
+    ylabel_vert: 'Altitude (m)'              # top-level
+    domain_type: ['all']
+    domain_name: ['DC8']
+    data: ['dc8_cam-chem-se-merra2', 'dc8_cam-chem-se-era5']
+    data_proc:
+      rem_obs_nan: True
+      set_axis: False
+      interquartile_style: 'shading'         # "box"
+    altitude_variable: altitude              # top-level; your obs altitude (m)
+    vertprofile_bins:                        # a DICT with range, not a list
+      range:
+        start: 0
+        stop: 12000
+        step: 1000
+
+  scatter_dc8:
+    type: 'scatter_density'
+    fig_kwargs: {figsize: [10, 10]}
+    default_plot_kwargs: {linewidth: 4.0, markersize: 10.}
+    text_kwargs: {fontsize: 18.}
+    domain_type: ['all']
+    domain_name: ['DC8']
+    data: ['dc8_cam-chem-se-merra2', 'dc8_cam-chem-se-era5']
+    data_proc:
+      rem_obs_nan: True
+      set_axis: False        # set True + vmin_x/vmax_x/vmin_y/vmax_y to fix axes
+    xlabel: 'Model'
+    ylabel: 'Observation'
+    title: 'DC8 Scatter Density'
+    fill: True
+    shade_lowest: True
+
+
+###-----------------------------------------------------------------------------
+stats:
+  #Stats require positive numbers, so if you want to calculate temperature use Kelvin!
+  #Wind direction has special calculations for AirNow if obs name is 'WD'
+  stat_list: ['MB', 'ME', 'RMSE', 'NMB', 'NME', 'R2', "MAE"] #List stat to calculate below. Dictionary of definitions included in plots/proc_stats.py
+  
+  #Full calc list ['STDO', 'STDP', 'MNB', 'MNE', 'MdnNB', 'MdnNE', 'NMdnGE','NO','NOP','NP','MO','MP', 'MdnO', 'MdnP', 'RM', 'RMdn', 'MB', 'MdnB', 'NMB', 'NMdnB', 'FB', 'ME', 'MdnE', 'NME', 'NMdnE', 'FE', 'MNPB', 'MdnNPB', 'MNPE', 'MdnNPE', 'NMPB', 'NMdnPB', 'NMPE', 'NMdnPE', 'R2', 'RMSE', 'd1', 'E1', 'IOA', 'AC', 'HSS', 'ETS'] 
+  
+  output_table: true #Always outputs a .txt file. Optional to also output as a table.
+  domain_type: ['all'] #List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.) 
+  domain_name: ["ASIAAQ"] #List of domain names. If domain_type = all domain_name is used in plot title.
+  data: ['dc8_cam-chem-se-merra2', 'dc8_cam-chem-se-era5']
+  

@@ -331,10 +331,32 @@ def vert_interp(ds_model,df_obs,var_name_list):
     df_model.drop(labels=['x','y','z','pressure_obs','pressure_model_nan','time_obs'], axis=1, inplace=True)
     df_model.rename(columns={'pressure_model':'pressure_obs'}, inplace=True)
 
-    final_df_model = merge_asof(df_obs, df_model, 
-                            by=['latitude', 'longitude', 'pressure_obs'], 
-                            on='time', direction='nearest')
+    # final_df_model = merge_asof(df_obs, df_model, 
+    #                         by=['latitude', 'longitude', 'pressure_obs'], 
+    #                         on='time', direction='nearest')
+    
+    # The model's pressure_obs is produced by stratifying onto the obs levels in the
+    # model's float32 dtype (i.e. float32(level)); the obs pressure is float64(level).
+    df_obs = df_obs.copy()
+    for _k in ['latitude', 'longitude', 'pressure_obs']:
+        if _k in df_obs.columns and _k in df_model.columns:
+            if df_obs[_k].dtype != df_model[_k].dtype:
+                df_obs[_k] = df_obs[_k].astype(df_model[_k].dtype)
 
+    # When a model variable shares the obs variable's name (e.g. mapping O3:'O3'),
+    # MM's plotting expects the MODEL column suffixed '_new' (obs stays bare). Rename
+    # the colliding model columns here so merge_asof doesn't fall back to its default
+    # _x/_y suffixes
+    
+    _join_keys = {'latitude', 'longitude', 'pressure_obs', 'time'}
+    _overlap = (set(df_model.columns) & set(df_obs.columns)) - _join_keys
+    if _overlap:
+        df_model = df_model.rename(columns={_c: f"{_c}_new" for _c in _overlap})
+        
+    final_df_model = merge_asof(df_obs, df_model,
+                            by=['latitude', 'longitude', 'pressure_obs'],
+                            on='time', direction='nearest')
+    
     return final_df_model
 
 def mobile_and_ground_pair(ds_model,df_obs, var_name_list):

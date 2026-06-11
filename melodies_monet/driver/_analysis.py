@@ -573,8 +573,22 @@ class analysis:
         print("1, in pair data")
         for model_label in self.models:
             mod = self.models[model_label]
+            # Coerce CESM/CAM  noleap (cftime) calendar so , so the model (pt_sfc, aircraft) sees datetime64 
+            # 'time' coordinate can come through as object/cftime. 
+            if "time" in mod.obj.coords and mod.obj["time"].dtype == object:
+                try:
+                    mod.obj = mod.obj.assign_coords(
+                        time=mod.obj.indexes["time"].to_datetimeindex()
+                    )
+                except Exception:
+                    mod.obj = mod.obj.assign_coords(
+                        time=pd.to_datetime(
+                            [str(t) for t in mod.obj["time"].values]
+                        )
+                    )
+                    
             # Now we have the models we need to loop through the mapping table for each network and pair the data
-            # each paired dataset will be output to a netcdf file with 'model_label_network.nc'
+            # each paired dataset will be output to a netcdf file with 'model_label_network.nc'                    
             for obs_to_pair in mod.mapping.keys():
                 # get the variables to pair from the model data (ie don't pair all data)
                 keys = [key for key in mod.mapping[obs_to_pair].keys()]
@@ -652,6 +666,11 @@ class analysis:
                         .set_index("time")
                     )
 
+                    # enable start and end time to trim aircraft obs as well
+                    obs.obj = obs.obj.sort_index().loc[
+                        str(self.start_time):str(self.end_time)
+                    ]
+                    
                     # do the facy trick to convert to get something useful for MONET
                     # this converts to dimensions of x and y
                     # you may want to make pressure / msl a coordinate too
@@ -662,12 +681,12 @@ class analysis:
                         .set_coords(["time_obs", "pressure_obs"])
                     )
 
-                    # Nearest neighbor approach to find closest grid cell to each point.
-                    ds_model = m.util.combinetool.combine_da_to_da(
-                        model_obj, new_ds_obs, merge=False
-                    )
-                    # Interpolate based on time in the observations
-                    ds_model = ds_model.interp(time=ds_model.time_obs.squeeze())
+                    # # Nearest neighbor approach to find closest grid cell to each point.
+                    # ds_model = m.util.combinetool.combine_da_to_da(
+                    #     model_obj, new_ds_obs, merge=False
+                    # )
+                    # # Interpolate based on time in the observations
+                    # ds_model = ds_model.interp(time=ds_model.time_obs.squeeze())
 
                     # Debugging: Print the variables in ds_model to verify 'pressure_model' is included  ##qzr++
                     # print("Variables in ds_model after combine_da_to_da and interp:", ds_model.variables)
@@ -676,7 +695,77 @@ class analysis:
                     # if 'pressure_model' not in ds_model:
                     #   raise KeyError("'pressure_model' is missing in the model dataset")   #qzr++
 
-                    paired_data = vert_interp(ds_model, obs.obj, keys + mod_vars)
+                    # Variables to vertically interpolate (species/met; NOT lon/lat
+                    # appended to `keys` only for the unstructured spatial step).
+                    _lonlat = {"lon", "lat", "longitude", "latitude", "Longitude", "Latitude"}
+                    interp_vars = [v for v in (keys + mod_vars) if v not in _lonlat]
+
+                    interp_vars = [
+                        v for v in interp_vars
+                        if v in mod.obj and "z" in mod.obj[v].dims]
+
+                        # Unstructured model
+                        # pyresample's area-based nearest can't handle a 1-D mesh Uses model
+                        # pres_pa_mid (Pa) as pressure_model for the vertical interp.
+                    if "n_face" in mod.obj.dims or mod.obj.attrs.get("mio_scrip_file", False):
+                        # Unstructured model: pyresample's area-based nearest can't handle a
+                        # 1-D mesh, so KDTree-sample the model at the flight (lon, lat) points
+                        # and reshape onto new_ds_obs's (y, x) point grid. Uses model
+                        # pres_pa_mid (Pa) as pressure_model for the vertical interp.
+                        from scipy.spatial import cKDTree
+                        import time as _time
+
+                        src = mod.obj[interp_vars + ["pres_pa_mid"]]
+                        col_dim = mod.obj["longitude"].dims[0]              # 'n_face'/'ncol'
+                        olon = np.asarray(new_ds_obs["longitude"].values)  # (y, x)
+                        olat = np.asarray(new_ds_obs["latitude"].values)
+                        sp_dims = new_ds_obs["longitude"].dims             # ('y', 'x')
+                        print(f"[aircraft] obs points: {olon.size} | "
+                              f"model dims: {dict(src.sizes)} | vars: {list(src.data_vars)}",
+                              flush=True)
+                        _t0 = _time.time()
+                        # Nearest model cell per flight point. Build the KDTree from the
+                        # model lon/lat ONLY (cheap), then isel + load just those columns.
+                        # Never materialize the full (tens-of-GB) global model.
+                        mlon = ((np.asarray(mod.obj["longitude"].values).ravel() + 180.0) % 360.0) - 180.0
+                        mlat = np.asarray(mod.obj["latitude"].values).ravel()
+                        tlon = ((olon.ravel() + 180.0) % 360.0) - 180.0
+                        _, idx = cKDTree(np.column_stack([mlon, mlat])).query(
+                            np.column_stack([tlon, olat.ravel()]))
+                        on = src.isel({col_dim: idx}).rename({col_dim: "target"}).load()
+                        print(f"[aircraft] nearest-sampled {on.sizes['target']} cells "
+                              f"({on.sizes['time']}x{on.sizes['z']}x{on.sizes['target']}) in "
+                              f"{_time.time() - _t0:.1f}s", flush=True)
+                        _t0 = _time.time()
+                        ds_model = xr.Dataset()
+                        for v in on.data_vars:
+                            a = on[v].transpose("time", "z", "target").values
+                            a = a.reshape((on.sizes["time"], on.sizes["z"]) + olon.shape)
+                            ds_model[v] = (("time", "z") + sp_dims, a)
+                        ds_model = ds_model.rename({"pres_pa_mid": "pressure_model"})
+                        ds_model = ds_model.assign_coords({
+                            "time": src["time"].values,
+                            "time_obs": (sp_dims, np.asarray(new_ds_obs["time_obs"].values)),
+                            "pressure_obs": (sp_dims, np.asarray(new_ds_obs["pressure_obs"].values)),
+                            "latitude": (sp_dims, olat),
+                            "longitude": (sp_dims, olon),
+                        })
+                        ds_model = ds_model.interp(time=ds_model.time_obs.squeeze())
+                        # vert_interp's resample_stratify uses axis=1 -> put z second.
+                        ds_model = ds_model.transpose(sp_dims[0], "z", *sp_dims[1:])
+                        print(f"[aircraft] reshape+time-interp done in "
+                              f"{_time.time() - _t0:.1f}s; running vert_interp...", flush=True)
+                    else:
+                        # Structured model: nearest grid cell via pyresample (original path).
+                        ds_model = m.util.combinetool.combine_da_to_da(
+                            model_obj, new_ds_obs, merge=False
+                        )
+                        ds_model = ds_model.interp(time=ds_model.time_obs.squeeze())
+                        
+                        
+                    #paired_data = vert_interp(ds_model, obs.obj, keys + mod_vars)
+                    paired_data = vert_interp(ds_model, obs.obj, list(interp_vars) + ["pressure_model"])
+                    
                     print("After pairing: ", paired_data)
 
                     # Ensure 'pressure_model' is included in the DataFrame (pairdf) #qzr++

@@ -2,29 +2,40 @@
 #-------------------------------------------------------------------
 # Universal comparison variables
 analysis:
-  start_time: '2024-03-20'          #UTC
-  end_time: '2024-03-31 23:59:00'          #UTC
-  
-  output_dir: 
+  start_time: '2024-03-29'                 
+  end_time: '2024-03-31 23:59:00'         
+
+  output_dir:
     /glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/asiaaq_cs_06082026/output
-  output_dir_save: 
+  output_dir_save:
     /glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/asiaaq_cs_06082026/output
-  output_dir_read: 
+  output_dir_read:
     /glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/asiaaq_cs_06082026/output
 
+  # pair
   save:
     paired:
       method: 'netcdf'
-      prefix: '20240331'
+      prefix: 'asiaaq_sfc'
       data: all
+
+  # plot
   read:
     paired:
       method: 'netcdf'
-      filenames: {airnow_cesm_se: ['airnow_cesm_se']}
-  download_maps: false #If off-line or on machine with download restrictions like hera set to False.
+      filenames:
+        thailand_bma_cam-chem-se-era5:     ['/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/asiaaq_cs_06082026/output/asiaaq_sfc_thailand_bma_cam-chem-se-era5.nc4']
+        thailand_bma_cam-chem-se-merra2:   ['/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/asiaaq_cs_06082026/output/asiaaq_sfc_thailand_bma_cam-chem-se-merra2.nc4']
+        
+        philippines_aws_cam-chem-se-era5:  ['/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/asiaaq_cs_06082026/output/asiaaq_sfc_philippines_aws_cam-chem-se-era5.nc4']
+        philippines_aws_cam-chem-se-merra2: ['/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/asiaaq_cs_06082026/output/asiaaq_sfc_philippines_aws_cam-chem-se-merra2.nc4']
+        
+        dc8_cam-chem-se-era5:   ['/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/asiaaq_cs_06082026/output/asiaaq_sfc_dc8_cam-chem-se-era5.nc4']
+        dc8_cam-chem-se-merra2: ['/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/asiaaq_cs_06082026/output/asiaaq_sfc_dc8_cam-chem-se-merra2.nc4']
+        
+  download_maps: false
   debug: false
 
-  
 #-------------------------------------------------------------------
 # Model definitions
 model:
@@ -180,9 +191,10 @@ obs:
   dc8:
     filename: /glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/asiaaq_cs_06082026/preprocessing/dc8_data/asiaaq_dc8_merge_all.nc
     obs_type: aircraft
-    
+    resample: '60s'                        #  1-min means before pairing
     variables:
-      pressure_obs: {}
+      pressure_obs: {}                     # Pa; required by vert_interp (join key)
+      altitude: {}                         # m; used by vertprofile/curtain altitude_variable
       O3:  {unit_scale: 1,  unit_scale_method: '*' }
       CO:  {unit_scale: 1,  unit_scale_method: '*' }
       #NO:  {unit_scale: 0.001, unit_scale_method: '*' }
@@ -378,26 +390,51 @@ plots:
     data_proc: {rem_obs_nan: true, ts_select_time: 'time', ts_avg_window: null, set_axis: false}
 
   vp_dc8:
-    type: 'vertprofile'          # model vs obs binned by altitude — the classic aircraft plot
-    fig_kwargs: {figsize: [8, 10]}
+    type: 'vertprofile'
+    fig_kwargs: {figsize: [10, 14]}
+    default_plot_kwargs: {linewidth: 4.0, markersize: 10.}
+    text_kwargs: {fontsize: 18.}
+    ylabel_vert: 'Altitude (m)'            # top-level
+    domain_type: ['all']
+    domain_name: ['DC8']
+    data: ['dc8_cam-chem-se-merra2', 'dc8_cam-chem-se-era5']
+    data_proc:
+      rem_obs_nan: True
+      set_axis: False
+      interquartile_style: 'shading'       # or 'box'
+    altitude_variable: altitude            # top-level
+    vertprofile_bins:                      # dict with range:{start,stop,step}
+      range:
+        start: 0
+        stop: 12000
+        step: 1000
+
+  scatter_dc8:
+    type: 'scatter_density'
+    fig_kwargs: {figsize: [10, 10]}
+    default_plot_kwargs: {linewidth: 4.0, markersize: 10.}
     text_kwargs: {fontsize: 18.}
     domain_type: ['all']
     domain_name: ['DC8']
     data: ['dc8_cam-chem-se-merra2', 'dc8_cam-chem-se-era5']
     data_proc:
-      rem_obs_nan: true
-      set_axis: false
-      altitude_variable: altitude          # your obs altitude (m)
-      vertprofile_bins: [0, 1000, 2000, 4000, 6000, 8000, 12000]   # m
-      
-  scatter_dc8:
-    type: 'scatter_density'
+      rem_obs_nan: True
+      set_axis: False
+    xlabel: 'Model'
+    ylabel: 'Observation'
+    title: 'DC8 Scatter Density'
+    fill: True
+    shade_lowest: True
+
+  taylor_dc8:
+    type: 'taylor'
     fig_kwargs: {figsize: [8, 8]}
-    text_kwargs: {fontsize: 18.}
+    default_plot_kwargs: {linewidth: 2.0, markersize: 10.}
+    text_kwargs: {fontsize: 16.}
     domain_type: ['all']
     domain_name: ['DC8']
     data: ['dc8_cam-chem-se-merra2', 'dc8_cam-chem-se-era5']
-    data_proc: {rem_obs_nan: true, set_axis: false}
+    data_proc: {rem_obs_nan: true, set_axis: true}
 
 
 ###-----------------------------------------------------------------------------
