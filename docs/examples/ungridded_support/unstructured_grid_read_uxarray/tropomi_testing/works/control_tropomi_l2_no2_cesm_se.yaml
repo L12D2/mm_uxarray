@@ -4,7 +4,7 @@
 # updated 06/11/2026 L.T.
 
 # works: https://github.com/noaa-oar-arl/monetio - 0.3.2
-
+# works: https://github.com/L12D2/mm_uxarray/tree/backup/asia-aq-satellite-wip/docs/examples/ungridded_support/unstructured_grid_read_uxarray/tropomi_testing/works
 #-------------------------------------------------------------------
 analysis:
   start_time: '2024-06-30'                 #UTC  
@@ -34,7 +34,7 @@ obs:
     filename: /glade/campaign/acom/acom-weather/amirrezaei/tropomi_no2/2024/S5P_OFFL_L2__NO2____20240630T*.nc
     obs_type: sat_swath_clm
     sat_type: tropomi_l2_no2
-    sat_method: replace_apriori
+    #sat_method: replace_apriori
     apply_ak: True
     variables:
         qa_value:

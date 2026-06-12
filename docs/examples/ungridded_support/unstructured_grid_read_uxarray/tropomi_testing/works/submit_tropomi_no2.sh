@@ -8,7 +8,7 @@
 #PBS -j oe
 #PBS -o tropomi_no2_cesmse.log
 
-cd /glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/tropomi_testing/
+cd /glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/tropomi_testing/works/
 mkdir -p output_tropno2
 
 module load conda
