@@ -238,7 +238,12 @@ class model:
                 self.obj = mio.fv3chem.open_dataset(self.files, **self.mod_kwargs)
         elif "cesm_fv" in self.model.lower():
             print("**** Reading CESM FV model output...")
-            self.mod_kwargs.update({"var_list": list_input_var})
+            self.mod_kwargs.update(
+                {
+                    "var_list": list_input_var,
+                    "surf_only": control_dict["model"][self.label].get("surf_only", False),
+                }
+            )
             try:
                 self.obj = mio.models.cesm_fv.open_mfdataset(self.files, **self.mod_kwargs)
             except AttributeError:

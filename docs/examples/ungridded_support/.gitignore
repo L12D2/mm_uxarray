@@ -1,0 +1,10 @@
+# satellite/aircraft run artifacts — never commit
+output/
+output_*/
+*.nc
+*.nc4
+*.png
+*.log
+*.ESMF_LogFile
+PET*.ESMF_LogFile
+*.csv

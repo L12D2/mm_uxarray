@@ -1,0 +1,97 @@
+
+#-------------------------------------------------------------------
+# MELODIES-MONET test: TROPOMI L2 CO vs CESM-SE/CAM-chem (CONUS ne0CONUSne30x8)
+# updated 06/11/2026 L.T.   
+#-------------------------------------------------------------------
+analysis:
+  start_time: '2024-06-30'                 #UTC  
+  end_time:   '2024-06-30 23:59:00'        #UTC
+  output_dir:
+    ./output_co
+  output_dir_save:
+    ./output_co
+  output_dir_read:
+    ./output_co
+  save:
+    paired:
+      method: 'netcdf'
+      prefix: '20240101'
+      data: all
+  read:
+    paired:
+      method: 'netcdf'
+      filenames:
+        tropomi_l2_co_cam-chem-se: ['./output_co/20240101_tropomi_l2_co_cam-chem-se.nc4']
+  pairing_kwargs:
+    sat_swath_clm:
+      apply_ak: True
+      mod_to_overpass: True
+  debug: false
+
+obs:
+  tropomi_l2_co:
+    regrid_method: nearest_s2d
+    debug: false
+    filename: /glade/campaign/acom/acom-da/sma/TROPOMI-CO-COLLECTION-03-DATA/S5P_OFFL_L2__CO_____20240630T*.nc
+    obs_type: sat_swath_clm
+    sat_type: tropomi_l2_co
+    sat_method: apply_ak
+    apply_ak: True
+    variables:
+      "carbonmonoxide_total_column_corrected": {"quality_flag": "qa_value", "qa_thresh_min": 0.5}
+      "column_averaging_kernel": {}
+      "qa_value": {}
+
+model:
+  cam-chem-se:
+    files: 
+      - /glade/derecho/scratch/gaubert/tempo/f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.ref_dust_M1.001/f.e22.FCnudged.01x01.ref_dust_M1.001.cam.h1.2024-06-30-03600.nc
+    mod_type: 'cesm_fv'
+    mapping:
+      tropomi_l2_co:
+        CO: "carbonmonoxide_total_column_corrected"
+    projection: ~
+    surf_only: false
+    mod_kwargs:
+      convert_to_ppb: True
+    plot_kwargs:
+      color: 'purple'
+      marker: '^'
+      linestyle: 'dotted'
+
+plots:
+  plot_grp1:
+    type: 'timeseries'
+    fig_kwargs: {figsize: [12, 6]}
+    default_plot_kwargs: {linewidth: 2.0, markersize: 10.}
+    text_kwargs: {fontsize: 18.}
+    domain_type: ["all"]
+    domain_name: ["CONUS"]
+    data: ["tropomi_l2_co_cam-chem-se"]
+    data_proc: {set_axis: false, vmin_plot: 0, vmax_plot: 3.0e+18}
+
+  plot_grp2:
+    type: 'gridded_spatial_bias'
+    fig_kwargs: {states: true, counties: false}
+    text_kwargs: {fontsize: 16}
+    domain_type: ['all', 'all']
+    domain_name: ['CONUS', 'model']
+    data: ['tropomi_l2_co_cam-chem-se']
+    data_proc: {set_axis: false, vdiff_plot: 5.0e+17}
+
+  plot_grp3:
+    type: 'spatial_dist'
+    fig_kwargs: {states: true, counties: false}
+    text_kwargs: {fontsize: 16}
+    domain_type: ['all', 'all']
+    domain_name: ['CONUS', 'model']
+    data: ['tropomi_l2_co_cam-chem-se']
+    data_proc: {set_axis: false, vmin_plot: 0, vmax_plot: 3.0e+18}
+
+stats:
+  stat_list: ["MB", "MdnB", "R2", "RMSE"]
+  round_output: 2
+  output_table: False
+  domain_type: ["all"]
+  domain_name: ["CONUS"]
+  data: ['tropomi_l2_co_cam-chem-se']
