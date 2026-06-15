@@ -1,0 +1,24 @@
+
+
+
+cd /glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/asiaaq_cs_06082026/write_met_data/batch_scripts/
+
+# one-time make sure the output dir exists so save_analysis() can write
+mkdir -p /glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/asiaaq_cs_06082026/output
+
+# submit the job
+qsub submit_aircraft.sh
+
+# prints a job id 
+
+
+# monitor
+qstat -f <job_id>
+
+# print end of log file
+tail -n 30 pair_dc8.log
+
+# kill the job 
+qdel <job_id>
+
+

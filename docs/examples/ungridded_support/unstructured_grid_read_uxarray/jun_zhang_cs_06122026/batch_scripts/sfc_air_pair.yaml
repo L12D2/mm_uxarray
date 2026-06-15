@@ -1,0 +1,101 @@
+#-------------------------------------------------------------------
+# MELODIES-MONET control file: DC8 aircraft vs CESM-SE/CAM-chem
+# (GEMSne30x8 / ERA5  and  ne30pg3 / MERRA2) for asia AQ field camp 
+# added sfc pairing too 
+#-------------------------------------------------------------------
+analysis:
+  start_time: '2024-01-23'                 
+  end_time: '2024-02-14 23:59:00'    
+
+  output_dir:
+    /glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/jun_zhang_cs_06122026/output
+  output_dir_save:
+    /glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/jun_zhang_cs_06122026/output
+  output_dir_read:
+    /glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/jun_zhang_cs_06122026/output
+
+  # an.save()
+  save:
+    paired:
+      method: 'netcdf'
+      prefix: 'asiaaq'
+      data: all
+
+  # an.read
+  read:
+    paired:
+      method: 'netcdf'
+      filenames:
+        dc8_cam-chem-se-era5:   ['/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/asiaaq_cs_06082026/output/asiaaq_dc8_dc8_cam-chem-se-era5.nc4']
+
+  download_maps: false
+  debug: false
+
+#-------------------------------------------------------------------
+# Model definitions
+model:
+  cam-chem-se-era5:
+    files: 
+      - /glade/derecho/scratch/jzhan166/f.e30beta01.FCnudged.GEMS01ne30x8.XNOx_PHL_anthro.02/run/f.e30beta01.FCnudged.GEMS01ne30x8.XNOx_PHL_anthro.02.cam.aircraft_asiaaqdc8_1s_1pt.2024-01-23-00225.nc
+      - /glade/derecho/scratch/jzhan166/f.e30beta01.FCnudged.GEMS01ne30x8.XNOx_PHL_anthro.02/run/f.e30beta01.FCnudged.GEMS01ne30x8.XNOx_PHL_anthro.02.cam.aircraft_asiaaqdc8_1s_1pt.2024-02-13-06525.nc
+
+    mod_type: 'cesm_se'
+    scrip_file: "/glade/work/emmons/VRM_Files/ne0np4.GEMS01.ne30x8/grids/GEMS01_ne30x8_np4_SCRIP.nc"
+    radius_of_influence: 200000
+
+    extra_calc: # Add more complex calculations and their associated variables here.
+      dewpoint:
+        pres_calc: "PS"
+        specific_hum: "Q"
+        
+    mapping:
+      
+      dc8:
+        O3: 'O3'
+        CO: 'CO'
+        #NO: 'NO'
+        NO2: 'NO2'
+        T: 'temperature'
+
+    projection: ~ 
+    plot_kwargs: #Opt 
+      color: 'magenta'
+      marker: 'x'
+      linestyle: '--'
+        
+#-------------------------------------------------------------------
+# Observation definitions
+obs:
+        
+  dc8:
+    filename: /glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/asiaaq_cs_06082026/preprocessing/dc8_data/asiaaq_dc8_merge_all.nc
+    obs_type: aircraft
+    resample: '60s'                        #  1-min means before pairing
+    variables:
+      pressure_obs: {}                     # Pa; required by vert_interp (join key)
+      altitude: {}                         # m; used by vertprofile/curtain altitude_variable
+      O3:
+        unit_scale: 1
+        unit_scale_method: '*'
+        ylabel_plot: 'O3 (ppb)'
+        vmin_plot: 0
+        vmax_plot: 120
+        ty_scale: 1.5
+      CO:
+        unit_scale: 1
+        unit_scale_method: '*'
+        ylabel_plot: 'CO (ppb)'
+        vmin_plot: 0
+        vmax_plot: 400
+        ty_scale: 1.5
+      #"NO":
+      #  unit_scale: 0.001                  
+      #  unit_scale_method: '*'
+      #  ylabel_plot: 'NO (ppb)'
+      NO2:
+        unit_scale: 0.001                  
+        unit_scale_method: '*'
+        ylabel_plot: 'NO2 (ppb)'
+        vmin_plot: 0
+        vmax_plot: 10
+        ty_scale: 1.5

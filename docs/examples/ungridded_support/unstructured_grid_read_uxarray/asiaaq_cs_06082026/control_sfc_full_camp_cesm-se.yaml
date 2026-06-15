@@ -1,0 +1,366 @@
+
+#-------------------------------------------------------------------
+# Universal comparison variables
+analysis:
+  start_time: '2024-01-31'                 #UTC  
+  end_time:   '2024-04-01 23:59:00'        #UTC      
+
+  output_dir:
+    /glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/asiaaq_cs_06082026/output/sfc_full_plot
+  output_dir_save:
+    /glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/asiaaq_cs_06082026/output/sfc_full_plot
+  output_dir_read:
+    /glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/asiaaq_cs_06082026/output/sfc_full_camp_pair
+
+  # pair
+  save:
+    paired:
+      method: 'netcdf'
+      prefix: 'asiaaq'
+      data: all
+
+  # plot
+  read:
+    paired:
+      method: 'netcdf'
+      filenames:
+        thailand_bma_cam-chem-se-era5:     ['/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/asiaaq_cs_06082026/output/sfc_full_camp_pair/asiaaq_sfc_thailand_bma_cam-chem-se-era5.nc4']
+        thailand_bma_cam-chem-se-merra2:   ['/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/asiaaq_cs_06082026/output/sfc_full_camp_pair/asiaaq_sfc_thailand_bma_cam-chem-se-merra2.nc4']
+        
+        philippines_aws_cam-chem-se-era5:  ['/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/asiaaq_cs_06082026/output/sfc_full_camp_pair/asiaaq_sfc_philippines_aws_cam-chem-se-era5.nc4']
+        philippines_aws_cam-chem-se-merra2: ['/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/asiaaq_cs_06082026/output/sfc_full_camp_pair/asiaaq_sfc_philippines_aws_cam-chem-se-merra2.nc4']
+                
+  download_maps: false
+  debug: false
+
+#-------------------------------------------------------------------
+# Model definitions
+model:
+  cam-chem-se-era5:
+    files:
+    # swhould add a safe guard that if you're reading a paired file dont need this
+      - /glade/campaign/acom/acom-weather/emmons/ASIAAQ_sims/f.e3b08.FHISTC_LTt1s.camsm11_finn27.era5.GEMSne30x8.2024.01/atm/hist/f.e3b08.FHISTC_LTt1s.camsm11_finn27.era5.GEMSne30x8.2024.01.cam.h5a.2024-03-29-03600.nc
+
+    mod_type: 'cesm_se'
+    scrip_file: "/glade/campaign/acom/MUSICA/grids/GEMSne30x8/GEMS01_ne30x8_np4_SCRIP.nc"
+    radius_of_influence: 200000
+
+    extra_calc: # Add more complex calculations and their associated variables here.
+      dewpoint:
+        pres_calc: "PS"
+        specific_hum: "Q"
+        
+    mapping:
+      thailand_bma:
+        T: 'temperature'
+        O3: "O3"
+        PM25: "PM2.5"
+        dewpoint: "dewpoint_qc"
+        
+      philippines_aws:
+        T: 'temperature'
+        dewpoint: "dewpoint_qc"
+      
+      dc8:
+        O3: 'O3'
+        CO: 'CO'
+        #NO: 'NO'
+        NO2: 'NO2'
+        T: 'temperature'
+
+    projection: ~ 
+    plot_kwargs: #Opt 
+      color: 'dodgerblue'
+      marker: '+'
+      linestyle: '-.'
+
+  cam-chem-se-merra2:
+    files:
+      - /glade/campaign/acom/acom-weather/emmons/ASIAAQ_sims/f.e3b08.FHISTC_LTt1s.camsm11_finn27.2024.merra2.ne30.01/atm/hist/f.e3b08.FHISTC_LTt1s.camsm11_finn27.2024.merra2.ne30.01.cam.h4i.2024-03-29-03600.nc
+      
+    mod_type: 'cesm_se'
+    scrip_file: "/glade/campaign/acom/MUSICA/grids/ne30pg3/ne30pg3_scrip_170611.nc"
+    
+    radius_of_influence: 200000
+
+    # extra_calc: # Add more complex calculations and their associated variables here.
+    #   dewpoint:
+    #     pres_calc: "PS"
+    #     specific_hum: "Q"
+        
+    mapping:
+      thailand_bma:
+        T: 'temperature'
+        O3: "O3"
+        PM25: "PM2.5"
+        #dewpoint: "dewpoint_qc"
+        
+      philippines_aws:
+        T: 'temperature'
+        #dewpoint: "dewpoint_qc"
+
+      dc8:
+        O3: 'O3'
+        CO: 'CO'
+        #NO: 'NO'
+        NO2: 'NO2'
+        T: 'temperature'
+        
+    projection: ~ 
+    plot_kwargs: #Opt 
+      color: 'magenta'
+      marker: 'x'
+      linestyle: '--'
+
+      
+#-------------------------------------------------------------------
+# Observation definitions
+obs:
+  thailand_bma:
+    use_airnow: true
+    filename: '' #/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/asiaaq_cs_06082026/preprocessing/thai_data/thai_aws_airnow_qc.nc
+    
+    obs_type: pt_sfc
+    variables:
+      temperature:
+        unit_scale: 273.15
+        unit_scale_method: '+'
+        ylabel_plot: 'Temperature (K)'
+        # vmin_plot: 280
+        # vmax_plot: 320
+        vdiff_plot: 5
+        nlevels_plot: 20
+      
+      O3:
+        unit_scale: 1
+        unit_scale_method: '*'
+        ylabel_plot: 'Ozone (Ppb)'
+        # vmin_plot: 0
+        # vmax_plot: 100
+        vdiff_plot: 5
+        nlevels_plot: 20
+
+      PM2.5: # check these units for thai. Multiplying by 1e9 makes them too big but docs say the si units are ug/m^3
+        unit_scale: 1
+        unit_scale_method: '*'
+        ylabel_plot: 'PM2.5 (ug/m^3)'
+        # vmin_plot: 0
+        # vmax_plot: 500
+        vdiff_plot: 5
+        nlevels_plot: 20
+        
+      dewpoint_qc:
+        unit_scale: 273.15
+        unit_scale_method: '+'
+        ylabel_plot: 'Dewpoint (K)'
+        # vmin_plot: 280
+        # vmax_plot: 320
+        vdiff_plot: 5
+        nlevels_plot: 20  
+        
+  philippines_aws:
+    use_airnow: true
+    filename: '' #/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/asiaaq_cs_06082026/preprocessing/philippines_data/philippines_aws_airnow_qc.nc
+    
+    obs_type: pt_sfc
+    variables:
+      temperature:
+        unit_scale: 273.15
+        unit_scale_method: '+'
+        ylabel_plot: 'Temperature (K)'
+        vmin_plot: 280
+        vmax_plot: 320
+        vdiff_plot: 5
+        nlevels_plot: 20
+
+      dewpoint_qc:
+        unit_scale: 273.15
+        unit_scale_method: '+'
+        ylabel_plot: 'Dewpoint (K)'
+        vmin_plot: 280
+        vmax_plot: 320
+        vdiff_plot: 5
+        nlevels_plot: 20          
+        
+#-------------------------------------------------------------------
+plots:
+  ts_th:
+    type: 'timeseries'
+    fig_kwargs: {figsize: [12, 6]}
+    default_plot_kwargs: {linewidth: 2.0, markersize: 10.}
+    text_kwargs: {fontsize: 18.}
+    domain_type: ['all']
+    domain_name: ['Thailand']          # title label only
+    data: ['thailand_bma_cam-chem-se-merra2', "thailand_bma_cam-chem-se-era5"]
+    data_proc: {rem_obs_nan: true, ts_select_time: 'time_local', ts_avg_window: 'h', set_axis: false}
+
+  ts_ph:
+    type: 'timeseries'
+    fig_kwargs: {figsize: [12, 6]}
+    default_plot_kwargs: {linewidth: 2.0, markersize: 10.}
+    text_kwargs: {fontsize: 18.}
+    domain_type: ['all']
+    domain_name: ['Philippines']
+    data: ['philippines_aws_cam-chem-se-merra2', 'philippines_aws_cam-chem-se-era5']
+    data_proc: {rem_obs_nan: true, ts_select_time: 'time_local', ts_avg_window: 'h', set_axis: false}
+
+  sbias_th:
+    type: 'spatial_bias'
+    fig_kwargs: {states: false, counties: false, extent: [96.0, 107.0, 4.0, 22.0], figsize: [8, 6]} 
+    
+    text_kwargs: {fontsize: 16.}
+    domain_type: ['all']
+    domain_name: ['Thailand']
+    data: ['thailand_bma_cam-chem-se-merra2', "thailand_bma_cam-chem-se-era5"]
+    data_proc: {rem_obs_nan: true, set_axis: true}
+
+  sbias_ph:
+    type: 'spatial_bias'
+    fig_kwargs: {states: false, counties: false, extent: [115.0, 128.0, 3.0, 23.0], figsize: [8, 6]}
+    text_kwargs: {fontsize: 16.}
+    domain_type: ['all']
+    domain_name: ['Philippines']
+    data: ['philippines_aws_cam-chem-se-merra2', 'philippines_aws_cam-chem-se-era5']
+    data_proc: {rem_obs_nan: true, set_axis: true}
+
+  # need a seperate plot / fix for this as it cant reaad from the paired? 
+  # soverlay_th:
+  #   type: 'spatial_overlay'
+  #   fig_kwargs: {states: false, counties: false, extent: [96.0, 107.0, 4.0, 22.0], figsize: [8, 6]}
+  #   text_kwargs: {fontsize: 16.}
+  #   domain_type: ['all']
+  #   domain_name: ['Thailand']
+  #   data: ['thailand_bma_cam-chem-se-merra2', "thailand_bma_cam-chem-se-era5"]
+  #   data_proc: {rem_obs_nan: true, set_axis: true}
+
+  # soverlay_ph:
+  #   type: 'spatial_overlay'
+  #   fig_kwargs: {states: false, counties: false, extent: [115.0, 128.0, 3.0, 23.0], figsize: [8, 6]}
+  #   text_kwargs: {fontsize: 16.}
+  #   domain_type: ['all']
+  #   domain_name: ['Philippines']
+  #   data: ['philippines_aws_cam-chem-se-merra2', 'philippines_aws_cam-chem-se-era5']
+  #   data_proc: {rem_obs_nan: true, set_axis: true}
+    
+  bx_th:
+    type: 'boxplot'
+    fig_kwargs:
+      figsize: [8, 6]
+    text_kwargs: {fontsize: 16.}
+    domain_type: ['all']
+    domain_name: ['Thailand']
+    data: ['thailand_bma_cam-chem-se-merra2', "thailand_bma_cam-chem-se-era5"]
+    data_proc: {rem_obs_nan: true, set_axis: true}
+
+  bx_ph:
+    type: 'boxplot'
+    fig_kwargs:
+      figsize: [8, 6]
+    text_kwargs: {fontsize: 16.}
+    domain_type: ['all']
+    domain_name: ['Philippines']
+    data: ['philippines_aws_cam-chem-se-merra2', 'philippines_aws_cam-chem-se-era5']
+    data_proc: {rem_obs_nan: true, set_axis: true}
+
+  diu_th:
+    type: "diurnal"
+    fig_kwargs:
+      figsize: [12, 6] 
+    default_plot_kwargs:
+      linewidth: 2.0
+      markersize: 10.
+    text_kwargs: 
+      fontsize: 24.
+    domain_type: ['all']
+    domain_name: ['Thailand']
+    data: ['thailand_bma_cam-chem-se-merra2', "thailand_bma_cam-chem-se-era5"]
+    data_proc: 
+      rem_obs_nan: True
+      ts_select_time: "time_local" 
+      ts_avg_window: "h"
+      set_axis: True
+
+  diu_ph:
+    type: "diurnal"
+    fig_kwargs:
+      figsize: [12, 6] 
+    default_plot_kwargs:
+      linewidth: 2.0
+      markersize: 10.
+    text_kwargs: 
+      fontsize: 24.
+    domain_type: ['all']
+    domain_name: ['Philippines']
+    data: ['philippines_aws_cam-chem-se-merra2', 'philippines_aws_cam-chem-se-era5']
+    data_proc: 
+      rem_obs_nan: True
+      ts_select_time: "time_local" 
+      ts_avg_window: "h"
+      set_axis: True
+
+  # mbx_th_pm25:
+  #   type: "multi_boxplot"
+  #   fig_kwargs:
+  #     figsize: [10, 8]
+  #   text_kwargs:
+  #     fontsize: 20.
+  #   gridlines: True
+  #   xlabel: "Binned by Observed PM2.5 (kg/m^3)"
+  #   domain_type: ['all']
+  #   domain_name: ['Thailand']
+  #   interval_var: PM2.5
+  #   interval_list:   [0, 12, 35, 55, 150, 250]
+  #   interval_labels: ["0–12", "12–35", "35–55", "55–150", "150–250"]
+  #   model_name_list: ['thailand_bma', "cam-chem-se-merra2", "cam-chem-se-era5"]
+  #   data: ['thailand_bma_cam-chem-se-merra2', "thailand_bma_cam-chem-se-era5"]
+  #   data_proc:
+  #     rem_obs_nan: True
+  #     set_axis: False
+
+  # mbx_th_temp:
+  #   type: "multi_boxplot"
+  #   fig_kwargs:
+  #     figsize: [10, 8]
+  #   text_kwargs:
+  #     fontsize: 20.
+  #   gridlines: True
+  #   xlabel: "Binned by Observed Temperature (K)"
+  #   domain_type: ['all']
+  #   domain_name: ['Thailand']
+  #   interval_var: temperature
+  #   interval_list:   [293, 298, 303, 308, 313, 318]
+  #   interval_labels: ["293–298", "298–303", "303–308", "308–313", "313–318"]
+  #   model_name_list: ['thailand_bma', "cam-chem-se-merra2", "cam-chem-se-era5"]
+  #   data: ['thailand_bma_cam-chem-se-merra2', "thailand_bma_cam-chem-se-era5"]
+  #   data_proc:
+  #     rem_obs_nan: True
+  #     set_axis: False
+
+  # mbx_ph_temp:
+  #   type: "multi_boxplot"
+  #   fig_kwargs:
+  #     figsize: [10, 8]
+  #   text_kwargs:
+  #     fontsize: 20.
+  #   gridlines: True
+  #   xlabel: "Binned by Observed Temperature (K)"
+  #   domain_type: ['all']
+  #   domain_name: ['Philippines']
+  #   interval_var: temperature
+  #   interval_list:   [293, 298, 303, 308, 313, 318]
+  #   interval_labels: ["293–298", "298–303", "303–308", "308–313", "313–318"]
+  #   model_name_list: ['philippines_aws', "cam-chem-se-merra2", "cam-chem-se-era5"]
+  #   data: ['philippines_aws_cam-chem-se-merra2', "philippines_aws_cam-chem-se-era5"]
+  #   data_proc:
+  #     rem_obs_nan: True
+  #     set_axis: False
+
+###-----------------------------------------------------------------------------
+stats:
+  stat_list: ['MB', 'ME', 'RMSE', 'NMB', 'NME', 'R2'] #List stat to calculate below. Dictionary of definitions included in plots/proc_stats.py 
+  output_table: true #Always outputs a .txt file. Optional to also output as a table.
+  round_output: 3
+  domain_type: ['all'] #List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.) 
+  domain_name: ["ASIAAQ"] #List of domain names. If domain_type = all domain_name is used in plot title.
+  data: ['thailand_bma_cam-chem-se-merra2', 'thailand_bma_cam-chem-se-era5',
+         'philippines_aws_cam-chem-se-merra2', 'philippines_aws_cam-chem-se-era5']
