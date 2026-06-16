@@ -182,6 +182,17 @@ plots:
     data: ['dc8_cam-chem-se-era5']
     data_proc: {rem_obs_nan: true, set_axis: true}
 
+  # curtain_dc8:
+  #   type: 'curtain'
+  #   fig_kwargs: {figsize: [8, 8]}
+  #   default_plot_kwargs: {linewidth: 2.0, markersize: 10.}
+  #   text_kwargs: {fontsize: 16.}
+  #   domain_type: ['all']
+  #   domain_name: ['DC8']
+  #   data: ['dc8_cam-chem-se-era5']
+  #   interval: 10000       
+  #   num_levels: 100
+  #   data_proc: {rem_obs_nan: true, set_axis: true}
 
 ###-----------------------------------------------------------------------------
 stats:
