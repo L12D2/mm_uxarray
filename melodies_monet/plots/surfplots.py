@@ -393,28 +393,35 @@ def make_spatial_bias(df, df_reg=None, column_o=None, label_o=None, column_m=Non
     ax.axes.set_extent(map_kwargs['extent'],crs=map_kwargs['crs'])
 
     #print(df.columns)
-    
+
     if wind_barb:
         if u_comp is not None and v_comp is not None:
-            #Recalculate mean, so always use mean for windbarbs and not percentiles.
-            df_mean_wind=df.groupby(['siteid'],as_index=False).mean(numeric_only=True)
-
+            # always use mean for windbarbs (not percentiles)
+            df_mean_wind = df.groupby(['siteid'], as_index=False).mean(numeric_only=True)
             u_mod = df_mean_wind[u_comp]
             v_mod = df_mean_wind[v_comp]
 
-            # set skip for less clutter
-            skip=1
-            ax.barbs(
-                df_mean_wind["longitude"][::skip], # long
-                df_mean_wind["latitude"][::skip], # lat
-                u_mod[::skip]*1.94384, 
-                v_mod[::skip]*1.94384, # u, v
-                transform=map_kwargs['crs'],
-                length=6, linewidth=0.85
-            )  # order per matplot lib follows (x, y, u, v)
+            skip = 2
+            if uxgrid is not None:
+                # unstructured model paired to sites: flatten to 1-D numpy + subsample.
+                mlon = np.asarray(df_mean_wind["longitude"].values).ravel()[::skip]
+                mlat = np.asarray(df_mean_wind["latitude"].values).ravel()[::skip]
+                mu   = np.asarray(u_mod.values).ravel()[::skip] * 1.94384
+                mv   = np.asarray(v_mod.values).ravel()[::skip] * 1.94384
+                ax.barbs(mlon, mlat, mu, mv,
+                         transform=map_kwargs['crs'], length=6, linewidth=0.85)
+            else:
+                ax.barbs(
+                    df_mean_wind["longitude"][::skip],
+                    df_mean_wind["latitude"][::skip],
+                    u_mod[::skip] * 1.94384,
+                    v_mod[::skip] * 1.94384,
+                    transform=map_kwargs['crs'],
+                    length=6, linewidth=0.85
+                )
         else:
             print("U-comp and V-comp need to be specified in the yaml file. Plotting wind barbs failed!")
-
+            
     #Update colorbar
     f = plt.gcf()
     model_ax = f.get_axes()[0]
@@ -2408,29 +2415,34 @@ def make_spatial_bias_exceedance(df, df_wind=None, column_o=None, label_o=None, 
             map_kwargs['extent'] = [lonmin,lonmax,latmin,latmax]
         ax.axes.set_extent(map_kwargs['extent'],crs=map_kwargs['crs'])
 
-        if wind_barb:
-            if u_comp is not None and v_comp is not None and df_wind is not None:
-                #Recalculate mean, so always use mean for windbarbs and not percentiles.
-                #Also use regular dataframe with hourly data and not the regulatory dataframe, 
-                #which only has wind fields in it for midnight local time.
-                df_mean_wind=df_wind.groupby(['siteid'],as_index=False).mean(numeric_only=True)
-            
-                u_mod = df_mean_wind[u_comp]
-                v_mod = df_mean_wind[v_comp]
-    
-                # set skip for less clutter
-                skip=1
+    if wind_barb:
+        if u_comp is not None and v_comp is not None and df_wind is not None:
+            # always use mean for windbarbs (not percentiles)
+            df_mean_wind = df_wind.groupby(['siteid'], as_index=False).mean(numeric_only=True)
+            u_mod = df_mean_wind[u_comp]
+            v_mod = df_mean_wind[v_comp]
+
+            skip = 2
+            if uxgrid is not None:
+                # unstructured model paired to sites: flatten to 1-D numpy + subsample.
+                mlon = np.asarray(df_mean_wind["longitude"].values).ravel()[::skip]
+                mlat = np.asarray(df_mean_wind["latitude"].values).ravel()[::skip]
+                mu   = np.asarray(u_mod.values).ravel()[::skip] * 1.94384
+                mv   = np.asarray(v_mod.values).ravel()[::skip] * 1.94384
+                ax.barbs(mlon, mlat, mu, mv,
+                         transform=map_kwargs['crs'], length=6, linewidth=0.85)
+            else:
                 ax.barbs(
-                    df_mean_wind["longitude"][::skip], # long
-                    df_mean_wind["latitude"][::skip], # lat
-                    u_mod[::skip]*1.94384, 
-                    v_mod[::skip]*1.94384, # u, v
+                    df_mean_wind["longitude"][::skip],
+                    df_mean_wind["latitude"][::skip],
+                    u_mod[::skip] * 1.94384,
+                    v_mod[::skip] * 1.94384,
                     transform=map_kwargs['crs'],
                     length=6, linewidth=0.85
-                )  # order per matplot lib follows (x, y, u, v)
-            else:
-                print("U-comp and V-comp need to be specified in the yaml file. Plotting wind barbs failed!")
-        
+                )
+        else:
+            print("U-comp and V-comp need to be specified in the yaml file. Plotting wind barbs failed!")
+            
         #Update colorbar
         f = plt.gcf()
         model_ax = f.get_axes()[0]

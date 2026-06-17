@@ -1,4 +1,5 @@
-import os, re, glob, copy, yaml
+import os, re, glob, copy, yaml, json, shutil, xarray as xr
+import netCDF4
 from datetime import datetime
 from melodies_monet import driver
 
@@ -9,7 +10,8 @@ from montage_dc8 import make_montages
 CTRL    = "/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/asiaaq_cs_06082026/control_air_full_camp_cesm-se.yaml"
 PAIRDIR = "/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/asiaaq_cs_06082026/output/dc8_full_camp_pair"
 PLOTROOT = "/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/asiaaq_cs_06082026/output/air_full_plot"
-TMPDIR   = "/glade/u/home/lcthompson/.../asiaaq_cs_06082026/output/dc8_plot_yaml"
+TMPDIR = "/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/asiaaq_cs_06082026/output/dc8_plot_yaml"
+
 os.makedirs(TMPDIR, exist_ok=True)
 
 base = yaml.safe_load(open(CTRL))
@@ -40,6 +42,46 @@ for ymd in dates:
     cd["analysis"]["read"]["paired"]["filenames"] = fn
     avail = list(fn.keys())                              # pairs present for THIS flight
 
+    # way to skip variables that were not recorded on flight
+    MODELCOL = {"O3": "O3_new", "CO": "CO_new", "NO2": "NO2_new", "temperature": "T"}   # obs_var to model column
+    COORDS   = {"pressure_obs", "altitude"}                         # always keep (vertical axis)
+
+    present = set(MODELCOL)
+    for files in fn.values():                       # every available pair file for this flight
+        ds = xr.open_dataset(files[0])
+        dv = set(ds.data_vars)
+        for ov, mcol in MODELCOL.items():
+            if mcol not in dv or int(ds[mcol].count()) == 0:   # model col absent/all-NaN
+                present.discard(ov)
+        ds.close()
+        
+    print(f"   {ymd}: plotting vars -> {sorted(present)}", flush=True)
+    if not present:
+        print(f"   SKIP {ymd}: nothing to plot"); continue
+
+    PRUNEDIR = f"{TMPDIR}/pruned"
+    os.makedirs(PRUNEDIR, exist_ok=True)
+    new_fn = {}
+    
+    for key, files in fn.items():
+        dst = f"{PRUNEDIR}/{ymd}_{os.path.basename(files[0])}"
+        shutil.copyfile(files[0], dst)
+        with netCDF4.Dataset(dst, "a") as nc:
+            meta = json.loads(nc.getncattr("dict_json"))
+            ov, mv = meta["obs_vars"], meta["model_vars"]
+            idx = [i for i, o in enumerate(ov) if o in present]   # keep aligned pairs
+            meta["obs_vars"]   = [ov[i] for i in idx]
+            meta["model_vars"] = [mv[i] for i in idx]
+            nc.setncattr("dict_json", json.dumps(meta))
+        new_fn[key] = [dst]
+    cd["analysis"]["read"]["paired"]["filenames"] = new_fn
+    
+    vd = cd["obs"]["dc8"]["variables"]
+    cd["obs"]["dc8"]["variables"] = {k: v for k, v in vd.items() if k in COORDS or k in present}
+    print(f"   {ymd}: plotting vars -> {sorted(present)}", flush=True)
+    if not present:
+        print(f"   SKIP {ymd}: no gas variables present"); continue
+        
     # label every plot/stat with the date, and only reference available pairs
     for g in cd["plots"].values():
         g["domain_name"] = [f"DC8 {iso}"]
