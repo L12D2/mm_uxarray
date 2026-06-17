@@ -58,6 +58,7 @@ model:
       - /glade/derecho/scratch/jzhan166/f.e30beta01.FCnudged.GEMS01ne30x8.XNOx_PHL_anthro.02/run/f.e30beta01.FCnudged.GEMS01ne30x8.XNOx_PHL_anthro.02.cam.aircraft_asiaaqdc8_1s_1pt.2024-02-13-06525.nc
       
     mod_type: 'cesm_se'
+    is_track: True
     scrip_file: "/glade/work/emmons/VRM_Files/ne0np4.GEMS01.ne30x8/grids/GEMS01_ne30x8_np4_SCRIP.nc"
     radius_of_influence: 100000
         
