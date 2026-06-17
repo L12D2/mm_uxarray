@@ -198,11 +198,11 @@ plots:
       rem_obs_nan: true # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
       set_axis: true #If select True, add vmin_plot and vmax_plot for each variable in obs.
       wind_barb: True
-      wind_barb_step: 2
+      wind_barb_step: 10
       wind_barb_kwargs:
         length: 6
         linewidth: 0.85
-        color: "magenta"
+        color: "black"
         
   plot_grp5:
     type: 'boxplot' # plot type

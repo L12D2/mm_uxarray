@@ -268,9 +268,10 @@ def get_utcoffset(lat,lon):
 def make_spatial_bias(df, df_reg=None, column_o=None, label_o=None, column_m=None, 
                       label_m=None, ylabel = None, ptile = None, vdiff=None,
                       outname = 'plot', u_comp = None, v_comp = None, wind_barb=False,
-                      domain_type=None, domain_name=None, fig_dict=None, 
-                      text_dict=None,debug=False): 
-        
+                      wind_barb_step=1, wind_barb_kwargs=None, uxgrid=None,
+                      domain_type=None, domain_name=None, fig_dict=None,
+                      text_dict=None,debug=False):
+
     """Creates surface spatial bias plot. 
     
     Parameters
@@ -389,8 +390,8 @@ def make_spatial_bias(df, df_reg=None, column_o=None, label_o=None, column_m=Non
         plt.title(domain_name + ': ' + label_m + ' - ' + label_o,fontweight='bold',**text_kwargs)
 
     if 'extent' not in map_kwargs:
-        map_kwargs['extent'] = [lonmin,lonmax,latmin,latmax]  
-    ax.axes.set_extent(map_kwargs['extent'],crs=map_kwargs['crs'])
+        map_kwargs['extent'] = [lonmin,lonmax,latmin,latmax]
+    ax.axes.set_extent(map_kwargs['extent'],crs=ccrs.PlateCarree())
 
     #print(df.columns)
 
@@ -401,27 +402,27 @@ def make_spatial_bias(df, df_reg=None, column_o=None, label_o=None, column_m=Non
             u_mod = df_mean_wind[u_comp]
             v_mod = df_mean_wind[v_comp]
 
-            skip = 2
+            if wind_barb_kwargs is None:
+                wind_barb_kwargs = {"length": 6, "linewidth": 0.85}
+            
             if uxgrid is not None:
                 # unstructured model paired to sites: flatten to 1-D numpy + subsample.
-                mlon = np.asarray(df_mean_wind["longitude"].values).ravel()[::skip]
-                mlat = np.asarray(df_mean_wind["latitude"].values).ravel()[::skip]
-                mu   = np.asarray(u_mod.values).ravel()[::skip] * 1.94384
-                mv   = np.asarray(v_mod.values).ravel()[::skip] * 1.94384
-                ax.barbs(mlon, mlat, mu, mv,
-                         transform=map_kwargs['crs'], length=6, linewidth=0.85)
-            else:
+                mlon = np.asarray(df_mean_wind["longitude"].values).ravel()[::wind_barb_step]
+                mlat = np.asarray(df_mean_wind["latitude"].values).ravel()[::wind_barb_step]
+                mu   = np.asarray(u_mod.values).ravel()[::wind_barb_step] * 1.94384
+                mv   = np.asarray(v_mod.values).ravel()[::wind_barb_step] * 1.94384
+                ax.barbs(mlon, mlat, mu, mv, transform=ccrs.PlateCarree(), **wind_barb_kwargs)
+            else: 
                 ax.barbs(
-                    df_mean_wind["longitude"][::skip],
-                    df_mean_wind["latitude"][::skip],
-                    u_mod[::skip] * 1.94384,
-                    v_mod[::skip] * 1.94384,
-                    transform=map_kwargs['crs'],
-                    length=6, linewidth=0.85
-                )
+                    df_mean_wind["longitude"][::wind_barb_step], # long
+                    df_mean_wind["latitude"][::wind_barb_step], # lat
+                    u_mod[::wind_barb_step]*1.94384, 
+                    v_mod[::wind_barb_step]*1.94384, # u, v
+                    transform=ccrs.PlateCarree(),
+                    **wind_barb_kwargs,)  # order per matplot lib follows (x, y, u, v)
         else:
             print("U-comp and V-comp need to be specified in the yaml file. Plotting wind barbs failed!")
-            
+     
     #Update colorbar
     f = plt.gcf()
     model_ax = f.get_axes()[0]
@@ -963,7 +964,7 @@ def make_taylor(df, df_reg=None, column_o=None, label_o='Obs', column_m=None, la
 def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None, 
                       label_m=None, ylabel = None, vmin=None,
                       vmax = None, nlevels = None, proj = None, outname = 'plot',
-                      u_comp = None, v_comp = None, wind_barb = False,
+                      u_comp = None, v_comp = None, wind_barb = False, wind_barb_step=1, wind_barb_kwargs=None,
                       domain_type=None, domain_name=None, fig_dict=None, 
                       text_dict=None, uxgrid = None, debug=False):
         
@@ -1139,26 +1140,24 @@ def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
         if u_comp is not None and v_comp is not None:
             u_mod = vmodel[u_comp].mean(dim='time').squeeze()
             v_mod = vmodel[v_comp].mean(dim='time').squeeze()
-
-            # set skip for less clutter
-            skip=2
+            
+            if wind_barb_kwargs is None:
+                wind_barb_kwargs = {"length": 6, "linewidth": 0.85}
             if uxgrid is not None or "n_face" in getattr(u_mod, "dims", ()):
-                # Unstructured grid-dim slicing isn't supported 
-                # flatten to 1-D numpy and subsample 
-                mlon = np.asarray(u_mod["longitude"].values).ravel()[::skip]
-                mlat = np.asarray(u_mod["latitude"].values).ravel()[::skip]
-                mu = np.asarray(u_mod.values).ravel()[::skip] * 1.94384
-                mv = np.asarray(v_mod.values).ravel()[::skip] * 1.94384
-                ax.barbs(mlon, mlat, mu, mv,
-                         transform=map_kwargs['crs'], length=6, linewidth=0.85)
+                # unstructured: flatten to 1-D numpy, then subsample
+                mlon = np.asarray(u_mod["longitude"].values).ravel()[::wind_barb_step]
+                mlat = np.asarray(u_mod["latitude"].values).ravel()[::wind_barb_step]
+                mu = np.asarray(u_mod.values).ravel()[::wind_barb_step] * 1.94384
+                mv = np.asarray(v_mod.values).ravel()[::wind_barb_step] * 1.94384
+                ax.barbs(mlon, mlat, mu, mv, transform=ccrs.PlateCarree(), **wind_barb_kwargs)
             else:
                 ax.barbs(
-                    u_mod["longitude"][::skip],
-                    u_mod["latitude"][::skip],
-                    u_mod[::skip]*1.94384,
-                    v_mod[::skip]*1.94384,
-                    transform=map_kwargs['crs'],
-                    length=6, linewidth=0.85
+                    u_mod["longitude"][::wind_barb_step, ::wind_barb_step].values,
+                    u_mod["latitude"][::wind_barb_step, ::wind_barb_step].values,
+                    u_mod[::wind_barb_step, ::wind_barb_step].values*1.94384,
+                    v_mod[::wind_barb_step, ::wind_barb_step].values*1.94384,
+                    transform=ccrs.PlateCarree(),
+                    **wind_barb_kwargs,
                 )
         else:
             print("U-comp and V-comp need to be specified in the yaml file. Plotting wind barbs failed!")
@@ -2285,7 +2284,7 @@ def Plot_CSI(column,score_name_input,threshold_list_input, comb_bx_input,plot_di
 def make_spatial_bias_exceedance(df, df_wind=None, column_o=None, label_o=None, column_m=None,
                                  label_m=None, ylabel = None,  vdiff=None,
                                  outname = 'plot',
-                                 u_comp = None, v_comp = None, wind_barb=False,
+                                 u_comp = None, v_comp = None, wind_barb=False, wind_barb_step=1, wind_barb_kwargs=None,
                                  domain_type=None, domain_name=None, fig_dict=None,
                                  text_dict=None,debug=False):
 
@@ -2413,7 +2412,7 @@ def make_spatial_bias_exceedance(df, df_wind=None, column_o=None, label_o=None, 
 
         if 'extent' not in map_kwargs:
             map_kwargs['extent'] = [lonmin,lonmax,latmin,latmax]
-        ax.axes.set_extent(map_kwargs['extent'],crs=map_kwargs['crs'])
+        ax.axes.set_extent(map_kwargs['extent'],crs=ccrs.PlateCarree())
 
     if wind_barb:
         if u_comp is not None and v_comp is not None and df_wind is not None:
@@ -2422,23 +2421,24 @@ def make_spatial_bias_exceedance(df, df_wind=None, column_o=None, label_o=None, 
             u_mod = df_mean_wind[u_comp]
             v_mod = df_mean_wind[v_comp]
 
-            skip = 2
+            if wind_barb_kwargs is None:
+                wind_barb_kwargs = {"length": 6, "linewidth": 0.85}
+
             if uxgrid is not None:
                 # unstructured model paired to sites: flatten to 1-D numpy + subsample.
-                mlon = np.asarray(df_mean_wind["longitude"].values).ravel()[::skip]
-                mlat = np.asarray(df_mean_wind["latitude"].values).ravel()[::skip]
-                mu   = np.asarray(u_mod.values).ravel()[::skip] * 1.94384
-                mv   = np.asarray(v_mod.values).ravel()[::skip] * 1.94384
-                ax.barbs(mlon, mlat, mu, mv,
-                         transform=map_kwargs['crs'], length=6, linewidth=0.85)
+                mlon = np.asarray(df_mean_wind["longitude"].values).ravel()[::wind_barb_step]
+                mlat = np.asarray(df_mean_wind["latitude"].values).ravel()[::wind_barb_step]
+                mu   = np.asarray(u_mod.values).ravel()[::wind_barb_step] * 1.94384
+                mv   = np.asarray(v_mod.values).ravel()[::wind_barb_step] * 1.94384
+                ax.barbs(mlon, mlat, mu, mv, transform=ccrs.PlateCarree(), **wind_barb_kwargs)
             else:
                 ax.barbs(
-                    df_mean_wind["longitude"][::skip],
-                    df_mean_wind["latitude"][::skip],
-                    u_mod[::skip] * 1.94384,
-                    v_mod[::skip] * 1.94384,
-                    transform=map_kwargs['crs'],
-                    length=6, linewidth=0.85
+                    df_mean_wind["longitude"][::wind_barb_step],
+                    df_mean_wind["latitude"][::wind_barb_step],
+                    u_mod[::wind_barb_step] * 1.94384,
+                    v_mod[::wind_barb_step] * 1.94384,
+                    transform=ccrs.PlateCarree(),
+                    **wind_barb_kwargs,
                 )
         else:
             print("U-comp and V-comp need to be specified in the yaml file. Plotting wind barbs failed!")

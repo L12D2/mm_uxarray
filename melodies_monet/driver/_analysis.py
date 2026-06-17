@@ -1505,6 +1505,8 @@ class analysis:
                             v_comp = self.control_dict["model"][p.model].get(
                                 "extra_calc", {}).get('wind_barb', {}).get('v_comp', None)
                             wind_barb = grp_dict['data_proc'].get('wind_barb', False)
+                            wind_barb_step = grp_dict['data_proc'].get('wind_barb_step', 1)
+                            wind_barb_kwargs = grp_dict['data_proc'].get('wind_barb_kwargs', None)
 
                         # Query with filter options
                         if (
@@ -2951,6 +2953,8 @@ class analysis:
                                 u_comp=u_comp, 
                                 v_comp=v_comp,
                                 wind_barb=wind_barb,
+                                wind_barb_step=wind_barb_step,
+                                wind_barb_kwargs=wind_barb_kwargs,
                                 domain_type=domain_type,
                                 domain_name=domain_name,
                                 fig_dict=fig_dict,
@@ -3059,6 +3063,8 @@ class analysis:
                                     u_comp = u_comp,
                                     v_comp = v_comp,
                                     wind_barb = wind_barb,
+                                    wind_barb_step=wind_barb_step,
+                                    wind_barb_kwargs=wind_barb_kwargs,
                                     domain_type=domain_type,
                                     domain_name=domain_name,
                                     fig_dict=fig_dict,
@@ -3169,6 +3175,8 @@ class analysis:
                                     u_comp=u_comp, 
                                     v_comp=v_comp,
                                     wind_barb=wind_barb,
+                                    wind_barb_step=wind_barb_step,
+                                    wind_barb_kwargs=wind_barb_kwargs,
                                     domain_type=domain_type,
                                     domain_name=domain_name,
                                     fig_dict=fig_dict,

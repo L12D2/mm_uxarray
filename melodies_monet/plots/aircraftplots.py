@@ -915,6 +915,12 @@ def make_violin_plot(comb_violin, label_violin, outname='plot',
     plt.tick_params(axis='both', labelsize=text_kwargs['fontsize']*0.8)
 
     if set_stat_sig:
+        if Annotator is None:
+            raise ImportError(
+                "statannotations is required for set_stat_sig. "
+                "Install with: conda install -c conda-forge statannotations "
+                "or with: pip install statannotations")
+
         # statistical significance of the means 
         p_values = []
     
