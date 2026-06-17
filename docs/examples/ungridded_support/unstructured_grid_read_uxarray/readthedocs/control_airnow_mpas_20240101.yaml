@@ -175,10 +175,6 @@ plots:
       fontsize: 16.
     domain_type: ['all', 'epa_region', 'state_name'] #List of domain types: . (e.g., airnow: epa_region, state_name, siteid, etc.) 
     domain_name: ['CONUS', 'R8', 'CO'] #List of domain names. If domain_type = all domain_name is used in plot title.
-    
-    # domain_type: ['all'] #List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.) 
-    # domain_name: ['CONUS'] #List of domain names. If domain_type = all domain_name is used in plot title.
-    
     data: ['airnow_mpas'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
     data_proc:
       rem_obs_nan: true # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
@@ -221,8 +217,8 @@ plots:
     type: "rose_plot"
     text_kwargs:
       fontsize: 16.
-    domain_type: ['all', 'epa_region', 'state_name'] #List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region etc.) 
-    domain_name: ['CONUS', 'R8', 'CO'] #List of domain names. If domain_type = all domain_name is used in plot title.
+    domain_type: ['all'] #List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region etc.) 
+    domain_name: ['CONUS'] #List of domain names. If domain_type = all domain_name is used in plot title.
     data: ['airnow_mpas']
     color_map: "inferno"  
     data_proc:
