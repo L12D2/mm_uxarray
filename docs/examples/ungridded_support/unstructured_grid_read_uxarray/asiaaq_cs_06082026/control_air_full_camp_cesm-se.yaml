@@ -30,14 +30,13 @@ model:
     mod_type: 'cesm_se'
     scrip_file: "/glade/campaign/acom/MUSICA/grids/GEMSne30x8/GEMS01_ne30x8_np4_SCRIP.nc"
     radius_of_influence: 200000
-        
-    mapping:
-      
+
+    mapping: #model species name : obs species name
       dc8:
         O3: 'O3'
         CO: 'CO'
         NO2: 'NO2'
-        T: 'temperature'
+        T: 'temperature'        
 
     projection: ~ 
     plot_kwargs: #Opt 
@@ -57,13 +56,12 @@ model:
     #     pres_calc: "PS"
     #     specific_hum: "Q"
         
-    mapping:
-
+    mapping: #model species name : obs species name
       dc8:
         O3: 'O3'
         CO: 'CO'
         NO2: 'NO2'
-        T: 'temperature'
+        T: 'temperature'    
         
     projection: ~ 
     plot_kwargs: #Opt 

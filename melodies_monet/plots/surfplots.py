@@ -1135,14 +1135,24 @@ def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
 
             # set skip for less clutter
             skip=2
-            ax.barbs(
-                u_mod["longitude"][::skip], # long
-                u_mod["latitude"][::skip], # lat
-                u_mod[::skip]*1.94384, 
-                v_mod[::skip]*1.94384, # u, v
-                transform=map_kwargs['crs'],
-                length=6, linewidth=0.85
-            )  # order per matplot lib follows (x, y, u, v)
+            if uxgrid is not None or "n_face" in getattr(u_mod, "dims", ()):
+                # Unstructured grid-dim slicing isn't supported 
+                # flatten to 1-D numpy and subsample 
+                mlon = np.asarray(u_mod["longitude"].values).ravel()[::skip]
+                mlat = np.asarray(u_mod["latitude"].values).ravel()[::skip]
+                mu = np.asarray(u_mod.values).ravel()[::skip] * 1.94384
+                mv = np.asarray(v_mod.values).ravel()[::skip] * 1.94384
+                ax.barbs(mlon, mlat, mu, mv,
+                         transform=map_kwargs['crs'], length=6, linewidth=0.85)
+            else:
+                ax.barbs(
+                    u_mod["longitude"][::skip],
+                    u_mod["latitude"][::skip],
+                    u_mod[::skip]*1.94384,
+                    v_mod[::skip]*1.94384,
+                    transform=map_kwargs['crs'],
+                    length=6, linewidth=0.85
+                )
         else:
             print("U-comp and V-comp need to be specified in the yaml file. Plotting wind barbs failed!")
 

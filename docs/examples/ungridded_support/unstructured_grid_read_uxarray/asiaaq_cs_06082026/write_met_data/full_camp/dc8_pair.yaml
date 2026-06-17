@@ -96,34 +96,56 @@ model:
 # Observation definitions
 obs:
   dc8:
-    filename: /glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/asiaaq_cs_06082026/preprocessing/dc8_data/asiaaq_dc8_merge_all.nc
+    filename: '' # i can se this using my driver 
     obs_type: aircraft
+    time_var: Time_Start
     resample: '60s'                        #  1-min means before pairing
     variables:
-      pressure_obs: {}                     # Pa; required by vert_interp (join key)
-      altitude: {}                         # m; used by vertprofile/curtain altitude_variable
-      O3:
+      Latitude_BENNETT:  {rename: latitude,  nan_value: -999999}
+      Longitude_BENNETT: {rename: longitude, nan_value: -999999}
+      Static_Pressure_BENNETT:
+        rename: pressure_obs
+        unit_scale: 100              # hPa to  Pa
+        unit_scale_method: '*'
+        nan_value: -999999
+      Pressure_Altitude_BENNETT:
+        rename: altitude
+        unit_scale: 0.3048           # ft to m
+        unit_scale_method: '*'
+        nan_value: -999999
+      Static_Air_Temp_BENNETT:
+        rename: temperature
+        unit_scale: 273.15           
+        unit_scale_method: '+'
+        nan_value: -999999
+      O3_ppbv_FRANCHIN:
+        rename: O3
         unit_scale: 1
         unit_scale_method: '*'
+        nan_value: -999999
         ylabel_plot: 'O3 (ppb)'
         vmin_plot: 0
         vmax_plot: 120
         ty_scale: 1.5
-      CO:
+      CO_DACOM_DISKIN:
+        rename: CO
         unit_scale: 1
         unit_scale_method: '*'
+        nan_value: -999999
         ylabel_plot: 'CO (ppb)'
         vmin_plot: 0
         vmax_plot: 400
         ty_scale: 1.5
-      #"NO":
-      #  unit_scale: 0.001                  
-      #  unit_scale_method: '*'
-      #  ylabel_plot: 'NO (ppb)'
-      NO2:
-        unit_scale: 0.001                  
+      NO2_pptv_FRANCHIN:
+        rename: NO2
+        unit_scale: 0.001              # pptv to ppb
         unit_scale_method: '*'
+        nan_value: -999999
         ylabel_plot: 'NO2 (ppb)'
         vmin_plot: 0
         vmax_plot: 10
         ty_scale: 1.5
+
+    
+
+        
