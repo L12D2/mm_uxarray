@@ -26,7 +26,7 @@ model:
         'xylene_tot_wrf':   'xylene_tot_obs'
         'csl':   'x109_0647888184_C7H9O_'
         'nald':   'x143_1430358887_C9H19O_'
-        'macr_mvk_isopooh_tot':   'x71_0491409302_C4H7O_'
+        'macr_mvk_b-isopooh':   'x71_0491409302_C4H7O_'
         'd4silx':   'x297_0824279785_C8H25O4Si4_'
         'd5silx':   'x371_1012268066_C10H31O5Si5_'
         'pcbtf':   'x181_0026397705_C7H4ClF3H_'
@@ -56,9 +56,9 @@ model:
         'xylene_tot_wrf':
             vars: ['xyl','xyo']
             ylabel_plot: 'Xylene'
-        'macr_mvk_isopooh_tot':
-            vars: ['macr','mvk','ishpa','ishpb','ishpd']
-            ylabel_plot: 'Methacrolein/MVK/ISOPOOH'
+        'macr_mvk_b-isopooh':
+            vars: ['macr','mvk','ishpa','ishpb']
+            ylabel_plot: 'MACR/MVK/B-ISOPOOH'
     projection: null
 obs:
   recap: # obs label
