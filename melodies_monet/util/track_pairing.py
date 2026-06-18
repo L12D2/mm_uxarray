@@ -19,6 +19,10 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
+# dry gas const & gravity
+RD = 287.05
+G0 = 9.80665
+
 def pair_track_model(model_file, obs_file, mapping, resample="60s",
                      obs_scale=None, fill_below=-9999.0, gap_warn_hours=1.0):
     """Pair a CAM '1s_1pt' along-track model file with aircraft obs.
@@ -143,4 +147,128 @@ def save_paired_mm(df, mapping, obs_label, model_label, out_nc):
                 "group_name": f"{obs_label}_{model_label}"}
     ds.to_netcdf(out_nc)
     print("wrote", out_nc)
+
+# helper function to help with curtain plot 
+
+def build_track_curtain(model_file, mod_var, times, num_levels=100, to_ppb=True,
+                        vert_coord="pressure", temp_var="T", phis_var="PHIS",
+                        ps_var="PS"):
+    """Build (target_pressures, model_data_2d) for a curtain plot from a track file
+
+    For each obs time, the nearest model track sample's column is vertically
+    interpolated onto a regular pressure grid — giving the model's time x
+    pressure curtain along the flight, the same array shape MM's
+    ``make_curtain_plot`` expects (``(n_time, n_levels)``).
+
+    Parameters
+    ----------
+    model_file : str
+        Along-track '1s_1pt' model file.
+    mod_var : str
+        **Raw** model variable name in the file (e.g. 'O3', not 'O3_new').
+    times : array-like
+        Obs times (the paired-data times) to align the curtain columns to.
+    num_levels : int
+        Number of vertical interpolation levels (curtain y-resolution).
+    to_ppb : bool
+        Scale mol/mol gases to ppb (default True).
+    vert_coord : 
+        {'pressure', 'altitude'}
+    temp_var : str ; temp K 
+    phis_var : str ; sfc geopoetntial 
+    ps_var : str ; sfc pressure 
+
+    temp, phis, ps req when vert_coord = altitude 
+
+    Returns
+    -------
+    target_pressures : numpy.ndarray
+        (num_levels,) Pa, descending (surface high p ; top low p).
+    model_data_2d : numpy.ndarray
+        (len(times), num_levels) model field for the contourf.
+    """
+    m = xr.open_dataset(model_file, decode_times=True).swap_dims({"ncol": "time"}).sortby("time")
+    pmid = m["PMID"].values                          # (time, lev) Pa
+    mt = pd.to_datetime(m["time"].values)
+    da = m[mod_var]
+    scale = 1e9 if (to_ppb and "mol/mol" in da.attrs.get("units", "").lower()) else 1.0
+    prof = da.values * scale                         # (time, lev)
+
+    mi = mt.values.astype("datetime64[ns]").astype("int64")
+    oi = pd.to_datetime(times).values.astype("datetime64[ns]").astype("int64")
+    pos = np.clip(np.searchsorted(mi, oi), 1, len(mi) - 1)
+    j = np.where((oi - mi[pos - 1]) <= (mi[pos] - oi), pos - 1, pos)
+
+    if vert_coord == "altitude":
+        if temp_var not in m:
+            raise ValueError(
+                f"vert_coord='altitude' needs temperature var '{temp_var}' in {model_file}"
+            )
+        t_all = m[temp_var].values                   # (time, lev) K
+        zsurf = (m[phis_var].values / G0) if phis_var in m else np.zeros(len(mt))
+        psurf = m[ps_var].values if ps_var in m else None
+        
+        # geopotential height (m) for each matched column
+        vert = np.empty((len(oi), pmid.shape[1]))
+        for i, jj in enumerate(j):
+            zs = float(np.ravel(zsurf)[jj]) if np.ndim(zsurf) else float(zsurf)
+            ps = float(psurf[jj]) if psurf is not None else None
+            vert[i] = _column_altitude(pmid[jj], t_all[jj], zs, ps)
+        target_levels = np.linspace(np.nanmin(vert), np.nanmax(vert), num_levels)
+        model_data_2d = np.full((len(oi), num_levels), np.nan)
+        for i, jj in enumerate(j):
+            order = np.argsort(vert[i])
+            model_data_2d[i] = np.interp(target_levels, vert[i][order], prof[jj][order],
+                                         left=np.nan, right=np.nan)
+        return target_levels, model_data_2d
+            
+    target_pressures = np.linspace(np.nanmax(pmid), np.nanmin(pmid), num_levels)
+    model_data_2d = np.full((len(oi), num_levels), np.nan)
+    for i, jj in enumerate(j):
+        order = np.argsort(pmid[jj])
+        model_data_2d[i] = np.interp(target_pressures, pmid[jj][order], prof[jj][order],
+                                     left=np.nan, right=np.nan)
+    return target_pressures, model_data_2d
+
+# altitude column using hypso metric eqn 
+def _column_altitude(pmid_col, t_col, z_surf=0.0, p_surf=None):
+    """Geopotential height (m) at each model midpoint 
+
+    Integrates the hypsometric equation upward from the surface:
+    dz = (Rd * Tv / g) * ln(p_below / p) 
+    
+    ASSUME: Tv ~ T 
+    
+    Parameters
+    ----------
+    pmid_col, t_col : array-like
+        1D mid-layer pressure (Pa) and temperature (K) for one column,
+        in any vertical ordering.
+    z_surf : float
+        Surface geopotential height (m), e.g. ``PHIS / g``. Default 0.
+    p_surf : float, optional
+        Surface pressure (Pa). If None, the lowest mid-layer is used as the
+        anchor (so its height == ``z_surf``).
+
+    Returns
+    -------
+    numpy.ndarray
+        Height (m) at each level
+    """
+    
+    pmid_col = np.asarray(pmid_col, float)
+    t_col = np.asarray(t_col, float)
+    order = np.argsort(pmid_col)[::-1]          # surface (high p) ; top (low p)
+    p = pmid_col[order]
+    tv = t_col[order]
+    z = np.empty_like(p)
+    p_below = p_surf if p_surf is not None else p[0]
+    z_below = z_surf
+    for k in range(len(p)):
+        z[k] = z_below + (RD * tv[k] / G0) * np.log(p_below / p[k])
+        z_below, p_below = z[k], p[k]
+    out = np.empty_like(z)
+    out[order] = z
+    return out
+
 

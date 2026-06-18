@@ -183,17 +183,35 @@ plots:
     data: ['dc8_cam-chem-se-era5']
     data_proc: {rem_obs_nan: true, set_axis: true}
 
-  # curtain_dc8:
-  #   type: 'curtain'
-  #   fig_kwargs: {figsize: [8, 8]}
-  #   default_plot_kwargs: {linewidth: 2.0, markersize: 10.}
-  #   text_kwargs: {fontsize: 16.}
-  #   domain_type: ['all']
-  #   domain_name: ['DC8']
-  #   data: ['dc8_cam-chem-se-era5']
-  #   interval: 10000       
-  #   num_levels: 100
-  #   data_proc: {rem_obs_nan: true, set_axis: true}
+  curtain_dc8_pa:
+    type: 'curtain'
+    fig_kwargs: {figsize: [20, 8]}
+    default_plot_kwargs: {linewidth: 2.0, markersize: 10.}
+    text_kwargs: {fontsize: 16.}
+    domain_type: ['all']
+    domain_name: ['DC8']
+    data: ['dc8_cam-chem-se-era5']
+    color_map: "cividis"
+    vert_coord: "pressure"
+    pressure_units: 'Pa'
+    interval: 10000       
+    num_levels: 100
+    data_proc: {rem_obs_nan: True, set_axis: True}
+
+  curtain_dc8_m:
+    type: 'curtain'
+    fig_kwargs: {figsize: [20, 8]}
+    default_plot_kwargs: {linewidth: 2.0, markersize: 10.}
+    text_kwargs: {fontsize: 16.}
+    domain_type: ['all']
+    domain_name: ['DC8']
+    data: ['dc8_cam-chem-se-era5']
+    color_map: "cividis"
+    vert_coord: 'altitude'      # 'altitude' (m) or 'pressure' 
+    altitude_units: 'm'         # label only
+    interval: 2000              # y-tick spacing 
+    num_levels: 100
+    data_proc: {rem_obs_nan: true, set_axis: true}  
 
 ###-----------------------------------------------------------------------------
 stats:

@@ -395,7 +395,7 @@ class analysis:
                             m.proj = ccrs.Projection(proj_in)
 
                 # open the model
-                if load_files and m.is_track:
+                if m.is_track:
                     # track_pairing opens/reshapes track only model data during pair_data.
                     m.glob_files()
                 elif load_files:
@@ -1885,6 +1885,7 @@ class analysis:
                                 vmax = None
 
                             curtain_config = grp_dict  # Curtain plot grp YAML dict
+                            vert_coord = curtain_config.get("vert_coord", "pressure")
                             # Inside your loop for processing each pair
                             obs_label = p.obs
                             model_label = p.model
@@ -1901,76 +1902,98 @@ class analysis:
                             pairdf = pairdf_all.reset_index()
 
                             #### For model_data_2d for curtain/contourfill plot #####
-                            # Convert to get something useful for MONET
-                            new_ds_obs = (
-                                obs.obj.rename_axis("time_obs")
-                                .reset_index()
-                                .monet._df_to_da()
-                                .set_coords(["time_obs", "pressure_obs"])
-                            )
+                            if getattr(mod, "is_track", False):
+                                from melodies_monet.util.track_pairing import build_track_curtain
+                                _tmap   = mod.mapping[obs_label]                      # {model_var: obs_var}
+                                _rawmod = next(mv for mv, ov in _tmap.items() if ov == obsvar)  # raw model var (not *_new)
+                                num_levels = curtain_config.get("num_levels", 100)
+                                interval   = curtain_config.get("interval", 10000)
+                                target_pressures, model_data_2d = build_track_curtain(
+                                    mod.files[0], _rawmod, pairdf["time"], num_levels,
+                                    vert_coord=vert_coord,
+                                    temp_var=curtain_config.get("model_temp_var", "T"),
+                                    phis_var=curtain_config.get("model_phis_var", "PHIS"),
+                                    ps_var=curtain_config.get("model_ps_var", "PS"),
+                                )
+                            else:
+                                if vert_coord == "altitude":
+                                    print(
+                                        "Warning: vert_coord='altitude' is currently supported "
+                                        "for track models (is_track) only; falling back to "
+                                        "pressure for this gridded model curtain."
+                                    )
+                                    vert_coord = "pressure"
 
-                            # Nearest neighbor approach to find closest grid cell to each point
-                            ds_model = m.util.combinetool.combine_da_to_da(
-                                model_obj, new_ds_obs, merge=False
-                            )
+                                # Convert to get something useful for MONET
+                                new_ds_obs = (
+                                    obs.obj.rename_axis("time_obs")
+                                    .reset_index()
+                                    .monet._df_to_da()
+                                    .set_coords(["time_obs", "pressure_obs"])
+                                )
 
-                            # Interpolate based on time in the observations
-                            ds_model = ds_model.interp(time=ds_model.time_obs.squeeze())
+                                # Nearest neighbor approach to find closest grid cell to each point
+                                ds_model = m.util.combinetool.combine_da_to_da(
+                                    model_obj, new_ds_obs, merge=False
+                                )
+    
+                                # Interpolate based on time in the observations
+                                ds_model = ds_model.interp(time=ds_model.time_obs.squeeze())
 
-                            # Print ds_model and pressure_model values #Debugging
-                            ##print(f"ds_model: {ds_model}")
-                            ##print(f"pressure_model values: {ds_model['pressure_model'].values}")
-
-                            # Define target pressures for interpolation based on the range of pressure_model
-                            min_pressure = ds_model["pressure_model"].min().compute()
-                            max_pressure = ds_model["pressure_model"].max().compute()
-
-                            # Fetch the interval and num_levels from curtain_config
-                            interval = curtain_config.get(
-                                "interval", 10000
-                            )  # Default to 10,000 Pa if not provided      # Y-axis tick interval
-                            num_levels = curtain_config.get(
-                                "num_levels", 100
-                            )  # Default to 100 levels if not provided
-
-                            print(
-                                f"Pressure MIN:{min_pressure}, max: {max_pressure}, ytick_interval: {interval}, interpolation_levels: {num_levels}  "
-                            )
-
-                            # Use num_levels to define target_pressures interpolation levels
-                            target_pressures = np.linspace(max_pressure, min_pressure, num_levels)
-
-                            # Debugging: print target pressures
-                            ##print(f"Generated target pressures: {target_pressures}, shape: {target_pressures.shape}")
-
-                            # Check for NaN values before interpolation
-                            ##print(f"NaNs in model data before interpolation: {np.isnan(ds_model[modvar]).sum().compute()}")
-                            ##print(f"NaNs in pressure_model before interpolation: {np.isnan(ds_model['pressure_model']).sum().compute()}")
-
-                            # Resample model data to target pressures using stratify
-                            da_wrf_const = resample_stratify(
-                                ds_model[modvar],
-                                target_pressures,
-                                ds_model["pressure_model"],
-                                axis=1,
-                                interpolation="linear",
-                                extrapolation="nan",
-                            )
-                            da_wrf_const.name = modvar
-
-                            # Create target_pressures DataArray
-                            da_target_pressures = xr.DataArray(target_pressures, dims=("z"))
-                            da_target_pressures.name = "target_pressures"
-
-                            # Merge DataArrays into a single Dataset
-                            ds_wrf_const = xr.merge([da_wrf_const, da_target_pressures])
-                            ds_wrf_const = ds_wrf_const.set_coords("target_pressures")
-
-                            # Debugging: print merged dataset for model curtain
-                            ##print(ds_wrf_const)
-
-                            # Ensure model_data_2d is properly reshaped for the contourfill plot
-                            model_data_2d = ds_wrf_const[modvar].squeeze()
+                                # Print ds_model and pressure_model values #Debugging
+                                ##print(f"ds_model: {ds_model}")
+                                ##print(f"pressure_model values: {ds_model['pressure_model'].values}")
+    
+                                # Define target pressures for interpolation based on the range of pressure_model
+                                min_pressure = ds_model["pressure_model"].min().compute()
+                                max_pressure = ds_model["pressure_model"].max().compute()
+    
+                                # Fetch the interval and num_levels from curtain_config
+                                interval = curtain_config.get(
+                                    "interval", 10000
+                                )  # Default to 10,000 Pa if not provided      # Y-axis tick interval
+                                num_levels = curtain_config.get(
+                                    "num_levels", 100
+                                )  # Default to 100 levels if not provided
+    
+                                print(
+                                    f"Pressure MIN:{min_pressure}, max: {max_pressure}, ytick_interval: {interval}, interpolation_levels: {num_levels}  "
+                                )
+    
+                                # Use num_levels to define target_pressures interpolation levels
+                                target_pressures = np.linspace(max_pressure, min_pressure, num_levels)
+    
+                                # Debugging: print target pressures
+                                ##print(f"Generated target pressures: {target_pressures}, shape: {target_pressures.shape}")
+    
+                                # Check for NaN values before interpolation
+                                ##print(f"NaNs in model data before interpolation: {np.isnan(ds_model[modvar]).sum().compute()}")
+                                ##print(f"NaNs in pressure_model before interpolation: {np.isnan(ds_model['pressure_model']).sum().compute()}")
+    
+                                # Resample model data to target pressures using stratify
+                                da_wrf_const = resample_stratify(
+                                    ds_model[modvar],
+                                    target_pressures,
+                                    ds_model["pressure_model"],
+                                    axis=1,
+                                    interpolation="linear",
+                                    extrapolation="nan",
+                                )
+                                da_wrf_const.name = modvar
+    
+                                # Create target_pressures DataArray
+                                da_target_pressures = xr.DataArray(target_pressures, dims=("z"))
+                                da_target_pressures.name = "target_pressures"
+    
+                                # Merge DataArrays into a single Dataset
+                                ds_wrf_const = xr.merge([da_wrf_const, da_target_pressures])
+                                ds_wrf_const = ds_wrf_const.set_coords("target_pressures")
+    
+                                # Debugging: print merged dataset for model curtain
+                                ##print(ds_wrf_const)
+    
+                                # Ensure model_data_2d is properly reshaped for the contourfill plot
+                                model_data_2d = ds_wrf_const[modvar].squeeze()
 
                             # Debugging: print reshaped model data shape
                             ##print(f"Reshaped model data shape: {model_data_2d.shape}")
@@ -1983,6 +2006,11 @@ class analysis:
                             ##print(f"Length of time: {len(time)}") #Debugging
                             ##print(f"Length of obs_pressure: {len(obs_pressure)}") #Debugging
 
+                            if vert_coord == "altitude" and "altitude" in pairdf:
+                                obs_pressure = pairdf["altitude"]
+                            else:
+                                obs_pressure = pairdf["pressure_obs"]
+                                
                             # Generate the curtain plot using airplots.make_curtain_plot
                             try:
                                 outname_pair = f"{outname}_{obs_label}_vs_{model_label}.png"
@@ -2009,6 +2037,7 @@ class analysis:
                                     obs_label_config=obs_label_config,
                                     text_dict=text_dict,
                                     debug=self.debug,  # Pass debug flag
+                                    vert_coord=vert_coord,
                                 )
 
                             except Exception as e:
