@@ -288,7 +288,14 @@ class observation:
                     self.obj = mio.sat.tropomi_l2.open_datasets(
                         self.file, self.variable_dict
                     )
-
+                    
+            elif self.sat_type == "tropomi_l2_hcho":
+                # Generic TROPOMI reader, which is same as NO2 conservative path
+                print("Reading TROPOMI L2 HCHO (generic reader)...")
+                self.obj = mio.sat.tropomi_l2.open_datasets(
+                    self.file, self.variable_dict
+                )
+                
             elif "tempo_l2" in self.sat_type:
                 print("Reading TEMPO L2")
                 try:

@@ -610,4 +610,101 @@ def regrid_and_apply_weights_tropomi(obsobj, modobj, species=["NO2"],
     if not out_list:
         return xr.Dataset()
     return xr.concat(out_list, dim="time")
-    
+
+# tropomi HCHO 
+# single tropo AMF and total columng averaging kernel 
+# use generic tropomi_l2 reader + shared regrid / interp 
+
+def apply_weights_mod2tropomi_hcho(obsobj, modobj_on_tropomi_layers, species="CH2O"):
+    """Apply the TROPOMI HCHO averaging kernel to a model formaldehyde profile.
+
+    Returns the model HCHO column with the AK applied (molec/cm2), dims (y, x).
+    """
+    g, M_air, NA = 9.80665, 0.0289644, 6.022e23
+
+    vmr = _to_molmol(modobj_on_tropomi_layers[species]).transpose("z", "y", "x")
+
+    pint = obsobj["pres_pa_int"].transpose("z_stagg", "y", "x")
+    dp = np.abs(
+        pint.isel(z_stagg=slice(0, -1)).values
+        - pint.isel(z_stagg=slice(1, None)).values
+    )
+    dp = xr.DataArray(dp, dims=("z", "y", "x"))
+    subcol = vmr * dp * (NA / (g * M_air) / 1e4)            # molec/cm2 per layer
+
+    ak = obsobj["averaging_kernel"].transpose("z", "y", "x")
+    vcd = (ak * subcol).sum("z", skipna=True)
+    vcd = vcd.where(np.isfinite(vmr.isel(z=0)))
+    vcd.attrs = {
+        "units": "molecules/cm2",
+        "description": "model HCHO column after applying TROPOMI averaging kernel",
+        "history": "Created by MELODIES-MONET, apply_weights_mod2tropomi_hcho",
+    }
+    return vcd.where(np.isfinite(vcd))
+
+def regrid_and_apply_weights_tropomi_hcho(obsobj, modobj, species=["CH2O"],
+                                          method="conservative"):
+    """
+    Pair an unstructured model with TROPOMI L2 HCHO (AK applied).
+    """
+    sp = species[0]
+    grid_file = (modobj.attrs.get("mio_scrip_file")
+                 or modobj.attrs.get("mio_mesh_file"))
+
+    granules = []
+    for v in obsobj.values():
+        granules.extend(v if isinstance(v, list) else [v])
+
+    out_list = []
+    for o in granules:
+        if "time" in o.dims:
+            o = o.squeeze("time", drop=False)
+
+        if "time_granule" in o.variables:
+            tg = np.asarray(o["time_granule"].values).ravel().astype("datetime64[ns]")
+            tg = tg[~np.isnat(tg)]
+            gtime = (
+                np.array(tg.astype("int64").mean(), dtype="int64").astype("datetime64[ns]")
+                if tg.size else None
+            )
+        else:
+            gtime = o["time"].values if "time" in o.coords else None
+
+        if "time" in modobj.dims and gtime is not None:
+            tsel = gtime if np.ndim(gtime) == 0 else np.asarray(gtime).ravel()[0]
+            mtimes = modobj["time"].values
+            tmin, tmax = mtimes.min(), mtimes.max()
+            if tsel < tmin:
+                tsel = tmin
+            elif tsel > tmax:
+                tsel = tmax
+            try:
+                mod_t = modobj.interp(time=tsel)
+            except Exception:
+                mod_t = modobj.sel(time=tsel, method="nearest")
+        elif "time" in modobj.dims:
+            mod_t = modobj.isel(time=0)
+        else:
+            mod_t = modobj
+
+        on_swath = _mod2tropomi_swath(mod_t, o, method, [sp, "pres_pa_mid"], grid_file)
+        prof_t = interp_vertical_mod2tropomi(o, on_swath, [sp])
+        model_col = apply_weights_mod2tropomi_hcho(o, prof_t, sp)
+        obs_col = o["formaldehyde_tropospheric_vertical_column"] * _MOL_M2_TO_MOLEC_CM2     # molec/cm2
+
+        swath = xr.Dataset(
+            {sp: model_col, "formaldehyde_tropospheric_vertical_column": obs_col,
+             "latitude_bounds": o["latitude_bounds"],
+             "longitude_bounds": o["longitude_bounds"]},
+            coords={"longitude": o["longitude"], "latitude": o["latitude"]},
+        )
+
+        on_mod = _tropomi_swath2mod(swath, modobj, method, [sp, "formaldehyde_tropospheric_vertical_column"])
+        if gtime is not None:
+            tval = gtime if np.ndim(gtime) == 0 else np.asarray(gtime).ravel()[0]
+            on_mod = on_mod.expand_dims(time=[np.datetime64(tval)])
+        out_list.append(on_mod)
+
+    if not out_list:
+        return xr.Dataset()
+    return xr.concat(out_list, dim="time")

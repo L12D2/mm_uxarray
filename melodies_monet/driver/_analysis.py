@@ -1184,6 +1184,41 @@ class analysis:
                         label = "{}_{}".format(p.obs, p.model)
                         p.filename = "{}.nc".format(label)
                         self.paired[label] = p
+
+                    if obs.sat_type == "tropomi_l2_hcho":
+                        from melodies_monet.util import sat_l2_swath_utility as troputil
+                        
+                        sp = "formaldehyde_tropospheric_vertical_column"
+                        key = "tropomi_l2_hcho"
+                        mod_sp = [k_sp for k_sp, v in mod.mapping[key].items() if v == sp]
+
+                        regrid_method = (
+                            obs.regrid_method if obs.regrid_method is not None
+                            else "conservative"
+                        )
+
+                        _sat_needed = list(mod_sp) + [
+                            "pres_pa_mid", "dz_m", "temperature_k"]
+                        _sat_vars = [v for v in _sat_needed if v in mod.obj.variables]
+                        mod_obj_for_sat = mod.obj[_sat_vars].load()
+
+                        paired_data_atgrid = troputil.regrid_and_apply_weights_tropomi_hcho(
+                            obs.obj, mod_obj_for_sat, species=mod_sp, method=regrid_method
+                        )
+
+                        p = pair()
+                        paired_data = paired_data_atgrid.sel(
+                            time=slice(self.start_time, self.end_time)
+                        )
+                        p.type = obs.obs_type
+                        p.obs = obs.label
+                        p.model = mod.label
+                        p.model_vars = keys
+                        p.obs_vars = obs_vars
+                        p.obj = paired_data
+                        label = "{}_{}".format(p.obs, p.model)
+                        p.filename = "{}.nc".format(label)
+                        self.paired[label] = p
                         
                     if "tempo_l2" in obs.sat_type:
                         from melodies_monet.util import sat_l2_swath_utility_tempo as sutil
@@ -2588,10 +2623,24 @@ class analysis:
                                 else {"color": "blue"}
                             )  # Fallback color for models, in case it's missing
 
+                            # Gridded sat paired data is (time, n_face); needs to be flatten to a
+                            # long 1-D frame so
+                            # calculate_violin's df[column] is a Series.
+                            if obs_type in (
+                                "sat_swath_sfc", "sat_swath_clm", "sat_grid_sfc",
+                                "sat_grid_clm", "sat_swath_prof",
+                            ):
+                                pairdf_v = pairdf.squeeze().to_dataframe().reset_index()
+                                _vcols = [c for c in (obsvar, modvar) if c in pairdf_v]
+                                if _vcols:
+                                    pairdf_v = pairdf_v.dropna(subset=_vcols)
+                            else:
+                                pairdf_v = pairdf
+                                
                             # Call calculate_violin for observation data
                             if p_index == 0:
                                 comb_violin, label_violin = airplots.calculate_violin(
-                                    df=pairdf,
+                                    df=pairdf_v,
                                     column=obsvar,
                                     label=obs_label,
                                     plot_dict=obs_dict,
@@ -2601,7 +2650,7 @@ class analysis:
 
                             # Call calculate_violin for model data
                             comb_violin, label_violin = airplots.calculate_violin(
-                                df=pairdf,
+                                df=pairdf_v,
                                 column=modvar,
                                 label=model_label,
                                 plot_dict=model_dict,
@@ -2706,12 +2755,25 @@ class analysis:
 
                             print(f"Saving scatter density plot to {outname_pair}...")
 
+                            # Gridded sat paired data is (time, n_face); needs to be flatten to a
+                            # long 1-D frame so the kde/scatter gets paired 1-D model/obs arrays.
+                            if obs_type in (
+                                "sat_swath_sfc", "sat_swath_clm", "sat_grid_sfc",
+                                "sat_grid_clm", "sat_swath_prof",
+                            ):
+                                pairdf_sd = pairdf.squeeze().to_dataframe().reset_index()
+                                _sdcols = [c for c in (obsvar, modvar) if c in pairdf_sd]
+                                if _sdcols:
+                                    pairdf_sd = pairdf_sd.dropna(subset=_sdcols)
+                            else:
+                                pairdf_sd = pairdf
+                                
                             # Create the scatter density plot
                             print(
                                 f"Processing scatter density plot for model '{model_label}' and observation '{obs_label}'..."
                             )
                             ax = splots.make_scatter_density_plot(
-                                pairdf,
+                                pairdf_sd,
                                 mod_var=modvar,
                                 obs_var=obsvar,
                                 color_map=color_map,
@@ -2739,7 +2801,12 @@ class analysis:
                                 "sat_grid_clm",
                                 "sat_swath_prof",
                             ]:
-                                pairdf_sel = pairdf.squeeze()
+                                #pairdf_sel = pairdf.squeeze()
+                                # calc boxplot cannot do a 1-D column. Flatten to a long frame 
+                                pairdf_sel = pairdf.squeeze().to_dataframe().reset_index()
+                                _bxcols = [c for c in (obsvar, modvar) if c in pairdf_sel]
+                                if _bxcols:
+                                    pairdf_sel = pairdf_sel.dropna(subset=_bxcols)  
                             else:
                                 pairdf_sel = pairdf
 
@@ -3579,7 +3646,11 @@ class analysis:
                         else:
                             p_region = p.obj
 
-                        dim_order = [dim for dim in ["time", "y", "x"] if dim in p_region.dims]
+                        # dim_order = [dim for dim in ["time", "y", "x"] if dim in p_region.dims]
+                        # order dims time, y, x, and append any remaining n_face ncol for unstructured sat grids
+                        dim_order = [dim for dim in ["time", "y", "x", "z", "n_face", "ncol"] if dim in p_region.dims]
+                        dim_order += [dim for dim in p_region.dims if dim not in dim_order]
+                        
                         pairdf_all = p_region.to_dataframe(dim_order=dim_order)
 
                         # Select only the analysis time window.

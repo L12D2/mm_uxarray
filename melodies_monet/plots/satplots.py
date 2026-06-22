@@ -379,7 +379,7 @@ def make_taylor(df,df_reg=None, column_o=None, label_o='Obs', column_m=None, lab
 def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
                       label_m=None, ylabel=None, vmin=None,
                       vmax=None, nlevels=None, proj=None, outname='plot',
-                      u_comp=None, v_comp=None, wind_barb=False,
+                      u_comp=None, v_comp=None, wind_barb=False, wind_barb_step = 1,  wind_barb_kwargs=None,
                       domain_type=None, domain_name=None, fig_dict=None,
                       text_dict=None, debug=False, uxgrid=None):
         
@@ -473,16 +473,33 @@ def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
         latmin,lonmin,latmax,lonmax,_ = get_epa_bounds(index=None,acronym=domain_name)
         title_add = 'EPA Region ' + domain_name + ': '
     else:
-        # float should work for both 1D coords for sat datasets and pandas
-        latmin = math.floor(float(df.latitude.min()))
-        lonmin = math.floor(float(df.longitude.min()))
-        latmax = math.ceil(float(df.latitude.max()))
-        lonmax = math.ceil(float(df.longitude.max()))
+        # # float should work for both 1D coords for sat datasets and pandas
+        # latmin = math.floor(float(df.latitude.min()))
+        # lonmin = math.floor(float(df.longitude.min()))
+        # latmax = math.ceil(float(df.latitude.max()))
+        # lonmax = math.ceil(float(df.longitude.max()))
         # latmin= math.floor(min(df.latitude))
         # lonmin= math.floor(min(df.longitude))
         # latmax= math.ceil(max(df.latitude))
         # lonmax= math.ceil(max(df.longitude))
-        title_add = domain_name + ': '
+        # title_add = domain_name + ': '
+
+        # zoom in where there is valid data rather than make a global map 
+        try:
+            _m = np.isfinite(df[column_o])
+            for _d in list(_m.dims):
+                if _d not in df["latitude"].dims:      # collapse time etc.
+                    _m = _m.any(_d)
+            _lat = df["latitude"].where(_m)
+            _lon = df["longitude"].where(_m)
+            latmin = math.floor(float(_lat.min())); lonmin = math.floor(float(_lon.min()))
+            latmax = math.ceil(float(_lat.max())); lonmax = math.ceil(float(_lon.max()))
+        except Exception:
+            latmin = math.floor(float(df.latitude.min()))
+            lonmin = math.floor(float(df.longitude.min()))
+            latmax = math.ceil(float(df.latitude.max()))
+            lonmax = math.ceil(float(df.longitude.max()))
+        title_add = (domain_name + ': ') if domain_name else ''
     
     #Map the model output first.
     cbar_kwargs = dict(aspect=15,shrink=.8)
@@ -703,7 +720,8 @@ def calculate_boxplot(df, df_reg=None,column=None, label=None, plot_dict=None, c
     
 def make_boxplot(comb_bx, label_bx, ylabel = None, vmin = None, vmax = None, outname='plot',
                  domain_type=None, domain_name=None,
-                 plot_dict=None, fig_dict=None,text_dict=None,debug=False):
+                 plot_dict=None, fig_dict=None,text_dict=None,debug=False,
+                 set_stat_sig=False, gridlines=False):
     
     """Creates box-plot. 
     
@@ -856,11 +874,24 @@ def make_spatial_bias_gridded(df, column_o=None, label_o=None, column_m=None,
         latmin,lonmin,latmax,lonmax,_ = get_epa_bounds(index=None,acronym=domain_name)
         title_add = 'EPA Region ' + domain_name + ': '
     else:
-        latmin= -90
-        lonmin= -180
-        latmax= 90
-        lonmax= 180
-        title_add = domain_name + ': '
+        # latmin= -90
+        # lonmin= -180
+        # latmax= 90
+        # lonmax= 180
+        title_add = (domain_name + ': ') if domain_name else ''
+        # zoom to where the data actually is
+        try:
+            _m = np.isfinite(diff_mod_min_obs)
+            _lon = df["longitude"].where(_m)
+            _lat = df["latitude"].where(_m)
+            lonmin = float(_lon.min()); lonmax = float(_lon.max())
+            latmin = float(_lat.min()); latmax = float(_lat.max())
+            _padx = max(0.5, 0.05 * (lonmax - lonmin))
+            _pady = max(0.5, 0.05 * (latmax - latmin))
+            lonmin -= _padx; lonmax += _padx
+            latmin -= _pady; latmax += _pady
+        except Exception:
+            latmin, lonmin, latmax, lonmax = -90, -180, 90, 180        
     
     #Map the model output first.
     cbar_kwargs = dict(aspect=15,shrink=.8)
