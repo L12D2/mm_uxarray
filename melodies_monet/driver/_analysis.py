@@ -1340,6 +1340,7 @@ class analysis:
 
         from melodies_monet.util.tools import resample_stratify
         from melodies_monet.util.region_select import select_region
+        from melodies_monet.util.regulatory_tools import make_24hr_regulatory, make_8hr_regulatory 
         import matplotlib.pyplot as plt
 
         pair_keys = list(self.paired.keys())
@@ -1719,7 +1720,7 @@ class analysis:
                             )
 
                             if obsvar == "PM2.5":
-                                pairdf_reg = splots.make_24hr_regulatory(
+                                pairdf_reg = make_24hr_regulatory(
                                     df2, [obsvar, modvar]
                                 ).rename(
                                     index=str,
@@ -1729,7 +1730,7 @@ class analysis:
                                     },
                                 )
                             elif obsvar == "OZONE":
-                                pairdf_reg = splots.make_8hr_regulatory(
+                                pairdf_reg = make_8hr_regulatory(
                                     df2, [obsvar, modvar]
                                 ).rename(
                                     index=str,
@@ -3438,6 +3439,7 @@ class analysis:
         from melodies_monet.stats import proc_stats as proc_stats
         from melodies_monet.plots import surfplots as splots
         from melodies_monet.util.region_select import select_region
+        from melodies_monet.util.regulatory_tools import make_24hr_regulatory, make_8hr_regulatory 
 
         # first get the stats dictionary from the yaml file
         stat_dict = self.control_dict["stats"]
@@ -3681,7 +3683,7 @@ class analysis:
                             )
 
                             if obsvar == "PM2.5":
-                                pairdf_reg = splots.make_24hr_regulatory(
+                                pairdf_reg = make_24hr_regulatory(
                                     df2, [obsvar, modvar]
                                 ).rename(
                                     index=str,
@@ -3691,7 +3693,7 @@ class analysis:
                                     },
                                 )
                             elif obsvar == "OZONE":
-                                pairdf_reg = splots.make_8hr_regulatory(
+                                pairdf_reg = make_8hr_regulatory(
                                     df2, [obsvar, modvar]
                                 ).rename(
                                     index=str,

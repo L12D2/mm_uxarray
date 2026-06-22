@@ -309,7 +309,7 @@ def resample_stratify(da, levels, vertical, axis=1,interpolation='linear',extrap
                 out.coords[i] = da.coords[i]
     return out
 
-def vert_interp(ds_model,df_obs,var_name_list):
+def vert_interp(ds_model,df_obs,var_name_list,method='linear'):
 
     """
     Vertically interpolate model columns onto the obs pressures
@@ -645,3 +645,4 @@ def calc_geolocaltime(modobj):
     localtime = modobj["time"] + timedelta
     localtime.attrs['description'] = 'Geographic local time, based on longitude'
     return localtime
+
