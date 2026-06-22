@@ -178,3 +178,5 @@ PET0.ESMF_LogFile
 docs/examples/ungridded_support/unstructured_grid_read_uxarray/asiaaq_cs_06082026/write_met_data/full_camp/pair_dc8_data.e*
 docs/examples/ungridded_support/unstructured_grid_read_uxarray/jun_zhang_cs_06122026/output_021324/*.png
 docs/examples/ungridded_support/unstructured_grid_read_uxarray/jun_zhang_cs_06122026/output_021324/*.nc4
+/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/output
+/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/jun_zhang_cs_06122026/output_021324

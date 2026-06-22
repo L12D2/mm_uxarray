@@ -32,7 +32,7 @@ model:
     # different interpolation options 
     vertical_interp: 'log-linear'   # linear ; nearest ; log-linear   (https://github.com/NCAR/MELODIES-MONET/issues/116)
     horizontal_interp: 'idw'        # nearest ; idw                   (https://github.com/NCAR/MELODIES-MONET/issues/113)
-    horizontal_neighbors: 4         # k for idw
+    horizontal_neighbors: 4         # k for idw                       (https://github.com/NCAR/MELODIES-MONET/issues/114 [?])
     idw_power: 2.0                  # weighting exponent
     
     mapping: 

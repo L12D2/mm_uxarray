@@ -23,6 +23,17 @@ import xarray as xr
 RD = 287.05
 G0 = 9.80665
 
+def _track_times(m):
+    """Model 'time' as a pandas DatetimeIndex.
+
+    CESM history uses a 'noleap'/'365_day' calendar, so xarray decodes time as
+    cftime objects that ``pd.to_datetime`` can't parse
+    """
+    vals = m["time"].values
+    if np.issubdtype(vals.dtype, np.datetime64):
+        return pd.DatetimeIndex(vals)
+    return pd.DatetimeIndex([pd.Timestamp(str(t)) for t in vals])
+    
 def pair_track_model(model_file, obs_file, mapping, resample="60s",
                      obs_scale=None, fill_below=-9999.0, gap_warn_hours=1.0):
     """Pair a CAM '1s_1pt' along-track model file with aircraft obs.
@@ -59,7 +70,8 @@ def pair_track_model(model_file, obs_file, mapping, resample="60s",
     # model ncol to time, (time, lev)
     m = xr.open_dataset(model_file, decode_times=True).swap_dims({"ncol": "time"}).sortby("time")
     pmid = m["PMID"].values                          # (time, lev) Pa
-    mtime = pd.to_datetime(m["time"].values)
+    #mtime = pd.to_datetime(m["time"].values)
+    mtime = _track_times(m)
 
     # obs mask fills before resample/scale
     odf = xr.open_dataset(obs_file).to_dataframe().reset_index()
@@ -189,7 +201,8 @@ def build_track_curtain(model_file, mod_var, times, num_levels=100, to_ppb=True,
     """
     m = xr.open_dataset(model_file, decode_times=True).swap_dims({"ncol": "time"}).sortby("time")
     pmid = m["PMID"].values                          # (time, lev) Pa
-    mt = pd.to_datetime(m["time"].values)
+    #mt = pd.to_datetime(m["time"].values)
+    mt = _track_times(m)
     da = m[mod_var]
     scale = 1e9 if (to_ppb and "mol/mol" in da.attrs.get("units", "").lower()) else 1.0
     prof = da.values * scale                         # (time, lev)
