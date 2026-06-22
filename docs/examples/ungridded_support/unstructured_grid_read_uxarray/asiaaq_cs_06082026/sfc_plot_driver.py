@@ -6,6 +6,9 @@ an.control = "/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded
 an.read_control()
 an.read_analysis()
 
+# an.open_models()
+# an.open_obs()
+
 an.plotting()
 an.stats()
 

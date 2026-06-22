@@ -8,7 +8,7 @@ analysis:
   start_time: '2024-01-31'                 #UTC  
   end_time:   '2024-04-01 23:59:00'        #UTC
 
-  output_dir:       /glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/asiaaq_cs_06082026/output/sfc_full_camp_pair
+  output_dir:       /glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/asiaaq_cs_06082026/output/sfc_full_plot
   output_dir_save:  /glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/asiaaq_cs_06082026/output/sfc_full_camp_pair
   output_dir_read:  /glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/asiaaq_cs_06082026/output/sfc_full_camp_pair
 
@@ -129,4 +129,26 @@ obs:
         vmax_plot: 320
         vdiff_plot: 5
         nlevels_plot: 15
+
+plots: 
+  # need a seperate plot / fix for this as it cant reaad from the paired? 
+  soverlay_th:
+    type: 'spatial_overlay'
+    fig_kwargs: {states: false, counties: false, extent: [96.0, 107.0, 4.0, 22.0], figsize: [8, 6]}
+    text_kwargs: {fontsize: 16.}
+    domain_type: ['all']
+    domain_name: ['Thailand']
+    data: ['thailand_bma_cam-chem-se-merra2', "thailand_bma_cam-chem-se-era5"]
+    data_proc: {rem_obs_nan: true, set_axis: true}
+
+  soverlay_ph:
+    type: 'spatial_overlay'
+    fig_kwargs: {states: false, counties: false, extent: [115.0, 128.0, 3.0, 23.0], figsize: [8, 6]}
+    text_kwargs: {fontsize: 16.}
+    domain_type: ['all']
+    domain_name: ['Philippines']
+    data: ['philippines_aws_cam-chem-se-merra2', 'philippines_aws_cam-chem-se-era5']
+    data_proc: {rem_obs_nan: true, set_axis: true}
+
+
 

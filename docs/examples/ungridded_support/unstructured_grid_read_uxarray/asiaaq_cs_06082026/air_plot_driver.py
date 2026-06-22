@@ -96,6 +96,10 @@ for ymd in dates:
     an = driver.analysis()
     an.control = tmp
     an.read_control()
+    
+    # an.open_models()
+    # an.open_obs()
+
     an.read_analysis()
     an.plotting()
     an.stats()

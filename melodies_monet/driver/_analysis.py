@@ -1916,14 +1916,29 @@ class analysis:
                                     ps_var=curtain_config.get("model_ps_var", "PS"),
                                 )
                             else:
-                                if vert_coord == "altitude":
-                                    print(
-                                        "Warning: vert_coord='altitude' is currently supported "
-                                        "for track models (is_track) only; falling back to "
-                                        "pressure for this gridded model curtain."
-                                    )
-                                    vert_coord = "pressure"
+                                #if vert_coord == "altitude":
+                                _unstructured = (
+                                    "n_face" in mod.obj.dims
+                                    or mod.obj.attrs.get("mio_scrip_file", False)
+                                )
+                                _want_alt = (vert_coord == "altitude")
+                                print(
+                                    "Warning: vert_coord='altitude' is currently supported "
+                                    "for unstructured model grids AND track only models; falling back to "
+                                    "pressure for gridded model curtain.")
+                                
+                                vert_coord = "pressure"
+                                _want_alt = False
 
+                                # deal with if mod_name = obs_name 
+                                # mod.obj holds the RAW name
+                                try:
+                                    _rawmod = next(
+                                        mv for mv, ov in mod.mapping[obs_label].items() if ov == obsvar
+                                    )
+                                except (AttributeError, KeyError, StopIteration):
+                                    _rawmod = modvar[:-4] if modvar.endswith("_new") else modvar
+                                    
                                 # Convert to get something useful for MONET
                                 new_ds_obs = (
                                     obs.obj.rename_axis("time_obs")
@@ -1933,20 +1948,64 @@ class analysis:
                                 )
 
                                 # Nearest neighbor approach to find closest grid cell to each point
-                                ds_model = m.util.combinetool.combine_da_to_da(
-                                    model_obj, new_ds_obs, merge=False
-                                )
+                                # ds_model = m.util.combinetool.combine_da_to_da(
+                                #     model_obj, new_ds_obs, merge=False
+                                # )
     
                                 # Interpolate based on time in the observations
-                                ds_model = ds_model.interp(time=ds_model.time_obs.squeeze())
+                                if _unstructured:
+                                    # Unstructured model support since pyresample's area-based can't remap a 1-D mesh, so KDTree-sample full model
+                                
+                                    from scipy.spatial import cKDTree
+
+                                    _ivars = [_rawmod] if (_rawmod in mod.obj and "z" in mod.obj[_rawmod].dims) else []
+                                    _extra = ["pres_pa_mid"]
+                                    if _want_alt and "temperature_k" in mod.obj:
+                                        _extra.append("temperature_k")   # for hypsometric altitude
+                                    src = mod.obj[_ivars + _extra]
+                                    col_dim = mod.obj["longitude"].dims[0]      # 'n_face'/'ncol'
+                                    olon = np.asarray(new_ds_obs["longitude"].values)   # (y, x)
+                                    olat = np.asarray(new_ds_obs["latitude"].values)
+                                    sp_dims = new_ds_obs["longitude"].dims              # ('y', 'x')
+                                    mlon = ((np.asarray(mod.obj["longitude"].values).ravel() + 180.0) % 360.0) - 180.0
+                                    mlat = np.asarray(mod.obj["latitude"].values).ravel()
+                                    tlon = ((olon.ravel() + 180.0) % 360.0) - 180.0
+                                    _, idx = cKDTree(np.column_stack([mlon, mlat])).query(
+                                        np.column_stack([tlon, olat.ravel()]))
+                                    on = src.isel({col_dim: idx}).rename({col_dim: "target"}).load()
+                                    ds_model = xr.Dataset()
+                                    for v in on.data_vars:
+                                        a = on[v].transpose("time", "z", "target").values
+                                        a = a.reshape((on.sizes["time"], on.sizes["z"]) + olon.shape)
+                                        ds_model[v] = (("time", "z") + sp_dims, a)
+                                    ds_model = ds_model.rename({"pres_pa_mid": "pressure_model"})
+                                    ds_model = ds_model.assign_coords({
+                                        "time": src["time"].values,
+                                        "time_obs": (sp_dims, np.asarray(new_ds_obs["time_obs"].values)),
+                                        "pressure_obs": (sp_dims, np.asarray(new_ds_obs["pressure_obs"].values)),
+                                        "latitude": (sp_dims, olat),
+                                        "longitude": (sp_dims, olon),
+                                    })
+                                    ds_model = ds_model.interp(time=ds_model.time_obs.squeeze())
+                                    
+                                    # resample_stratify 
+                                    ds_model = ds_model.transpose(sp_dims[0], "z", *sp_dims[1:])
+                                else:
+                                    ds_model = m.util.combinetool.combine_da_to_da(
+                                        model_obj, new_ds_obs, merge=False
+                                    )
+                                    # Interpolate based on time in the observations
+                                    ds_model = ds_model.interp(time=ds_model.time_obs.squeeze())
+                                    
+                                #ds_model = ds_model.interp(time=ds_model.time_obs.squeeze())
 
                                 # Print ds_model and pressure_model values #Debugging
                                 ##print(f"ds_model: {ds_model}")
                                 ##print(f"pressure_model values: {ds_model['pressure_model'].values}")
     
                                 # Define target pressures for interpolation based on the range of pressure_model
-                                min_pressure = ds_model["pressure_model"].min().compute()
-                                max_pressure = ds_model["pressure_model"].max().compute()
+                                # min_pressure = ds_model["pressure_model"].min().compute()
+                                # max_pressure = ds_model["pressure_model"].max().compute()
     
                                 # Fetch the interval and num_levels from curtain_config
                                 interval = curtain_config.get(
@@ -1955,13 +2014,45 @@ class analysis:
                                 num_levels = curtain_config.get(
                                     "num_levels", 100
                                 )  # Default to 100 levels if not provided
+
+                                # Vertical coordinate for stratification: pressure (default) or
+                                # altitude (m) computed hypsometrically from pressure + temperature.
+                                if _want_alt and "temperature_k" in ds_model:
+                                    from melodies_monet.util.track_pairing import _column_altitude
+                                    _p = ds_model["pressure_model"].transpose(sp_dims[0], *sp_dims[1:], "z").values
+                                    _t = ds_model["temperature_k"].transpose(sp_dims[0], *sp_dims[1:], "z").values
+                                    _shp = _p.shape
+                                    _pf = _p.reshape(-1, _shp[-1])
+                                    _tf = _t.reshape(-1, _shp[-1])
+                                    _zf = np.empty_like(_pf)
+                                    for _k in range(_pf.shape[0]):
+                                        _zf[_k] = _column_altitude(_pf[_k], _tf[_k])
+                                    vert_model = xr.DataArray(
+                                        _zf.reshape(_shp),
+                                        dims=(sp_dims[0],) + tuple(sp_dims[1:]) + ("z",),
+                                    ).transpose(sp_dims[0], "z", *sp_dims[1:])
+                                else:
+                                    if _want_alt:
+                                        print("Warning: temperature_k unavailable; cannot build an "
+                                              "altitude axis, falling back to pressure.")
+                                        vert_coord = "pressure"
+                                        _want_alt = False
+                                    vert_model = ds_model["pressure_model"]
+
+                                min_lev = float(vert_model.min())
+                                max_lev = float(vert_model.max())
     
-                                print(
-                                    f"Pressure MIN:{min_pressure}, max: {max_pressure}, ytick_interval: {interval}, interpolation_levels: {num_levels}  "
-                                )
-    
+                                print(f"Vert ({vert_coord}) MIN:{min_lev}, max: {max_lev}, "
+                                    f"ytick_interval: {interval}, interpolation_levels: {num_levels}  ")
+
+                                # Altitude increases upward; pressure decreases upward
+                                if _want_alt:
+                                    target_pressures = np.linspace(min_lev, max_lev, num_levels)
+                                else:
+                                    target_pressures = np.linspace(max_lev, min_lev, num_levels)
+                                    
                                 # Use num_levels to define target_pressures interpolation levels
-                                target_pressures = np.linspace(max_pressure, min_pressure, num_levels)
+                                # target_pressures = np.linspace(max_pressure, min_pressure, num_levels)
     
                                 # Debugging: print target pressures
                                 ##print(f"Generated target pressures: {target_pressures}, shape: {target_pressures.shape}")
@@ -1972,9 +2063,10 @@ class analysis:
     
                                 # Resample model data to target pressures using stratify
                                 da_wrf_const = resample_stratify(
-                                    ds_model[modvar],
+                                    ds_model[_rawmod],
                                     target_pressures,
-                                    ds_model["pressure_model"],
+                                    #ds_model["pressure_model"],
+                                    vert_model,
                                     axis=1,
                                     interpolation="linear",
                                     extrapolation="nan",
@@ -2010,6 +2102,14 @@ class analysis:
                                 obs_pressure = pairdf["altitude"]
                             else:
                                 obs_pressure = pairdf["pressure_obs"]
+
+                            # make_curtain_plot meshes as (n_time, n_levels)
+                            model_data_2d = np.asarray(
+                                model_data_2d.values if hasattr(model_data_2d, "values") else model_data_2d
+                            )
+                            _nt, _nl = len(time), len(target_pressures)
+                            if model_data_2d.ndim == 2 and model_data_2d.shape == (_nl, _nt) and _nt != _nl:
+                                model_data_2d = model_data_2d.T
                                 
                             # Generate the curtain plot using airplots.make_curtain_plot
                             try:

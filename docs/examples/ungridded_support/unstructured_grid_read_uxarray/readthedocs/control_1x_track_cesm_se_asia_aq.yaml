@@ -16,11 +16,11 @@ analysis:
   #   /glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/jun_zhang_cs_06122026/output_012324
 
   output_dir:
-    /glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/jun_zhang_cs_06122026/output_021324
+    ./output/1x_asia_aq_cesmse
   output_dir_save:
-    /glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/jun_zhang_cs_06122026/output_021324
+    ./output/1x_asia_aq_cesmse
   output_dir_read:
-    /glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/jun_zhang_cs_06122026/output_021324
+    ./output/1x_asia_aq_cesmse
     
   # pair
   # save:

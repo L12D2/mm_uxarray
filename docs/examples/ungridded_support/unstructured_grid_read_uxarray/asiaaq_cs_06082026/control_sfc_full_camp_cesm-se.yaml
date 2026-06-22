@@ -223,7 +223,7 @@ plots:
     data: ['philippines_aws_cam-chem-se-merra2', 'philippines_aws_cam-chem-se-era5']
     data_proc: {rem_obs_nan: true, set_axis: true}
 
-  # need a seperate plot / fix for this as it cant reaad from the paired? 
+  # # need a seperate plot / fix for this as it cant reaad from the paired? 
   # soverlay_th:
   #   type: 'spatial_overlay'
   #   fig_kwargs: {states: false, counties: false, extent: [96.0, 107.0, 4.0, 22.0], figsize: [8, 6]}
@@ -297,6 +297,7 @@ plots:
       ts_select_time: "time_local" 
       ts_avg_window: "h"
       set_axis: True
+
 
   # mbx_th_pm25:
   #   type: "multi_boxplot"

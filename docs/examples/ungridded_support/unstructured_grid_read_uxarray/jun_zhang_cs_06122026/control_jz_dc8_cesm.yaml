@@ -85,9 +85,37 @@ obs:
     variables:
       pressure_obs: {}                     # Pa; required by vert_interp (join key)
       altitude: {}                         # m; used by vertprofile/curtain altitude_variable
-      O3:  {unit_scale: 1,  unit_scale_method: '*' }
-      NO2: {unit_scale: 0.001, unit_scale_method: '*' }
-
+      O3:
+        unit_scale: 1
+        unit_scale_method: '*' 
+        units: 'ppb'
+        ylabel_plot: 'O3 (ppb)'     
+        nan_value: -1.0
+        vmin_plot: 0
+        vmax_plot: 120
+        vdiff_plot: 10
+        nlevels_plot: 10
+      NO2:
+        unit_scale: 0.001
+        unit_scale_method: '*' 
+        units: 'ppb'
+        ylabel_plot: 'NO2 (ppb)'   
+        nan_value: -1.0
+        vmin_plot: 0
+        vmax_plot: 12
+        vdiff_plot: 1
+        nlevels_plot: 5
+      temperature:
+        unit_scale: 1
+        unit_scale_method: '*' 
+        units: 'K'
+        ylabel_plot: 'Kelvin (K)' 
+        nan_value: -1.0
+        vmin_plot: 270
+        vmax_plot: 300
+        vdiff_plot: 10
+        nlevels_plot: 10
+        
 #-------------------------------------------------------------------
 # Define which comparisons/plots to complete:
 # Any key that is specific for a plot type will begin with ts for timeseries, ty for taylor
@@ -97,104 +125,122 @@ obs:
 
 plots:
 
-  ts_dc8:
-    type: 'timeseries'
-    fig_kwargs: {figsize: [12, 6]}
-    text_kwargs: {fontsize: 18.}
-    default_plot_kwargs: {linewidth: 2.0, markersize: 6.}
-    domain_type: ['all']
-    domain_name: ['DC8']
-    data: ['dc8_cam-chem-se-era5']
-    data_proc: {rem_obs_nan: true, ts_select_time: 'time', ts_avg_window: null, set_axis: false}
+  # ts_dc8:
+  #   type: 'timeseries'
+  #   fig_kwargs: {figsize: [12, 6]}
+  #   text_kwargs: {fontsize: 18.}
+  #   default_plot_kwargs: {linewidth: 2.0, markersize: 6.}
+  #   domain_type: ['all']
+  #   domain_name: ['DC8']
+  #   data: ['dc8_cam-chem-se-era5']
+  #   data_proc: {rem_obs_nan: true, ts_select_time: 'time', ts_avg_window: null, set_axis: false}
 
-  vi_dc8:
-    type: 'violin'
-    fig_kwargs: {figsize: [12, 6]}
-    text_kwargs: {fontsize: 18.}
-    default_plot_kwargs: {linewidth: 2.0, markersize: 6.}
-    domain_type: ['all']
-    domain_name: ['DC8']
-    data: ['dc8_cam-chem-se-era5']
-    data_proc:
-      rem_obs_nan: True
-      set_axis: False
+  # vi_dc8:
+  #   type: 'violin'
+  #   fig_kwargs: {figsize: [12, 6]}
+  #   text_kwargs: {fontsize: 18.}
+  #   default_plot_kwargs: {linewidth: 2.0, markersize: 6.}
+  #   domain_type: ['all']
+  #   domain_name: ['DC8']
+  #   data: ['dc8_cam-chem-se-era5']
+  #   data_proc:
+  #     rem_obs_nan: True
+  #     set_axis: False
     
-  vp_dc8_pa:
-    type: 'vertprofile'
-    fig_kwargs: {figsize: [10, 14]}
-    default_plot_kwargs: {linewidth: 4.0, markersize: 10.}
-    text_kwargs: {fontsize: 18.}
-    ylabel_vert: 'Pressure (Pa)'            # top-level
-    domain_type: ['all']
-    domain_name: ['DC8']
-    data: ['dc8_cam-chem-se-era5']
-    data_proc:
-      rem_obs_nan: True
-      set_axis: False
-      interquartile_style: 'shading'       # or 'box'
-    altitude_variable: pressure_obs            # top-level
-    vertprofile_bins:                      # dict with range:{start,stop,step}
-      range: {start: 10000, stop: 110000, step: 5000}
+  # vp_dc8_pa:
+  #   type: 'vertprofile'
+  #   fig_kwargs: {figsize: [10, 14]}
+  #   default_plot_kwargs: {linewidth: 4.0, markersize: 10.}
+  #   text_kwargs: {fontsize: 18.}
+  #   ylabel_vert: 'Pressure (Pa)'            # top-level
+  #   domain_type: ['all']
+  #   domain_name: ['DC8']
+  #   data: ['dc8_cam-chem-se-era5']
+  #   data_proc:
+  #     rem_obs_nan: True
+  #     set_axis: False
+  #     interquartile_style: 'shading'       # or 'box'
+  #   altitude_variable: pressure_obs            # top-level
+  #   vertprofile_bins:                      # dict with range:{start,stop,step}
+  #     range: {start: 10000, stop: 110000, step: 5000}
 
-  vp_dc8_m:
-    type: 'vertprofile'
-    fig_kwargs: {figsize: [10, 14]}
-    default_plot_kwargs: {linewidth: 4.0, markersize: 10.}
-    text_kwargs: {fontsize: 18.}
-    ylabel_vert: 'Altitude (m)'            # top-level
-    domain_type: ['all']
-    domain_name: ['DC8']
-    data: ['dc8_cam-chem-se-era5']
-    data_proc:
-      rem_obs_nan: True
-      set_axis: False
-      interquartile_style: 'shading'       # or 'box'
-    altitude_variable: altitude            # top-level
-    vertprofile_bins:                      # dict with range:{start,stop,step}
-      range:
-        start: 0
-        stop: 18000
-        step: 1000
+  # vp_dc8_m:
+  #   type: 'vertprofile'
+  #   fig_kwargs: {figsize: [10, 14]}
+  #   default_plot_kwargs: {linewidth: 4.0, markersize: 10.}
+  #   text_kwargs: {fontsize: 18.}
+  #   ylabel_vert: 'Altitude (m)'            # top-level
+  #   domain_type: ['all']
+  #   domain_name: ['DC8']
+  #   data: ['dc8_cam-chem-se-era5']
+  #   data_proc:
+  #     rem_obs_nan: True
+  #     set_axis: False
+  #     interquartile_style: 'shading'       # or 'box'
+  #   altitude_variable: altitude            # top-level
+  #   vertprofile_bins:                      # dict with range:{start,stop,step}
+  #     range:
+  #       start: 0
+  #       stop: 18000
+  #       step: 1000
       
-  scatter_dc8:
-    type: 'scatter_density'
-    fig_kwargs: {figsize: [10, 10]}
-    default_plot_kwargs: {linewidth: 4.0, markersize: 10.}
-    text_kwargs: {fontsize: 18.}
-    domain_type: ['all']
-    domain_name: ['DC8']
-    data: ['dc8_cam-chem-se-era5']
-    data_proc:
-      rem_obs_nan: True
-      set_axis: False
-    xlabel: 'Model'
-    ylabel: 'Observation'
-    title: 'DC8 Scatter Density'
-    fill: True
-    shade_lowest: True
+  # scatter_dc8:
+  #   type: 'scatter_density'
+  #   fig_kwargs: {figsize: [10, 10]}
+  #   default_plot_kwargs: {linewidth: 4.0, markersize: 10.}
+  #   text_kwargs: {fontsize: 18.}
+  #   domain_type: ['all']
+  #   domain_name: ['DC8']
+  #   data: ['dc8_cam-chem-se-era5']
+  #   data_proc:
+  #     rem_obs_nan: True
+  #     set_axis: False
+  #   xlabel: 'Model'
+  #   ylabel: 'Observation'
+  #   title: 'DC8 Scatter Density'
+  #   fill: True
+  #   shade_lowest: True
 
-  taylor_dc8:
-    type: 'taylor'
-    fig_kwargs: {figsize: [8, 8]}
-    default_plot_kwargs: {linewidth: 2.0, markersize: 10.}
-    text_kwargs: {fontsize: 16.}
-    domain_type: ['all']
-    domain_name: ['DC8']
-    data: ['dc8_cam-chem-se-era5']
-    data_proc: {rem_obs_nan: true, set_axis: true}
-
-  # curtain_dc8:
-  #   type: 'curtain'
+  # taylor_dc8:
+  #   type: 'taylor'
   #   fig_kwargs: {figsize: [8, 8]}
   #   default_plot_kwargs: {linewidth: 2.0, markersize: 10.}
   #   text_kwargs: {fontsize: 16.}
   #   domain_type: ['all']
   #   domain_name: ['DC8']
   #   data: ['dc8_cam-chem-se-era5']
-  #   interval: 10000       
-  #   num_levels: 100
   #   data_proc: {rem_obs_nan: true, set_axis: true}
 
+  curtain_dc8_pa:
+    type: 'curtain'
+    fig_kwargs: {figsize: [20, 8]}
+    default_plot_kwargs: {linewidth: 2.0, markersize: 10.}
+    text_kwargs: {fontsize: 16.}
+    domain_type: ['all']
+    domain_name: ['DC8']
+    data: ['dc8_cam-chem-se-era5']
+    color_map: "cividis"
+    vert_coord: "pressure"
+    pressure_units: 'Pa'
+    interval: 10000       
+    num_levels: 100
+    data_proc: {rem_obs_nan: True, set_axis: True}
+
+  curtain_dc8_m:
+    type: 'curtain'
+    fig_kwargs: {figsize: [20, 8]}
+    default_plot_kwargs: {linewidth: 2.0, markersize: 10.}
+    text_kwargs: {fontsize: 16.}
+    domain_type: ['all']
+    domain_name: ['DC8']
+    data: ['dc8_cam-chem-se-era5']
+    color_map: "cividis"
+    vert_coord: 'altitude'      # 'altitude' (m) or 'pressure' 
+    altitude_units: 'm'         # label only
+    interval: 2000              # y-tick spacing 
+    num_levels: 100
+    data_proc: {rem_obs_nan: true, set_axis: true}  
+    
 ###-----------------------------------------------------------------------------
 stats:
   #Stats require positive numbers, so if you want to calculate temperature use Kelvin!

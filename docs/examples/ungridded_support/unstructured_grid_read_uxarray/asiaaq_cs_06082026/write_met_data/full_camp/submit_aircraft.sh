@@ -3,8 +3,8 @@
 #PBS -N pair_dc8_data
 #PBS -A P19010000
 #PBS -q casper
-#PBS -l select=1:ncpus=4:mem=300GB
-#PBS -l walltime=07:00:00
+#PBS -l select=1:ncpus=4:mem=400GB
+#PBS -l walltime=10:00:00
 #PBS -o pair_dc8_full.log
 
 # One-time DC8 aircraft pairing job 

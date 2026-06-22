@@ -8,4 +8,7 @@ an.read_control()
 an.open_models()
 an.open_obs()
 an.pair_data()
+
+an.plotting()
+
 an.save_analysis()

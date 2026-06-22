@@ -3,8 +3,8 @@
 #PBS -N plot_sfc_data
 #PBS -A P19010000
 #PBS -q casper
-#PBS -l select=1:ncpus=4:mem=50GB
-#PBS -l walltime=02:00:00
+#PBS -l select=1:ncpus=4:mem=200GB
+#PBS -l walltime=06:00:00
 #PBS -j oe
 #PBS -o sfc_plot.log
 
