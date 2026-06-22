@@ -280,9 +280,23 @@ def get_epa_region_df(df):
 
 def resample_stratify(da, levels, vertical, axis=1,interpolation='linear',extrapolation='nan'):
     import stratify
+    import numpy as np
+    
+    #result = stratify.interpolate(levels, vertical.chunk().data, da.chunk().data, axis=axis,
+                                 #interpolation = interpolation,extrapolation = extrapolation)
 
-    result = stratify.interpolate(levels, vertical.chunk().data, da.chunk().data, axis=axis,
-                                 interpolation = interpolation,extrapolation = extrapolation)
+    levels_in = np.asarray(levels)
+    vertical_in = vertical.chunk().data
+    interp = interpolation
+    # Pressures should always be strictly positive, so the log is always well defined 
+    if interpolation in ('log-linear', 'loglinear', 'log_linear'):
+        levels_in = np.log(levels_in)
+        vertical_in = np.log(vertical_in)
+        interp = 'linear'
+
+    result = stratify.interpolate(levels_in, vertical_in, da.chunk().data, axis=axis,
+                                 interpolation = interp,extrapolation = extrapolation)
+
     dims = da.dims
     out = xr.DataArray(result, dims=dims)
     for i in dims:
@@ -296,7 +310,24 @@ def resample_stratify(da, levels, vertical, axis=1,interpolation='linear',extrap
     return out
 
 def vert_interp(ds_model,df_obs,var_name_list):
+
+    """
+    Vertically interpolate model columns onto the obs pressures
+
+    
+    method : {'linear', 'nearest', 'log-linear'}
+        Vertical interpolation method for the species/met variables. 'linear'
+        (default) and 'nearest' map directly to ``stratify``; 'log-linear'
+        interpolates linearly in log-pressure
+
+    """
     from pandas import merge_asof
+
+    _allowed = {'linear', 'nearest', 'log-linear', 'loglinear', 'log_linear'}
+    if method not in _allowed:
+        print(f"Warning: unknown vertical interp method {method!r}; using 'linear'. "
+              f"Supported options: linear, nearest, log-linear.")
+        method = 'linear'
 
     ds_model['pressure_model_nan'] = ds_model['pressure_model'].copy()
     var_name_list.append('pressure_model_nan')
@@ -316,7 +347,7 @@ def vert_interp(ds_model,df_obs,var_name_list):
         else:
             out = resample_stratify(ds_model[var_name],sorted(ds_model.pressure_obs.squeeze().values,reverse=True),
                                   ds_model['pressure_model'],axis=1,
-                                  interpolation='linear',extrapolation='nearest')
+                                  interpolation=method,extrapolation='nearest')
         out.name = var_name
         var_out_list.append(out)
 

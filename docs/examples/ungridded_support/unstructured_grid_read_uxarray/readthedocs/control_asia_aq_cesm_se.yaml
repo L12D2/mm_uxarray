@@ -28,6 +28,12 @@ model:
     mod_type: 'cesm_se'
     scrip_file: "/glade/campaign/acom/MUSICA/grids/GEMSne30x8/GEMS01_ne30x8_np4_SCRIP.nc"
     radius_of_influence: 14000
+
+    # different interpolation options 
+    vertical_interp: 'log-linear'   # linear ; nearest ; log-linear   (https://github.com/NCAR/MELODIES-MONET/issues/116)
+    horizontal_interp: 'idw'        # nearest ; idw                   (https://github.com/NCAR/MELODIES-MONET/issues/113)
+    horizontal_neighbors: 4         # k for idw
+    idw_power: 2.0                  # weighting exponent
     
     mapping: 
       dc8:

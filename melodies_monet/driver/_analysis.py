@@ -306,6 +306,19 @@ class analysis:
                 else:
                     m.radius_of_influence = 1e6
 
+                # add more aircraft pairing interpolation options 
+                # https://github.com/NCAR/MELODIES-MONET/issues/116
+                # https://github.com/NCAR/MELODIES-MONET/issues/113
+                m.vertical_interp = self.control_dict["model"][mod].get(
+                    "vertical_interp", "linear")          # Specifcy your vert interpolation in model of yaml 
+                                                          # linear ; nearest ; log-linear
+                m.horizontal_interp = self.control_dict["model"][mod].get(
+                    "horizontal_interp", "nearest")       # nearest ; idw
+                m.horizontal_neighbors = self.control_dict["model"][mod].get(
+                    "horizontal_neighbors", 4)            # k for idw
+                m.idw_power = self.control_dict["model"][mod].get(
+                    "idw_power", 2.0)                     # weighting exponent for idw
+                
                 if "mod_kwargs" in self.control_dict["model"][mod].keys():
                     m.mod_kwargs = self.control_dict["model"][mod]["mod_kwargs"]
                 m.label = mod
@@ -782,24 +795,60 @@ class analysis:
                               f"model dims: {dict(src.sizes)} | vars: {list(src.data_vars)}",
                               flush=True)
                         _t0 = _time.time()
+                        
                         # Nearest model cell per flight point. Build the KDTree from the
                         # model lon/lat ONLY (cheap), then isel + load just those columns.
                         # Never materialize the full (tens-of-GB) global model.
                         mlon = ((np.asarray(mod.obj["longitude"].values).ravel() + 180.0) % 360.0) - 180.0
                         mlat = np.asarray(mod.obj["latitude"].values).ravel()
                         tlon = ((olon.ravel() + 180.0) % 360.0) - 180.0
-                        _, idx = cKDTree(np.column_stack([mlon, mlat])).query(
-                            np.column_stack([tlon, olat.ravel()]))
-                        on = src.isel({col_dim: idx}).rename({col_dim: "target"}).load()
-                        print(f"[aircraft] nearest-sampled {on.sizes['target']} cells "
-                              f"({on.sizes['time']}x{on.sizes['z']}x{on.sizes['target']}) in "
-                              f"{_time.time() - _t0:.1f}s", flush=True)
-                        _t0 = _time.time()
-                        ds_model = xr.Dataset()
-                        for v in on.data_vars:
-                            a = on[v].transpose("time", "z", "target").values
-                            a = a.reshape((on.sizes["time"], on.sizes["z"]) + olon.shape)
-                            ds_model[v] = (("time", "z") + sp_dims, a)
+                        _tree = cKDTree(np.column_stack([mlon, mlat]))
+                        _tpts = np.column_stack([tlon, olat.ravel()])
+                        _horiz = getattr(mod, "horizontal_interp", "nearest")
+                        
+                        if _horiz == "idw":
+                            # Inverse-distance weighting over the k nearest model columns
+                            #  https://github.com/NCAR/MELODIES-MONET/issues/113 
+                            k = max(1, int(getattr(mod, "horizontal_neighbors", 4)))
+                            p_pow = float(getattr(mod, "idw_power", 2.0))
+                            dist, idx = _tree.query(_tpts, k=k)
+                            if k == 1:
+                                dist, idx = dist[:, None], idx[:, None]
+                            on = src.isel({col_dim: idx.ravel()}).rename({col_dim: "target"}).load()
+                            with np.errstate(divide="ignore"):
+                                w = 1.0 / np.power(dist, p_pow)            # (npts, k)
+                            # exact hits give inf weight so use only the exact column(s)
+                            _hit = np.isinf(w)
+                            _rows = _hit.any(axis=1)
+                            w[_rows] = _hit[_rows].astype(float)
+                            w = w / w.sum(axis=1, keepdims=True)            # (npts, k)
+                            npts = _tpts.shape[0]
+                            print(f"[aircraft] idw-sampled {npts} pts x k={k} "
+                                  f"({on.sizes['time']}x{on.sizes['z']}) in "
+                                  f"{_time.time() - _t0:.1f}s", flush=True)
+                            _t0 = _time.time()
+                            ds_model = xr.Dataset()
+                            for v in on.data_vars:
+                                a = on[v].transpose("time", "z", "target").values
+                                nt, nz = a.shape[0], a.shape[1]
+                                a = a.reshape(nt, nz, npts, k)
+                                aw = np.nansum(a * w.reshape(1, 1, npts, k), axis=3)
+                                aw = aw.reshape((nt, nz) + olon.shape)
+                                ds_model[v] = (("time", "z") + sp_dims, aw)
+                        else:
+                            # default to original path 
+                            _, idx = _tree.query(_tpts)
+                            on = src.isel({col_dim: idx}).rename({col_dim: "target"}).load()
+                            print(f"[aircraft] nearest-sampled {on.sizes['target']} cells "
+                                  f"({on.sizes['time']}x{on.sizes['z']}x{on.sizes['target']}) in "
+                                  f"{_time.time() - _t0:.1f}s", flush=True)
+                            _t0 = _time.time()
+                            ds_model = xr.Dataset()
+                            for v in on.data_vars:
+                                a = on[v].transpose("time", "z", "target").values
+                                a = a.reshape((on.sizes["time"], on.sizes["z"]) + olon.shape)
+                                ds_model[v] = (("time", "z") + sp_dims, a)
+                        
                         ds_model = ds_model.rename({"pres_pa_mid": "pressure_model"})
                         ds_model = ds_model.assign_coords({
                             "time": src["time"].values,
@@ -814,15 +863,23 @@ class analysis:
                         print(f"[aircraft] reshape+time-interp done in "
                               f"{_time.time() - _t0:.1f}s; running vert_interp...", flush=True)
                     else:
-                        # Structured model: nearest grid cell via pyresample (original path).
+                        # Structured model: nearest grid cell via pyresample
+                        # generalize at some point? 
+                        if getattr(mod, "horizontal_interp", "nearest") == "idw":
+                            print("Warning: horizontal_interp='idw' is implemented for "
+                                  "unstructured models only; using nearest for this "
+                                  "structured model.")
+                        
                         ds_model = m.util.combinetool.combine_da_to_da(
                             model_obj, new_ds_obs, merge=False
                         )
                         ds_model = ds_model.interp(time=ds_model.time_obs.squeeze())
-                        
-                        
+
                     #paired_data = vert_interp(ds_model, obs.obj, keys + mod_vars)
-                    paired_data = vert_interp(ds_model, obs.obj, list(interp_vars) + ["pressure_model"])
+                    #paired_data = vert_interp(ds_model, obs.obj, list(interp_vars) + ["pressure_model"])
+                    paired_data = vert_interp(
+                        ds_model, obs.obj, list(interp_vars) + ["pressure_model"],
+                        method=getattr(mod, "vertical_interp", "linear"),)
                     
                     print("After pairing: ", paired_data)
 
