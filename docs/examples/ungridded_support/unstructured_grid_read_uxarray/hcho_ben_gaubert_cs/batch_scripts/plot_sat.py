@@ -33,8 +33,10 @@ def main():
 
     # try and reduce some noise 
     for lbl, p in an.paired.items():
-        vc = p.obj["vertical_column"]
-        p.obj["vertical_column"] = vc.where(np.isfinite(vc) & (vc > -2e16) & (vc < 5e16))
+        for v in ("vertical_column", "formaldehyde_tropospheric_vertical_column"):
+            if v in p.obj:
+                vc = p.obj[v]
+                p.obj[v] = vc.where(np.isfinite(vc) & (vc > -2e16) & (vc < 5e16))
     
     print(f"[saved pair] plotting... ({time.time() - t0:.0f}s)", flush=True)
     an.plotting()

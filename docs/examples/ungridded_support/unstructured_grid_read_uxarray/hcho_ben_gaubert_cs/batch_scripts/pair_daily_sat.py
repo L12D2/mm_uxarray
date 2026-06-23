@@ -13,14 +13,21 @@ BASE = ("/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_supp
 OUTDIR = ("/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/"
           "unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/output")
 
-YAMLDIR = "/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/output/hcho_yaml"
+YAMLDIR = OUTDIR + "/hcho_yaml"
 
 MODEL_DIR = ("/glade/campaign/acom/acom-da/conus_outputs/"
              "f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.ERA5_ref_dust_M1.1.002/H1")
 
 MODEL_STEM = "f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.ERA5_ref_dust_M1.1.002.cam.h1"
 
-TEMPO_DIR = "/glade/campaign/acom/acom-da/sma/TEMPO_HCHO_V03"
+OBS_SOURCES = {
+    "tempo_l2_hcho": {"dir": "/glade/campaign/acom/acom-da/sma/TEMPO_HCHO_V03",
+                      "glob": "TEMPO_HCHO_L2_V03_{ymd}T*_S*"},
+    # "tropomi_l2_hcho": {"dir": "/glade/campaign/acom/acom-weather/amirrezaei/tropomi_hcho_n/BIRA_dataset_daily/nc_files/2024/06",
+    #                     "glob": "S5P_*_L2__HCHO___{ymd}T*.nc"},
+    "tropomi_l2_hcho": {"dir": "/glade/campaign/acom/acom-da/sma/TROPOMI-HCHO-DATA/2024",
+                    "glob": "S5P_OFFL_L2__HCHO___{ymd}T*.nc"},
+}
 
 os.makedirs(OUTDIR, exist_ok=True)
 os.makedirs(YAMLDIR, exist_ok=True)
@@ -30,28 +37,42 @@ def main():
     iso = datetime.strptime(ymd, "%Y%m%d").strftime("%Y-%m-%d")
     t0 = time.time()
     mfiles = sorted(glob.glob(f"{MODEL_DIR}/{MODEL_STEM}.{iso}-*.nc"))
-    tfiles = sorted(glob.glob(f"{TEMPO_DIR}/TEMPO_HCHO_L2_V03_{ymd}T*_S0*"))
     if not mfiles:
         print(f"SKIP {ymd}: no model H1 file", flush=True); return
-    if not tfiles:
-        print(f"SKIP {ymd}: no TEMPO granules", flush=True); return
 
     cd = copy.deepcopy(yaml.safe_load(open(BASE)))
     cd["analysis"]["start_time"] = iso
     cd["analysis"]["end_time"] = f"{iso} 23:59:00"
-    cd["analysis"]["output_dir"] = OUTDIR
-    cd["analysis"]["output_dir_save"] = OUTDIR
-    cd["analysis"]["output_dir_read"] = OUTDIR
+    for k in ("output_dir", "output_dir_save", "output_dir_read"):
+        cd["analysis"][k] = OUTDIR
     cd["analysis"]["save"]["paired"]["prefix"] = ymd
     cd["model"]["cam-chem-se"]["files"] = mfiles
-    cd["obs"]["tempo_l2_hcho"]["filename"] = f"{TEMPO_DIR}/TEMPO_HCHO_L2_V03_{ymd}T*_S0*"
+
+    mapping = cd["model"]["cam-chem-se"].get("mapping", {})
+    present = []
+    for obs_name, src in OBS_SOURCES.items():
+        pat = f"{src['dir']}/{src['glob'].format(ymd=ymd)}"
+        if obs_name in cd["obs"] and glob.glob(pat):
+            cd["obs"][obs_name]["filename"] = pat
+            present.append(obs_name)
+        else:
+            cd["obs"].pop(obs_name, None); mapping.pop(obs_name, None)
+            print(f"  {ymd}: no {obs_name} files -> dropped", flush=True)
+    if not present:
+        print(f"SKIP {ymd}: no obs products with data", flush=True); return
 
     tmp = f"{YAMLDIR}/control_hcho_{ymd}.yaml"
     yaml.safe_dump(cd, open(tmp, "w"), sort_keys=False)
-
-    print(f"==== pairing {iso}: {len(mfiles)} model, {len(tfiles)} TEMPO granules ====", flush=True)
-    an = driver.analysis(); an.control = tmp; an.read_control()
-    an.open_models(); an.open_obs(); an.pair_data(); an.save_analysis()
+    print(f"==== pairing {iso}: {len(mfiles)} model | {present} ====", flush=True)
+    
+    an = driver.analysis()
+    an.control = tmp
+    an.read_control()
+    an.open_models()
+    an.open_obs()
+    an.pair_data()
+    an.save_analysis()
+    
     print(f"==== DONE {iso} in {time.time()-t0:.0f}s ====", flush=True)
     for label, p in an.paired.items():
         print(f"  {label}: {dict(p.obj.sizes)}", flush=True)

@@ -3,9 +3,9 @@
 #PBS -N pair_month_sat_data
 #PBS -A P19010000
 #PBS -q casper
-#PBS -J 1-30
-#PBS -l select=1:ncpus=4:mem=60GB
-#PBS -l walltime=01:00:00
+#PBS -l select=1:ncpus=4:mem=300GB
+#PBS -l walltime=12:00:00
+#PBS -J 1-31
 #PBS -j oe
 #PBS -o pair_month_sat_data.log
 
@@ -16,6 +16,7 @@ cd /glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/un
 module load conda
 conda activate melodies-monet   
 
-export YMD=$(printf "202406%02d" ${PBS_ARRAY_INDEX})   # 20240601 .. 20240630
+#export YMD=$(printf "202406%02d" ${PBS_ARRAY_INDEX})   # 20240601 .. 20240630
+export YMD=$(printf "202403%02d" ${PBS_ARRAY_INDEX})   # 20240301 .. 20240331
 
 python pair_daily_sat.py

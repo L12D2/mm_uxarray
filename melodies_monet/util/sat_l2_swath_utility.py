@@ -490,6 +490,10 @@ def _tropomi_swath2mod(swath, modobj, method, data_vars):
         src = ux.UxDataset(flat, uxgrid=swath_grid)
         model_grid = open_uxgrid(grid_file)
         out = regrid(src, method=method, target_grid=model_grid)
+
+        # Conservative regrid fills model cells with no swath overlap with exactly 0.
+        out = out.where(out != 0)
+        
         n_col = int(model_grid.n_face)
         d = next((dd for dd in out.dims if out.sizes[dd] == n_col), None)
         if d is not None and d != col_dim:
@@ -504,12 +508,15 @@ def _tropomi_swath2mod(swath, modobj, method, data_vars):
         .reset_index("pixel", drop=True)
         .set_coords(["longitude", "latitude"])
     )
-    return regrid(flat, target={"lon": mlon, "lat": mlat},
-                  method="radius_mean", radius=0.1, target_dims=(col_dim,))
+    out = regrid(flat, target={"lon": mlon, "lat": mlat},
+                 method="radius_mean", radius=0.1, target_dims=(col_dim,))
+
+    # make sure to fill 0s with nans
+    return out.where(out != 0)
 
 
 def regrid_and_apply_weights_tropomi(obsobj, modobj, species=["NO2"],
-                                     method="conservative"):
+                                     method="conservative", qa_min=0.75):
     """Pair an unstructured model with TROPOMI L2 NO2 (AK applied).
 
     For each granule: forward-regrid model -> swath, interpolate the model
@@ -594,6 +601,15 @@ def regrid_and_apply_weights_tropomi(obsobj, modobj, species=["NO2"],
         model_col = apply_weights_mod2tropomi_no2(o, no2_t, "NO2")
         obs_col = o[_TROPOMI_NO2_VAR] * _MOL_M2_TO_MOLEC_CM2  # molec/cm2
 
+        # qa val for no2
+        if qa_min and "qa_value" in o.variables:
+            qa = o["qa_value"]
+            if float(np.nanmax(np.asarray(qa.values))) > 1.5:
+                qa = qa / 100.0
+            good = qa >= qa_min
+            obs_col = obs_col.where(good)
+            model_col = model_col.where(good)
+                    
         swath = xr.Dataset(
             {sp: model_col, _TROPOMI_NO2_VAR: obs_col,
              "latitude_bounds": o["latitude_bounds"],
@@ -643,7 +659,7 @@ def apply_weights_mod2tropomi_hcho(obsobj, modobj_on_tropomi_layers, species="CH
     return vcd.where(np.isfinite(vcd))
 
 def regrid_and_apply_weights_tropomi_hcho(obsobj, modobj, species=["CH2O"],
-                                          method="conservative"):
+                                          method="conservative", qa_min=0.5):
     """
     Pair an unstructured model with TROPOMI L2 HCHO (AK applied).
     """
@@ -692,6 +708,15 @@ def regrid_and_apply_weights_tropomi_hcho(obsobj, modobj, species=["CH2O"],
         model_col = apply_weights_mod2tropomi_hcho(o, prof_t, sp)
         obs_col = o["formaldehyde_tropospheric_vertical_column"] * _MOL_M2_TO_MOLEC_CM2     # molec/cm2
 
+        # QA filter
+        if qa_min and "qa_value" in o.variables:
+            qa = o["qa_value"]
+            if float(np.nanmax(np.asarray(qa.values))) > 1.5:
+                qa = qa / 100.0
+            good = qa >= qa_min
+            obs_col = obs_col.where(good)
+            model_col = model_col.where(good)
+                    
         swath = xr.Dataset(
             {sp: model_col, "formaldehyde_tropospheric_vertical_column": obs_col,
              "latitude_bounds": o["latitude_bounds"],

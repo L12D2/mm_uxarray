@@ -1167,8 +1167,11 @@ class analysis:
                         _sat_vars = [v for v in _sat_needed if v in mod.obj.variables]
                         mod_obj_for_sat = mod.obj[_sat_vars].load()
 
+                        _qa_min = (obs.variable_dict or {}).get(
+                            "qa_value", {}).get("qa_min", 0.75)
+                        
                         paired_data_atgrid = troputil.regrid_and_apply_weights_tropomi(
-                            obs.obj, mod_obj_for_sat, species=mod_sp, method=regrid_method
+                            obs.obj, mod_obj_for_sat, species=mod_sp, method=regrid_method, qa_min=_qa_min,
                         )
 
                         p = pair()
@@ -1202,8 +1205,11 @@ class analysis:
                         _sat_vars = [v for v in _sat_needed if v in mod.obj.variables]
                         mod_obj_for_sat = mod.obj[_sat_vars].load()
 
+                        _qa_min = (obs.variable_dict or {}).get(
+                            "qa_value", {}).get("qa_min", 0.5)
+                        
                         paired_data_atgrid = troputil.regrid_and_apply_weights_tropomi_hcho(
-                            obs.obj, mod_obj_for_sat, species=mod_sp, method=regrid_method
+                            obs.obj, mod_obj_for_sat, species=mod_sp, method=regrid_method,  qa_min=_qa_min,
                         )
 
                         p = pair()
