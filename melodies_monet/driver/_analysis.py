@@ -873,7 +873,7 @@ class analysis:
                             print('Pairing is being done for model variable: '+keys[i_no2_varname[0]])
                         no2_varname = keys[i_no2_varname[0]]
 
-                        if m.mod_to_overpass:
+                        if mod.mod_to_overpass:
                             print("sampling model to 13:30 local overpass time")
                             overpass_datetime = pd.date_range(
                                 self.start_time.replace(hour=13, minute=30),
@@ -1042,7 +1042,7 @@ class analysis:
                             model_obj = mod.obj[keys + ["pres_pa_mid"]]
 
                             # Sample model to observation overpass time
-                            if m.mod_to_overpass:
+                            if mod.mod_to_overpass:
                                 print("sampling model to 10:30 local overpass time")
                                 overpass_datetime = pd.date_range(
                                     self.start_time.replace(hour=10, minute=30),
