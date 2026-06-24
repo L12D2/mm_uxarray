@@ -33,7 +33,7 @@ def main():
 
     # try and reduce some noise 
     for lbl, p in an.paired.items():
-        for v in ("vertical_column", "formaldehyde_tropospheric_vertical_column"):
+        for v in ("vertical_column", "formaldehyde_tropospheric_vertical_column", "CH2O"):
             if v in p.obj:
                 vc = p.obj[v]
                 p.obj[v] = vc.where(np.isfinite(vc) & (vc > -2e16) & (vc < 5e16))

@@ -648,9 +648,41 @@ def apply_weights_mod2tropomi_hcho(obsobj, modobj_on_tropomi_layers, species="CH
     dp = xr.DataArray(dp, dims=("z", "y", "x"))
     subcol = vmr * dp * (NA / (g * M_air) / 1e4)            # molec/cm2 per layer
 
+    # AK * AMF 
     ak = obsobj["averaging_kernel"].transpose("z", "y", "x")
+    ak = ak * obsobj["formaldehyde_tropospheric_air_mass_factor"] # hopefully this isnt hardcoded otherwise will need to pull this in from YAML
+
     vcd = (ak * subcol).sum("z", skipna=True)
     vcd = vcd.where(np.isfinite(vmr.isel(z=0)))
+
+    # # debug 
+    # import os as _os
+    # print("testing debug...")
+    # def _p(a, n):
+    #     x = np.asarray(getattr(a, "values", a), dtype=float)
+    #     x = x[np.isfinite(x)]
+    #     print(f"  {n:7s} p50={np.percentile(x,50):.2e} p99={np.percentile(x,99):.2e} "
+    #           f"max={x.max():.2e}" if x.size else f"  {n}: all-nan", flush=True)
+    # print("=== hcho operator (one granule) ===", flush=True)
+    # _p(vmr, "vmr"); _p(dp, "dp"); _p(ak, "ak"); _p(subcol, "subcol"); _p(vcd, "vcd")
+    # vv = vcd.values
+    # if np.isfinite(vv).any():
+    #     jy, jx = np.unravel_index(np.nanargmax(vv), vv.shape)
+    #     sp = (float(obsobj["surface_pressure"].values[jy, jx])
+    #           if "surface_pressure" in obsobj else float("nan"))
+    #     print(f"  MAXCELL vcd={vv[jy,jx]:.2e} dp_max={np.nanmax(dp.values[:,jy,jx]):.2e} "
+    #           f"ak_max={np.nanmax(ak.values[:,jy,jx]):.2e} "
+    #           f"vmr_max={np.nanmax(vmr.values[:,jy,jx]):.2e} surfP={sp:.2e}", flush=True)
+        
+    #     prof = lambda a: np.array2string(np.asarray(a)[:, jy, jx], precision=2, max_line_width=200)
+    #     print("  AK   prof:", prof(ak.values))
+    #     print("  ak*subcol:", prof((ak * subcol).values))
+    #     _amf = obsobj.get("formaldehyde_tropospheric_air_mass_factor")
+    #     print("  amf:", float(_amf.values[jy, jx]) if _amf is not None else "n/a")
+
+    # print("end debug...")
+    # # end debug
+    
     vcd.attrs = {
         "units": "molecules/cm2",
         "description": "model HCHO column after applying TROPOMI averaging kernel",

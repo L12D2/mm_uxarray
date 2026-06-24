@@ -23,8 +23,15 @@ MODEL_STEM = "f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.ERA5_ref_dust_M1
 OBS_SOURCES = {
     "tempo_l2_hcho": {"dir": "/glade/campaign/acom/acom-da/sma/TEMPO_HCHO_V03",
                       "glob": "TEMPO_HCHO_L2_V03_{ymd}T*_S*"},
-    # "tropomi_l2_hcho": {"dir": "/glade/campaign/acom/acom-weather/amirrezaei/tropomi_hcho_n/BIRA_dataset_daily/nc_files/2024/06",
+    # "tropomi_l2_hcho": {"dir": "/glade/derecho/scratch/lcthompson/tropomi/hcho_2024",
     #                     "glob": "S5P_*_L2__HCHO___{ymd}T*.nc"},
+    
+    # "tempo_l2_no2": {"dir": "/glade/campaign/acom/acom-da/sma/TEMPO_NO2_V03",
+    #                     "glob": "S5P_*_L2__NO2___{ymd}T*.nc"},
+
+    # "tropomi_l2_no2": {"dir": "/glade/derecho/scratch/lcthompson/tropomi/hcho_2024",
+    #                     "glob": "S5P_*_L2__NO2___{ymd}T*.nc"},
+    
     "tropomi_l2_hcho": {"dir": "/glade/campaign/acom/acom-da/sma/TROPOMI-HCHO-DATA/2024",
                     "glob": "S5P_OFFL_L2__HCHO___{ymd}T*.nc"},
 }

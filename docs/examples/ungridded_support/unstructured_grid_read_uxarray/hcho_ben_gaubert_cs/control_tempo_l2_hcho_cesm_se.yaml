@@ -9,7 +9,7 @@
 #-------------------------------------------------------------------
 
 analysis:
-  # start_time: '2024-06-30'                 #UTC  
+  # start_time: '2024-06-01'                 #UTC  
   # end_time:   '2024-06-30 23:59:00'        #UTC
   
   # start_time: '2024-04-14'                 #UTC  
@@ -17,13 +17,18 @@ analysis:
   
   start_time: '2024-03-01'                 #UTC  
   end_time:   '2024-03-31 23:59:00'        #UTC
+
+  # start_time: '2024-03-15'                 #UTC  
+  # end_time:   '2024-03-15 23:59:00'        #UTC
   
   output_dir: /glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/output
   output_dir_save: /glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/output
   output_dir_read: /glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/output 
   
   save:
+    # paired: {method: 'netcdf', prefix: 'test', data: all}
     paired: {method: 'netcdf', prefix: '20240331', data: all}
+    # paired: {method: 'netcdf', prefix: '202406', data: all}
   
   read:
     paired:
@@ -33,16 +38,24 @@ analysis:
         # tempo_l2_no2_cam-chem-se: ['/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/output/20240630_tempo_l2_no2_cam-chem-se.nc4'] 
         # tropomi_l2_no2_cam-chem-se: ['/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/output/20240630_tropomi_l2_no2_cam-chem-se.nc4']
         tropomi_l2_hcho_cam-chem-se: ['/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/output/202403*_tropomi_l2_hcho_cam-chem-se.nc4']
-         
+
+        # tempo_l2_hcho_cam-chem-se: ['/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/output/202406*_tempo_l2_hcho_cam-chem-se.nc4']
+        # # tempo_l2_no2_cam-chem-se: ['/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/output/20240630_tempo_l2_no2_cam-chem-se.nc4'] 
+        # # tropomi_l2_no2_cam-chem-se: ['/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/output/20240630_tropomi_l2_no2_cam-chem-se.nc4']
+        # tropomi_l2_hcho_cam-chem-se: ['/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/output/202406*_tropomi_l2_hcho_cam-chem-se.nc4']
+        
   debug: false
 
 obs:
 
   tempo_l2_hcho:
-    regrid_method: conservative
+    regrid_method: # conservative
     debug: false
     #filename: /glade/campaign/acom/acom-da/sma/TEMPO_HCHO_V03/TEMPO_HCHO_L2_V03_20240630T*_S0*
     filename: /glade/campaign/acom/acom-da/sma/TEMPO_HCHO_V03/TEMPO_HCHO_L2_V03_202403*_S*
+    # filename: /glade/campaign/acom/acom-da/sma/TEMPO_HCHO_V03/TEMPO_HCHO_L2_V03_202406*_S*
+    # filename: /glade/campaign/acom/acom-da/sma/TEMPO_HCHO_V03/TEMPO_HCHO_L2_V03_202403*_S*
+    # filename: /glade/campaign/acom/acom-da/sma/TEMPO_HCHO_V03/TEMPO_HCHO_L2_V03_20240315*_S*
     obs_type: sat_swath_clm
     sat_type: tempo_l2_hcho
     variables:
@@ -52,7 +65,8 @@ obs:
       vertical_column:                 # HCHO total column (molecules/cm^2)
         ylabel_plot: 'HCHO column'
         vmin_plot: 0
-        vmax_plot: 2.0e+16
+        vmax_plot: 3.0e+16
+        nlevels_plot: 21
       pressure: {}
       scattering_weights: {}
       amf: {}
@@ -93,12 +107,18 @@ obs:
   tropomi_l2_hcho:
     obs_type: sat_swath_clm
     sat_type: tropomi_l2_hcho
-    regrid_method: conservative
+    regrid_method: nearest_s2d # nearest_s2d #conservative
     filename: /glade/campaign/acom/acom-da/sma/TROPOMI-HCHO-DATA/2024/S5P_OFFL_L2__HCHO___202403*.nc
-    # /glade/campaign/acom/acom-weather/amirrezaei/tropomi_hcho_n/BIRA_dataset_daily/nc_files/2024/06/2024/06/ESACCI-PREC-L3C-HCHO-TROPOMI_S5P_BIRA-0720x1440_1D-20240630-fv02.nc
+    # filename: /glade/campaign/acom/acom-da/sma/TROPOMI-HCHO-DATA/2024/S5P_OFFL_L2__HCHO___202406*.nc
+    # filename: /glade/campaign/acom/acom-da/sma/TROPOMI-HCHO-DATA/2024/S5P_OFFL_L2__HCHO___202403*.nc
+    # filename: /glade/campaign/acom/acom-da/sma/TROPOMI-HCHO-DATA/2024/S5P_OFFL_L2__HCHO___20240315*.nc
     variables:
-      qa_value: {}
-      formaldehyde_tropospheric_vertical_column: {ylabel_plot: 'HCHO column', vmin_plot: 0, vmax_plot: 2.0e+16}
+      qa_value: {qa_min: 0.5}
+      formaldehyde_tropospheric_vertical_column: 
+        ylabel_plot: 'HCHO column'
+        vmin_plot: 0
+        vmax_plot: 3.0e+16
+        nlevels_plot: 21
       averaging_kernel: {}
       formaldehyde_tropospheric_air_mass_factor: {}
       surface_pressure: {}
@@ -106,17 +126,26 @@ obs:
       tm5_constant_b: {}
       latitude_bounds: {}
       longitude_bounds: {}
-      qa_value: {}
       
       #  data: ['tempo_l2_hcho_cam-chem-se', 'tempo_l2_no2_cam-chem-se', 'tropomi_l2_no2_cam-chem-se', 'tropomi_l2_hcho_cam-chem-se']
       # data: ["tempo_l2_hcho_cam-chem-se"]
 
       # data: ["tempo_l2_hcho_cam-chem-se", 'tropomi_l2_hcho_cam-chem-se']
+      
 model:
   cam-chem-se:
     files: /glade/campaign/acom/acom-da/conus_outputs/f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.ERA5_ref_dust_M1.1.002/H1/f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.ERA5_ref_dust_M1.1.002.cam.h1.2024-03*.nc
+    
+    # /glade/campaign/acom/acom-da/conus_outputs/f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.ERA5_ref_dust_M1.1.002/H1/f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.ERA5_ref_dust_M1.1.002.cam.h1.2024-03-15-03600.nc
+    
+    # /glade/campaign/acom/acom-da/conus_outputs/f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.ERA5_ref_dust_M1.1.002/H1/f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.ERA5_ref_dust_M1.1.002.cam.h1.2024-03*.nc
+    
+    # /glade/campaign/acom/acom-da/conus_outputs/f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.ERA5_ref_dust_M1.1.002/H1/f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.ERA5_ref_dust_M1.1.002.cam.h1.2024-06*.nc
+    
       # - /glade/campaign/acom/acom-da/conus_outputs/f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.ERA5_ref_dust_M1.1.002/H1/f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.ERA5_ref_dust_M1.1.002.cam.h1.2024-06-30-03600.nc
+      
       # - /glade/campaign/acom/acom-da/conus_outputs/f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.ERA5_ref_dust_M1.1.002/H1/f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.ERA5_ref_dust_M1.1.002.cam.h1.2024-04-14-03600.nc
+      
       # - /glade/campaign/acom/acom-da/conus_outputs/f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.ERA5_ref_dust_M1.1.002/H1/f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.ERA5_ref_dust_M1.1.002.cam.h1.2024-03*.nc
       
     scrip_file: "/glade/campaign/acom/MUSICA/grids/ne0CONUSne30x8/ne0CONUS_ne30x8_np4_SCRIP.nc"
@@ -160,7 +189,9 @@ plots:
       SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}
     
     data: ["tempo_l2_hcho_cam-chem-se", 'tropomi_l2_hcho_cam-chem-se']
-    data_proc: {set_axis: true}
+    data_proc: 
+      set_axis: true
+      vdiff: 2.0e+16 
 
   plot_grp3:
     type: 'spatial_dist'
@@ -173,9 +204,26 @@ plots:
       SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}
 
     data: ["tempo_l2_hcho_cam-chem-se", 'tropomi_l2_hcho_cam-chem-se']
-    data_proc: {set_axis: true, vmax: 2e16, vmin: 0}
+    data_proc:
+      set_axis: true
 
-  plot_grp4:
+  # plot_grp4:
+  #   type: "boxplot"
+  #   fig_kwargs:
+  #     figsize: [8, 6]
+  #   text_kwargs:
+  #     fontsize: 20.
+      
+  #   domain_type: ["all", "auto-region:giorgi", "auto-region:box"]
+  #   domain_name: ["CONUS", "CNA", "SE_US"]
+  #   domain_info:
+  #     SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}
+  #   data: ["tempo_l2_hcho_cam-chem-se", 'tropomi_l2_hcho_cam-chem-se']
+  #   data_proc:
+  #     rem_obs_nan: True
+  #     set_axis: False
+
+  plot_grp4_tempo:
     type: "boxplot"
     fig_kwargs:
       figsize: [8, 6]
@@ -186,11 +234,27 @@ plots:
     domain_name: ["CONUS", "CNA", "SE_US"]
     domain_info:
       SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}
-    data: ["tempo_l2_hcho_cam-chem-se", 'tropomi_l2_hcho_cam-chem-se']
+    data: ["tempo_l2_hcho_cam-chem-se"]
     data_proc:
       rem_obs_nan: True
-      set_axis: False
-
+      set_axis: True
+ 
+  plot_grp4_tropo:
+    type: "boxplot"
+    fig_kwargs:
+      figsize: [8, 6]
+    text_kwargs:
+      fontsize: 20.
+      
+    domain_type: ["all", "auto-region:giorgi", "auto-region:box"]
+    domain_name: ["CONUS", "CNA", "SE_US"]
+    domain_info:
+      SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}
+    data: ['tropomi_l2_hcho_cam-chem-se']
+    data_proc:
+      rem_obs_nan: True
+      set_axis: True
+      
   plot_grp5:
     type: 'spatial_overlay'
     fig_kwargs: {states: true, counties: false, figsize: [12, 8]}
@@ -201,9 +265,10 @@ plots:
       SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}
     
     data: ["tempo_l2_hcho_cam-chem-se", 'tropomi_l2_hcho_cam-chem-se']
-    data_proc: {set_axis: true, rem_obs_nan: True}
-    nlevels: 21        
-    
+    data_proc: 
+      set_axis: true
+      rem_obs_nan: True
+           
 stats:
   stat_list: ["MB", "MdnB", "R2", "RMSE"]
   round_output: 2
