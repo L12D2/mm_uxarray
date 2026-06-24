@@ -49,7 +49,7 @@ analysis:
 obs:
 
   tempo_l2_hcho:
-    regrid_method: # conservative
+    regrid_method: nearest_s2d # conservative
     debug: false
     #filename: /glade/campaign/acom/acom-da/sma/TEMPO_HCHO_V03/TEMPO_HCHO_L2_V03_20240630T*_S0*
     filename: /glade/campaign/acom/acom-da/sma/TEMPO_HCHO_V03/TEMPO_HCHO_L2_V03_202403*_S*

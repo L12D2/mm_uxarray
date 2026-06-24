@@ -103,5 +103,3 @@ for ymd in dates:
     an.read_analysis()
     an.plotting()
     an.stats()
-
-make_montages(PLOTROOT, f"{os.path.dirname(PLOTROOT)}/dc8_montages")

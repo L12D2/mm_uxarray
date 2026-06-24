@@ -19,6 +19,16 @@ analysis:
         dc8_cam-chem-se-era5:   []
         dc8_cam-chem-se-merra2: []
   download_maps: false 
+
+  # add this as example to yaml 
+  montage:
+    plot_dir: /glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/asiaaq_cs_06082026/output/air_full_plot  # where are the single images written too
+    outdir: /glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/asiaaq_cs_06082026/output/dc8_montages  # where do you want the montages written too
+    group_by: plotname     # tile same <grp>.<type>.<var> across flight subdirs
+    search: '*/*.png'      # per-flight subdirectories
+    cols: 6
+    thumb_width: 420
+    
   debug: false
 
   

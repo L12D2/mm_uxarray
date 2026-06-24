@@ -23,6 +23,16 @@ analysis:
   download_maps: false #If off-line or on machine with download restrictions like hera set to False.
   debug: false
   
+  # add this as example to yaml 
+  montage:
+    plot_dir: ./output/airnow_mpas # where are the single images written too
+    outdir: ./output/airnow_mpas # where do you want the montages written too
+    group_by: type     # puts all outputted figs in montage
+    # options include: "all", "plotname", "type"
+    search: "*.png"
+    cols: 6
+    thumb_width: 420
+  
 #-------------------------------------------------------------------
 # Model definitions
 model:
