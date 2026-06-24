@@ -296,6 +296,13 @@ class observation:
                     self.file, self.variable_dict
                 )
                 
+            elif self.sat_type == "tropomi_l2_co":
+                # Generic TROPOMI reader
+                print("Reading TROPOMI L2 CO (generic reader)...")
+                self.obj = mio.sat.tropomi_l2.open_datasets(
+                    self.file, self.variable_dict
+                )
+                
             elif "tempo_l2" in self.sat_type:
                 print("Reading TEMPO L2")
                 try:

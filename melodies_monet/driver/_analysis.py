@@ -1155,6 +1155,10 @@ class analysis:
                         label = "{}_{}".format(p.obs, p.model)
                         self.paired[label] = p
 
+                    ############################# TROPOMI #############################                           
+                    ############################# TROPOMI #############################
+                    ############################# TROPOMI #############################
+                    
                     #if obs.sat_type == "tropomi_l2_no2" and (obs.sat_method == None or obs.sat_method == "replace_apriori"):
                     # make this a legacy call for the hyper specific tropomi reader
                     if obs.sat_type == "tropomi_l2_no2" and obs.sat_method == "replace_apriori":
@@ -1232,7 +1236,7 @@ class analysis:
                     if obs.sat_type == "tropomi_l2_no2" and obs.sat_method != "replace_apriori":
                         # Conservative / unstructured TROPOMI NO2 path (default):
                         # generic reader + averaging-kernel operator, reusing the
-                        # same regrid engine as TEMPO. Works for CESM-SE / MPAS.
+                        # same regrid engine as TEMPO. Works for unstructured grids
                         from melodies_monet.util import sat_l2_swath_utility as troputil
 
                         sp = "nitrogendioxide_tropospheric_column"
@@ -1307,7 +1311,59 @@ class analysis:
                         label = "{}_{}".format(p.obs, p.model)
                         p.filename = "{}.nc".format(label)
                         self.paired[label] = p
-                        
+
+                    if obs.sat_type == "tropomi_l2_co":
+                        # TROPOMI CO same as HCHO but the column AK is dimensionless 
+                        from melodies_monet.util import sat_l2_swath_utility as troputil
+
+                        sp = "carbonmonoxide_total_column"
+                        key = "tropomi_l2_co"
+                        mod_sp = [k_sp for k_sp, v in mod.mapping[key].items() if v == sp]
+
+                        regrid_method = (
+                            obs.regrid_method if obs.regrid_method is not None
+                            else "conservative"
+                        )
+
+                        _sat_needed = list(mod_sp) + [
+                            "pres_pa_mid", "dz_m", "temperature_k"]
+                        _sat_vars = [v for v in _sat_needed if v in mod.obj.variables]
+                        mod_obj_for_sat = mod.obj[_sat_vars].load()
+
+                        # qa_value threshold
+                        _qa_min = (obs.variable_dict or {}).get(
+                            "qa_value", {}).get("qa_min", 0.5)
+
+                        paired_data_atgrid = troputil.regrid_and_apply_weights_tropomi_co(
+                            obs.obj, mod_obj_for_sat, species=mod_sp,
+                            method=regrid_method, qa_min=_qa_min,
+                        )
+
+                        if not paired_data_atgrid.sizes:
+                            print(
+                                f"Warning: no TROPOMI CO granules paired for {obs.label} "
+                                "(empty obs read / wrong date glob / no model overlap). Skipping."
+                            )
+                        else:
+                            p = pair()
+                            paired_data = paired_data_atgrid.sel(
+                                time=slice(self.start_time, self.end_time)
+                            )
+                            p.type = obs.obs_type
+                            p.obs = obs.label
+                            p.model = mod.label
+                            p.model_vars = keys
+                            p.obs_vars = obs_vars
+                            p.obj = paired_data
+                            label = "{}_{}".format(p.obs, p.model)
+                            p.filename = "{}.nc".format(label)
+                            self.paired[label] = p
+
+                    
+                    ############################# TEMPO #############################                           
+                    ############################# TEMPO #############################
+                    ############################# TEMPO #############################
+                    
                     if "tempo_l2" in obs.sat_type:
                         from melodies_monet.util import sat_l2_swath_utility_tempo as sutil
 

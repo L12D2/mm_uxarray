@@ -654,34 +654,6 @@ def apply_weights_mod2tropomi_hcho(obsobj, modobj_on_tropomi_layers, species="CH
 
     vcd = (ak * subcol).sum("z", skipna=True)
     vcd = vcd.where(np.isfinite(vmr.isel(z=0)))
-
-    # # debug 
-    # import os as _os
-    # print("testing debug...")
-    # def _p(a, n):
-    #     x = np.asarray(getattr(a, "values", a), dtype=float)
-    #     x = x[np.isfinite(x)]
-    #     print(f"  {n:7s} p50={np.percentile(x,50):.2e} p99={np.percentile(x,99):.2e} "
-    #           f"max={x.max():.2e}" if x.size else f"  {n}: all-nan", flush=True)
-    # print("=== hcho operator (one granule) ===", flush=True)
-    # _p(vmr, "vmr"); _p(dp, "dp"); _p(ak, "ak"); _p(subcol, "subcol"); _p(vcd, "vcd")
-    # vv = vcd.values
-    # if np.isfinite(vv).any():
-    #     jy, jx = np.unravel_index(np.nanargmax(vv), vv.shape)
-    #     sp = (float(obsobj["surface_pressure"].values[jy, jx])
-    #           if "surface_pressure" in obsobj else float("nan"))
-    #     print(f"  MAXCELL vcd={vv[jy,jx]:.2e} dp_max={np.nanmax(dp.values[:,jy,jx]):.2e} "
-    #           f"ak_max={np.nanmax(ak.values[:,jy,jx]):.2e} "
-    #           f"vmr_max={np.nanmax(vmr.values[:,jy,jx]):.2e} surfP={sp:.2e}", flush=True)
-        
-    #     prof = lambda a: np.array2string(np.asarray(a)[:, jy, jx], precision=2, max_line_width=200)
-    #     print("  AK   prof:", prof(ak.values))
-    #     print("  ak*subcol:", prof((ak * subcol).values))
-    #     _amf = obsobj.get("formaldehyde_tropospheric_air_mass_factor")
-    #     print("  amf:", float(_amf.values[jy, jx]) if _amf is not None else "n/a")
-
-    # print("end debug...")
-    # # end debug
     
     vcd.attrs = {
         "units": "molecules/cm2",
@@ -765,3 +737,132 @@ def regrid_and_apply_weights_tropomi_hcho(obsobj, modobj, species=["CH2O"],
     if not out_list:
         return xr.Dataset()
     return xr.concat(out_list, dim="time")
+
+
+# new satelite variables ncdump -h "$F" | grep -iE "group: (PRODUCT|DETAILED_RESULTS|INPUT_DATA)|carbonmonoxide_total_column|column_averaging_kernel|pressure_levels|qa_value|layer =|:units|:multiplication_factor"
+
+# co 
+
+_TROPOMI_CO_VAR = "carbonmonoxide_total_column"
+
+def apply_weights_mod2tropomi_co(obsobj, modobj_on_tropomi_layers, species="CO"):
+    """Apply the TROPOMI CO column averaging kernel to a model CO profile.
+
+    """
+    g, M_air, NA = 9.80665, 0.0289644, 6.022e23
+
+    vmr = _to_molmol(modobj_on_tropomi_layers[species]).transpose("z", "y", "x")
+
+    pint = obsobj["pres_pa_int"].transpose("z_stagg", "y", "x")
+    dp = np.abs(
+        pint.isel(z_stagg=slice(0, -1)).values
+        - pint.isel(z_stagg=slice(1, None)).values
+    )
+    dp = xr.DataArray(dp, dims=("z", "y", "x"))
+    subcol = vmr * dp * (NA / (g * M_air) / 1e4)            # molec/cm2 per layer
+
+    ak = obsobj["column_averaging_kernel"].transpose("z", "y", "x")  # dimensionless 
+    vcd = (ak * subcol).sum("z", skipna=True)
+    vcd = vcd.where(np.isfinite(vmr.isel(z=0)))
+
+    # debug    
+    import os as _os
+
+    print("start debug...")
+    def _p(a, n):
+        x = np.asarray(getattr(a, "values", a), dtype=float)
+        x = x[np.isfinite(x)]
+        print(f"  {n:7s} p50={np.percentile(x,50):.2e} p99={np.percentile(x,99):.2e} "
+              f"max={x.max():.2e}" if x.size else f"  {n}: all-nan", flush=True)
+    print("=== co operator (one granule) ===", flush=True)
+    _p(vmr, "vmr"); _p(dp, "dp"); _p(ak, "ak"); _p(subcol, "subcol"); _p(vcd, "vcd")
+
+    print("end debug...")
+    
+    # end debug
+
+    vcd.attrs = {
+        "units": "molecules/cm2",
+        "description": "model CO column after applying TROPOMI column averaging kernel",
+        "history": "Created by MELODIES-MONET, apply_weights_mod2tropomi_co",
+    }
+    return vcd.where(np.isfinite(vcd))
+
+def regrid_and_apply_weights_tropomi_co(obsobj, modobj, species=["CO"],
+                                        method="conservative", qa_min=0.5):
+    
+    """Pair an unstructured model with TROPOMI L2 CO (column AK applied).
+
+    Mirrors regrid_and_apply_weights_tropomi_hcho 
+    """
+    sp = species[0]
+    grid_file = (modobj.attrs.get("mio_scrip_file")
+                 or modobj.attrs.get("mio_mesh_file"))
+
+    granules = []
+    for v in obsobj.values():
+        granules.extend(v if isinstance(v, list) else [v])
+
+    out_list = []
+    for o in granules:
+        if "time" in o.dims:
+            o = o.squeeze("time", drop=False)
+
+        if "time_granule" in o.variables:
+            tg = np.asarray(o["time_granule"].values).ravel().astype("datetime64[ns]")
+            tg = tg[~np.isnat(tg)]
+            gtime = (
+                np.array(tg.astype("int64").mean(), dtype="int64").astype("datetime64[ns]")
+                if tg.size else None
+            )
+        else:
+            gtime = o["time"].values if "time" in o.coords else None
+
+        if "time" in modobj.dims and gtime is not None:
+            tsel = gtime if np.ndim(gtime) == 0 else np.asarray(gtime).ravel()[0]
+            mtimes = modobj["time"].values
+            tmin, tmax = mtimes.min(), mtimes.max()
+            if tsel < tmin:
+                tsel = tmin
+            elif tsel > tmax:
+                tsel = tmax
+            try:
+                mod_t = modobj.interp(time=tsel)
+            except Exception:
+                mod_t = modobj.sel(time=tsel, method="nearest")
+        elif "time" in modobj.dims:
+            mod_t = modobj.isel(time=0)
+        else:
+            mod_t = modobj
+
+        on_swath = _mod2tropomi_swath(mod_t, o, method, [sp, "pres_pa_mid"], grid_file)
+        prof_t = interp_vertical_mod2tropomi(o, on_swath, [sp])
+        model_col = apply_weights_mod2tropomi_co(o, prof_t, sp)
+        obs_col = o[_TROPOMI_CO_VAR] * _MOL_M2_TO_MOLEC_CM2     # molec/cm2
+
+        # QA filter 
+        if qa_min and "qa_value" in o.variables:
+            qa = o["qa_value"]
+            if float(np.nanmax(np.asarray(qa.values))) > 1.5:
+                qa = qa / 100.0
+            good = qa >= qa_min
+            obs_col = obs_col.where(good)
+            model_col = model_col.where(good)
+
+        swath = xr.Dataset(
+            {sp: model_col, _TROPOMI_CO_VAR: obs_col,
+             "latitude_bounds": o["latitude_bounds"],
+             "longitude_bounds": o["longitude_bounds"]},
+            coords={"longitude": o["longitude"], "latitude": o["latitude"]},
+        )
+
+        on_mod = _tropomi_swath2mod(swath, modobj, method, [sp, _TROPOMI_CO_VAR])
+        if gtime is not None:
+            tval = gtime if np.ndim(gtime) == 0 else np.asarray(gtime).ravel()[0]
+            on_mod = on_mod.expand_dims(time=[np.datetime64(tval)])
+        out_list.append(on_mod)
+
+    if not out_list:
+        return xr.Dataset()
+    return xr.concat(out_list, dim="time")
+
