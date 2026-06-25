@@ -30,6 +30,7 @@ class observation:
         self.resample = None
         self.time_var = None
         self.regrid_method = None
+        self.debug = False
 
     def __repr__(self):
         return (

@@ -21,19 +21,22 @@ MODEL_DIR = ("/glade/campaign/acom/acom-da/conus_outputs/"
 MODEL_STEM = "f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.ERA5_ref_dust_M1.1.002.cam.h1"
 
 OBS_SOURCES = {
+    
     "tempo_l2_hcho": {"dir": "/glade/campaign/acom/acom-da/sma/TEMPO_HCHO_V03",
                       "glob": "TEMPO_HCHO_L2_V03_{ymd}T*_S*"},
-    # "tropomi_l2_hcho": {"dir": "/glade/derecho/scratch/lcthompson/tropomi/hcho_2024",
-    #                     "glob": "S5P_*_L2__HCHO___{ymd}T*.nc"},
+    "tempo_l2_no2": {"dir": "/glade/campaign/acom/acom-da/sma/TEMPO_NO2_V03",
+                 "glob": "TEMPO_NO2_L2_V03_{ymd}T*_S*"},
     
-    # "tempo_l2_no2": {"dir": "/glade/campaign/acom/acom-da/sma/TEMPO_NO2_V03",
-    #                     "glob": "S5P_*_L2__NO2___{ymd}T*.nc"},
+    "tropomi_l2_hcho": {"dir": "/glade/derecho/scratch/lcthompson/tropomi/hcho_2024",
+                        "glob": "S5P_*_L2__HCHO___{ymd}T*.nc"},
+    "tropomi_l2_no2": {"dir": "/glade/derecho/scratch/lcthompson/tropomi/no2_2024",
+                        "glob": "S5P_*_L2__NO2____{ymd}T*.nc"},
 
-    # "tropomi_l2_no2": {"dir": "/glade/derecho/scratch/lcthompson/tropomi/hcho_2024",
-    #                     "glob": "S5P_*_L2__NO2___{ymd}T*.nc"},
+    "tropomi_l2_co": {"dir": "/glade/derecho/scratch/lcthompson/tropomi/co_2024",
+                        "glob": "S5P_*_L2__CO_____{ymd}T*.nc"},
     
-    "tropomi_l2_hcho": {"dir": "/glade/campaign/acom/acom-da/sma/TROPOMI-HCHO-DATA/2024",
-                    "glob": "S5P_OFFL_L2__HCHO___{ymd}T*.nc"},
+    # "tropomi_l2_hcho": {"dir": "/glade/campaign/acom/acom-da/sma/TROPOMI-HCHO-DATA/2024",
+    #                 "glob": "S5P_OFFL_L2__HCHO___{ymd}T*.nc"},
 }
 
 os.makedirs(OUTDIR, exist_ok=True)

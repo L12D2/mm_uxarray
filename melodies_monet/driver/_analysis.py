@@ -249,7 +249,72 @@ class analysis:
             dest = os.path.join(out, f"montage_{k}.png")
             sheet.save(dest)
             print(f"montage: wrote {dest} ({len(gfiles)} tiles)", flush=True)            
-    
+
+    def _sat_regrid_targets(self, obs):
+        """Resolve (targets, obs_grid_res) for a satellite pairing from its obs config
+
+        regrid_target: defaults to model grid
+        obs_grid_res defaults to 0.1 deg (though this may actually need to be more similar to the "radius of influence" YAML key that sfc obs use?)
+        
+        Give a warning if obs_grid_res yaml argument is given but regridding to obs was not requested
+        
+        """
+        cfg = self.control_dict.get("obs", {}).get(obs.label, {})
+        targets = cfg.get("regrid_target", "model")
+        targets = [targets] if isinstance(targets, str) else list(targets)
+        
+        res = cfg.get("obs_grid_res", 0.1)
+        units = cfg.get("obs_grid_units", "deg")
+        extent = cfg.get("obs_grid_extent", None)
+        _grid_keys = ("obs_grid_res", "obs_grid_units", "obs_grid_extent")
+
+        if "obs" not in targets:
+            if any(k in cfg for k in _grid_keys):
+                print(
+                    "Warning: obs_grid_* keys are ignored because regrid_target does "
+                    "not include 'obs' (they only apply to the lat/lon 'obs' target).",
+                    flush=True,
+                )
+
+        elif units in ("km", "m") and extent is None:
+            print(
+                f"Warning: obs_grid_units is '{units}' but no obs_grid_extent was given. "
+                "the grid will span the FULL model extent (often global for a refined-mesh "
+                "run) at metric resolution, which is enormous. Set obs_grid_extent: "
+                "[lonW, lonE, latS, latN] to bound it.",
+                flush=True,
+            )
+
+        return targets, res, units, extent
+
+    def _store_sat_pairs(self, paired_dict, obs, mod, keys, obs_vars, label_tag):
+        """Store satellite pairs from a dict into self.paired
+
+        Model-space pairs keep the label <obs>_<model> ;
+        the lat/lon 'obs' target gets an _obsgrid suffix 
+        
+        """
+        for tgt, atgrid in paired_dict.items():
+            if not getattr(atgrid, "sizes", {}):
+                print(
+                    f"Warning: no {label_tag} granules paired for {obs.label} "
+                    f"[{tgt}] (empty read / wrong date glob / no model overlap). "
+                    "Skipping.",
+                    flush=True,
+                )
+                continue
+            p = pair()
+            p.type = obs.obs_type
+            p.obs = obs.label
+            p.model = mod.label
+            p.model_vars = keys
+            p.obs_vars = obs_vars
+            p.obj = atgrid.sel(time=slice(self.start_time, self.end_time))
+            suffix = "" if tgt == "model" else "_obsgrid"
+            label = "{}_{}{}".format(p.obs, p.model, suffix)
+            p.filename = "{}.nc".format(label)
+            self.paired[label] = p
+            
     def save_analysis(self):
         """Save all analysis attributes listed in analysis section of input yaml file.
 
@@ -1256,23 +1321,15 @@ class analysis:
                         _qa_min = (obs.variable_dict or {}).get(
                             "qa_value", {}).get("qa_min", 0.75)
                         
-                        paired_data_atgrid = troputil.regrid_and_apply_weights_tropomi(
-                            obs.obj, mod_obj_for_sat, species=mod_sp, method=regrid_method, qa_min=_qa_min,
-                        )
+                        _targets, _res, _units, _extent = self._sat_regrid_targets(obs)
 
-                        p = pair()
-                        paired_data = paired_data_atgrid.sel(
-                            time=slice(self.start_time, self.end_time)
+                        paired_dict = troputil.regrid_and_apply_weights_tropomi(
+                            obs.obj, mod_obj_for_sat, species=mod_sp, method=regrid_method,
+                            qa_min=_qa_min, regrid_target=_targets, obs_grid_res=_res, 
+                            obs_grid_units=_units, obs_grid_extent=_extent,
                         )
-                        p.type = obs.obs_type
-                        p.obs = obs.label
-                        p.model = mod.label
-                        p.model_vars = keys
-                        p.obs_vars = obs_vars
-                        p.obj = paired_data
-                        label = "{}_{}".format(p.obs, p.model)
-                        p.filename = "{}.nc".format(label)
-                        self.paired[label] = p
+                        self._store_sat_pairs(
+                            paired_dict, obs, mod, keys, obs_vars, "TROPOMI NO2")
 
                     if obs.sat_type == "tropomi_l2_hcho":
                         from melodies_monet.util import sat_l2_swath_utility as troputil
@@ -1294,23 +1351,15 @@ class analysis:
                         _qa_min = (obs.variable_dict or {}).get(
                             "qa_value", {}).get("qa_min", 0.5)
                         
-                        paired_data_atgrid = troputil.regrid_and_apply_weights_tropomi_hcho(
-                            obs.obj, mod_obj_for_sat, species=mod_sp, method=regrid_method,  qa_min=_qa_min,
-                        )
+                        _targets, _res, _units, _extent = self._sat_regrid_targets(obs)
 
-                        p = pair()
-                        paired_data = paired_data_atgrid.sel(
-                            time=slice(self.start_time, self.end_time)
+                        paired_dict = troputil.regrid_and_apply_weights_tropomi_hcho(
+                            obs.obj, mod_obj_for_sat, species=mod_sp, method=regrid_method,
+                            qa_min=_qa_min, regrid_target=_targets, obs_grid_res=_res, 
+                            obs_grid_units=_units, obs_grid_extent=_extent,
                         )
-                        p.type = obs.obs_type
-                        p.obs = obs.label
-                        p.model = mod.label
-                        p.model_vars = keys
-                        p.obs_vars = obs_vars
-                        p.obj = paired_data
-                        label = "{}_{}".format(p.obs, p.model)
-                        p.filename = "{}.nc".format(label)
-                        self.paired[label] = p
+                        self._store_sat_pairs(
+                            paired_dict, obs, mod, keys, obs_vars, "TROPOMI HCHO")                        
 
                     if obs.sat_type == "tropomi_l2_co":
                         # TROPOMI CO same as HCHO but the column AK is dimensionless 
@@ -1334,31 +1383,16 @@ class analysis:
                         _qa_min = (obs.variable_dict or {}).get(
                             "qa_value", {}).get("qa_min", 0.5)
 
-                        paired_data_atgrid = troputil.regrid_and_apply_weights_tropomi_co(
+                        _targets, _res, _units, _extent = self._sat_regrid_targets(obs)
+
+                        paired_dict = troputil.regrid_and_apply_weights_tropomi_co(
                             obs.obj, mod_obj_for_sat, species=mod_sp,
                             method=regrid_method, qa_min=_qa_min,
+                            regrid_target=_targets, obs_grid_res=_res,
                         )
-
-                        if not paired_data_atgrid.sizes:
-                            print(
-                                f"Warning: no TROPOMI CO granules paired for {obs.label} "
-                                "(empty obs read / wrong date glob / no model overlap). Skipping."
-                            )
-                        else:
-                            p = pair()
-                            paired_data = paired_data_atgrid.sel(
-                                time=slice(self.start_time, self.end_time)
-                            )
-                            p.type = obs.obs_type
-                            p.obs = obs.label
-                            p.model = mod.label
-                            p.model_vars = keys
-                            p.obs_vars = obs_vars
-                            p.obj = paired_data
-                            label = "{}_{}".format(p.obs, p.model)
-                            p.filename = "{}.nc".format(label)
-                            self.paired[label] = p
-
+                        
+                        self._store_sat_pairs(
+                            paired_dict, obs, mod, keys, obs_vars, "TROPOMI CO")
                     
                     ############################# TEMPO #############################                           
                     ############################# TEMPO #############################
