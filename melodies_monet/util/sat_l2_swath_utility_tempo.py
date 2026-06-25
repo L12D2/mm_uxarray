@@ -974,6 +974,10 @@ def back_to_modgrid(
     path="Regridded_object_XYZ.nc",
     method="bilinear",
     grid_path=None,
+    regrid_target="model",
+    obs_grid_res=0.1,
+    obs_grid_units="deg",
+    obs_grid_extent=None,
 ):
     """Grids object in sat-space to modgrid. Designed to grid back to modgrid after applying
     the scattering weights and air mass factors. It is designed for a single scan.
@@ -1031,57 +1035,74 @@ def back_to_modgrid(
     end_time = np.array(
         paireddict[ordered_keys[-1]].attrs["final_time_string"], dtype="datetime64[ns]"
     )
-    if grid_path is not None:
-        grid = xr.open_dataset(grid_path)
-        regridder = xe.Regridder(concatenated, grid, method=method, unmapped_to_nan=True)
-        out_regridded = regridder(concatenated)
-    elif modobj.attrs.get("mio_has_unstructured_grid", False):
-        # Unstructured target: bypass xESMF (which OOMs on 1-D ncol targets).
-        # Conservative goes mesh-to-mesh via xregrid; else cKDTree radius-mean.
-        out_regridded = _unstructured_back_to_modgrid(
-            concatenated, modobj, method=method
-        )
-    else:
-        regridder = xe.Regridder(concatenated, modobj, method=method, unmapped_to_nan=True)
-        out_regridded = regridder(concatenated)
-    for v in out_regridded.variables:
-        if v in concatenated.variables:
-            out_regridded[v].attrs = concatenated[v].attrs
-        else:
-            warnings.warn(f"Variable {v} not found in mod2grid nor obs2grid. Continuing.")
-    out_regridded.attrs["reference_time_string"] = ref_times
-    out_regridded.attrs["granules"] = np.array(granules)
+
+    # enables regridding to obs or model space 
+    targets = [regrid_target] if isinstance(regrid_target, str) else list(regrid_target)
+    
+    from melodies_monet.util.sat_l2_swath_utility import _swath2latlon, _model_lonlat_extent
+    _extent = tuple(obs_grid_extent) if obs_grid_extent else _model_lonlat_extent(modobj)
+    
     scan_num = concatenated.attrs["scan_num"]
-    out_regridded.attrs["scan_num"] = scan_num
-    out_regridded = out_regridded.where(np.isfinite(out_regridded))
-    if add_time:
-        time = [np.array(ref_times[0], dtype="datetime64[ns]")]
-        da_time = xr.DataArray(
-            name="time",
-            data=time,
-            dims=["time"],
-            attrs={"description": "Reference start time of first selected granule in scan."},
-            coords={"time": (("time",), time)},
-        )
-        out_regridded = out_regridded.expand_dims(time=da_time)
-        out_regridded["end_time"] = (("time",), [end_time])
-        out_regridded["end_time"].attrs = {
-            "description": "time at which the last swath of the scan starts"
-        }
-    if to_netcdf:
-        if "XYZ" in path:
-            scan_num = out_regridded.attrs["scan_num"]
-            out_regridded.to_netcdf(
-                path.replace(
-                    "XYZ",
-                    f"S{scan_num:03d}_{out_regridded['time'].values.astype(str)[0][0:19]}",
-                )
+
+    results = {}
+    for _tgt in targets:
+        if _tgt == "obs":
+            _dvars = [
+                v for v in concatenated.data_vars
+                if v not in ("lon", "lat", "longitude", "latitude")
+                and "bounds" not in v
+            ]
+            out_regridded = _swath2latlon(
+                concatenated, _dvars, obs_grid_res, _extent, units=obs_grid_units
+            )
+        elif grid_path is not None:
+            grid = xr.open_dataset(grid_path)
+            regridder = xe.Regridder(concatenated, grid, method=method, unmapped_to_nan=True)
+            out_regridded = regridder(concatenated)
+        elif modobj.attrs.get("mio_has_unstructured_grid", False):
+            # Unstructured target bypass xESMF (memory issues on 1-D ncol targets)
+            # Conservative goes mesh-to-mesh via xregrid; else cKDTree radius-mean
+            out_regridded = _unstructured_back_to_modgrid(
+                concatenated, modobj, method=method
             )
         else:
-            out_regridded.to_netcdf(path)
+            regridder = xe.Regridder(concatenated, modobj, method=method, unmapped_to_nan=True)
+            out_regridded = regridder(concatenated)
 
-    return out_regridded
-
+        # shared post-processing 
+        for v in out_regridded.variables:
+            if v in concatenated.variables:
+                out_regridded[v].attrs = concatenated[v].attrs
+        out_regridded.attrs["reference_time_string"] = ref_times
+        out_regridded.attrs["granules"] = np.array(granules)
+        out_regridded.attrs["scan_num"] = scan_num
+        out_regridded = out_regridded.where(np.isfinite(out_regridded))
+        if add_time:
+            time = [np.array(ref_times[0], dtype="datetime64[ns]")]
+            da_time = xr.DataArray(
+                name="time",
+                data=time,
+                dims=["time"],
+                attrs={"description": "Reference start time of first selected granule in scan."},
+                coords={"time": (("time",), time)},
+            )
+            out_regridded = out_regridded.expand_dims(time=da_time)
+            out_regridded["end_time"] = (("time",), [end_time])
+            out_regridded["end_time"].attrs = {
+                "description": "time at which the last swath of the scan starts"
+            }
+        if to_netcdf and _tgt == "model":
+            if "XYZ" in path:
+                out_regridded.to_netcdf(
+                    path.replace(
+                        "XYZ",
+                        f"S{scan_num:03d}_{out_regridded['time'].values.astype(str)[0][0:19]}",
+                    )
+                )
+            else:
+                out_regridded.to_netcdf(path)
+        results[_tgt] = out_regridded
+    return results
 
 def back_to_modgrid_multiscan(
     paireddict,
@@ -1090,6 +1111,10 @@ def back_to_modgrid_multiscan(
     path="Regridded_object_XYZ.nc",
     method="bilinear",
     grid_path=None,
+    regrid_target="model",
+    obs_grid_res=0.1,
+    obs_grid_units="deg",
+    obs_grid_extent=None,
 ):
     """Grids object in sat-space to modgrid. Designed to grid back to modgrid after applying
     the scattering weights and air mass factors. It is designed for multiple scans, and uses
@@ -1110,13 +1135,18 @@ def back_to_modgrid_multiscan(
         be ignored.
     method : str
         Method of regridding used by xESMF
-
+    regrid_target: defaults to regridding unstructured grids to model space . If user 
+                   specifies [model, obs] in yaml key argument, then regridding of obs will occur to model and obs space 
+    
     Returns
     -------
     xr.Dataset
         Dataset with obj2grid regridded to modobj.
     """
-    out_regridded = xr.Dataset()
+
+    targets = [regrid_target] if isinstance(regrid_target, str) else list(regrid_target)
+    out_by = {t: xr.Dataset() for t in targets}
+
     ordered_keys = sorted(list(paireddict.keys()))
     if not ordered_keys:
         raise ValueError(
@@ -1124,7 +1154,13 @@ def back_to_modgrid_multiscan(
             "Every granule was discarded as 'no overlap with model' upstream. "
             "Check is_nonpairable() and the model/obs longitude conventions "
             "(model in 0..360 vs obs in -180..180 is a common cause).")
-            
+    
+    _kw = dict(
+        method=method, grid_path=grid_path, regrid_target=targets,
+        obs_grid_res=obs_grid_res, obs_grid_units=obs_grid_units,
+        obs_grid_extent=obs_grid_extent,
+    )
+    
     scan_num = paireddict[ordered_keys[0]].attrs["scan_num"]
     keys_in_scan = [ordered_keys[0]]
     if len(ordered_keys) > 1:
@@ -1132,26 +1168,26 @@ def back_to_modgrid_multiscan(
             if paireddict[k].attrs["scan_num"] == scan_num:
                 keys_in_scan.append(k)
             else:
-                regridded_scan = back_to_modgrid(
-                    paireddict, modobj, keys_in_scan, method=method, grid_path=grid_path
-                )
-                out_regridded = xr.merge([out_regridded, regridded_scan])
+                scan_dict = back_to_modgrid(paireddict, modobj, keys_in_scan, **_kw)
+                for t in targets:
+                    out_by[t] = xr.merge([out_by[t], scan_dict[t]])
                 scan_num = paireddict[k].attrs["scan_num"]
                 keys_in_scan = [k]
-    regridded_scan = back_to_modgrid(
-        paireddict, modobj, keys_in_scan, add_time=True, method=method, grid_path=grid_path
-    )
-    out_regridded = xr.merge([out_regridded, regridded_scan])
+    scan_dict = back_to_modgrid(paireddict, modobj, keys_in_scan, add_time=True, **_kw)
+    for t in targets:
+        out_by[t] = xr.merge([out_by[t], scan_dict[t]])
 
     if to_netcdf:
-        if "XYZ" in path:
-            first_time = out_regridded["time"][0].values.astype(str)[0:19]
-            last_time = out_regridded["time"][-1].values.astype(str)[0:19]
-            out_regridded.to_netcdf(path.replace("XYZ", f"{first_time}_{last_time}"))
-        else:
-            out_regridded.to_netcdf(path)
+        for t in targets:
+            _p = path if t == "model" else path.replace(".nc", f"_{t}.nc")
+            if "XYZ" in _p:
+                first_time = out_by[t]["time"][0].values.astype(str)[0:19]
+                last_time = out_by[t]["time"][-1].values.astype(str)[0:19]
+                out_by[t].to_netcdf(_p.replace("XYZ", f"{first_time}_{last_time}"))
+            else:
+                out_by[t].to_netcdf(_p)
 
-    return out_regridded
+    return out_by
 
 
 def read_paired_gridded_tempo_model(path):

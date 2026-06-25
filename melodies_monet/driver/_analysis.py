@@ -287,6 +287,20 @@ class analysis:
 
         return targets, res, units, extent
 
+    def _pair_uxgrid(self, p):
+        """Return the model's uxgrid only for *unstructured* pairs.
+
+        Model-space unstructured mesh (n_face/ncol) and need
+        the uxgrid for polygon rendering 
+        
+        Obs-space ('_obsgrid') pairs are a regular
+        lat/lon grid (dims y/x, no n_face) and must plot via the structured path 
+        """
+        dims = set(getattr(getattr(p, "obj", None), "dims", ()))
+        if dims & {"n_face", "ncol"}:
+            return getattr(self.models.get(p.model), "uxgrid", None)
+        return None
+        
     def _store_sat_pairs(self, paired_dict, obs, mod, keys, obs_vars, label_tag):
         """Store satellite pairs from a dict into self.paired
 
@@ -1432,26 +1446,15 @@ class analysis:
                         paired_data_atswath = sutil.regrid_and_apply_weights(
                             obs.obj, mod_obj_for_sat, species=mod_sp, method=regrid_method, tempo_sp=sat_sp)
                         
-                        paired_data_atgrid = sutil.back_to_modgrid_multiscan(
-                            paired_data_atswath, model_obj, method=regrid_method
+                        _targets, _res, _units, _extent = self._sat_regrid_targets(obs)
+                        paired_dict = sutil.back_to_modgrid_multiscan(
+                            paired_data_atswath, model_obj, method=regrid_method,
+                            regrid_target=_targets, obs_grid_res=_res,
+                            obs_grid_units=_units, obs_grid_extent=_extent,
                         )
 
-                        p = pair()
-
-                        paired_data = paired_data_atgrid.sel(
-                            time=slice(self.start_time, self.end_time)
-                        )
-
-                        p.type = obs.obs_type
-                        p.obs = obs.label
-                        p.model = mod.label
-                        p.model_vars = keys
-                        p.obs_vars = obs_vars
-                        p.obj = paired_data
-                        label = "{}_{}".format(p.obs, p.model)
-                        p.filename = "{}.nc".format(label)
-
-                        self.paired[label] = p
+                        self._store_sat_pairs(
+                            paired_dict, obs, mod, keys, obs_vars, f"TEMPO {sat_sp}")
 
                 # if sat_grid_clm (satellite l3 column products)
                 elif obs.obs_type.lower() == "sat_grid_clm":
@@ -3460,9 +3463,7 @@ class analysis:
                                     "fig_dict": fig_dict,
                                     "text_dict": text_dict,
                                     "debug": self.debug,
-                                    "uxgrid": getattr(
-                                        self.models.get(p.model), "uxgrid", None
-                                    ),
+                                    "uxgrid": self._pair_uxgrid(p),
                                 },
                             }
                             make_spatial_bias_gridded(**plot_kwargs)
@@ -3488,9 +3489,7 @@ class analysis:
                                 "fig_dict": fig_dict,
                                 "text_dict": text_dict,
                                 "debug": self.debug,
-                                "uxgrid": getattr(
-                                    self.models.get(p.model), "uxgrid", None
-                                ),
+                                "uxgrid": self._pair_uxgrid(p),
                             }
                             if isinstance(plot_kwargs["vmax"], str):
                                 plot_kwargs["vmax"] = float(plot_kwargs["vmax"])
@@ -3649,7 +3648,7 @@ class analysis:
                                     domain_name=domain_name,
                                     fig_dict=fig_dict,
                                     text_dict=text_dict,
-                                    uxgrid=getattr(self.models[p.model], "uxgrid", None), 
+                                    uxgrid=self._pair_uxgrid(p),
                                     debug=self.debug,
                                 )
                             else:

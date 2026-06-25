@@ -180,3 +180,7 @@ docs/examples/ungridded_support/unstructured_grid_read_uxarray/jun_zhang_cs_0612
 docs/examples/ungridded_support/unstructured_grid_read_uxarray/jun_zhang_cs_06122026/output_021324/*.nc4
 /glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/output
 /glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/jun_zhang_cs_06122026/output_021324
+docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/test/test_tempo_l2_hcho_cam-chem-se.nc4
+docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/test/test_tempo_l2_hcho_cam-chem-se_obsgrid.nc4
+docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/test/test_tempo_l2_no2_cam-chem-se.nc4
+docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/test/test_tempo_l2_no2_cam-chem-se_obsgrid.nc4

@@ -209,6 +209,20 @@ plots:
       ts_avg_window: 'h' 
       set_axis: True 
 
+  plot_grp1_no2_tempo:
+    type: 'timeseries'
+    fig_kwargs: {figsize: [12, 6]}
+    default_plot_kwargs: {linewidth: 2.0, markersize: 10.}
+    text_kwargs: {fontsize: 18.}
+    domain_type: ["all", "auto-region:giorgi", "auto-region:box"]
+    domain_name: ["CONUS", "CNA", "SE_US"]
+    domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
+    data: ['tempo_l2_no2_cam-chem-se']
+    data_proc:
+      rem_obs_nan: True 
+      ts_avg_window: 'h' 
+      set_axis: True 
+      
   plot_grp1_no2_tropo:
     type: 'timeseries'
     fig_kwargs: {figsize: [12, 6]}
@@ -223,7 +237,7 @@ plots:
       ts_avg_window: 'h' 
       set_axis: True 
 
-  plot_grp1_hcho_tempo:
+  plot_grp1_hcho_tropo:
     type: 'timeseries'
     fig_kwargs: {figsize: [12, 6]}
     default_plot_kwargs: {linewidth: 2.0, markersize: 10.}
@@ -231,7 +245,7 @@ plots:
     domain_type: ["all", "auto-region:giorgi", "auto-region:box"]
     domain_name: ["CONUS", "CNA", "SE_US"]
     domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
-    data: ['tempo_l2_hcho_cam-chem-se']
+    data: ['tropomi_l2_hcho_cam-chem-se']
     data_proc:
       rem_obs_nan: True 
       ts_avg_window: 'h' 

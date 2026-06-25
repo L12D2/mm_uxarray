@@ -376,20 +376,38 @@ def _swath2latlon(swath, data_vars, res, extent, units = "deg"):
     tlat1 = np.arange(latmin, latmax + dlat, dlat)
     tlon2, tlat2 = np.meshgrid(tlon1, tlat1)        # (lat, lon)
 
+    # handle the lat lon naming between satellites 
+    # tropomi carry long / lat on (y,x) where tempo does lon / lat on (x,y)
+    # rename to longintude latitude 
+    ren = {}
+    if "longitude" not in swath.variables and "lon" in swath.variables:
+        ren["lon"] = "longitude"
+    if "latitude" not in swath.variables and "lat" in swath.variables:
+        ren["lat"] = "latitude"
+    if ren:
+        swath = swath.rename(ren)
+    _to_coord = [c for c in ("longitude", "latitude") if c in swath.data_vars]
+    if _to_coord:
+        swath = swath.set_coords(_to_coord)
+    hdims = list(swath["longitude"].dims)            # (y, x) or (x, y)
+    
     flat = (
         swath[data_vars]
-        .stack(pixel=("y", "x"))
+        .stack(pixel=hdims)
         .reset_index("pixel", drop=True)
-        .set_coords(["longitude", "latitude"])
     )
+    
     # search radius ~ cell size, but at least ~5 km (sensor footprint) so a
     # finer-than-sensor grid fills from the nearest pixel instead of going empty.
     radius = max(float(dlat), 0.05)
     out = regrid(flat, target={"lon": tlon2, "lat": tlat2},
                  method="radius_mean", radius=radius, target_dims=("lat", "lon"))
     out = out.where(out != 0)        # empty cells -> NaN, not 0
-    
-    return out.assign_coords(lon=("lon", tlon1), lat=("lat", tlat1))
+
+    out = out.assign_coords(lon=("lon", tlon1), lat=("lat", tlat1))
+
+    # want to make sure these regrided lat lon pairs can just run through the existing plotting 
+    return out.rename({"lat": "y", "lon": "x"})
 
 def _swath_to_target(swath, modobj, method, data_vars, target, res, extent, units="deg" ):
     """Regrid the paired swath onto the requested target space

@@ -24,12 +24,20 @@ analysis:
       method: 'netcdf'
       filenames:
         
-        tempo_l2_hcho_cam-chem-se: ['/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/test/202406*_tempo_l2_hcho_cam-chem-se.nc4']
-        tempo_l2_no2_cam-chem-se: ['/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/test/202406*_tempo_l2_no2_cam-chem-se.nc4'] 
+        tempo_l2_hcho_cam-chem-se: ['/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/test/test_tempo_l2_hcho_cam-chem-se.nc4']
+        tempo_l2_no2_cam-chem-se: ['/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/test/test_tempo_l2_no2_cam-chem-se.nc4'] 
         
-        tropomi_l2_no2_cam-chem-se: ['/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/test/202406*_tropomi_l2_no2_cam-chem-se.nc4']
-        tropomi_l2_hcho_cam-chem-se: ['/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/test/202406*_tropomi_l2_hcho_cam-chem-se.nc4']
-        tropomi_l2_co_cam-chem-se: ['/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/test/202406*_tropomi_l2_co_cam-chem-se.nc4']
+        tropomi_l2_no2_cam-chem-se: ['/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/test/test_tropomi_l2_no2_cam-chem-se.nc4']
+        tropomi_l2_hcho_cam-chem-se: ['/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/test/test_tropomi_l2_hcho_cam-chem-se.nc4']
+        tropomi_l2_co_cam-chem-se: ['/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/test/test_tropomi_l2_co_cam-chem-se.nc4']
+
+        # regridded to fixed lat lon 
+        tempo_l2_hcho_cam-chem-se_obsgrid: ["/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/test/test_tempo_l2_hcho_cam-chem-se_obsgrid.nc4"]
+        tempo_l2_no2_cam-chem-se_obsgrid: ["/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/test/test_tempo_l2_no2_cam-chem-se_obsgrid.nc4"]
+        
+        tropomi_l2_no2_cam-chem-se_obsgrid: ["/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/test/test_tropomi_l2_no2_cam-chem-se_obsgrid.nc4"]
+        tropomi_l2_hcho_cam-chem-se_obsgrid: ["/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/test/test_tropomi_l2_hcho_cam-chem-se_obsgrid.nc4"]
+        tropomi_l2_co_cam-chem-se_obsgrid: ["/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/test/test_tropomi_l2_co_cam-chem-se_obsgrid.nc4"]
         
   debug: false
 
@@ -45,45 +53,55 @@ analysis:
 
 obs:
 
-  # tempo_l2_hcho:
-  #   regrid_method: nearest_s2d # conservative
-  #   debug: false
-  #   #filename: /glade/campaign/acom/acom-da/sma/TEMPO_HCHO_V03/TEMPO_HCHO_L2_V03_20240630T*_S0*
-  #   #filename: /glade/campaign/acom/acom-da/sma/TEMPO_HCHO_V03/TEMPO_HCHO_L2_V03_202403*_S*
-  #   filename: /glade/campaign/acom/acom-da/sma/TEMPO_HCHO_V03/TEMPO_HCHO_L2_V03_202406*_S*
-  #   # filename: /glade/campaign/acom/acom-da/sma/TEMPO_HCHO_V03/TEMPO_HCHO_L2_V03_202403*_S*
-  #   # filename: /glade/campaign/acom/acom-da/sma/TEMPO_HCHO_V03/TEMPO_HCHO_L2_V03_20240315*_S*
-  #   obs_type: sat_swath_clm
-  #   sat_type: tempo_l2_hcho
-  #   variables:
-  #     main_data_quality_flag:
-  #       main_data_quality_flag_max: 0
-  #       var_applied: ['vertical_column']
-  #     vertical_column:                 # HCHO total column (molecules/cm^2)
-  #       ylabel_plot: 'HCHO column'
-  #       vmin_plot: 0
-  #       vmax_plot: 3.0e+16
-  #       nlevels_plot: 21
-  #     pressure: {}
-  #     scattering_weights: {}
-  #     amf: {}
-  #     latitude_bounds: {}
-  #     longitude_bounds: {}
+  tempo_l2_hcho:
+    regrid_target: [model, obs]   # default 'model'; 'obs' = lat/lon L3 grid
+    obs_grid_res: 7
+    obs_grid_extent: [-130, -60, 20, 55] # [lonW, lonE, latS, latN]; default = model extent
+    obs_grid_units: km            # 'deg' (default) | 'km' | 'm'
+    
+    regrid_method: nearest_s2d # conservative
+    debug: false
+    #filename: /glade/campaign/acom/acom-da/sma/TEMPO_HCHO_V03/TEMPO_HCHO_L2_V03_20240630T*_S0*
+    #filename: /glade/campaign/acom/acom-da/sma/TEMPO_HCHO_V03/TEMPO_HCHO_L2_V03_202403*_S*
+    filename: /glade/campaign/acom/acom-da/sma/TEMPO_HCHO_V03/TEMPO_HCHO_L2_V03_20240601*_S*
+    # filename: /glade/campaign/acom/acom-da/sma/TEMPO_HCHO_V03/TEMPO_HCHO_L2_V03_202403*_S*
+    # filename: /glade/campaign/acom/acom-da/sma/TEMPO_HCHO_V03/TEMPO_HCHO_L2_V03_20240315*_S*
+    obs_type: sat_swath_clm
+    sat_type: tempo_l2_hcho
+    variables:
+      main_data_quality_flag:
+        main_data_quality_flag_max: 0
+        var_applied: ['vertical_column']
+      vertical_column:                 # HCHO total column (molecules/cm^2)
+        ylabel_plot: 'HCHO column'
+        vmin_plot: 0
+        vmax_plot: 3.0e+16
+        nlevels_plot: 21
+      pressure: {}
+      scattering_weights: {}
+      amf: {}
+      latitude_bounds: {}
+      longitude_bounds: {}
       
-  # tempo_l2_no2:
-  #   obs_type: sat_swath_clm
-  #   sat_type: tempo_l2_no2
-  #   regrid_method: nearest_s2d          
-  #   filename: /glade/campaign/acom/acom-da/sma/TEMPO_NO2_V03/TEMPO_NO2_L2_V03_202406*_S0*
-  #   variables:
-  #     main_data_quality_flag: {main_data_quality_flag_max: 0, var_applied: ['vertical_column_troposphere']}
-  #     vertical_column_troposphere: {ylabel_plot: 'NO2 trop. column', vmin_plot: 0, vmax_plot: 1.0e+16}
-  #     pressure: {}
-  #     tropopause_pressure: {}
-  #     scattering_weights: {}
-  #     amf_troposphere: {}
-  #     latitude_bounds: {}
-  #     longitude_bounds: {}
+  tempo_l2_no2:
+    regrid_target: [model, obs]   # default 'model'; 'obs' = lat/lon L3 grid
+    obs_grid_res: 7
+    obs_grid_extent: [-130, -60, 20, 55] # [lonW, lonE, latS, latN]; default = model extent
+    obs_grid_units: km            # 'deg' (default) | 'km' | 'm'
+    
+    obs_type: sat_swath_clm
+    sat_type: tempo_l2_no2
+    regrid_method: nearest_s2d          
+    filename: /glade/campaign/acom/acom-da/sma/TEMPO_NO2_V03/TEMPO_NO2_L2_V03_20240601*_S0*
+    variables:
+      main_data_quality_flag: {main_data_quality_flag_max: 0, var_applied: ['vertical_column_troposphere']}
+      vertical_column_troposphere: {ylabel_plot: 'NO2 trop. column', vmin_plot: 0, vmax_plot: 1.0e+16}
+      pressure: {}
+      tropopause_pressure: {}
+      scattering_weights: {}
+      amf_troposphere: {}
+      latitude_bounds: {}
+      longitude_bounds: {}
   
   tropomi_l2_no2:
     regrid_target: [model, obs]   # default 'model'; 'obs' = lat/lon L3 grid
@@ -170,8 +188,8 @@ model:
     scrip_file: "/glade/campaign/acom/MUSICA/grids/ne0CONUSne30x8/ne0CONUS_ne30x8_np4_SCRIP.nc"
     mod_type: 'cesm_se' 
     mapping:
-      # tempo_l2_hcho:  {CH2O: "vertical_column"}
-      # tempo_l2_no2:   {NO2:  "vertical_column_troposphere"}
+      tempo_l2_hcho:  {CH2O: "vertical_column"}
+      tempo_l2_no2:   {NO2:  "vertical_column_troposphere"}
       tropomi_l2_no2: {NO2:  "nitrogendioxide_tropospheric_column"}    
       tropomi_l2_hcho: {CH2O: "formaldehyde_tropospheric_vertical_column"}
       tropomi_l2_co: {CO: "carbonmonoxide_total_column"}
@@ -229,6 +247,21 @@ plots:
   #     set_axis: true
   #     vdiff: 2.0e+16 
 
+  # plot_grp2_hcho_obsgrid:
+  #   type: 'gridded_spatial_bias'
+  #   fig_kwargs: {states: true, counties: false}
+  #   text_kwargs: {fontsize: 16}
+    
+  #   domain_type: ["all", "auto-region:giorgi", "auto-region:box"]
+  #   domain_name: ["CONUS", "CNA", "SE_US"]
+  #   domain_info:
+  #     SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}
+    
+  #   data: ['tempo_l2_hcho_cam-chem-se_obsgrid','tempo_l2_hcho_cam-chem-se_obsgrid']
+  #   data_proc: 
+  #     set_axis: true
+  #     vdiff: 2.0e+16 
+      
   # plot_grp2_no2:
   #   type: 'gridded_spatial_bias'
   #   fig_kwargs: {states: true, counties: false}
@@ -273,16 +306,26 @@ plots:
   #   data_proc:
   #     set_axis: true
       
-  # plot_grp4_hcho:
-  #   type: "boxplot"
-  #   fig_kwargs: {figsize: [8, 6]}
-  #   text_kwargs: {fontsize: 20.}
-  #   domain_type: ["all", "auto-region:giorgi", "auto-region:box"]
-  #   domain_name: ["CONUS", "CNA", "SE_US"]
-  #   domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
-  #   data: ['tempo_l2_hcho_cam-chem-se', 'tropomi_l2_hcho_cam-chem-se']
-  #   data_proc: {rem_obs_nan: True, set_axis: True}
+  plot_grp4_hcho:
+    type: "boxplot"
+    fig_kwargs: {figsize: [8, 6]}
+    text_kwargs: {fontsize: 20.}
+    domain_type: ["all", "auto-region:giorgi", "auto-region:box"]
+    domain_name: ["CONUS", "CNA", "SE_US"]
+    domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
+    data: ['tempo_l2_hcho_cam-chem-se', 'tropomi_l2_hcho_cam-chem-se']
+    data_proc: {rem_obs_nan: True, set_axis: True}
 
+  plot_grp4_hcho_obsgrid:
+    type: "boxplot"
+    fig_kwargs: {figsize: [8, 6]}
+    text_kwargs: {fontsize: 20.}
+    domain_type: ["all", "auto-region:giorgi", "auto-region:box"]
+    domain_name: ["CONUS", "CNA", "SE_US"]
+    domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
+    data: ['tempo_l2_hcho_cam-chem-se_obsgrid','tempo_l2_hcho_cam-chem-se_obsgrid']
+    data_proc: {rem_obs_nan: True, set_axis: True}
+    
   # plot_grp4_no2:
   #   type: "boxplot"
   #   fig_kwargs: {figsize: [8, 6]}
