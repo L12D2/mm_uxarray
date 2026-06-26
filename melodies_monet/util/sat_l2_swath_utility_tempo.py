@@ -1053,7 +1053,7 @@ def back_to_modgrid(
                 and "bounds" not in v
             ]
             out_regridded = _swath2latlon(
-                concatenated, _dvars, obs_grid_res, _extent, units=obs_grid_units
+                concatenated, _dvars, obs_grid_res, _extent, units=obs_grid_units, method=method,
             )
         elif grid_path is not None:
             grid = xr.open_dataset(grid_path)

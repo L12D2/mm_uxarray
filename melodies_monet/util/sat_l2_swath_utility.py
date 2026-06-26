@@ -357,7 +357,7 @@ def _model_lonlat_extent(modobj, pad=0.0):
             float(np.nanmin(mlat)) - pad, float(np.nanmax(mlat)) + pad)
 
 
-def _swath2latlon(swath, data_vars, res, extent, units = "deg"):
+def _swath2latlon(swath, data_vars, res, extent, units = "deg", method="radius_mean"):
     """Regrid swath-paired fields (y, x) onto a regular lat/lon grid 
 
     use radius mean averaging 
@@ -392,6 +392,39 @@ def _swath2latlon(swath, data_vars, res, extent, units = "deg"):
     _to_coord = [c for c in ("longitude", "latitude") if c in swath.data_vars]
     if _to_coord:
         swath = swath.set_coords(_to_coord)
+
+    # insert a conservative regriding option 
+    # Builds the swath source mesh from corner bounds and a rectilinear target
+    # mesh, then mesh-to-mesh conservative regrid
+    # Fall back to radius_mean if bounds are missing
+    
+    if method in _CONSERVATIVE and "longitude_bounds" in swath.variables:
+        try:
+            import uxarray as ux
+
+            swath_grid, _ = _tropomi_swath_mesh(swath)
+            _hd = tuple(swath["longitude"].dims)
+            _flat = (
+                swath[data_vars].stack(n_face=_hd).reset_index("n_face", drop=True)
+            )
+            _flat = _flat.drop_vars(
+                [c for c in _flat.coords if "n_face" in _flat[c].dims], errors="ignore")
+            _src = ux.UxDataset(_flat, uxgrid=swath_grid)
+            _tgt = ux.Grid.from_structured(lon=tlon1, lat=tlat1)
+            _out = regrid(_src, method=method, target_grid=_tgt)
+            _out = _out.where(_out != 0)        # empty cells go to  NaN, not 0
+
+            _nlat, _nlon = tlat1.size, tlon1.size
+            _ncell = _nlat * _nlon
+            _fd = next((d for d in _out.dims if _out.sizes.get(d) == _ncell), None)
+            if _fd is None:
+                raise ValueError("conservative target face dim not found after regrid")
+            _res = xr.Dataset()
+            for v in _out.data_vars:
+                da = _out[v]
+                if _fd not in da.dims:
+                    continue
+    
     hdims = list(swath["longitude"].dims)            # (y, x) or (x, y)
     
     flat = (
@@ -423,7 +456,7 @@ def _swath_to_target(swath, modobj, method, data_vars, target, res, extent, unit
     if target == "model":
         return _tropomi_swath2mod(swath, modobj, method, data_vars)
     if target == "obs":
-        return _swath2latlon(swath, data_vars, res, extent, units=units)
+        return _swath2latlon(swath, data_vars, res, extent, units=units, method=method)
     raise ValueError(f"regrid_target {target!r} not understood; use 'model' or 'obs'.")
 
 def apply_weights_mod2tropomi_no2(obsobj, modobj_on_tropomi_layers, species="NO2"):
