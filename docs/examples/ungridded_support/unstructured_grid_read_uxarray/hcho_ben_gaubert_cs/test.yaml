@@ -199,175 +199,204 @@ model:
     plot_kwargs: {color: 'purple', marker: '^', linestyle: 'dotted'}
 
 plots:
-  # plot_grp1_hcho:
-  #   type: 'timeseries'
-  #   fig_kwargs: {figsize: [12, 6]}
-  #   default_plot_kwargs: {linewidth: 2.0, markersize: 10.}
-  #   text_kwargs: {fontsize: 18.}
-  #   domain_type: ["all", "auto-region:giorgi", "auto-region:box"]
-  #   domain_name: ["CONUS", "CNA", "SE_US"]
-  #   domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
-  #   data: ['tempo_l2_hcho_cam-chem-se', 'tropomi_l2_hcho_cam-chem-se']
-  #   data_proc: {ts_offset: (-4, 'h'), ts_avg_window: 'h', set_axis: true}
 
-  # plot_grp1_no2:
-  #   type: 'timeseries'
-  #   fig_kwargs: {figsize: [12, 6]}
-  #   default_plot_kwargs: {linewidth: 2.0, markersize: 10.}
-  #   text_kwargs: {fontsize: 18.}
-  #   domain_type: ["all", "auto-region:giorgi", "auto-region:box"]
-  #   domain_name: ["CONUS", "CNA", "SE_US"]
-  #   domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
-  #   data: ['tempo_l2_no2_cam-chem-se', 'tropomi_l2_no2_cam-chem-se']
-  #   data_proc: {ts_offset: (-4, 'h'), ts_avg_window: 'h', set_axis: true}
+  plot_ts_tempo_hcho:
+    type: 'timeseries'
+    fig_kwargs: {figsize: [12, 6]}
+    default_plot_kwargs: {linewidth: 2.0, markersize: 10.}
+    text_kwargs: {fontsize: 18.}
+    domain_type: ["all",]
+    domain_name: ["CONUS",]
+    domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
+    data: ['tempo_l2_hcho_cam-chem-se', 'tempo_l2_hcho_cam-chem-se_obsgrid']
+    data_proc: {rem_obs_nan: True, ts_avg_window: 'h', set_axis: False}
 
-  # plot_grp1_co:
-  #   type: 'timeseries'
-  #   fig_kwargs: {figsize: [12, 6]}
-  #   default_plot_kwargs: {linewidth: 2.0, markersize: 10.}
-  #   text_kwargs: {fontsize: 18.}
-  #   domain_type: ["all", "auto-region:giorgi", "auto-region:box"]
-  #   domain_name: ["CONUS", "CNA", "SE_US"]
-  #   domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
-  #   data: ['tropomi_l2_co_cam-chem-se']
-  #   data_proc: {ts_offset: (-4, 'h'), ts_avg_window: 'h', set_axis: true}
+  plot_ts_tempo_no2:
+    type: 'timeseries'
+    fig_kwargs: {figsize: [12, 6]}
+    default_plot_kwargs: {linewidth: 2.0, markersize: 10.}
+    text_kwargs: {fontsize: 18.}
+    domain_type: ["all",]
+    domain_name: ["CONUS",]
+    domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
+    data: ['tempo_l2_no2_cam-chem-se', 'tempo_l2_no2_cam-chem-se_obsgrid']
+    data_proc: {rem_obs_nan: True, ts_avg_window: 'h', set_axis: False}
 
-  # plot_grp2_hcho:
-  #   type: 'gridded_spatial_bias'
-  #   fig_kwargs: {states: true, counties: false}
-  #   text_kwargs: {fontsize: 16}
-    
-  #   domain_type: ["all", "auto-region:giorgi", "auto-region:box"]
-  #   domain_name: ["CONUS", "CNA", "SE_US"]
-  #   domain_info:
-  #     SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}
-    
-  #   data: ['tempo_l2_hcho_cam-chem-se','tropomi_l2_hcho_cam-chem-se']
-  #   data_proc: 
-  #     set_axis: true
-  #     vdiff: 2.0e+16 
+  plot_ts_tropomi_no2:
+    type: 'timeseries'
+    fig_kwargs: {figsize: [12, 6]}
+    default_plot_kwargs: {linewidth: 2.0, markersize: 10.}
+    text_kwargs: {fontsize: 18.}
+    domain_type: ["all",]
+    domain_name: ["CONUS",]
+    domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
+    data: ['tropomi_l2_no2_cam-chem-se', 'tropomi_l2_no2_cam-chem-se_obsgrid']
+    data_proc: {rem_obs_nan: True, ts_avg_window: 'h', set_axis: False}
 
-  # plot_grp2_hcho_obsgrid:
-  #   type: 'gridded_spatial_bias'
-  #   fig_kwargs: {states: true, counties: false}
-  #   text_kwargs: {fontsize: 16}
-    
-  #   domain_type: ["all", "auto-region:giorgi", "auto-region:box"]
-  #   domain_name: ["CONUS", "CNA", "SE_US"]
-  #   domain_info:
-  #     SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}
-    
-  #   data: ['tempo_l2_hcho_cam-chem-se_obsgrid','tempo_l2_hcho_cam-chem-se_obsgrid']
-  #   data_proc: 
-  #     set_axis: true
-  #     vdiff: 2.0e+16 
-      
-  # plot_grp2_no2:
-  #   type: 'gridded_spatial_bias'
-  #   fig_kwargs: {states: true, counties: false}
-  #   text_kwargs: {fontsize: 16}
-    
-  #   domain_type: ["all", "auto-region:giorgi", "auto-region:box"]
-  #   domain_name: ["CONUS", "CNA", "SE_US"]
-  #   domain_info:
-  #     SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}
-    
-  #   data: ['tempo_l2_no2_cam-chem-se', 'tropomi_l2_no2_cam-chem-se']
-  #   data_proc: 
-  #     set_axis: true
-  #     vdiff: 5.0e+15
+  plot_ts_tropomi_hcho:
+    type: 'timeseries'
+    fig_kwargs: {figsize: [12, 6]}
+    default_plot_kwargs: {linewidth: 2.0, markersize: 10.}
+    text_kwargs: {fontsize: 18.}
+    domain_type: ["all",]
+    domain_name: ["CONUS",]
+    domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
+    data: ['tropomi_l2_hcho_cam-chem-se', 'tropomi_l2_hcho_cam-chem-se_obsgrid']
+    data_proc: {rem_obs_nan: True, ts_avg_window: 'h', set_axis: False}
 
-  # plot_grp2_co:
-  #   type: 'gridded_spatial_bias'
-  #   fig_kwargs: {states: true, counties: false}
-  #   text_kwargs: {fontsize: 16}
-    
-  #   domain_type: ["all", "auto-region:giorgi", "auto-region:box"]
-  #   domain_name: ["CONUS", "CNA", "SE_US"]
-  #   domain_info:
-  #     SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}
-    
-  #   data: ['tropomi_l2_co_cam-chem-se']
-  #   data_proc: 
-  #     set_axis: true
-  #     vdiff: 5.0e+17
+  plot_ts_tropomi_co:
+    type: 'timeseries'
+    fig_kwargs: {figsize: [12, 6]}
+    default_plot_kwargs: {linewidth: 2.0, markersize: 10.}
+    text_kwargs: {fontsize: 18.}
+    domain_type: ["all",]
+    domain_name: ["CONUS",]
+    domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
+    data: ['tropomi_l2_co_cam-chem-se', 'tropomi_l2_co_cam-chem-se_obsgrid']
+    data_proc: {rem_obs_nan: True, ts_avg_window: 'h', set_axis: False}
 
-  # plot_grp3:
-  #   type: 'spatial_dist'
-  #   fig_kwargs: {states: true, counties: false}
-  #   text_kwargs: {fontsize: 16}
-    
-  #   domain_type: ["all", "auto-region:giorgi", "auto-region:box"]
-  #   domain_name: ["CONUS", "CNA", "SE_US"]
-  #   domain_info:
-  #     SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}
+  plot_bias_hcho:
+    type: 'gridded_spatial_bias'
+    fig_kwargs: {states: true, counties: false}
+    text_kwargs: {fontsize: 16}
+    domain_type: ["all",]
+    domain_name: ["CONUS",]
+    domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
+    data: ['tempo_l2_hcho_cam-chem-se', 'tempo_l2_hcho_cam-chem-se_obsgrid',
+           'tropomi_l2_hcho_cam-chem-se', 'tropomi_l2_hcho_cam-chem-se_obsgrid']
+    data_proc: {set_axis: false, vdiff: 2.0e+16}
 
-  #   data: ['tempo_l2_hcho_cam-chem-se', 'tempo_l2_no2_cam-chem-se', 'tropomi_l2_no2_cam-chem-se', 'tropomi_l2_hcho_cam-chem-se', 'tropomi_l2_co_cam-chem-se']
-  #   data_proc:
-  #     set_axis: true
-      
-  plot_grp4_hcho:
+  plot_bias_no2:
+    type: 'gridded_spatial_bias'
+    fig_kwargs: {states: true, counties: false}
+    text_kwargs: {fontsize: 16}
+    domain_type: ["all",]
+    domain_name: ["CONUS",]
+    domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
+    data: ['tempo_l2_no2_cam-chem-se', 'tempo_l2_no2_cam-chem-se_obsgrid',
+           'tropomi_l2_no2_cam-chem-se', 'tropomi_l2_no2_cam-chem-se_obsgrid']
+    data_proc: {set_axis: false, vdiff: 5.0e+15}
+
+  plot_bias_co:
+    type: 'gridded_spatial_bias'
+    fig_kwargs: {states: true, counties: false}
+    text_kwargs: {fontsize: 16}
+    domain_type: ["all",]
+    domain_name: ["CONUS",]
+    domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
+    data: ['tropomi_l2_co_cam-chem-se', 'tropomi_l2_co_cam-chem-se_obsgrid']
+    data_proc: {set_axis: false, vdiff: 5.0e+17}
+
+  plot_dist_all:
+    type: 'spatial_dist'
+    fig_kwargs: {states: true, counties: false}
+    text_kwargs: {fontsize: 16}
+    domain_type: ["all",]
+    domain_name: ["CONUS",]
+    domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
+    data: ['tempo_l2_hcho_cam-chem-se', 'tempo_l2_hcho_cam-chem-se_obsgrid',
+           'tempo_l2_no2_cam-chem-se', 'tempo_l2_no2_cam-chem-se_obsgrid',
+           'tropomi_l2_no2_cam-chem-se', 'tropomi_l2_no2_cam-chem-se_obsgrid',
+           'tropomi_l2_hcho_cam-chem-se', 'tropomi_l2_hcho_cam-chem-se_obsgrid',
+           'tropomi_l2_co_cam-chem-se', 'tropomi_l2_co_cam-chem-se_obsgrid']
+    data_proc: {set_axis: false}
+
+  plot_box_tempo_hcho:
     type: "boxplot"
     fig_kwargs: {figsize: [8, 6]}
     text_kwargs: {fontsize: 20.}
-    domain_type: ["all", "auto-region:giorgi", "auto-region:box"]
-    domain_name: ["CONUS", "CNA", "SE_US"]
+    domain_type: ["all",]
+    domain_name: ["CONUS",]
     domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
-    data: ['tempo_l2_hcho_cam-chem-se', 'tropomi_l2_hcho_cam-chem-se']
-    data_proc: {rem_obs_nan: True, set_axis: True}
+    data: ['tempo_l2_hcho_cam-chem-se']
+    data_proc: {rem_obs_nan: True, set_axis: False}
 
-  plot_grp4_hcho_obsgrid:
+  plot_box_tempo_hcho_obsgrid:
     type: "boxplot"
     fig_kwargs: {figsize: [8, 6]}
     text_kwargs: {fontsize: 20.}
-    domain_type: ["all", "auto-region:giorgi", "auto-region:box"]
-    domain_name: ["CONUS", "CNA", "SE_US"]
+    domain_type: ["all",]
+    domain_name: ["CONUS",]
     domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
-    data: ['tempo_l2_hcho_cam-chem-se_obsgrid','tempo_l2_hcho_cam-chem-se_obsgrid']
-    data_proc: {rem_obs_nan: True, set_axis: True}
-    
-  # plot_grp4_no2:
-  #   type: "boxplot"
-  #   fig_kwargs: {figsize: [8, 6]}
-  #   text_kwargs: {fontsize: 20.}
-  #   domain_type: ["all", "auto-region:giorgi", "auto-region:box"]
-  #   domain_name: ["CONUS", "CNA", "SE_US"]
-  #   domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
-  #   data: ['tempo_l2_no2_cam-chem-se', 'tropomi_l2_no2_cam-chem-se']
-  #   data_proc: {rem_obs_nan: True, set_axis: True}
+    data: ['tempo_l2_hcho_cam-chem-se_obsgrid']
+    data_proc: {rem_obs_nan: True, set_axis: False}
 
-  # plot_grp4_co:
-  #   type: "boxplot"
-  #   fig_kwargs: {figsize: [8, 6]}
-  #   text_kwargs: {fontsize: 20.}
-  #   domain_type: ["all", "auto-region:giorgi", "auto-region:box"]
-  #   domain_name: ["CONUS", "CNA", "SE_US"]
-  #   domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
-  #   data: ['tropomi_l2_co_cam-chem-se']
-  #   data_proc: {rem_obs_nan: True, set_axis: True}
-      
-  # plot_grp5:
-  #   type: 'spatial_overlay'
-  #   fig_kwargs: {states: true, counties: false, figsize: [12, 8]}
-  #   text_kwargs: {fontsize: 16}
-  #   domain_type: ["all", "auto-region:giorgi", "auto-region:box"]
-  #   domain_name: ["CONUS", "CNA", "SE_US"]
-  #   domain_info:
-  #     SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}
-    
-  #   data: ['tempo_l2_hcho_cam-chem-se', 'tempo_l2_no2_cam-chem-se', 'tropomi_l2_no2_cam-chem-se', 'tropomi_l2_hcho_cam-chem-se', 'tropomi_l2_co_cam-chem-se']
-  #   data_proc: 
-  #     set_axis: true
-  #     rem_obs_nan: True
-           
-# stats:
-#   stat_list: ["MB", "MdnB", "R2", "RMSE"]
-#   round_output: 2
-#   output_table: False
-  
-#   domain_type: ["all", "auto-region:giorgi", "auto-region:box"]
-#   domain_name: ["CONUS", "CNA", "SE_US"]
-#   domain_info:
-#     SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}
-      
-#   data: ['tempo_l2_hcho_cam-chem-se', 'tempo_l2_no2_cam-chem-se', 'tropomi_l2_no2_cam-chem-se', 'tropomi_l2_hcho_cam-chem-se', 'tropomi_l2_co_cam-chem-se']
+  plot_box_tempo_no2:
+    type: "boxplot"
+    fig_kwargs: {figsize: [8, 6]}
+    text_kwargs: {fontsize: 20.}
+    domain_type: ["all",]
+    domain_name: ["CONUS",]
+    domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
+    data: ['tempo_l2_no2_cam-chem-se']
+    data_proc: {rem_obs_nan: True, set_axis: False}
+
+  plot_box_tempo_no2_obsgrid:
+    type: "boxplot"
+    fig_kwargs: {figsize: [8, 6]}
+    text_kwargs: {fontsize: 20.}
+    domain_type: ["all",]
+    domain_name: ["CONUS",]
+    domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
+    data: ['tempo_l2_no2_cam-chem-se_obsgrid']
+    data_proc: {rem_obs_nan: True, set_axis: False}
+
+  plot_box_tropomi_no2:
+    type: "boxplot"
+    fig_kwargs: {figsize: [8, 6]}
+    text_kwargs: {fontsize: 20.}
+    domain_type: ["all",]
+    domain_name: ["CONUS",]
+    domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
+    data: ['tropomi_l2_no2_cam-chem-se']
+    data_proc: {rem_obs_nan: True, set_axis: False}
+
+  plot_box_tropomi_no2_obsgrid:
+    type: "boxplot"
+    fig_kwargs: {figsize: [8, 6]}
+    text_kwargs: {fontsize: 20.}
+    domain_type: ["all",]
+    domain_name: ["CONUS",]
+    domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
+    data: ['tropomi_l2_no2_cam-chem-se_obsgrid']
+    data_proc: {rem_obs_nan: True, set_axis: False}
+
+  plot_box_tropomi_hcho:
+    type: "boxplot"
+    fig_kwargs: {figsize: [8, 6]}
+    text_kwargs: {fontsize: 20.}
+    domain_type: ["all",]
+    domain_name: ["CONUS",]
+    domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
+    data: ['tropomi_l2_hcho_cam-chem-se']
+    data_proc: {rem_obs_nan: True, set_axis: False}
+
+  plot_box_tropomi_hcho_obsgrid:
+    type: "boxplot"
+    fig_kwargs: {figsize: [8, 6]}
+    text_kwargs: {fontsize: 20.}
+    domain_type: ["all",]
+    domain_name: ["CONUS",]
+    domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
+    data: ['tropomi_l2_hcho_cam-chem-se_obsgrid']
+    data_proc: {rem_obs_nan: True, set_axis: False}
+
+  plot_box_tropomi_co:
+    type: "boxplot"
+    fig_kwargs: {figsize: [8, 6]}
+    text_kwargs: {fontsize: 20.}
+    domain_type: ["all",]
+    domain_name: ["CONUS",]
+    domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
+    data: ['tropomi_l2_co_cam-chem-se']
+    data_proc: {rem_obs_nan: True, set_axis: False}
+
+  plot_box_tropomi_co_obsgrid:
+    type: "boxplot"
+    fig_kwargs: {figsize: [8, 6]}
+    text_kwargs: {fontsize: 20.}
+    domain_type: ["all",]
+    domain_name: ["CONUS",]
+    domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
+    data: ['tropomi_l2_co_cam-chem-se_obsgrid']
+    data_proc: {rem_obs_nan: True, set_axis: False}

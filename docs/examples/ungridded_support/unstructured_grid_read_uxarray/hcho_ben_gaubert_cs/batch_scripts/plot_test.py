@@ -21,8 +21,8 @@ def main():
     an.control = CONTROL
     an.read_control()
 
-    # print("[pair] opening models (lazy)...", flush=True)
-    # an.open_models()
+    print("[pair] opening models (lazy)...", flush=True)
+    an.open_models()
     
     # print(f"[pair] opening obs... ({time.time() - t0:.0f}s)", flush=True)
     # an.open_obs()

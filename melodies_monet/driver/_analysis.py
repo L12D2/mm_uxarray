@@ -297,8 +297,25 @@ class analysis:
         lat/lon grid (dims y/x, no n_face) and must plot via the structured path 
         """
         dims = set(getattr(getattr(p, "obj", None), "dims", ()))
-        if dims & {"n_face", "ncol"}:
-            return getattr(self.models.get(p.model), "uxgrid", None)
+        if not (dims & {"n_face", "ncol"}):
+            return None
+        m = self.models.get(p.model)
+        if m is None:
+            return None
+        uxg = getattr(m, "uxgrid", None)
+        if uxg is not None:
+            return uxg
+            
+        # Read-and-plot: the model data isn't loaded, so uxgrid is None,
+        # SCRIP/mesh path is known from the yaml so build grid and cache it from yaml to avoid having to load the full model
+        grid_path = getattr(m, "scrip_file", None) or getattr(m, "mesh_file", None)
+        if grid_path:
+            try:
+                import uxarray as _ux
+                m.uxgrid = _ux.open_grid(grid_path)
+                return m.uxgrid
+            except Exception as e:
+                print(f"_pair_uxgrid: could not open grid {grid_path!r}: {e}", flush=True)
         return None
         
     def _store_sat_pairs(self, paired_dict, obs, mod, keys, obs_vars, label_tag):
