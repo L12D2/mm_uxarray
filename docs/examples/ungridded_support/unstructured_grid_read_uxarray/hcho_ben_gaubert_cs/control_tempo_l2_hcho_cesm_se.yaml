@@ -64,7 +64,7 @@ analysis:
 
 obs:
   tempo_l2_hcho:
-    regrid_method: nearest_s2d # conservative
+    regrid_method: conservative #nearest_s2d # conservative
     #filename: /glade/campaign/acom/acom-da/sma/TEMPO_HCHO_V03/TEMPO_HCHO_L2_V03_20240630T*_S0*
     #filename: /glade/campaign/acom/acom-da/sma/TEMPO_HCHO_V03/TEMPO_HCHO_L2_V03_202403*_S*
     filename: /glade/campaign/acom/acom-da/sma/TEMPO_HCHO_V03/TEMPO_HCHO_L2_V03_202406*_S*
@@ -90,7 +90,7 @@ obs:
   tempo_l2_no2:
     obs_type: sat_swath_clm
     sat_type: tempo_l2_no2
-    regrid_method: nearest_s2d          
+    regrid_method: conservative          
     filename: /glade/campaign/acom/acom-da/sma/TEMPO_NO2_V03/TEMPO_NO2_L2_V03_202406*_S0*
     variables:
       main_data_quality_flag: {main_data_quality_flag_max: 0, var_applied: ['vertical_column_troposphere']}
@@ -105,7 +105,7 @@ obs:
   tropomi_l2_no2:
     obs_type: sat_swath_clm
     sat_type: tropomi_l2_no2
-    regrid_method: nearest_s2d
+    regrid_method: conservative
     filename: /glade/derecho/scratch/lcthompson/tropomi/no2_2024/S5P_OFFL_L2__NO2____202406*.nc
     variables:
       qa_value: {}
@@ -121,7 +121,7 @@ obs:
   tropomi_l2_hcho:
     obs_type: sat_swath_clm
     sat_type: tropomi_l2_hcho
-    regrid_method: nearest_s2d # nearest_s2d #conservative
+    regrid_method: conservative # nearest_s2d #conservative
     filename: /glade/derecho/scratch/lcthompson/tropomi/hcho_2024/S5P_OFFL_L2__HCHO___202406*.nc
     # /glade/campaign/acom/acom-da/sma/TROPOMI-HCHO-DATA/2024/S5P_OFFL_L2__HCHO___202403*.nc
     # filename: /glade/campaign/acom/acom-da/sma/TROPOMI-HCHO-DATA/2024/S5P_OFFL_L2__HCHO___202406*.nc
@@ -145,7 +145,7 @@ obs:
   tropomi_l2_co:
     obs_type: sat_swath_clm
     sat_type: tropomi_l2_co
-    regrid_method: nearest_s2d # nearest_s2d #conservative
+    regrid_method: conservative # nearest_s2d #conservative
     filename: /glade/derecho/scratch/lcthompson/tropomi/co_2024/S5P_OFFL_L2__CO_____20240601*.nc #/glade/derecho/scratch/lcthompson/tropomi/co_2024/S5P_OFFL_L2__CO___202406*.nc
     variables:
       qa_value: {qa_min: 0.5}
@@ -167,19 +167,6 @@ obs:
 model:
   cam-chem-se:
     files: /glade/campaign/acom/acom-da/conus_outputs/f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.ERA5_ref_dust_M1.1.002/H1/f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.ERA5_ref_dust_M1.1.002.cam.h1.2024-06*.nc
-
-    
-    # /glade/campaign/acom/acom-da/conus_outputs/f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.ERA5_ref_dust_M1.1.002/H1/f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.ERA5_ref_dust_M1.1.002.cam.h1.2024-03*.nc
-    
-    # /glade/campaign/acom/acom-da/conus_outputs/f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.ERA5_ref_dust_M1.1.002/H1/f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.ERA5_ref_dust_M1.1.002.cam.h1.2024-03-15-03600.nc
-        
-    # /glade/campaign/acom/acom-da/conus_outputs/f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.ERA5_ref_dust_M1.1.002/H1/f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.ERA5_ref_dust_M1.1.002.cam.h1.2024-06*.nc
-    
-      # - /glade/campaign/acom/acom-da/conus_outputs/f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.ERA5_ref_dust_M1.1.002/H1/f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.ERA5_ref_dust_M1.1.002.cam.h1.2024-06-30-03600.nc
-      
-      # - /glade/campaign/acom/acom-da/conus_outputs/f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.ERA5_ref_dust_M1.1.002/H1/f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.ERA5_ref_dust_M1.1.002.cam.h1.2024-04-14-03600.nc
-      
-      # - /glade/campaign/acom/acom-da/conus_outputs/f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.ERA5_ref_dust_M1.1.002/H1/f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.ERA5_ref_dust_M1.1.002.cam.h1.2024-03*.nc
       
     scrip_file: "/glade/campaign/acom/MUSICA/grids/ne0CONUSne30x8/ne0CONUS_ne30x8_np4_SCRIP.nc"
     mod_type: 'cesm_se' 
@@ -322,7 +309,7 @@ plots:
 
     data: ['tempo_l2_hcho_cam-chem-se', 'tempo_l2_no2_cam-chem-se', 'tropomi_l2_no2_cam-chem-se', 'tropomi_l2_hcho_cam-chem-se', 'tropomi_l2_co_cam-chem-se']
     data_proc:
-      #set_axis: true
+      set_axis: false
 
   plot_grp4_hcho_tempo:
     type: "boxplot"

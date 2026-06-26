@@ -537,140 +537,82 @@ def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
 
     # Structured -> quick_contourf (2-D lat/lon mesh). Unstructured (CESM-SE
     # ncol/n_face) goes via monet.draw_map + uxarray PolyCollection so we
+    if _df_is_ds:
+        obs_field = df[column_o]
+        if "time" in obs_field.dims:
+            obs_field = obs_field.mean("time")
+        obs_field = obs_field.squeeze()
+        mod_field = vmodel_mean
+        diff_field = (mod_field - obs_field)
 
-    is_unstructured = uxgrid is not None or any(
-        d in vmodel_mean.dims for d in ("n_face", "ncol")
-    )
-    if is_unstructured:
-        if uxgrid is None:
-            grid_file = (
-                vmodel.attrs.get("mio_scrip_file")
-                or vmodel.attrs.get("mio_grid_file")
-            )
-            if not grid_file:
+        _is_unstruct = uxgrid is not None or any(
+            d in mod_field.dims for d in ("n_face", "ncol"))
+        if _is_unstruct and uxgrid is None:
+            _gf = vmodel.attrs.get("mio_scrip_file") or vmodel.attrs.get("mio_grid_file")
+            if not _gf:
                 raise ValueError(
                     "satplots.make_spatial_overlay: unstructured model but no "
                     "uxgrid passed and no mio_scrip_file/mio_grid_file attr."
                 )
     
-            uxgrid = ux.open_grid(grid_file)
+            uxgrid = ux.open_grid(_gf)
             
-        from melodies_monet.plots.uxarray_render import render_unstructured_field
-
-        if _df_is_ds:
-            # Satellite path: obs + model both live on the same model
-            # n_face grid after back_to_modgrid. show them side-
-            # by-side with a shared color scale
-            obs_field = df[column_o]
-            if "time" in obs_field.dims:
-                obs_field = obs_field.mean("time")
-            obs_field = obs_field.squeeze()
-
-            mod_field = vmodel_mean 
-
-            _proj = proj if proj is not None else ccrs.PlateCarree()
-            figsize = map_kwargs.get("figsize", [16, 6])
-            fig, axes = plt.subplots(
-                1, 2, figsize=figsize,
-                subplot_kw={"projection": _proj},
-            )
-
-            # Obs (left)
-            render_unstructured_field(
-                axes[0], obs_field, uxgrid,
-                cmap=cmap, norm=norm,
-                extent=map_kwargs["extent"],
-                coast=True, borders=True,
-                states=map_kwargs.get("states", True),
-                gridlines=True, colorbar=False,
-            )
-            axes[0].set_title(label_o, fontweight="bold", **text_kwargs)
-
-            # Model (right)
-            poly = render_unstructured_field(
-                axes[1], mod_field, uxgrid,
-                cmap=cmap, norm=norm,
-                extent=map_kwargs["extent"],
-                coast=True, borders=True,
-                states=map_kwargs.get("states", True),
-                gridlines=True, colorbar=False,
-            )
-            axes[1].set_title(label_m, fontweight="bold", **text_kwargs)
+        if _is_unstruct:
+            from melodies_monet.plots.uxarray_render import render_unstructured_field
             
-            # Shared colorbar spanning both panels.
-            cbar = fig.colorbar(
-                poly, ax=axes.tolist(),
-                shrink=0.8, pad=0.04, extend="both",
-            )
-            cbar.set_label(ylabel, fontweight="bold", **text_kwargs)
-            cbar.ax.tick_params(labelsize=text_kwargs["fontsize"] * 0.8)
+            def _draw(ax_, fld, cm, nm):
+                return render_unstructured_field(
+                    ax_, fld, uxgrid, cmap=cm, norm=nm,
+                    extent=map_kwargs["extent"], coast=True, borders=True,
+                    states=map_kwargs.get("states", True), gridlines=True, colorbar=False)
+        else:
+            import cartopy.feature as cfeature
+            
+            def _draw(ax_, fld, cm, nm):
+                pm = ax_.pcolormesh(
+                    np.asarray(fld["longitude"].values), np.asarray(fld["latitude"].values),
+                    np.asarray(fld.values), cmap=cm, norm=nm,
+                    transform=ccrs.PlateCarree(), shading="auto")
+                ax_.coastlines(linewidth=0.5)
+                ax_.add_feature(cfeature.BORDERS, linewidth=0.4)
+                if map_kwargs.get("states", True):
+                    ax_.add_feature(cfeature.STATES, linewidth=0.3)
+                ax_.set_extent(map_kwargs["extent"], crs=ccrs.PlateCarree())
+                return pm
+                
+        _proj = proj if proj is not None else ccrs.PlateCarree()
+        figsize = map_kwargs.get("figsize", [22, 6])
+        fig, axes = plt.subplots(1, 3, figsize=figsize, subplot_kw={"projection": _proj})
 
-            # Domain super-title (e.g. "CONUS:")
-            _suptitle = (title_add or "").rstrip(":").rstrip().strip()
-            if _suptitle:
-                fig.suptitle(_suptitle, fontweight="bold", **text_kwargs)
+        # obs (left) + model (middle): shared Spectral_r scale
+        _draw(axes[0], obs_field, cmap, norm)
+        axes[0].set_title(label_o, fontweight="bold", **text_kwargs)
+        poly = _draw(axes[1], mod_field, cmap, norm)
+        axes[1].set_title(label_m, fontweight="bold", **text_kwargs)
+        cbar = fig.colorbar(poly, ax=axes[:2].tolist(), shrink=0.8, pad=0.04, extend="both")
+        cbar.set_label(ylabel, fontweight="bold", **text_kwargs)
+        cbar.ax.tick_params(labelsize=text_kwargs["fontsize"] * 0.8)
 
-            savefig(
-                outname + ".png", loc=4, logo_height=100,
-                bbox_inches="tight", dpi=150,
-            )
-            return axes[1]
+        # bias (right): model - obs, diverging scale
+        _dv = np.asarray(diff_field.values, dtype=float)
+        _dv = _dv[np.isfinite(_dv)]
+        _vd = float(np.nanmax(np.abs(np.percentile(_dv, [1, 99])))) if _dv.size else 1.0
+        if not np.isfinite(_vd) or _vd == 0:
+            _vd = 1.0
+        _bn = nlevels if nlevels else 21
+        _bcmap = mpl.cm.get_cmap("RdBu_r", _bn - 1)
+        _bnorm = mpl.colors.BoundaryNorm(np.linspace(-_vd, _vd, _bn), ncolors=_bcmap.N, clip=False)
+        bpoly = _draw(axes[2], diff_field, _bcmap, _bnorm)
+        axes[2].set_title(label_m + " - " + label_o, fontweight="bold", **text_kwargs)
+        bcbar = fig.colorbar(bpoly, ax=axes[2], shrink=0.8, pad=0.04, extend="both")
+        bcbar.set_label(ylabel, fontweight="bold", **text_kwargs)
+        bcbar.ax.tick_params(labelsize=text_kwargs["fontsize"] * 0.8)
 
-        states = map_kwargs.get("states", True)
-        counties = map_kwargs.get("counties", False)
-        ax = monet.plots.mapgen.draw_map(
-            crs=map_kwargs["crs"], extent=map_kwargs["extent"],
-            states=states, counties=counties,
-        )
-        render_unstructured_field(
-            ax.axes, vmodel_mean, uxgrid,
-            cmap=cmap, norm=norm,
-            coast=False, borders=False, states=False, gridlines=False,
-            colorbar=True, cbar_label=ylabel, text_kwargs=text_kwargs,
-        )
-    else:
-        #I add extend='both' here because the colorbar is setup to plot the values outside the range
-        ax = vmodel_mean.monet.quick_contourf(cbar_kwargs=cbar_kwargs, figsize=map_kwargs['figsize'], map_kws=map_kwargs,
-                                    robust=True, norm=norm, cmap=cmap, levels=clevel, extend='both')
-    
-    plt.gcf().canvas.draw() 
-    plt.tight_layout(pad=0)
-    plt.title(title_add + label_o + ' overlaid on ' + label_m,fontweight='bold',**text_kwargs)
-     
-    # ax.axes.scatter(df_mean.longitude.values, df_mean.latitude.values,s=30,c=df_mean[column_o], 
-    #                 transform=ccrs.PlateCarree(), edgecolor='b', linewidth=.50, norm=norm, 
-    #                 cmap=cmap)
-    # ax.axes.set_extent(map_kwargs['extent'],crs=ccrs.PlateCarree())    
-
-    # Obs overlay -- station path scatters per-site values. For sat data
-    # (df is xr.Dataset), obs already lives on the same n_face grid as the
-    # model after back_to_modgrid; 
-    if df_mean is not None:
-        ax.axes.scatter(df_mean.longitude.values, df_mean.latitude.values, s=30,
-                        c=df_mean[column_o], transform=ccrs.PlateCarree(),
-                        edgecolor='b', linewidth=.50, norm=norm, cmap=cmap)
-    ax.axes.set_extent(map_kwargs['extent'], crs=ccrs.PlateCarree())    
-
-    
-    #Uncomment these lines if you update above just to verify colorbars are identical.
-    #Also specify plot above scatter = ax.axes.scatter etc.
-    #cbar = ax.figure.get_axes()[1] 
-    #plt.colorbar(scatter,ax=ax)
-    
-    #Update colorbar
-    f = plt.gcf()
-    model_ax = f.get_axes()[0]
-    cax = f.get_axes()[1]
-    #get the position of the plot axis and use this to rescale nicely the color bar to the height of the plot.
-    position_m = model_ax.get_position()
-    position_c = cax.get_position()
-    cax.set_position([position_c.x0, position_m.y0, position_c.x1 - position_c.x0, (position_m.y1-position_m.y0)*1.1])
-    cax.set_ylabel(ylabel,fontweight='bold',**text_kwargs)
-    cax.tick_params(labelsize=text_kwargs['fontsize']*0.8,length=10.0,width=2.0,grid_linewidth=2.0)    
-    
-    #plt.tight_layout(pad=0)
-    savefig(outname + '.png',loc=4, logo_height=100, bbox_inches='tight', dpi=150)
-    return ax
+        _suptitle = (title_add or "").rstrip(":").rstrip().strip()
+        if _suptitle:
+            fig.suptitle(_suptitle, fontweight="bold", **text_kwargs)
+        savefig(outname + ".png", loc=4, logo_height=100, bbox_inches="tight", dpi=150)
+        return axes[1]
     
 def calculate_boxplot(df, df_reg=None,column=None, label=None, plot_dict=None, comb_bx = None, label_bx = None):
     """Combines data into acceptable format for box-plot

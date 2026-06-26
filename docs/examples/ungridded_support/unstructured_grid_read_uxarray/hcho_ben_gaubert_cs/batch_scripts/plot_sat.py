@@ -41,7 +41,7 @@ def main():
     print(f"[saved pair] plotting... ({time.time() - t0:.0f}s)", flush=True)
     an.plotting()
 
-    an.stats()
+    #an.stats()
 
     print(f"[plotting] DONE in {time.time() - t0:.0f}s", flush=True)
     for label, p in an.paired.items():

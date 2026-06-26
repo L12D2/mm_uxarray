@@ -359,6 +359,9 @@ def _model_lonlat_extent(modobj, pad=0.0):
 
 def _swath2latlon(swath, data_vars, res, extent, units = "deg"):
     """Regrid swath-paired fields (y, x) onto a regular lat/lon grid 
+
+    use radius mean averaging 
+    
     returns a Dataset on dims (lat, lon).
     """
     from melodies_monet.util.regrid_util import regrid
