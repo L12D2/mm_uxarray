@@ -64,12 +64,18 @@ analysis:
 
 obs:
   tempo_l2_hcho:
-    regrid_method: conservative #nearest_s2d # conservative
+    regrid_method: radius_mean #nearest_s2d # conservative
     #filename: /glade/campaign/acom/acom-da/sma/TEMPO_HCHO_V03/TEMPO_HCHO_L2_V03_20240630T*_S0*
     #filename: /glade/campaign/acom/acom-da/sma/TEMPO_HCHO_V03/TEMPO_HCHO_L2_V03_202403*_S*
     filename: /glade/campaign/acom/acom-da/sma/TEMPO_HCHO_V03/TEMPO_HCHO_L2_V03_202406*_S*
     # filename: /glade/campaign/acom/acom-da/sma/TEMPO_HCHO_V03/TEMPO_HCHO_L2_V03_202403*_S*
     # filename: /glade/campaign/acom/acom-da/sma/TEMPO_HCHO_V03/TEMPO_HCHO_L2_V03_20240315*_S*
+    
+    regrid_target: [obs, model, series]   #[model, obs]   # default 'model'; 'obs' = lat/lon L3 grid
+    obs_grid_res: 0.1
+    obs_grid_extent: [-130, -60, 20, 55] # [lonW, lonE, latS, latN]; default = model extent
+    obs_grid_units: deg            # 'deg' (default) | 'km' | 'm'
+    
     obs_type: sat_swath_clm
     sat_type: tempo_l2_hcho
     variables:
@@ -86,11 +92,18 @@ obs:
       amf: {}
       latitude_bounds: {}
       longitude_bounds: {}
+      vertical_column_uncertainty: {}
       
   tempo_l2_no2:
     obs_type: sat_swath_clm
     sat_type: tempo_l2_no2
-    regrid_method: conservative          
+    regrid_method: radius_mean
+
+    regrid_target: [obs, model, series]     # default 'model'; 'obs' = lat/lon L3 grid
+    obs_grid_res: 0.1
+    obs_grid_extent: [-130, -60, 20, 55] # [lonW, lonE, latS, latN]; default = model extent
+    obs_grid_units: deg            # 'deg' (default) | 'km' | 'm'
+    
     filename: /glade/campaign/acom/acom-da/sma/TEMPO_NO2_V03/TEMPO_NO2_L2_V03_202406*_S0*
     variables:
       main_data_quality_flag: {main_data_quality_flag_max: 0, var_applied: ['vertical_column_troposphere']}
@@ -101,11 +114,19 @@ obs:
       amf_troposphere: {}
       latitude_bounds: {}
       longitude_bounds: {}
+      vertical_column_troposphere_uncertainty: {}
+      
   
   tropomi_l2_no2:
     obs_type: sat_swath_clm
     sat_type: tropomi_l2_no2
-    regrid_method: conservative
+    regrid_method: radius_mean
+
+    regrid_target: [obs, model, series]   # default 'model'; 'obs' = lat/lon L3 grid
+    obs_grid_res: 0.1
+    obs_grid_extent: [-130, -60, 20, 55] # [lonW, lonE, latS, latN]; default = model extent
+    obs_grid_units: deg            # 'deg' (default) | 'km' | 'm'
+    
     filename: /glade/derecho/scratch/lcthompson/tropomi/no2_2024/S5P_OFFL_L2__NO2____202406*.nc
     variables:
       qa_value: {}
@@ -117,11 +138,18 @@ obs:
       latitude_bounds: {}
       longitude_bounds: {}
       qa_value: {}
+      nitrogendioxide_tropospheric_column_precision: {}
 
   tropomi_l2_hcho:
     obs_type: sat_swath_clm
     sat_type: tropomi_l2_hcho
-    regrid_method: conservative # nearest_s2d #conservative
+    regrid_method: radius_mean # nearest_s2d #conservative
+
+    regrid_target: [obs, model, series]   # default 'model'; 'obs' = lat/lon L3 grid
+    obs_grid_res: 0.1
+    obs_grid_extent: [-130, -60, 20, 55] # [lonW, lonE, latS, latN]; default = model extent
+    obs_grid_units: deg            # 'deg' (default) | 'km' | 'm'
+    
     filename: /glade/derecho/scratch/lcthompson/tropomi/hcho_2024/S5P_OFFL_L2__HCHO___202406*.nc
     # /glade/campaign/acom/acom-da/sma/TROPOMI-HCHO-DATA/2024/S5P_OFFL_L2__HCHO___202403*.nc
     # filename: /glade/campaign/acom/acom-da/sma/TROPOMI-HCHO-DATA/2024/S5P_OFFL_L2__HCHO___202406*.nc
@@ -141,11 +169,18 @@ obs:
       tm5_constant_b: {}
       latitude_bounds: {}
       longitude_bounds: {}
+      formaldehyde_tropospheric_vertical_column_precision: {}
 
   tropomi_l2_co:
     obs_type: sat_swath_clm
     sat_type: tropomi_l2_co
-    regrid_method: conservative # nearest_s2d #conservative
+    regrid_method: radius_mean # nearest_s2d #conservative
+
+    regrid_target: obs   # default 'model'; 'obs' = lat/lon L3 grid
+    obs_grid_res: 0.1
+    obs_grid_extent: [-130, -60, 20, 55] # [lonW, lonE, latS, latN]; default = model extent
+    obs_grid_units: deg            # 'deg' (default) | 'km' | 'm'
+    
     filename: /glade/derecho/scratch/lcthompson/tropomi/co_2024/S5P_OFFL_L2__CO_____20240601*.nc #/glade/derecho/scratch/lcthompson/tropomi/co_2024/S5P_OFFL_L2__CO___202406*.nc
     variables:
       qa_value: {qa_min: 0.5}
@@ -158,6 +193,7 @@ obs:
       pressure_levels: {}
       latitude_bounds: {}
       longitude_bounds: {}
+      carbonmonoxide_total_column_precision: {}
 
       #  data: ['tempo_l2_hcho_cam-chem-se', 'tempo_l2_no2_cam-chem-se', 'tropomi_l2_no2_cam-chem-se', 'tropomi_l2_hcho_cam-chem-se', 'tropomi_l2_co_cam-chem-se']
       # data: ["tempo_l2_hcho_cam-chem-se"]

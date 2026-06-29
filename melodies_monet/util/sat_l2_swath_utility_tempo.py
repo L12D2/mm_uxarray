@@ -713,7 +713,8 @@ def is_nonpairable(obsobj, k, modobj):
 
 
 def _regrid_and_apply_weights(
-    obsobj, modobj, method="conservative", weights=None, species=["NO2"], tempo_sp="NO2"
+    obsobj, modobj, method="conservative", weights=None, species=["NO2"], tempo_sp="NO2",
+    crop_extent=None,
 ):
     """Does the complete process of regridding and
     applying scattering weights. Assumes that obsobj is a Dataset
@@ -780,6 +781,7 @@ def regrid_and_apply_weights(
     weights=None,
     species=["NO2"],
     tempo_sp="NO2",
+    crop_extent=None,
 ):
     """Does the complete process of regridding
     and applying scattering weights.
@@ -818,7 +820,15 @@ def regrid_and_apply_weights(
         assert tempo_sp == "HCHO", "TEMPO species must be HCHO or NO2."
         sat_species_name = "vertical_column"
 
+    # crop granule to region of interest
+    from melodies_monet.util.sat_l2_swath_utility import _crop_swath_to_extent
+    
     if isinstance(obsobj, xr.Dataset):
+        if crop_extent is not None:
+            obsobj = _crop_swath_to_extent(obsobj, crop_extent)
+            if obsobj is None:
+                return None
+                
         regridded = _regrid_and_apply_weights(
             obsobj, modobj, method=method, weights=weights, species=species, tempo_sp=tempo_sp
         )
@@ -839,10 +849,17 @@ def regrid_and_apply_weights(
             if is_nonpairable(obsobj, ref_time, modobj):
                 warnings.warn(f"{ref_time} granule domain has no overlap with model. Discarding.")
                 continue
+                
+            granule = obsobj[ref_time]
+            if crop_extent is not None:
+                granule = _crop_swath_to_extent(granule, crop_extent)
+                if granule is None:
+                    continue
+                    
             if verbose:
                 print(f"Regridding {ref_time} and applying AMF and weights")
             output_multiple[ref_time] = _regrid_and_apply_weights(
-                obsobj[ref_time],
+                granule,
                 modobj,
                 method=method,
                 weights=weights,
@@ -861,7 +878,7 @@ def regrid_and_apply_weights(
                 output_multiple[ref_time] = xr.merge(
                     [
                         output_multiple[ref_time],
-                        obsobj[ref_time][sat_species_name],
+                        granule[sat_species_name],   # cropped, aligns with model
                     ]
                 )
             if "lat" in output_multiple[ref_time].variables:
@@ -871,7 +888,7 @@ def regrid_and_apply_weights(
 
             # better memory handling 
             output_multiple[ref_time] = _carry_swath_bounds(
-                output_multiple[ref_time], obsobj[ref_time]
+                output_multiple[ref_time], granule
             )
             
             # better memory handling 
@@ -1039,7 +1056,7 @@ def back_to_modgrid(
     # enables regridding to obs or model space 
     targets = [regrid_target] if isinstance(regrid_target, str) else list(regrid_target)
     
-    from melodies_monet.util.sat_l2_swath_utility import _swath2latlon, _model_lonlat_extent
+    from melodies_monet.util.sat_l2_swath_utility import _swath2latlon, _model_lonlat_extent, _swath2series
     _extent = tuple(obs_grid_extent) if obs_grid_extent else _model_lonlat_extent(modobj)
     
     scan_num = concatenated.attrs["scan_num"]
@@ -1055,6 +1072,20 @@ def back_to_modgrid(
             out_regridded = _swath2latlon(
                 concatenated, _dvars, obs_grid_res, _extent, units=obs_grid_units, method=method,
             )
+        elif _tgt =="series": # time domain vector 
+            _errs = [v for v in concatenated.data_vars
+                     if v.endswith(("_uncertainty", "_precision"))]
+            _dvars = [
+                v for v in concatenated.data_vars
+                if v not in ("lon", "lat", "longitude", "latitude")
+                and "bounds" not in v and v not in _errs
+            ]
+            _ssw, _obs_var = concatenated, None
+            if _errs:
+                _ssw = concatenated.assign(_obs_err=concatenated[_errs[0]])
+                _base = _errs[0].rsplit("_", 1)[0]
+                _obs_var = _base if _base in _dvars else None
+            out_regridded = _swath2series(_ssw, _dvars, obs_var=_obs_var)
         elif grid_path is not None:
             grid = xr.open_dataset(grid_path)
             regridder = xe.Regridder(concatenated, grid, method=method, unmapped_to_nan=True)

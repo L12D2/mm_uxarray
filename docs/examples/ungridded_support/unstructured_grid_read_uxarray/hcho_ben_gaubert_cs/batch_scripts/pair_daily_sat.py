@@ -58,12 +58,26 @@ def main():
     cd["analysis"]["save"]["paired"]["prefix"] = ymd
     cd["model"]["cam-chem-se"]["files"] = mfiles
 
+    # break job up 
+    _grp = os.environ.get("OBS_GROUP", "").strip()
+    keep = {s.strip() for s in _grp.split(",") if s.strip()} if _grp else None
+
+    # vary regrid target 
+    _rt = os.environ.get("REGRID_TARGET", "").strip()
+    rt_val = ([s.strip() for s in _rt.split(",")] if "," in _rt else _rt) if _rt else None
+    
     mapping = cd["model"]["cam-chem-se"].get("mapping", {})
     present = []
     for obs_name, src in OBS_SOURCES.items():
+        if keep is not None and obs_name not in keep:
+            cd["obs"].pop(obs_name, None); mapping.pop(obs_name, None)
+            continue
         pat = f"{src['dir']}/{src['glob'].format(ymd=ymd)}"
         if obs_name in cd["obs"] and glob.glob(pat):
             cd["obs"][obs_name]["filename"] = pat
+            if rt_val is not None:
+                cd["obs"][obs_name]["regrid_target"] = rt_val
+                            
             present.append(obs_name)
         else:
             cd["obs"].pop(obs_name, None); mapping.pop(obs_name, None)

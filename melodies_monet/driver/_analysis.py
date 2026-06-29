@@ -341,7 +341,7 @@ class analysis:
             p.model_vars = keys
             p.obs_vars = obs_vars
             p.obj = atgrid.sel(time=slice(self.start_time, self.end_time))
-            suffix = "" if tgt == "model" else "_obsgrid"
+            suffix = {"model": "", "obs": "_obsgrid", "series": "_series"}.get(tgt, "_" + str(tgt))
             label = "{}_{}{}".format(p.obs, p.model, suffix)
             p.filename = "{}.nc".format(label)
             self.paired[label] = p
@@ -1464,10 +1464,15 @@ class analysis:
                             obs.obj, mod_obj_for_sat, species=mod_sp, method=regrid_method, tempo_sp=sat_sp)
                         
                         _targets, _res, _units, _extent = self._sat_regrid_targets(obs)
+                        
+                        paired_data_atswath = sutil.regrid_and_apply_weights(
+                            obs.obj, mod_obj_for_sat, species=mod_sp, method=regrid_method,
+                            tempo_sp=sat_sp)
+                        
                         paired_dict = sutil.back_to_modgrid_multiscan(
                             paired_data_atswath, model_obj, method=regrid_method,
                             regrid_target=_targets, obs_grid_res=_res,
-                            obs_grid_units=_units, obs_grid_extent=_extent,
+                            obs_grid_units=_units
                         )
 
                         self._store_sat_pairs(

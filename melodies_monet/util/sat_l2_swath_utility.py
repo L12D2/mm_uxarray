@@ -356,6 +356,28 @@ def _model_lonlat_extent(modobj, pad=0.0):
     return (float(np.nanmin(mlon)) - pad, float(np.nanmax(mlon)) + pad,
             float(np.nanmin(mlat)) - pad, float(np.nanmax(mlat)) + pad)
 
+def _crop_swath_to_extent(o, extent, pad=0.5):
+    """Slice a swath granule to the (y,x) index window overlapping the extent box.
+    """
+    if extent is None:
+        return o
+    lonmin, lonmax, latmin, latmax = extent
+    
+    lon_n = "longitude" if "longitude" in o.variables else "lon"  # TROPOMI vs TEMPO
+    lat_n = "latitude" if "latitude" in o.variables else "lat"
+    lon = np.asarray(o[lon_n].values)
+    lat = np.asarray(o[lat_n].values)
+    
+    inbox = ((lon >= lonmin - pad) & (lon <= lonmax + pad) &
+             (lat >= latmin - pad) & (lat <= latmax + pad))
+    if not inbox.any():
+        return None
+    hdims = o[lon_n].dims                      # (y, x) or (x, y)
+    a0 = np.where(inbox.any(axis=1))[0]
+    a1 = np.where(inbox.any(axis=0))[0]
+    sl = {hdims[0]: slice(int(a0.min()), int(a0.max()) + 1),
+          hdims[1]: slice(int(a1.min()), int(a1.max()) + 1)}
+    return o.isel(sl)
 
 def _swath2latlon(swath, data_vars, res, extent, units = "deg", method="radius_mean"):
     """Regrid swath-paired fields (y, x) onto a regular lat/lon grid 
@@ -424,7 +446,17 @@ def _swath2latlon(swath, data_vars, res, extent, units = "deg", method="radius_m
                 da = _out[v]
                 if _fd not in da.dims:
                     continue
-    
+                t = da.transpose(..., _fd)
+                arr = np.asarray(t.values).reshape(t.shape[:-1] + (_nlat, _nlon))
+                _res[v] = xr.DataArray(arr, dims=t.dims[:-1] + ("y", "x"),
+                                       attrs=dict(da.attrs))
+            return _res.assign_coords(
+                longitude=(("y", "x"), tlon2), latitude=(("y", "x"), tlat2),
+                x=("x", tlon1), y=("y", tlat1))
+        except Exception as e:
+            print(f"_swath2latlon: conservative regrid failed ({e!r}); "
+                  "falling back to radius_mean.", flush=True)
+
     hdims = list(swath["longitude"].dims)            # (y, x) or (x, y)
     
     flat = (
@@ -445,6 +477,73 @@ def _swath2latlon(swath, data_vars, res, extent, units = "deg", method="radius_m
     # want to make sure these regrided lat lon pairs can just run through the existing plotting 
     return out.rename({"lat": "y", "lon": "x"})
 
+def _wmean(da, w):
+    """Weighted spatial mean of da with weights w, ignoring NaN
+
+    Returns a 0-d (scalar) DataArray; NaN if nothing valid.
+    """
+    w = w.where(np.isfinite(da) & np.isfinite(w) & (w > 0))
+    den = w.sum(skipna=True)
+    return xr.where(den > 0, (da * w).sum(skipna=True) / den, np.nan)
+
+def _attach_obs_err(swath, o, obs_var):
+    """Attach the per-pixel retrieval error to swath as _obs_err
+    
+    Used by the 'series' target to inverse-variance weight the observations
+    
+    Looks for '<obs_var>_precision' then '<obs_var>_uncertainty' in the
+    granule. No-op if neither was read in (then 'series' falls back to area
+    weighting for obs).
+    
+    """
+    for _name in (obs_var + "_precision", obs_var + "_uncertainty"):
+        if _name in o.variables:
+            err = o[_name]
+            if "time" in err.dims:
+                err = err.squeeze("time", drop=True)
+            swath["_obs_err"] = err
+            return
+
+def _swath2series(swath, data_vars, obs_var=None,
+                  obs_weight="inverse_variance", model_weight="area"):
+    
+    """Collapse a swath to ONE weighted domain value per variable (a time point).
+
+    The 'series' target saves a *time vector* instead of a map: every
+    granule/overpass is reduced to a single representative number, and the
+    orchestrator stamps it with the overpass time and concatenates to (time,).
+    Obs and model are reduced over the *same* sampled pixels, so they stay
+    directly comparable (the absolute level still reflects which footprint each
+    overpass sampled).
+
+    Default weighting:
+      * model field        -> AREA-weighted by cos(latitude), so the domain
+        mean is area-representative rather than biased toward where swath
+        pixels happen to be dense.
+      * obs field (obs_var) -> INVERSE-VARIANCE weighted (weight = 1/sigma^2)
+        using the per-pixel retrieval error in swath['_obs_err'] (see
+        _attach_obs_err), so noisy retrievals count for less. Falls back to
+        area weighting if no error field is attached.
+
+    obs_weight / model_weight may be overridden: 'inverse_variance' | 'area'
+    | 'equal'. Returns a Dataset of scalars (one per variable in data_vars).
+    """
+    
+    lat = swath["latitude"] if "latitude" in swath.variables else swath["lat"]
+    w_area = np.cos(np.deg2rad(lat))
+
+    out = xr.Dataset()
+    for v in data_vars:
+        da = swath[v]
+        mode = obs_weight if v == obs_var else model_weight
+        if v == obs_var and mode == "inverse_variance" and "_obs_err" in swath.variables:
+            out[v] = _wmean(da, 1.0 / (swath["_obs_err"] ** 2))   # inverse-variance
+        elif mode == "equal":
+            out[v] = da.mean(skipna=True)                          # unweighted
+        else:
+            out[v] = _wmean(da, w_area)                            # area (cos lat)
+    return out
+
 def _swath_to_target(swath, modobj, method, data_vars, target, res, extent, units="deg" ):
     """Regrid the paired swath onto the requested target space
 
@@ -452,12 +551,17 @@ def _swath_to_target(swath, modobj, method, data_vars, target, res, extent, unit
 
     if target = obs, use a regular lat lon grid via _swath2latlon 
 
+    if target = series, single weighted domain value per overpass (time vector)
+
     """
     if target == "model":
         return _tropomi_swath2mod(swath, modobj, method, data_vars)
     if target == "obs":
         return _swath2latlon(swath, data_vars, res, extent, units=units, method=method)
-    raise ValueError(f"regrid_target {target!r} not understood; use 'model' or 'obs'.")
+    if target == "series":
+        _ov = data_vars[1] if len(data_vars) > 1 else None
+        return _swath2series(swath, data_vars, obs_var=_ov)
+    raise ValueError(f"regrid_target {target!r} not understood; use 'model', 'obs', or 'series'.")
 
 def apply_weights_mod2tropomi_no2(obsobj, modobj_on_tropomi_layers, species="NO2"):
     """Apply the TROPOMI averaging kernel to a model NO2 profile.
@@ -676,6 +780,11 @@ def regrid_and_apply_weights_tropomi(obsobj, modobj, species=["NO2"],
     for o in granules:
         if "time" in o.dims:
             o = o.squeeze("time", drop=False)
+
+        # crop the orbit to the region of interest before the expensive pairing
+        o = _crop_swath_to_extent(o, extent)
+        if o is None:
+            continue
         
         # Granule overpass time for model matching. prefer "time_granule", which holds
         # the real per-measurement times, and use its mean. Fall back to the
@@ -736,6 +845,9 @@ def regrid_and_apply_weights_tropomi(obsobj, modobj, species=["NO2"],
              "longitude_bounds": o["longitude_bounds"]},
             coords={"longitude": o["longitude"], "latitude": o["latitude"]},
         )
+
+        # per-pixel retrieval error for  inverse-variance weighting in 'series'
+        _attach_obs_err(swath, o, _TROPOMI_NO2_VAR)        
 
         for t in targets:
             on = _swath_to_target(swath, modobj, method, [sp, _TROPOMI_NO2_VAR],
@@ -811,7 +923,12 @@ def regrid_and_apply_weights_tropomi_hcho(obsobj, modobj, species=["CH2O"],
     for o in granules:
         if "time" in o.dims:
             o = o.squeeze("time", drop=False)
-
+            
+        # crop the orbit to the region of interest before the expensive pairing
+        o = _crop_swath_to_extent(o, extent)
+        if o is None:
+            continue
+            
         if "time_granule" in o.variables:
             tg = np.asarray(o["time_granule"].values).ravel().astype("datetime64[ns]")
             tg = tg[~np.isnat(tg)]
@@ -859,6 +976,9 @@ def regrid_and_apply_weights_tropomi_hcho(obsobj, modobj, species=["CH2O"],
              "longitude_bounds": o["longitude_bounds"]},
             coords={"longitude": o["longitude"], "latitude": o["latitude"]},
         )
+        
+        # per-pixel retrieval error for inverse-variance weighting in 'series'
+        _attach_obs_err(swath, o, "formaldehyde_tropospheric_vertical_column")
 
         for t in targets:
             on = _swath_to_target(
@@ -939,6 +1059,11 @@ def regrid_and_apply_weights_tropomi_co(obsobj, modobj, species=["CO"],
         if "time" in o.dims:
             o = o.squeeze("time", drop=False)
 
+        # crop the orbit to the region of interest before the expensive pairing
+        o = _crop_swath_to_extent(o, extent)
+        if o is None:
+            continue
+            
         if "time_granule" in o.variables:
             tg = np.asarray(o["time_granule"].values).ravel().astype("datetime64[ns]")
             tg = tg[~np.isnat(tg)]
@@ -987,6 +1112,9 @@ def regrid_and_apply_weights_tropomi_co(obsobj, modobj, species=["CO"],
             coords={"longitude": o["longitude"], "latitude": o["latitude"]},
         )
 
+        # per-pixel retrieval error for inverse-variance weighting in 'series'
+        _attach_obs_err(swath, o, _TROPOMI_CO_VAR)
+        
         for t in targets:
             on = _swath_to_target(swath, modobj, method, [sp, _TROPOMI_CO_VAR],
                                   t, obs_grid_res, extent, units=obs_grid_units)
