@@ -19,7 +19,7 @@ dependencies:
   - numba
   - pooch
   - timezonefinder
-  - typer
+  - typer<0.26
   - wrf-python  # for WRF-Chem reader in monetio
   #
   # Docs

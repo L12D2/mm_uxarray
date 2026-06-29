@@ -97,7 +97,7 @@ branch of one, you should use the develop branch of all of them for consistency.
        $ conda install -y -c conda-forge pyyaml pandas=2 monet monetio \
          "netcdf4<1.7" "setuptools<70" "dask>=2024.2.1" wrf-python \
          "cartopy=0.24" metpy windrose statannotations \
-         typer rich pooch jupyterlab
+         "typer<0.26" rich pooch jupyterlab
 
 (b) Now, install the **develop** branch of **MELODIES MONET** to the environment::
 
@@ -135,7 +135,7 @@ changes on your fork, and submit a pull request with your changes to the develop
        $ conda install -y -c conda-forge pyyaml pandas=2 monet monetio \
          "netcdf4<1.7" "setuptools<70" "dask>=2024.2.1" wrf-python \
          "cartopy=0.24" metpy windrose statannotations \
-         typer rich pooch jupyterlab
+         "typer<0.26" rich pooch jupyterlab
 
 (b) Fork the GitHub repositories to your own GitHub account
     using the "Fork" button near the top right for the following repositories:
@@ -199,7 +199,7 @@ from the MELODIES MONET repository,
 or add the following packages to your conda environment manually::
 
     $ conda install -y -c conda-forge sphinx=7.* sphinx_rtd_theme myst-nb>=0.14 sphinx-design \ 
-      sphinx-click sphinx-togglebutton typer
+      sphinx-click sphinx-togglebutton "typer<0.26"
 
 The restructured text sources (rst) are located
 in the ``MELODIES-MONET/docs`` folders.
