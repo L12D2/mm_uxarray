@@ -15,8 +15,7 @@ Optional dependencies
 
 - ``netcdf4`` (`from Unidata <https://unidata.github.io/netcdf4-python/>`__; most likely needed for reading model/obs datasets)
 - ``wrf-python`` (needed in order to use the WRF-Chem reader; note that the version of ``wrf-python`` compatible with python=3.11 has known incompatibilities with newer ``netCDF4`` and ``setuptools`` versions — see *Incompatibilities* below)
-- ``typer`` (to use the :doc:`/cli`;
-  add ``rich`` `for <https://typer.tiangolo.com/release-notes/#060-2022-07-12>`__ fancy tracebacks and ``--help``)
+- ``typer`` (to use the :doc:`/cli`)
 - ``pooch`` (to enable automatic downloading of :doc:`tutorial datasets </examples/tutorial-data>`)
 - ``regionmask`` (`for complex region masking support <https://regionmask.readthedocs.io/en/stable/>`__; can read shapefiles, geojson, arbitrary polygons and predefined regions.)
 - ``metpy`` (for meteorological calculations)
@@ -77,7 +76,7 @@ Add dependencies from conda-forge::
     $ conda install -y -c conda-forge pyyaml pandas=2 monet monetio \
       "netcdf4<1.7" "setuptools<70" "dask>=2024.2.1" wrf-python \
       "cartopy=0.24" metpy windrose statannotations \
-      typer rich pooch jupyterlab
+      typer pooch jupyterlab
    
 Now, install the stable branch of MELODIES MONET to the environment::
 
