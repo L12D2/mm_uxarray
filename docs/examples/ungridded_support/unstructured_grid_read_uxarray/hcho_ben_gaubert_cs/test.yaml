@@ -59,7 +59,7 @@ obs:
     obs_grid_extent: [-130, -60, 20, 55] # [lonW, lonE, latS, latN]; default = model extent
     obs_grid_units: deg            # 'deg' (default) | 'km' | 'm'
     
-    regrid_method: radius_mean # conservative
+    regrid_method: conservative # conservative
     debug: false
     #filename: /glade/campaign/acom/acom-da/sma/TEMPO_HCHO_V03/TEMPO_HCHO_L2_V03_20240630T*_S0*
     #filename: /glade/campaign/acom/acom-da/sma/TEMPO_HCHO_V03/TEMPO_HCHO_L2_V03_202403*_S*
@@ -82,6 +82,7 @@ obs:
       amf: {}
       latitude_bounds: {}
       longitude_bounds: {}
+      vertical_column_uncertainty: {}
       
   # tempo_l2_no2:
   #   regrid_target: [obs, model, series]   # default 'model'; 'obs' = lat/lon L3 grid

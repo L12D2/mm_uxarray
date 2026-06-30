@@ -176,7 +176,7 @@ obs:
     sat_type: tropomi_l2_co
     regrid_method: radius_mean # nearest_s2d #conservative
 
-    regrid_target: obs   # default 'model'; 'obs' = lat/lon L3 grid
+    regrid_target: [obs, model, series]   # default 'model'; 'obs' = lat/lon L3 grid
     obs_grid_res: 0.1
     obs_grid_extent: [-130, -60, 20, 55] # [lonW, lonE, latS, latN]; default = model extent
     obs_grid_units: deg            # 'deg' (default) | 'km' | 'm'

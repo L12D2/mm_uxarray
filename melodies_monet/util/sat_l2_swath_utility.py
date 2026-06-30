@@ -458,24 +458,60 @@ def _swath2latlon(swath, data_vars, res, extent, units = "deg", method="radius_m
                   "falling back to radius_mean.", flush=True)
 
     hdims = list(swath["longitude"].dims)            # (y, x) or (x, y)
+
+    # instead of radius mean use a box mean gridding (faster)
     
-    flat = (
-        swath[data_vars]
-        .stack(pixel=hdims)
-        .reset_index("pixel", drop=True)
-    )
+    # flat = (
+    #     swath[data_vars]
+    #     .stack(pixel=hdims)
+    #     .reset_index("pixel", drop=True)
+    # )
+
+    plon = np.asarray(swath["longitude"].values).ravel()
+    plat = np.asarray(swath["latitude"].values).ravel()
+    nlat, nlon = tlat1.size, tlon1.size
+    ncell = nlat * nlon
     
     # search radius ~ cell size, but at least ~5 km (sensor footprint) so a
     # finer-than-sensor grid fills from the nearest pixel instead of going empty.
-    radius = max(float(dlat), 0.05)
-    out = regrid(flat, target={"lon": tlon2, "lat": tlat2},
-                 method="radius_mean", radius=radius, target_dims=("lat", "lon"))
-    out = out.where(out != 0)        # empty cells -> NaN, not 0
+    # radius = max(float(dlat), 0.05)
+    # out = regrid(flat, target={"lon": tlon2, "lat": tlat2},
+    #              method="radius_mean", radius=radius, target_dims=("lat", "lon"))
+    # out = out.where(out != 0)        # empty cells -> NaN, not 0
 
-    out = out.assign_coords(lon=("lon", tlon1), lat=("lat", tlat1))
+    # out = out.assign_coords(lon=("lon", tlon1), lat=("lat", tlat1))
+    ix = np.floor((plon - lonmin) / dlon).astype(np.intp)
+    iy = np.floor((plat - latmin) / dlat).astype(np.intp)
+    ingrid = ((ix >= 0) & (ix < nlon) & (iy >= 0) & (iy < nlat)
+              & np.isfinite(plon) & np.isfinite(plat))
+    cell = iy * nlon + ix                            # flat (lat-major) cell id
+    
+    out = xr.Dataset()
+    for v in data_vars:
+        da = swath[v]
+        extra = [d for d in da.dims if d not in hdims]
+        arr = np.asarray(da.transpose(*extra, *hdims).values, dtype=float).reshape(-1, plon.size)
+        res = np.full((arr.shape[0], ncell), np.nan)
+        for k in range(arr.shape[0]):
+            good = ingrid & np.isfinite(arr[k])
+            c = cell[good]
+            ssum = np.bincount(c, weights=arr[k][good], minlength=ncell)
+            scnt = np.bincount(c, minlength=ncell)
+            with np.errstate(invalid="ignore", divide="ignore"):
+                m = ssum / scnt
+            m[scnt == 0] = np.nan
+            res[k] = m
+        out[v] = xr.DataArray(
+            res.reshape(tuple(da.sizes[d] for d in extra) + (nlat, nlon)),
+            dims=tuple(extra) + ("y", "x"), attrs=dict(da.attrs))
 
-    # want to make sure these regrided lat lon pairs can just run through the existing plotting 
-    return out.rename({"lat": "y", "lon": "x"})
+    # 2-D lon/lat + 1-D x/y so the result flows through structured-sat plotting
+    return out.assign_coords(
+        longitude=(("y", "x"), tlon2), latitude=(("y", "x"), tlat2),
+        x=("x", tlon1), y=("y", tlat1))
+
+    # # want to make sure these regrided lat lon pairs can just run through the existing plotting 
+    # return out.rename({"lat": "y", "lon": "x"})
 
 def _wmean(da, w):
     """Weighted spatial mean of da with weights w, ignoring NaN
@@ -674,7 +710,7 @@ def _mod2tropomi_swath(modobj, o, method, mod_vars, grid_file):
 
     # nearest family
     out = regrid(msrc, target={"lon": olon, "lat": olat},
-                 method=method, target_dims=("y", "x"))
+                 method="nearest_s2d", target_dims=("y", "x"))
     return out
 
 

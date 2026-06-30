@@ -1460,9 +1460,6 @@ class analysis:
                         # speed up by loading once. monetio v1 might fix this? 
                         mod_obj_for_sat = mod_obj_for_sat.load()
                         
-                        paired_data_atswath = sutil.regrid_and_apply_weights(
-                            obs.obj, mod_obj_for_sat, species=mod_sp, method=regrid_method, tempo_sp=sat_sp)
-                        
                         _targets, _res, _units, _extent = self._sat_regrid_targets(obs)
                         
                         paired_data_atswath = sutil.regrid_and_apply_weights(
@@ -1472,7 +1469,7 @@ class analysis:
                         paired_dict = sutil.back_to_modgrid_multiscan(
                             paired_data_atswath, model_obj, method=regrid_method,
                             regrid_target=_targets, obs_grid_res=_res,
-                            obs_grid_units=_units
+                            obs_grid_units=_units, obs_grid_extent=_extent,
                         )
 
                         self._store_sat_pairs(
