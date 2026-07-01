@@ -1419,7 +1419,8 @@ class analysis:
                         paired_dict = troputil.regrid_and_apply_weights_tropomi_co(
                             obs.obj, mod_obj_for_sat, species=mod_sp,
                             method=regrid_method, qa_min=_qa_min,
-                            regrid_target=_targets, obs_grid_res=_res,
+                            regrid_target=_targets, obs_grid_res=_res, 
+                            obs_grid_units=_units, obs_grid_extent=_extent,
                         )
                         
                         self._store_sat_pairs(

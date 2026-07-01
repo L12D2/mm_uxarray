@@ -4,7 +4,7 @@
 #PBS -A P19010000
 #PBS -q casper
 #PBS -l select=1:ncpus=1:mem=200GB
-#PBS -l walltime=02:00:00
+#PBS -l walltime=04:00:00
 #PBS -j oe
 #PBS -o plot_sat.log
 
@@ -16,3 +16,5 @@ module load conda
 conda activate melodies-monet   
 
 python plot_sat.py
+
+

@@ -1017,10 +1017,15 @@ def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
         latmin,lonmin,latmax,lonmax,acro = get_epa_bounds(index=None,acronym=domain_name)
         title_add = 'EPA Region ' + domain_name + ': '
     elif domain_type.startswith('custom:') or domain_type.startswith('auto-region:'):
-        valid_data = vmodel.notnull()
-        lons = vmodel.where(valid_data).longitude
-        lats = vmodel.where(valid_data).latitude
-        latmin, lonmin, latmax, lonmax = lats.min(), lons.min(), lats.max(), lons.max()
+        # valid_data = vmodel.notnull()
+        # lons = vmodel.where(valid_data).longitude
+        # lats = vmodel.where(valid_data).latitude
+        # latmin, lonmin, latmax, lonmax = lats.min(), lons.min(), lats.max(), lons.max()
+        # df should already be subset of requested region. Using vmodel plots the whole model grid with obs overlaid. 
+        latmin = math.floor(min(df.latitude))
+        lonmin = math.floor(min(df.longitude))
+        latmax = math.ceil(max(df.latitude))
+        lonmax = math.ceil(max(df.longitude))
         title_add = domain_name + ': '
     else:
         latmin= math.floor(min(df.latitude))

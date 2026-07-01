@@ -721,6 +721,16 @@ def make_spatial_dist(
         latmin, latmax = dset["latitude"].min(), dset["latitude"].max()
         lonmin, lonmax = dset["longitude"].min(), dset["longitude"].max()
         title_add = ""
+    elif domain_type and (str(domain_type).startswith("auto-region:")
+                      or str(domain_type).startswith("custom:")):
+        # zoom to where the field has data (the region the driver subset to),
+        # so a global/CONUS grid doesn't render worldwide.
+        _finite = var2plot.notnull()
+        _lat = dset["latitude"].where(_finite)
+        _lon = dset["longitude"].where(_finite)
+        latmin, latmax = float(_lat.min()), float(_lat.max())
+        lonmin, lonmax = float(_lon.min()), float(_lon.max())
+        title_add = domain_name + ": "
     else:
         latmin = -90
         lonmin = -180
@@ -943,6 +953,16 @@ def make_spatial_bias_gridded(
         latmin, latmax = dset["latitude"].min(), dset["latitude"].max()
         lonmin, lonmax = dset["longitude"].min(), dset["longitude"].max()
         title_add = ""
+    elif domain_type and (str(domain_type).startswith("auto-region:")
+                          or str(domain_type).startswith("custom:")):
+        # zoom to where the difference has data (the region the driver subset
+        # to), so a global/CONUS grid doesn't render worldwide.
+        _finite = diff_mod_min_obs.notnull()
+        _lat = dset["latitude"].where(_finite)
+        _lon = dset["longitude"].where(_finite)
+        latmin, latmax = float(_lat.min()), float(_lat.max())
+        lonmin, lonmax = float(_lon.min()), float(_lon.max())
+        title_add = domain_name + ": "    
     else:
         latmin = -90
         lonmin = -180

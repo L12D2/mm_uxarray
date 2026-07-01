@@ -16,3 +16,8 @@ module load conda
 conda activate melodies-monet   
 
 python pair_sat.py
+
+# export PLOT_GRID=obs
+# qsub -N plot_obs   -o plot_obs.log   -l select=1:ncpus=1:mem=96GB -V submit_sat.sh
+# export PLOT_GRID=model
+# qsub -N plot_model -o plot_model.log -l select=1:ncpus=1:mem=96GB -V submit_sat.sh
