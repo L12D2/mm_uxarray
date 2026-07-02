@@ -203,7 +203,9 @@ class analysis:
         except ImportError:
             print("montage: Pillow (PIL) not installed; pip install PIL skipping.", flush=True)
             return
-            
+
+        print("Creating montages... NOTE: This feature is designed to help with rapid analysis. It is not intended to be used as publication quality output!")
+        
         cfg = self.montage_config if isinstance(self.montage_config, dict) else {}
         cols = int(cfg.get("cols", 6))
         thumb_w = int(cfg.get("thumb_width", 420))
@@ -211,8 +213,23 @@ class analysis:
         search = cfg.get("search", "*/*.png")
         plot_dir = os.path.expandvars(cfg.get("plot_dir", self.output_dir or "."))
         out = os.path.join(plot_dir, cfg.get("outdir", "montages"))
-        os.makedirs(out, exist_ok=True)
+        
+        # IF the user makes the plot_dir and output_dir the same, it will simply to not find the .pngs. You don't want an endless cycle of montages creating montages creating montages. 
+        #os.makedirs(out, exist_ok=True)
 
+        # fix: Warn and redirect montages into a new subdir within output_dir
+        if os.path.abspath(out) == os.path.abspath(plot_dir):
+            print(f"montage: WARNING outdir == plot_dir ({plot_dir}). The source "
+                  "outdir cannot be the same as the plot_dir. Otherwise, you will endlessly montage your montages. Redirecting montages to a "
+                  "'montages' subdir here:", flush=True)
+
+            out = os.path.join(plot_dir, "montages")
+            print(out)
+
+        if not os.path.isdir(out):
+            os.makedirs(out, exist_ok=True)
+            print(f"montage: created montage directory {out}", flush=True)
+            
         files = sorted(_glob.glob(os.path.join(plot_dir, search)))
         # never recurse into our own output
         files = [f for f in files if os.path.dirname(f) != out]
