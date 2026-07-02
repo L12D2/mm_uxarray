@@ -65,15 +65,17 @@ analysis:
         
   debug: false
 
-  # # add this as example to yaml 
-  # montage:
-  #   plot_dir: /glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/output/img # where are the single images written too
-  #   outdir: /glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/output/img # where do you want the montages written too
-  #   group_by: type     # puts all outputted figs in montage
-  #   # options include: "all", "plotname", "type"
-  #   search: "*.png"
-  #   cols: 6
-  #   thumb_width: 420
+  # add this as example to yaml 
+  montage:
+    plot_dir: /glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/satellite_img # where are the single images written too
+    outdir: /glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/satellite_img/montages # where do you want the montages written too
+    group_by: type     # puts all outputted figs in montage
+    # options include: "all", "plotname", "type"
+    search: "*.png"
+    cols: 6
+    thumb_width: 420
+
+# python -c "from melodies_monet import driver; an=driver.analysis(); an.control='/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/control_tempo_l2_hcho_cesm_se.yaml'; an.read_control(); an.montage()"
 
 obs:
   tempo_l2_hcho:
@@ -219,6 +221,7 @@ model:
 
     # for plotting model, it only needs a single model to get the grid. No need to load the whole month 
     files: /glade/campaign/acom/acom-da/conus_outputs/f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.ERA5_ref_dust_M1.1.002/H1/f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.ERA5_ref_dust_M1.1.002.cam.h1.2024-06-01-03600.nc 
+    # /glade/campaign/acom/acom-da/conus_outputs/f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.biog_ERA5_ref_dust_M1.1.001/H1/
     scrip_file: "/glade/campaign/acom/MUSICA/grids/ne0CONUSne30x8/ne0CONUS_ne30x8_np4_SCRIP.nc"
     mod_type: 'cesm_se' 
     mapping:
@@ -561,55 +564,55 @@ plots:
     data: ['tropomi_l2_co_cam-chem-se']
     data_proc: {rem_obs_nan: True, set_axis: True }
 
-  plot_grp4_hcho_tempo_obs:
-    type: "boxplot"
-    fig_kwargs: {figsize: [8, 6]}
-    text_kwargs: {fontsize: 20.}
-    domain_type: ["auto-region:box"]
-    domain_name: ["SE_US"]
-    domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
-    data: ['tempo_l2_hcho_cam-chem-se_obsgrid']
-    data_proc: {rem_obs_nan: True, set_axis: True}
+  # plot_grp4_hcho_tempo_obs:
+  #   type: "boxplot"
+  #   fig_kwargs: {figsize: [8, 6]}
+  #   text_kwargs: {fontsize: 20.}
+  #   domain_type: ["auto-region:box"]
+  #   domain_name: ["SE_US"]
+  #   domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
+  #   data: ['tempo_l2_hcho_cam-chem-se_obsgrid']
+  #   data_proc: {rem_obs_nan: True, set_axis: True}
 
-  plot_grp4_hcho_tropo_obs:
-    type: "boxplot"
-    fig_kwargs: {figsize: [8, 6]}
-    text_kwargs: {fontsize: 20.}
-    domain_type: ["auto-region:box"]
-    domain_name: ["SE_US"]
-    domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
-    data: ['tropomi_l2_hcho_cam-chem-se_obsgrid']
-    data_proc: {rem_obs_nan: True, set_axis: True}
+  # plot_grp4_hcho_tropo_obs:
+  #   type: "boxplot"
+  #   fig_kwargs: {figsize: [8, 6]}
+  #   text_kwargs: {fontsize: 20.}
+  #   domain_type: ["auto-region:box"]
+  #   domain_name: ["SE_US"]
+  #   domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
+  #   data: ['tropomi_l2_hcho_cam-chem-se_obsgrid']
+  #   data_proc: {rem_obs_nan: True, set_axis: True}
 
-  plot_grp4_no2_tempo_obs:
-    type: "boxplot"
-    fig_kwargs: {figsize: [8, 6]}
-    text_kwargs: {fontsize: 20.}
-    domain_type: ["auto-region:box"]
-    domain_name: ["SE_US"]
-    domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
-    data: ['tempo_l2_no2_cam-chem-se_obsgrid']
-    data_proc: {rem_obs_nan: True, set_axis: True}
+  # plot_grp4_no2_tempo_obs:
+  #   type: "boxplot"
+  #   fig_kwargs: {figsize: [8, 6]}
+  #   text_kwargs: {fontsize: 20.}
+  #   domain_type: ["auto-region:box"]
+  #   domain_name: ["SE_US"]
+  #   domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
+  #   data: ['tempo_l2_no2_cam-chem-se_obsgrid']
+  #   data_proc: {rem_obs_nan: True, set_axis: True}
 
-  plot_grp4_no2_tropo_obs:
-    type: "boxplot"
-    fig_kwargs: {figsize: [8, 6]}
-    text_kwargs: {fontsize: 20.}
-    domain_type: ["auto-region:box"]
-    domain_name: ["SE_US"]
-    domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
-    data: ['tropomi_l2_no2_cam-chem-se_obsgrid']
-    data_proc: {rem_obs_nan: True, set_axis: True}
+  # plot_grp4_no2_tropo_obs:
+  #   type: "boxplot"
+  #   fig_kwargs: {figsize: [8, 6]}
+  #   text_kwargs: {fontsize: 20.}
+  #   domain_type: ["auto-region:box"]
+  #   domain_name: ["SE_US"]
+  #   domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
+  #   data: ['tropomi_l2_no2_cam-chem-se_obsgrid']
+  #   data_proc: {rem_obs_nan: True, set_axis: True}
 
-  plot_grp4_co_obs:
-    type: "boxplot"
-    fig_kwargs: {figsize: [8, 6]}
-    text_kwargs: {fontsize: 20.}
-    domain_type: ["auto-region:box"]
-    domain_name: ["SE_US"]
-    domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
-    data: ['tropomi_l2_co_cam-chem-se_obsgrid']
-    data_proc: {rem_obs_nan: True, set_axis: True}
+  # plot_grp4_co_obs:
+  #   type: "boxplot"
+  #   fig_kwargs: {figsize: [8, 6]}
+  #   text_kwargs: {fontsize: 20.}
+  #   domain_type: ["auto-region:box"]
+  #   domain_name: ["SE_US"]
+  #   domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
+  #   data: ['tropomi_l2_co_cam-chem-se_obsgrid']
+  #   data_proc: {rem_obs_nan: True, set_axis: True}
     
   plot_grp5:
     type: 'spatial_overlay'
