@@ -1298,7 +1298,7 @@ def calculate_multi_boxplot(df, df_reg=None, region_name= None, interval_list=No
 
 def make_boxplot(comb_bx, label_bx, ylabel = None, vmin = None, vmax = None, outname='plot',
                  domain_type=None, domain_name=None,
-                 plot_dict=None, fig_dict=None,text_dict=None,debug=False, set_stat_sig=False, gridlines = False):
+                 plot_dict=None, fig_dict=None,text_dict=None,debug=False, set_stat_sig=False, gridlines = False, showfliers=True):
 
     """Creates box-plot. 
 
@@ -1378,6 +1378,7 @@ def make_boxplot(comb_bx, label_bx, ylabel = None, vmin = None, vmax = None, out
     boxplot_kwargs = {'boxprops': boxprops, 'medianprops': lineprops,
                   'whiskerprops': lineprops, 'capprops': lineprops,
                   'fliersize' : 2.0,
+                  'showfliers': showfliers,
                   'flierprops': dict(marker='*',
                                      markerfacecolor='blue',
                                      markeredgecolor='none',
