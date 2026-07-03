@@ -58,6 +58,17 @@ def _save(outname_png):
               flush=True)
         plt.savefig(outname_png, dpi=200, bbox_inches="tight")
 
+def _fnum(x):
+    """PyYAML parses '5.0e16' (no '+') as a STRING, which then compares
+    silently-wrong; coerce every user-supplied numeric defensively."""
+    return None if x is None else float(x)
+
+def _clip2(clip):
+    """clip: [lo, hi] from YAML (float, float) or None.
+       Add an additioanl way for user to clip values they may think are extraneous 
+    """
+    return None if clip is None else (float(clip[0]), float(clip[1]))
+    
 def _pair_obj(paired, label):
     if label not in paired:
         raise KeyError(
@@ -104,7 +115,7 @@ def _extract(spec, paired, time_match, max_points=2_000_000):
                 else 100.0 * (da_m - da_o) / da_o.where(da_o > 0)
 
         # temporary filter string
-        clip = spec.get("clip")   # [lo, hi] physical range -> NaN outside
+        clip = _clip2(spec.get("clip"))   # [lo, hi] physical range -> NaN outside
         if clip is not None:
             da = da.where((da >= clip[0]) & (da <= clip[1]))
             
@@ -143,7 +154,7 @@ def _extract(spec, paired, time_match, max_points=2_000_000):
         o, m = df[spec["obs_var"]], df[spec["mod_var"]]
         v = (m - o) if mode == "bias" else 100.0 * (m - o) / o.where(o > 0)
     
-    clip = spec.get("clip")   # [lo, hi] physical range -> NaN outside
+    clip = _clip2(spec.get("clip"))   # [lo, hi] physical range -> NaN outside
     if clip is not None:
         v = v.where((v >= clip[0]) & (v <= clip[1]))
         
@@ -211,7 +222,8 @@ def multi_timeseries(series, outname, ylabel=None, title=None, avg_window=None,
 
 
 def multi_boxplot(series, outname, ylabel=None, title=None, vmin=None,
-                  vmax=None, fig_dict=None, text_dict=None, showfliers=False): # add outliers as an option in the yaml
+                  vmax=None, fig_dict=None, text_dict=None, showfliers=False,
+                        hline=hline,): # add outliers as an option in the yaml
     """One box per series via surfplots.make_boxplot.
 
     The combined frame is built with pd.concat (NOT column assignment as in
@@ -291,6 +303,7 @@ def run(paired, config, default_outdir="."):
     max_points = int(config.get("max_points", 2_000_000))
 
     for gname, grp in config.get("groups", {}).items():
+        dp = grp.get("data_proc") or {}
         tm = grp.get("time_match", default_tm)
         gbounds = grp.get("bounds")
         gclip = grp.get("clip")
@@ -319,11 +332,15 @@ def run(paired, config, default_outdir="."):
                           fig_dict=grp.get("fig_kwargs"),
                           text_dict=grp.get("text_kwargs"))
             if t == "multi_boxplot":
-                kwargs.update(vmin=grp.get("vmin"), vmax=grp.get("vmax"))
+                kwargs.update(
+                    vmin=_fnum(grp.get("vmin")), vmax=_fnum(grp.get("vmax")),
+                    showfliers=dp.get("showfliers",
+                                      grp.get("showfliers", False)),
+                    hline=_fnum(dp.get("hline", grp.get("hline"))))
             if t == "multi_timeseries":
                 kwargs["avg_window"] = grp.get("avg_window")
             if t == "diff_map":
-                kwargs.update(vdiff=grp.get("vdiff"),
+                kwargs.update(vdiff=_fnum(grp.get("vdiff")),
                               domain_name=grp.get("domain_name"))
             fn(series, out, **kwargs)
 

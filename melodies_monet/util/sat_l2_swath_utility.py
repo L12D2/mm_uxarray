@@ -574,10 +574,18 @@ def _swath2series(swath, data_vars, obs_var=None,
         mode = obs_weight if v == obs_var else model_weight
         if v == obs_var and mode == "inverse_variance" and "_obs_err" in swath.variables:
             out[v] = _wmean(da, 1.0 / (swath["_obs_err"] ** 2))   # inverse-variance
+            used = "inverse_variance"
         elif mode == "equal":
             out[v] = da.mean(skipna=True)                          # unweighted
+            used = "equal"
         else:
             out[v] = _wmean(da, w_area)                            # area (cos lat)
+            # requested inverse_variance but no _obs_err read in to area
+            used = ("area (inverse_variance fallback: no _obs_err)"
+                    if v == obs_var and mode == "inverse_variance" else "area")
+        # record how this scalar was built so saved series files are auditable
+        out[v].attrs = {**dict(da.attrs), "series_weighting": used}
+        
     return out
 
 def _swath_to_target(swath, modobj, method, data_vars, target, res, extent, units="deg" ):
@@ -865,6 +873,7 @@ def regrid_and_apply_weights_tropomi(obsobj, modobj, species=["NO2"],
         # averaging-kernel applied model column (molec/cm2), (y, x)
         model_col = apply_weights_mod2tropomi_no2(o, no2_t, "NO2")
         obs_col = o[_TROPOMI_NO2_VAR] * _MOL_M2_TO_MOLEC_CM2  # molec/cm2
+        obs_col.attrs["units"] = "molecules/cm2" # update attributes
 
         # qa val for no2
         if qa_min and "qa_value" in o.variables:
@@ -996,6 +1005,7 @@ def regrid_and_apply_weights_tropomi_hcho(obsobj, modobj, species=["CH2O"],
         prof_t = interp_vertical_mod2tropomi(o, on_swath, [sp])
         model_col = apply_weights_mod2tropomi_hcho(o, prof_t, sp)
         obs_col = o["formaldehyde_tropospheric_vertical_column"] * _MOL_M2_TO_MOLEC_CM2     # molec/cm2
+        obs_col.attrs["units"] = "molecules/cm2"
 
         # QA filter
         if qa_min and "qa_value" in o.variables:
@@ -1090,6 +1100,16 @@ def regrid_and_apply_weights_tropomi_co(obsobj, modobj, species=["CO"],
     for v in obsobj.values():
         granules.extend(v if isinstance(v, list) else [v])
 
+    # tropomi co ships a destriped column; warn once if only the raw one
+    # was read in (the retrieval has known along-track striping)
+    _has_corr = any(_TROPOMI_CO_VAR + "_corrected" in o.variables
+                    for o in granules)
+    if not _has_corr:
+        print("TROPOMI CO: pairing the raw (stripey) column. The product "
+              "ships a destriped variable — add "
+              "'carbonmonoxide_total_column_corrected: {}' to the obs "
+              "variables in the control YAML.", flush=True)
+        
     out_by = {t: [] for t in targets}
     for o in granules:
         if "time" in o.dims:
@@ -1130,8 +1150,14 @@ def regrid_and_apply_weights_tropomi_co(obsobj, modobj, species=["CO"],
         on_swath = _mod2tropomi_swath(mod_t, o, method, [sp, "pres_pa_mid"], grid_file)
         prof_t = interp_vertical_mod2tropomi(o, on_swath, [sp])
         model_col = apply_weights_mod2tropomi_co(o, prof_t, sp)
-        obs_col = o[_TROPOMI_CO_VAR] * _MOL_M2_TO_MOLEC_CM2     # molec/cm2
 
+        # tropomi co ships with a destriped product 
+        _co_src = (_TROPOMI_CO_VAR + "_corrected"
+                   if _TROPOMI_CO_VAR + "_corrected" in o.variables
+                   else _TROPOMI_CO_VAR)
+        obs_col = o[_co_src] * _MOL_M2_TO_MOLEC_CM2             # molec/cm2
+        obs_col.attrs["units"] = "molecules/cm2"
+        
         # QA filter 
         if qa_min and "qa_value" in o.variables:
             qa = o["qa_value"]
@@ -1148,6 +1174,8 @@ def regrid_and_apply_weights_tropomi_co(obsobj, modobj, species=["CO"],
             coords={"longitude": o["longitude"], "latitude": o["latitude"]},
         )
 
+        swath[_TROPOMI_CO_VAR].attrs["source_variable"] = _co_src
+        
         # per-pixel retrieval error for inverse-variance weighting in 'series'
         _attach_obs_err(swath, o, _TROPOMI_CO_VAR)
         

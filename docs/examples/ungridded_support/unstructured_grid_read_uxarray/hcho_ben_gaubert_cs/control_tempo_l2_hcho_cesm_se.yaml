@@ -209,6 +209,7 @@ obs:
       latitude_bounds: {}
       longitude_bounds: {}
       carbonmonoxide_total_column_precision: {}
+      carbonmonoxide_total_column_corrected: {}
 
       #  data: ['tempo_l2_hcho_cam-chem-se', 'tempo_l2_no2_cam-chem-se', 'tropomi_l2_no2_cam-chem-se', 'tropomi_l2_hcho_cam-chem-se', 'tropomi_l2_co_cam-chem-se']
       # data: ["tempo_l2_hcho_cam-chem-se"]
