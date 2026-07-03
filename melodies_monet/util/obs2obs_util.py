@@ -280,7 +280,9 @@ _PLOTTERS = {"multi_boxplot": multi_boxplot,
              "multi_timeseries": multi_timeseries,
              "diff_map": diff_map}
 
-
+# spatial overlay 
+# spatial bias 
+# 
 def run(paired, config, default_outdir="."):
     """Execute every group in the ``obs2obs:`` config against loaded pairs."""
     outdir = os.path.expandvars(config.get("output_dir", default_outdir))
