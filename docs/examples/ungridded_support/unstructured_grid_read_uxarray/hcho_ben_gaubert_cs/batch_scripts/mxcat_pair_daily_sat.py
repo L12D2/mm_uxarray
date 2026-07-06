@@ -9,7 +9,7 @@ from melodies_monet import driver
 
 BASE = ("/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/satellite_mxcat/control_mxcat.yaml")
 
-OUTDIR = ("/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/output/mxcat")
+OUTDIR = ("/glade/work/lcthompson/mm_output/mxcat")
 
 YAMLDIR = OUTDIR + "/hcho_yaml"
 

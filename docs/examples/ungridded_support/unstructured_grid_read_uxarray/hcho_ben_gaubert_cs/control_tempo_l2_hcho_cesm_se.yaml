@@ -25,8 +25,8 @@ analysis:
   # end_time:   '2024-03-15 23:59:00'        #UTC
   
   output_dir: /glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/satellite_img
-  output_dir_save: /glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/output
-  output_dir_read: /glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/output 
+  output_dir_save: /glade/work/lcthompson/mm_output/nonbiog_refera5_dust
+  output_dir_read: /glade/work/lcthompson/mm_output/nonbiog_refera5_dust 
   
   save:
     # paired: {method: 'netcdf', prefix: 'test', data: all}
@@ -38,29 +38,29 @@ analysis:
       method: 'netcdf'
       filenames:
         # TEMPO HCHO 
-        tempo_l2_hcho_cam-chem-se:          ['/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/output/202406*_tempo_l2_hcho_cam-chem-se.nc4']
-        tempo_l2_hcho_cam-chem-se_obsgrid:  ['/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/output/202406*_tempo_l2_hcho_cam-chem-se_obsgrid.nc4']
-        tempo_l2_hcho_cam-chem-se_series:   ['/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/output/202406*_tempo_l2_hcho_cam-chem-se_series.nc4']
+        tempo_l2_hcho_cam-chem-se:          ['/glade/work/lcthompson/mm_output/nonbiog_refera5_dust/202406*_tempo_l2_hcho_cam-chem-se.nc4']
+        tempo_l2_hcho_cam-chem-se_obsgrid:  ['/glade/work/lcthompson/mm_output/nonbiog_refera5_dust/202406*_tempo_l2_hcho_cam-chem-se_obsgrid.nc4']
+        tempo_l2_hcho_cam-chem-se_series:   ['/glade/work/lcthompson/mm_output/nonbiog_refera5_dust/202406*_tempo_l2_hcho_cam-chem-se_series.nc4']
 
         # TEMPO NO2 
-        tempo_l2_no2_cam-chem-se:           ['/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/output/202406*_tempo_l2_no2_cam-chem-se.nc4']
-        tempo_l2_no2_cam-chem-se_obsgrid:   ['/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/output/202406*_tempo_l2_no2_cam-chem-se_obsgrid.nc4']
-        tempo_l2_no2_cam-chem-se_series:    ['/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/output/202406*_tempo_l2_no2_cam-chem-se_series.nc4']
+        tempo_l2_no2_cam-chem-se:           ['/glade/work/lcthompson/mm_output/nonbiog_refera5_dust/202406*_tempo_l2_no2_cam-chem-se.nc4']
+        tempo_l2_no2_cam-chem-se_obsgrid:   ['/glade/work/lcthompson/mm_output/nonbiog_refera5_dust/202406*_tempo_l2_no2_cam-chem-se_obsgrid.nc4']
+        tempo_l2_no2_cam-chem-se_series:    ['/glade/work/lcthompson/mm_output/nonbiog_refera5_dust/202406*_tempo_l2_no2_cam-chem-se_series.nc4']
 
         # TROPOMI NO2
-        tropomi_l2_no2_cam-chem-se:         ['/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/output/202406*_tropomi_l2_no2_cam-chem-se.nc4']
-        tropomi_l2_no2_cam-chem-se_obsgrid: ['/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/output/202406*_tropomi_l2_no2_cam-chem-se_obsgrid.nc4']
-        tropomi_l2_no2_cam-chem-se_series:  ['/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/output/202406*_tropomi_l2_no2_cam-chem-se_series.nc4']
+        tropomi_l2_no2_cam-chem-se:         ['/glade/work/lcthompson/mm_output/nonbiog_refera5_dust/202406*_tropomi_l2_no2_cam-chem-se.nc4']
+        tropomi_l2_no2_cam-chem-se_obsgrid: ['/glade/work/lcthompson/mm_output/nonbiog_refera5_dust/202406*_tropomi_l2_no2_cam-chem-se_obsgrid.nc4']
+        tropomi_l2_no2_cam-chem-se_series:  ['/glade/work/lcthompson/mm_output/nonbiog_refera5_dust/202406*_tropomi_l2_no2_cam-chem-se_series.nc4']
 
         # TROPOMI HCHO
-        tropomi_l2_hcho_cam-chem-se:        ['/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/output/202406*_tropomi_l2_hcho_cam-chem-se.nc4']
-        tropomi_l2_hcho_cam-chem-se_obsgrid: ['/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/output/202406*_tropomi_l2_hcho_cam-chem-se_obsgrid.nc4']
-        tropomi_l2_hcho_cam-chem-se_series: ['/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/output/202406*_tropomi_l2_hcho_cam-chem-se_series.nc4']
+        tropomi_l2_hcho_cam-chem-se:        ['/glade/work/lcthompson/mm_output/nonbiog_refera5_dust/202406*_tropomi_l2_hcho_cam-chem-se.nc4']
+        tropomi_l2_hcho_cam-chem-se_obsgrid: ['/glade/work/lcthompson/mm_output/nonbiog_refera5_dust/202406*_tropomi_l2_hcho_cam-chem-se_obsgrid.nc4']
+        tropomi_l2_hcho_cam-chem-se_series: ['/glade/work/lcthompson/mm_output/nonbiog_refera5_dust/202406*_tropomi_l2_hcho_cam-chem-se_series.nc4']
 
         # TROPOMI CO 
-        tropomi_l2_co_cam-chem-se:          ['/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/output/202406*_tropomi_l2_co_cam-chem-se.nc4']
-        tropomi_l2_co_cam-chem-se_obsgrid:  ['/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/output/202406*_tropomi_l2_co_cam-chem-se_obsgrid.nc4']
-        tropomi_l2_co_cam-chem-se_series:   ['/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/output/202406*_tropomi_l2_co_cam-chem-se_series.nc4']
+        tropomi_l2_co_cam-chem-se:          ['/glade/work/lcthompson/mm_output/nonbiog_refera5_dust/202406*_tropomi_l2_co_cam-chem-se.nc4']
+        tropomi_l2_co_cam-chem-se_obsgrid:  ['/glade/work/lcthompson/mm_output/nonbiog_refera5_dust/202406*_tropomi_l2_co_cam-chem-se_obsgrid.nc4']
+        tropomi_l2_co_cam-chem-se_series:   ['/glade/work/lcthompson/mm_output/nonbiog_refera5_dust/202406*_tropomi_l2_co_cam-chem-se_series.nc4']
         
         
   debug: false
@@ -196,7 +196,7 @@ obs:
     #obs_grid_extent: [-130, -60, 20, 55] # [lonW, lonE, latS, latN]; default = model extent
     obs_grid_units: deg            # 'deg' (default) | 'km' | 'm'
     
-    filename: /glade/derecho/scratch/lcthompson/tropomi/co_2024/S5P_OFFL_L2__CO_____20240601*.nc #/glade/derecho/scratch/lcthompson/tropomi/co_2024/S5P_OFFL_L2__CO___202406*.nc
+    filename: /glade/derecho/scratch/lcthompson/tropomi/co_2024/S5P_OFFL_L2__CO_____202406*.nc #/glade/derecho/scratch/lcthompson/tropomi/co_2024/S5P_OFFL_L2__CO___202406*.nc
     variables:
       qa_value: {qa_min: 0.5}
       carbonmonoxide_total_column: 

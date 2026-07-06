@@ -9,7 +9,7 @@ from melodies_monet import driver
 
 BASE = ("/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/satellite_bio_era5_ref_dust/control_biog_era5_ref_dust.yaml")
 
-OUTDIR = ("/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/output/biog_refera5_dust")
+OUTDIR = ("/glade/work/lcthompson/mm_output/biog_refera5_dust")
 
 YAMLDIR = OUTDIR + "/hcho_yaml"
 
