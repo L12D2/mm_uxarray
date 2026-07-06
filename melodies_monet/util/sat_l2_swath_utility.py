@@ -776,6 +776,47 @@ def _tropomi_swath2mod(swath, modobj, method, data_vars):
     # make sure to fill 0s with nans
     return out.where(out != 0)
 
+# 07062026 simplify this code and combine where redundant 
+
+# time should be non specific to the satellite 
+def _granule_time(o):
+    """Granule overpass time for model matching.
+
+    Prefer 'time_granule' (real per-measurement times, take the mean); fall
+    back to the 'time' coord (start-of-day reference) if absent. None if
+    neither is usable.
+    """
+    if "time_granule" in o.variables:
+        tg = np.asarray(o["time_granule"].values).ravel().astype("datetime64[ns]")
+        tg = tg[~np.isnat(tg)]
+        return (np.array(tg.astype("int64").mean(), dtype="int64")
+                .astype("datetime64[ns]") if tg.size else None)
+    return o["time"].values if "time" in o.coords else None
+    
+# model time at the granule sat overpass time 
+def _model_at_time(modobj, gtime):
+    """Model state at a granule's overpass time.
+
+    Linear time interpolation, clamped to the model's time span (an overpass
+    just outside the model window snaps to the first/last model time);
+    nearest-neighbor as a fallback; passthrough when the model has no time
+    dim (or first step when the overpass time is unknown).
+    """
+    if "time" not in modobj.dims:
+        return modobj
+    if gtime is None:
+        return modobj.isel(time=0)
+    tsel = gtime if np.ndim(gtime) == 0 else np.asarray(gtime).ravel()[0]
+    mtimes = modobj["time"].values
+    tsel = min(max(tsel, mtimes.min()), mtimes.max())
+    try:
+        return modobj.interp(time=tsel)
+    except Exception:
+        return modobj.sel(time=tsel, method="nearest")
+
+
+###################### Regrid and application of weights ###################### 
+########################### instrument specific ############################### 
 
 def regrid_and_apply_weights_tropomi(obsobj, modobj, species=["NO2"],
                                      method="conservative", qa_min=0.75,
@@ -783,10 +824,9 @@ def regrid_and_apply_weights_tropomi(obsobj, modobj, species=["NO2"],
     
     """Pair an unstructured model with TROPOMI L2 NO2 (AK applied).
 
-    For each granule: forward-regrid model to swat (obs), interpolate the model
-    profile onto TROPOMI's layers, apply the averaging kernel, then
-    regrid the AK'd model column AND the obs column back onto the model
-    grid. Granules are concatenated along ``time``.
+    wrapper for _pair_tropomi. for each granule, forward regrid model to the swath, interpolate model profile 
+    onto tropomi layers, apple the AK, then regrid the AK'd model column AND obs column to requested 
+    regrid targets. Concatenated along time 
 
     Parameters
     ----------
@@ -803,108 +843,17 @@ def regrid_and_apply_weights_tropomi(obsobj, modobj, species=["NO2"],
 
     Returns
     -------
-    xr.Dataset
-        Paired model + obs NO2 tropospheric columns (molec/cm2) on the model
-        column dim, stacked along ``time`` (one entry per granule).
+    dict[str, xr.Dataset]
+        Per regrid target: paired model + obs NO2 tropospheric columns
+        (molec/cm2), stacked along ``time`` (one entry per granule).
     """
-    sp = species[0]
-    grid_file = (modobj.attrs.get("mio_scrip_file")
-                 or modobj.attrs.get("mio_mesh_file"))
-
-    targets = [regrid_target] if isinstance(regrid_target, str) else list(regrid_target)
-    extent = (tuple(obs_grid_extent) if obs_grid_extent
-                  else _model_lonlat_extent(modobj))
-
-    # Flatten dict[date -> list[granule]] to a flat granule list.
-    granules = []
-    for v in obsobj.values():
-        granules.extend(v if isinstance(v, list) else [v])
-
-    out_by = {t: [] for t in targets}
-    for o in granules:
-        if "time" in o.dims:
-            o = o.squeeze("time", drop=False)
-
-        # crop the orbit to the region of interest before the expensive pairing
-        o = _crop_swath_to_extent(o, extent)
-        if o is None:
-            continue
-        
-        # Granule overpass time for model matching. prefer "time_granule", which holds
-        # the real per-measurement times, and use its mean. Fall back to the
-        # "time" coord (midnight, start of day reference) only if "time_granule" is absent.
-        
-        if "time_granule" in o.variables:
-            tg = np.asarray(o["time_granule"].values).ravel().astype("datetime64[ns]")
-            tg = tg[~np.isnat(tg)]
-            gtime = (
-                np.array(tg.astype("int64").mean(), dtype="int64").astype("datetime64[ns]")
-                if tg.size else None
-            )
-        else:
-            gtime = o["time"].values if "time" in o.coords else None
-
-        # Select the model to this granule's overpass time
-        if "time" in modobj.dims and gtime is not None:
-            tsel = gtime if np.ndim(gtime) == 0 else np.asarray(gtime).ravel()[0]
-
-            mtimes = modobj["time"].values
-            tmin, tmax = mtimes.min(), mtimes.max()
-            if tsel < tmin:
-                tsel = tmin
-            elif tsel > tmax:
-                tsel = tmax
-                
-            try:
-                mod_t = modobj.interp(time=tsel)
-            except Exception:
-                mod_t = modobj.sel(time=tsel, method="nearest")
-        elif "time" in modobj.dims:
-            mod_t = modobj.isel(time=0)
-        else:
-            mod_t = modobj
-            
-        # forward model to swath (NO2 + model pressure for the vertical interp)
-        on_swath = _mod2tropomi_swath(
-            mod_t, o, method, ["NO2", "pres_pa_mid"], grid_file
-        )
-        # model vmr onto TROPOMI's 34 layers
-        no2_t = interp_vertical_mod2tropomi(o, on_swath, ["NO2"])
-        # averaging-kernel applied model column (molec/cm2), (y, x)
-        model_col = apply_weights_mod2tropomi_no2(o, no2_t, "NO2")
-        obs_col = o[_TROPOMI_NO2_VAR] * _MOL_M2_TO_MOLEC_CM2  # molec/cm2
-        obs_col.attrs["units"] = "molecules/cm2" # update attributes
-
-        # qa val for no2
-        if qa_min and "qa_value" in o.variables:
-            qa = o["qa_value"]
-            if float(np.nanmax(np.asarray(qa.values))) > 1.5:
-                qa = qa / 100.0
-            good = qa >= qa_min
-            obs_col = obs_col.where(good)
-            model_col = model_col.where(good)
-                    
-        swath = xr.Dataset(
-            {sp: model_col, _TROPOMI_NO2_VAR: obs_col,
-             "latitude_bounds": o["latitude_bounds"],
-             "longitude_bounds": o["longitude_bounds"]},
-            coords={"longitude": o["longitude"], "latitude": o["latitude"]},
-        )
-
-        # per-pixel retrieval error for  inverse-variance weighting in 'series'
-        _attach_obs_err(swath, o, _TROPOMI_NO2_VAR)        
-
-        for t in targets:
-            on = _swath_to_target(swath, modobj, method, [sp, _TROPOMI_NO2_VAR],
-                                  t, obs_grid_res, extent, units=obs_grid_units)
-            if gtime is not None:
-                tval = gtime if np.ndim(gtime) == 0 else np.asarray(gtime).ravel()[0]
-                on = on.expand_dims(time=[np.datetime64(tval)])
-            out_by[t].append(on)
-
-    return {t: (xr.concat(lst, dim="time") if lst else xr.Dataset())
-            for t, lst in out_by.items()}
-
+    
+    return _pair_tropomi("no2", obsobj, modobj, species=species, method=method,
+                         qa_min=qa_min, regrid_target=regrid_target,
+                         obs_grid_res=obs_grid_res,
+                         obs_grid_units=obs_grid_units,
+                         obs_grid_extent=obs_grid_extent)
+    
 # tropomi HCHO 
 # single tropo AMF and total columng averaging kernel 
 # use generic tropomi_l2 reader + shared regrid / interp 
@@ -942,7 +891,8 @@ def apply_weights_mod2tropomi_hcho(obsobj, modobj_on_tropomi_layers, species="CH
 
 def regrid_and_apply_weights_tropomi_hcho(obsobj, modobj, species=["CH2O"],
                                           method="conservative", qa_min=0.5,
-                                          regrid_target="model", obs_grid_res=0.1, obs_grid_units="deg", obs_grid_extent=None): 
+                                          regrid_target="model", obs_grid_res=0.1, obs_grid_units="deg", 
+                                          obs_grid_extent=None):
     """
     Pair an unstructured model with TROPOMI L2 HCHO (AK applied).
 
@@ -950,101 +900,16 @@ def regrid_and_apply_weights_tropomi_hcho(obsobj, modobj, species=["CH2O"],
 
     regrid_target="model" ; model space 
     regrid_target="obs" ; obs space
+    regrid_target="series" ; one weighted domain value per overpass
     
     """
-    sp = species[0]
-    grid_file = (modobj.attrs.get("mio_scrip_file")
-                 or modobj.attrs.get("mio_mesh_file"))
-
-    targets = [regrid_target] if isinstance(regrid_target, str) else list(regrid_target)
-    extent = (tuple(obs_grid_extent) if obs_grid_extent
-              else _model_lonlat_extent(modobj))
-
-    granules = []
-    for v in obsobj.values():
-        granules.extend(v if isinstance(v, list) else [v])
-
-    out_by = {t: [] for t in targets}
-    for o in granules:
-        if "time" in o.dims:
-            o = o.squeeze("time", drop=False)
-            
-        # crop the orbit to the region of interest before the expensive pairing
-        o = _crop_swath_to_extent(o, extent)
-        if o is None:
-            continue
-            
-        if "time_granule" in o.variables:
-            tg = np.asarray(o["time_granule"].values).ravel().astype("datetime64[ns]")
-            tg = tg[~np.isnat(tg)]
-            gtime = (
-                np.array(tg.astype("int64").mean(), dtype="int64").astype("datetime64[ns]")
-                if tg.size else None
-            )
-        else:
-            gtime = o["time"].values if "time" in o.coords else None
-
-        if "time" in modobj.dims and gtime is not None:
-            tsel = gtime if np.ndim(gtime) == 0 else np.asarray(gtime).ravel()[0]
-            mtimes = modobj["time"].values
-            tmin, tmax = mtimes.min(), mtimes.max()
-            if tsel < tmin:
-                tsel = tmin
-            elif tsel > tmax:
-                tsel = tmax
-            try:
-                mod_t = modobj.interp(time=tsel)
-            except Exception:
-                mod_t = modobj.sel(time=tsel, method="nearest")
-        elif "time" in modobj.dims:
-            mod_t = modobj.isel(time=0)
-        else:
-            mod_t = modobj
-
-        on_swath = _mod2tropomi_swath(mod_t, o, method, [sp, "pres_pa_mid"], grid_file)
-        prof_t = interp_vertical_mod2tropomi(o, on_swath, [sp])
-        model_col = apply_weights_mod2tropomi_hcho(o, prof_t, sp)
-        obs_col = o["formaldehyde_tropospheric_vertical_column"] * _MOL_M2_TO_MOLEC_CM2     # molec/cm2
-        obs_col.attrs["units"] = "molecules/cm2"
-
-        # QA filter
-        if qa_min and "qa_value" in o.variables:
-            qa = o["qa_value"]
-            if float(np.nanmax(np.asarray(qa.values))) > 1.5:
-                qa = qa / 100.0
-            good = qa >= qa_min
-            obs_col = obs_col.where(good)
-            model_col = model_col.where(good)
-                    
-        swath = xr.Dataset(
-            {sp: model_col, "formaldehyde_tropospheric_vertical_column": obs_col,
-             "latitude_bounds": o["latitude_bounds"],
-             "longitude_bounds": o["longitude_bounds"]},
-            coords={"longitude": o["longitude"], "latitude": o["latitude"]},
-        )
-        
-        # per-pixel retrieval error for inverse-variance weighting in 'series'
-        _attach_obs_err(swath, o, "formaldehyde_tropospheric_vertical_column")
-
-        for t in targets:
-            on = _swath_to_target(
-                swath, modobj, method,
-                [sp, "formaldehyde_tropospheric_vertical_column"],
-                t, obs_grid_res, extent, units=obs_grid_units
-            )
-            if gtime is not None:
-                tval = gtime if np.ndim(gtime) == 0 else np.asarray(gtime).ravel()[0]
-                on = on.expand_dims(time=[np.datetime64(tval)])
-            out_by[t].append(on)
-
-    return {t: (xr.concat(lst, dim="time") if lst else xr.Dataset())
-            for t, lst in out_by.items()}
-
-
-# new satelite variables ncdump -h "$F" | grep -iE "group: (PRODUCT|DETAILED_RESULTS|INPUT_DATA)|carbonmonoxide_total_column|column_averaging_kernel|pressure_levels|qa_value|layer =|:units|:multiplication_factor"
+    return _pair_tropomi("hcho", obsobj, modobj, species=species, method=method,
+                         qa_min=qa_min, regrid_target=regrid_target,
+                         obs_grid_res=obs_grid_res,
+                         obs_grid_units=obs_grid_units,
+                         obs_grid_extent=obs_grid_extent)
 
 # co 
-
 _TROPOMI_CO_VAR = "carbonmonoxide_total_column"
 
 def apply_weights_mod2tropomi_co(obsobj, modobj_on_tropomi_layers, species="CO"):
@@ -1077,18 +942,55 @@ def apply_weights_mod2tropomi_co(obsobj, modobj_on_tropomi_layers, species="CO")
 def regrid_and_apply_weights_tropomi_co(obsobj, modobj, species=["CO"],
                                         method="conservative", qa_min=0.5,
                                         regrid_target="model", obs_grid_res=0.1, obs_grid_units="deg", obs_grid_extent=None):
-    
     """Pair an unstructured model with TROPOMI L2 CO (column AK applied).
 
-    Mirrors regrid_and_apply_weights_tropomi_hcho 
-
-    defaults to regridding to model space via "regrid_target"
-
-    regrid_target="model" ; model space 
-    regrid_target="obs" ; obs space
-
+    Thin wrapper over _pair_tropomi('co', ...). Prefers the destriped
+    'carbonmonoxide_total_column_corrected' when it was read in.
     """
-    sp = species[0]
+    return _pair_tropomi("co", obsobj, modobj, species=species, method=method,
+                         qa_min=qa_min, regrid_target=regrid_target,
+                         obs_grid_res=obs_grid_res,
+                         obs_grid_units=obs_grid_units,
+                         obs_grid_extent=obs_grid_extent)
+
+
+
+# generalize the ability to easily add more tropomi species 
+# to add new satelite variables ncdump -h "$F" | grep -iE "group: (PRODUCT|DETAILED_RESULTS|INPUT_DATA)|carbonmonoxide_total_column|column_averaging_kernel|pressure_levels|qa_value|layer =|:units|:multiplication_factor"
+
+_TROPOMI_PRODUCTS = {
+    "no2": dict(obs_var="nitrogendioxide_tropospheric_column",
+                ak_apply=apply_weights_mod2tropomi_no2,
+                species="NO2", qa_min=0.75, prefer_corrected=False),
+    "hcho": dict(obs_var="formaldehyde_tropospheric_vertical_column",
+                 ak_apply=apply_weights_mod2tropomi_hcho,
+                 species="CH2O", qa_min=0.5, prefer_corrected=False),
+    "co": dict(obs_var="carbonmonoxide_total_column",
+               ak_apply=apply_weights_mod2tropomi_co,
+               species="CO", qa_min=0.5, prefer_corrected=True),
+}
+
+def _pair_tropomi(product, obsobj, modobj, species=None, method="conservative",
+                  qa_min=None, regrid_target="model", obs_grid_res=0.1,
+                  obs_grid_units="deg", obs_grid_extent=None):
+    
+    """Shared TROPOMI pairing loop; the per-product science comes from
+    _TROPOMI_PRODUCTS[product].
+
+    For each granule: crop to the domain extent (if specified), take the model at the
+    overpass time, forward-regrid model to the swath, interpolate to the
+    retrieval layers, apply the averaging kernel, QA-filter obs and model
+    together, then regrid the paired swath to every requested target
+    ('model' / 'obs' / 'series'), stamp it with the overpass time and
+    concatenate along time.
+    """
+    
+    cfg = _TROPOMI_PRODUCTS[product]
+    obs_var = cfg["obs_var"]
+    sp = (species or [cfg["species"]])[0]
+    if qa_min is None:
+        qa_min = cfg["qa_min"]
+
     grid_file = (modobj.attrs.get("mio_scrip_file")
                  or modobj.attrs.get("mio_mesh_file"))
 
@@ -1096,20 +998,21 @@ def regrid_and_apply_weights_tropomi_co(obsobj, modobj, species=["CO"],
     extent = (tuple(obs_grid_extent) if obs_grid_extent
               else _model_lonlat_extent(modobj))
 
+    # Flatten dict[date -> list[granule]] to a flat granule list.
     granules = []
     for v in obsobj.values():
         granules.extend(v if isinstance(v, list) else [v])
 
-    # tropomi co ships a destriped column; warn once if only the raw one
-    # was read in (the retrieval has known along-track striping)
-    _has_corr = any(_TROPOMI_CO_VAR + "_corrected" in o.variables
-                    for o in granules)
-    if not _has_corr:
-        print("TROPOMI CO: pairing the raw (stripey) column. The product "
-              "ships a destriped variable — add "
-              "'carbonmonoxide_total_column_corrected: {}' to the obs "
-              "variables in the control YAML.", flush=True)
-        
+    # warn once when the product has a destriped column but only the raw
+    # (stripey) one was read in
+    # this particularly seems to affect the CO product. 
+    if cfg["prefer_corrected"]:
+        if not any(obs_var + "_corrected" in o.variables for o in granules):
+            print(f"TROPOMI {product}: pairing the raw (stripey) column. The "
+                  f"product ships a destriped variable -- add "
+                  f"'{obs_var}_corrected: {{}}' to the obs variables in the "
+                  "control YAML.", flush=True)
+
     out_by = {t: [] for t in targets}
     for o in granules:
         if "time" in o.dims:
@@ -1119,46 +1022,24 @@ def regrid_and_apply_weights_tropomi_co(obsobj, modobj, species=["CO"],
         o = _crop_swath_to_extent(o, extent)
         if o is None:
             continue
-            
-        if "time_granule" in o.variables:
-            tg = np.asarray(o["time_granule"].values).ravel().astype("datetime64[ns]")
-            tg = tg[~np.isnat(tg)]
-            gtime = (
-                np.array(tg.astype("int64").mean(), dtype="int64").astype("datetime64[ns]")
-                if tg.size else None
-            )
-        else:
-            gtime = o["time"].values if "time" in o.coords else None
 
-        if "time" in modobj.dims and gtime is not None:
-            tsel = gtime if np.ndim(gtime) == 0 else np.asarray(gtime).ravel()[0]
-            mtimes = modobj["time"].values
-            tmin, tmax = mtimes.min(), mtimes.max()
-            if tsel < tmin:
-                tsel = tmin
-            elif tsel > tmax:
-                tsel = tmax
-            try:
-                mod_t = modobj.interp(time=tsel)
-            except Exception:
-                mod_t = modobj.sel(time=tsel, method="nearest")
-        elif "time" in modobj.dims:
-            mod_t = modobj.isel(time=0)
-        else:
-            mod_t = modobj
+        gtime = _granule_time(o)
+        mod_t = _model_at_time(modobj, gtime)
 
-        on_swath = _mod2tropomi_swath(mod_t, o, method, [sp, "pres_pa_mid"], grid_file)
+        # model to swath to retrieval layers to AK-applied column (molec/cm2)
+        on_swath = _mod2tropomi_swath(mod_t, o, method, [sp, "pres_pa_mid"],
+                                      grid_file)
         prof_t = interp_vertical_mod2tropomi(o, on_swath, [sp])
-        model_col = apply_weights_mod2tropomi_co(o, prof_t, sp)
 
-        # tropomi co ships with a destriped product 
-        _co_src = (_TROPOMI_CO_VAR + "_corrected"
-                   if _TROPOMI_CO_VAR + "_corrected" in o.variables
-                   else _TROPOMI_CO_VAR)
-        obs_col = o[_co_src] * _MOL_M2_TO_MOLEC_CM2             # molec/cm2
-        obs_col.attrs["units"] = "molecules/cm2"
-        
-        # QA filter 
+        model_col = cfg["ak_apply"](o, prof_t, sp)
+
+        src = (obs_var + "_corrected"
+               if cfg["prefer_corrected"] and obs_var + "_corrected" in o.variables
+               else obs_var)
+        obs_col = o[src] * _MOL_M2_TO_MOLEC_CM2               # molec/cm2
+        obs_col.attrs["units"] = "molecules/cm2"   # granule attr says mol m-2
+
+        # QA filter: obs and model masked together so pixel sets stay aligned
         if qa_min and "qa_value" in o.variables:
             qa = o["qa_value"]
             if float(np.nanmax(np.asarray(qa.values))) > 1.5:
@@ -1167,20 +1048,18 @@ def regrid_and_apply_weights_tropomi_co(obsobj, modobj, species=["CO"],
             obs_col = obs_col.where(good)
             model_col = model_col.where(good)
 
-        swath = xr.Dataset(
-            {sp: model_col, _TROPOMI_CO_VAR: obs_col,
+        swath = xr.Dataset({sp: model_col, obs_var: obs_col,
              "latitude_bounds": o["latitude_bounds"],
              "longitude_bounds": o["longitude_bounds"]},
             coords={"longitude": o["longitude"], "latitude": o["latitude"]},
         )
+        swath[obs_var].attrs["source_variable"] = src
 
-        swath[_TROPOMI_CO_VAR].attrs["source_variable"] = _co_src
-        
         # per-pixel retrieval error for inverse-variance weighting in 'series'
-        _attach_obs_err(swath, o, _TROPOMI_CO_VAR)
+        _attach_obs_err(swath, o, obs_var)
         
         for t in targets:
-            on = _swath_to_target(swath, modobj, method, [sp, _TROPOMI_CO_VAR],
+            on = _swath_to_target(swath, modobj, method, [sp, obs_var],
                                   t, obs_grid_res, extent, units=obs_grid_units)
             if gtime is not None:
                 tval = gtime if np.ndim(gtime) == 0 else np.asarray(gtime).ravel()[0]
@@ -1190,3 +1069,5 @@ def regrid_and_apply_weights_tropomi_co(obsobj, modobj, species=["CO"],
     return {t: (xr.concat(lst, dim="time") if lst else xr.Dataset())
             for t, lst in out_by.items()}
 
+
+    

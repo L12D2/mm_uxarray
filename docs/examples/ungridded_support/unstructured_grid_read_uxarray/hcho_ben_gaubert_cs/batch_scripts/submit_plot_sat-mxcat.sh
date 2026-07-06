@@ -24,3 +24,6 @@ python plot_sat-mxcat.py
     #     qsub -N p_${tag} -o p_${tag}.log -l select=1:ncpus=1:mem=48GB -V submit_plot_sat-bio.sh
     #   done
     # done
+
+# qsub -N p_co -o p_co.log -l select=1:ncpus=1:mem=48GB \
+#      -v PLOT_ONLY=_co submit_plot_sat.sh

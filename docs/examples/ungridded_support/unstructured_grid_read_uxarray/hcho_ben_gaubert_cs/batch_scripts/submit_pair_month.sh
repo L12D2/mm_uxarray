@@ -20,3 +20,10 @@ export YMD=$(printf "202406%02d" ${PBS_ARRAY_INDEX})   # 20240601 .. 20240630
 #export YMD=$(printf "202403%02d" ${PBS_ARRAY_INDEX})   # 20240301 .. 20240331
 
 python pair_daily_sat.py
+
+# for P in tropomi_l2_no2 tropomi_l2_hcho tropomi_l2_co; do
+#   qsub -N pair_${P} -o pair_${P}.log \
+#        -l select=1:ncpus=1:mem=96GB \
+#        -v OBS_GROUP=$P \
+#        submit_pair_month.sh 
+# done

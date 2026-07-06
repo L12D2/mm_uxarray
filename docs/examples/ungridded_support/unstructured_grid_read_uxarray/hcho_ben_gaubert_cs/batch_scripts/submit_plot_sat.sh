@@ -18,3 +18,5 @@ conda activate melodies-monet
 python plot_sat.py
 
 
+# qsub -N p_co -o p_co.log -l select=1:ncpus=1:mem=48GB \
+#      -v PLOT_ONLY=_co submit_plot_sat.sh
