@@ -1,0 +1,51 @@
+
+# Per-run overrides applied to control_master.yaml by make_controls.py.
+# Everything NOT listed here (obs blocks, plots, stats, mapping) lives in
+# the master and is shared by all runs 
+
+master: control_master.yaml
+
+# common domain across all model runs. Add additional domains under "add_domains"
+common:
+  add_domains:
+    ATL_metro: {bounds: [-85.0, -83.7, 33.2, 34.4]}
+    SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}
+    LA_metro:  {bounds: [-119.2, -117.3, 33.3, 34.7]}
+    DEN_metro: {bounds: [-105.8, -104.3, 39.2, 40.3]}
+    DFW_metro: {bounds: [-97.8, -96.3, 32.2, 33.4]}
+    CONUS:      # 'all' domain
+    GLOBAL:     # 'all' domain (fit-to-data)
+    
+runs:
+  nonbiog:
+    plot_dir:   /glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/satellite_img
+    paired_dir: /glade/work/lcthompson/mm_output/nonbiog_refera5_dust
+    model_files: /glade/campaign/acom/acom-da/conus_outputs/f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.ERA5_ref_dust_M1.1.002/H1/f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.ERA5_ref_dust_M1.1.002.cam.h1.2024-06-05-03600.nc
+    scrip_file: /glade/campaign/acom/MUSICA/grids/ne0CONUSne30x8/ne0CONUS_ne30x8_np4_SCRIP.nc
+    # add_domains:
+    #   ATL_metro: {bounds: [-85.0, -83.7, 33.2, 34.4]}
+
+  biog:
+    plot_dir:   /glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/satellite_bio_era5_ref_dust
+    paired_dir: /glade/work/lcthompson/mm_output/biog_refera5_dust
+    model_files: /glade/campaign/acom/acom-da/conus_outputs/f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.biog_ERA5_ref_dust_M1.1.001/H1/f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.biog_ERA5_ref_dust_M1.1.001.cam.h1.2024-06-01-03600.nc
+    scrip_file: /glade/campaign/acom/MUSICA/grids/ne0CONUSne30x8/ne0CONUS_ne30x8_np4_SCRIP.nc
+    # add_domains:
+    #   ATL_metro: {bounds: [-85.0, -83.7, 33.2, 34.4]}
+
+  grapes:
+    plot_dir:   /glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/satellite_grapes
+    paired_dir: /glade/work/lcthompson/mm_output/grapes
+    model_files: /glade/campaign/acom/acom-da/conus_outputs/f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.nox_grapes.001/H1/f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.nox_grapes.001.cam.h1.2024-06-01-03600.nc
+    scrip_file: /glade/campaign/acom/MUSICA/grids/ne0CONUSne30x8/ne0CONUS_ne30x8_np4_SCRIP.nc
+    # add_domains:
+    #   ATL_metro: {bounds: [-85.0, -83.7, 33.2, 34.4]}
+
+  mxcat:
+    plot_dir:   /glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/satellite_mxcat
+    paired_dir: /glade/work/lcthompson/mm_output/mxcat
+    model_files: /glade/campaign/acom/acom-weather/jjacdan/SCENICS.HAMAQ/f.e3beta01.FCts2nudged.MXCATL_ne30x16_cams_mosaic_v1.1_final.03/f.e3beta01.FCts2nudged.MXCATL_ne30x16_cams_mosaic_v1.1_final.03.cam.h3i.2024-06-01-03600.nc
+    scrip_file: /glade/work/jjacdan/ne0np4.MXC.ATL.ne30x16/grids/MXC.ATL_ne30x16_np4_SCRIP.nc
+    add_domains:                 # mxcat mesh refines both cities
+      MEX_metro: {bounds: [-99.6, -98.6, 18.9, 20.0]}
+

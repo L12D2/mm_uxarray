@@ -445,6 +445,65 @@ class analysis:
                         self.open_models(load_files=False)
                     if not self.obs:
                         self.open_obs(load_files=False)
+                    self._relabel_relabel_read_pairs()
+
+    # this is probably very specific to liam's coding mishap / mistake 
+    # maintaining 4 YAML files for different runs is extremely cumbersome. Repairing is also a lot of time. 
+    # however, when i created the 4 yamls, I kept the read, paired, method, filenames the same across all 4 YAML files
+
+      # read:
+      #   paired:
+      #     method: 'netcdf'
+      #     filenames:
+      #       tempo_l2_hcho_cam-chem-se:          <directory>
+      #       tempo_l2_hcho_cam-chem-se_obsgrid:  <directory>
+
+    # i think the pair's internal obs/model attribute comes from the saved file and not necessarily the filename key. so 
+    # without this fct, I couldnt necessarily just rename the filename keys to unify my 4 yaml files. 
+
+      # read:
+      #   paired:
+      #     method: 'netcdf'
+      #     filenames:
+      #       tempo_l2_hcho_cam-chem-se1:          <directory>
+      #       tempo_l2_hcho_cam-chem-se_obsgrid2:  <directory>
+      #       tempo_l2_hcho_cam-chem-se3:          <directory>
+      #       tempo_l2_hcho_cam-chem-se_obsgrid4:  <directory>
+
+    def _relabel_read_pairs(self):
+        """Re-derive each read pair's obs/model attrs from its filenames key.
+
+        Saved pair files bake obs/model into their dict_json attr, so a pair
+        saved as <obs>_<model> keeps those names even when the read section
+        keys it differently. That blocks the one-control-many-runs pattern:
+        e.g. key 'tempo_l2_hcho_cam-chem-biog' pointing at a file saved as
+        'tempo_l2_hcho_cam-chem-se'. 
+        
+        When a label parses cleanly into an obs entry + a model entry of THIS control file, the pair's
+        obs/model are updated to match, so projections, SCRIP files, legend
+        labels, and plot colors follow the label rather than the stale
+        saved attrs. Labels that don't parse are left untouched.
+        """
+        
+        for label, p in self.paired.items():
+            base = label
+            for suffix in ("_obsgrid", "_series"):
+                if base.endswith(suffix):
+                    base = base[: -len(suffix)]
+                    break
+            # longest obs key first so e.g. tempo_l2_no2 wins over tempo_l2
+            for obs_key in sorted(self.obs, key=len, reverse=True):
+                if base.startswith(obs_key + "_"):
+                    model_key = base[len(obs_key) + 1:]
+                    if model_key in self.models:
+                        if (p.obs, p.model) != (obs_key, model_key):
+                            print(
+                                f"read_analysis: relabeling pair '{label}' "
+                                f"({p.obs}, {p.model}) -> ({obs_key}, {model_key})"
+                            )
+                            p.obs = obs_key
+                            p.model = model_key
+                        break
 
     def setup_regridders(self):
         """Create an obs xesmf.Regridder from base and target grids specified in the control_dict

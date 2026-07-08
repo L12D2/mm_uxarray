@@ -14,7 +14,10 @@ warnings.filterwarnings("ignore")
 
 from melodies_monet import driver
 
-CONTROL = "/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/control_tempo_l2_hcho_cesm_se.yaml"
+# CONTROL = "/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/control_tempo_l2_hcho_cesm_se.yaml"
+
+CONTROL = os.environ.get("MM_CONTROL",
+    "/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/batch_scripts/control_master.yaml",)
 
 def _grid_of(label):
     """Which grid a paired label belongs to."""
@@ -69,7 +72,7 @@ def main():
                 return
             da = p.obj[var]
             a = np.asarray(da.values)                      # materialize once
-            np.putmask(a, (a <= lo) | (a >= hi), np.nan)    # mask in place -- no float duplicate
+            np.putmask(a, (a <= lo) | (a >= hi), np.nan)    # mask in place ; no float duplicate
             p.obj[var] = da.copy(data=a)                    
         for v in ("vertical_column", "formaldehyde_tropospheric_vertical_column", "CH2O"):
             clip(v, -2e16, 5e16)
