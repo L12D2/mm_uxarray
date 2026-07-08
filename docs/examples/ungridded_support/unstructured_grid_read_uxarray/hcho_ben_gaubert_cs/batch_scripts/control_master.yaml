@@ -5,6 +5,9 @@
 
 # Per-run paths/model/scrip/domains come from runs.yaml via make_controls.py -- do NOT run this file directly.
 
+# when you update this yaml run: 
+python make_controls.py                      # control_{nonbiog,biog,grapes,mxcat}.yaml
+
 analysis:
   start_time: '2024-06-01'                 # UTC
   end_time:   '2024-06-30 23:59:00'        # UTC
@@ -719,6 +722,64 @@ plots:
       <<: *grp7_proc
       hour_range: [16, 20]
 
+  # LST-window boxplots 
+  grp8_multibox_lst_tempo_no2:
+    type: 'multi_boxplot'
+    fig_kwargs: {figsize: [10, 6]}
+    text_kwargs: {fontsize: 16}
+    domain_type:      # from add_domains in runs.yaml
+    domain_name:
+    domain_info:
+    data: ['tempo_l2_no2_cam-chem-se']
+    interval_var: local_hour
+    interval_list: [5, 11, 16, 20]          # edges ; morning/midday/evening
+    interval_labels: [morning, midday, evening]
+    xlabel: 'Local solar hour'
+    data_proc: {rem_obs_nan: True, set_axis: True}
+
+  # pollution-regime boxplots (sfc temperature-bins analog)
+  grp8_multibox_regime_tempo_no2:
+    type: 'multi_boxplot'
+    fig_kwargs: {figsize: [10, 6]}
+    text_kwargs: {fontsize: 16}
+    domain_type:
+    domain_name:
+    domain_info:
+    data: ['tempo_l2_no2_cam-chem-se']
+    interval_var: vertical_column_troposphere    # bin by the obs column itself
+    interval_list: [0, 1.0e+15, 3.0e+15, 1.0e+16, 5.0e+16]
+    interval_labels: [clean, moderate, polluted, hotspot]
+    xlabel: 'Observed NO$_2$ regime'
+    data_proc: {rem_obs_nan: True, set_axis: False}   # log-ish spread; let it autoscale
+
+  grp8_multibox_lst_tempo_hcho:
+    type: 'multi_boxplot'
+    fig_kwargs: {figsize: [10, 6]}
+    text_kwargs: {fontsize: 16}
+    domain_type:
+    domain_name:
+    domain_info:
+    data: ['tempo_l2_hcho_cam-chem-se']
+    interval_var: local_hour
+    interval_list: [5, 11, 16, 20]
+    interval_labels: [morning, midday, evening]
+    xlabel: 'Local solar hour'
+    data_proc: {rem_obs_nan: True, set_axis: True}
+
+  grp8_multibox_regime_tempo_hcho:
+    type: 'multi_boxplot'
+    fig_kwargs: {figsize: [10, 6]}
+    text_kwargs: {fontsize: 16}
+    domain_type:
+    domain_name:
+    domain_info:
+    data: ['tempo_l2_hcho_cam-chem-se']
+    interval_var: vertical_column                # TEMPO HCHO obs column
+    interval_list: [0, 8.0e+15, 1.2e+16, 2.0e+16, 5.0e+16]
+    interval_labels: [clean, moderate, elevated, hotspot]
+    xlabel: 'Observed HCHO regime'
+    data_proc: {rem_obs_nan: True, set_axis: False}
+    
 stats:
   stat_list: ["MB", "MdnB", "R2", "RMSE"]
   round_output: 2

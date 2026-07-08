@@ -373,6 +373,40 @@ def make_taylor(df,df_reg=None, column_o=None, label_o='Obs', column_m=None, lab
     ax.axis["right"].major_ticklabels.set_fontsize(text_kwargs['fontsize']*0.8)
     return dia
 
+# expand multiboxplot capabilties to the satellite 
+# multiboxplot and "diurnal" spatial overlays need this hour mask helper 
+def _hour_window_mask(times, lon, hour_range, hour_basis="solar"):
+    """Mask of samples whose hour-of-day falls inside ``hour_range``.
+
+    Shared by the windowed spatial overlay so the
+    window semantics stay identical. ``hour_range`` is end-exclusive and
+    wraps midnight when start > end (e.g. [22, 4]). ``hour_basis``:
+    "solar" = local solar time per cell (UTC + lon/15, so ``lon``
+    broadcasts against time), "utc" = as-is, or a fixed UTC offset in
+    hours (e.g. -6).
+
+    Returns
+    -------
+    (mask, window_label) : (xr.DataArray of bool, str)
+    """
+    h0, h1 = (float(hour_range[0]), float(hour_range[1]))
+    hh = times.dt.hour + times.dt.minute / 60.0
+    b = str(hour_basis).lower()
+    if b == "utc":
+        lst = hh % 24
+        basis_label = "UTC"
+    elif b == "solar":
+        lst = (hh + lon / 15.0) % 24
+        basis_label = "LST"
+    else:
+        lst = (hh + float(hour_basis)) % 24
+        basis_label = f"UTC{float(hour_basis):+g}h"
+    if h0 <= h1:
+        keep = (lst >= h0) & (lst < h1)
+    else:  # window wraps midnight
+        keep = (lst >= h0) | (lst < h1)
+    return keep, f"{h0:g}-{h1:g} {basis_label}"
+    
 # driver calls splots.make_spatial_overlay and then resolves to sat plots. 
 # sat plots does not have ucomp and vcomp. so silently fail it. 
 
@@ -585,25 +619,13 @@ def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
             
             hour_range = red.get("hour_range")
             if hour_range is not None:
-                h0, h1 = (float(hour_range[0]), float(hour_range[1]))
-                basis = red.get("hour_basis", "solar")
-                hh = obs_da["time"].dt.hour + obs_da["time"].dt.minute / 60.0
-                if str(basis).lower() == "utc":
-                    lst = hh % 24
-                    _basis_label = "UTC"
-                elif str(basis).lower() == "solar":
-                    lst = (hh + df["longitude"] / 15.0) % 24
-                    _basis_label = "LST"
-                else:
-                    lst = (hh + float(basis)) % 24
-                    _basis_label = f"UTC{float(basis):+g}h"
-                if h0 <= h1:
-                    _keep = (lst >= h0) & (lst < h1)
-                else:  # window wraps midnight, e.g. [22, 4]
-                    _keep = (lst >= h0) | (lst < h1)
+                _keep, _window_label = _hour_window_mask(
+                    obs_da["time"], df["longitude"], hour_range,
+                    red.get("hour_basis", "solar"))
+                
                 obs_da = obs_da.where(_keep)
                 mod_da = mod_da.where(_keep)
-                _window_label = f"{h0:g}-{h1:g} {_basis_label}"
+
                 if not bool(_keep.any()):
                     print(
                         f"make_spatial_overlay: no samples fall in hour_range "
@@ -1010,3 +1032,196 @@ def make_spatial_bias_gridded(df, column_o=None, label_o=None, column_m=None,
     #plt.tight_layout(pad=0)
     savefig(outname + '.png',loc=4, logo_height=100, bbox_inches='tight', dpi=150)
     return ax    
+
+def calculate_multi_boxplot(df, df_reg=None, region_name=None,
+                            interval_list=None, interval_var=None,
+                            interval_labels=None, column=None, label=None,
+                            plot_dict=None, comb_bx=None, label_bx=None):
+    """Accumulate per-interval box statistics for one obs or model column.
+
+    Satellite (xarray) counterpart of surfplots.calculate_multi_boxplot,
+    with the same driver-facing signature. The x-axis bins come from
+    ``interval_var`` + ``interval_list`` (bin edges):
+
+    - ``interval_var: local_hour`` (or ``solar_hour``) -- local solar
+      hour-of-day per cell (UTC + lon/15), e.g. edges [5, 11, 16, 20]
+      with labels [morning, midday, evening]. The LST analog of the
+      hour_range windowed spatial overlays.
+    - ``interval_var: utc_hour`` (or ``hour``) -- hour-of-day in UTC.
+    - any other name -- a variable in the paired dataset to bin on
+      (e.g. the obs column itself, cloud fraction, ...), like the
+      surface temperature-bin examples.
+
+    ``df_reg`` and ``region_name`` are accepted for signature symmetry;
+    EPA-region binning is not implemented on the satellite path.
+
+    Returns
+    -------
+    (comb_bx, label_bx, region_bx)
+        comb_bx : list of per-source dicts
+        {label, color, bins: {label: {stats, n, blabel}}};
+        label_bx : list of {column, label} (surface-compatible bookkeeping);
+        region_bx : None (regions unsupported here).
+    """
+    if interval_list is None or len(interval_list) < 2:
+        raise ValueError(
+            "satellite multi_boxplot needs interval_list (bin edges) and "
+            "interval_var; region-based multi_boxplot is not implemented "
+            "for satellite pairs."
+        )
+    if region_name is not None:
+        print("calculate_multi_boxplot: region binning is not implemented "
+              "for satellite pairs; using interval_var bins.")
+    if comb_bx is None:
+        comb_bx = []
+    if label_bx is None:
+        label_bx = []
+
+    edges = [float(e) for e in interval_list]
+    nbin = len(edges) - 1
+    if interval_labels is not None and len(interval_labels) != nbin:
+        print("calculate_multi_boxplot: len(interval_labels) != number of "
+              "bins; falling back to edge labels.")
+        interval_labels = None
+    bin_names = (list(interval_labels) if interval_labels is not None
+                 else [f"{edges[i]:g}-{edges[i+1]:g}" for i in range(nbin)])
+
+    da = df[column]
+    iv = str(interval_var).lower()
+    if iv in ("local_hour", "solar_hour"):
+        hh = da["time"].dt.hour + da["time"].dt.minute / 60.0
+        bv = (hh + df["longitude"] / 15.0) % 24
+        unit = " LST"
+    elif iv in ("utc_hour", "hour"):
+        hh = da["time"].dt.hour + da["time"].dt.minute / 60.0
+        bv = hh % 24
+        unit = " UTC"
+    elif interval_var in df:
+        bv = df[interval_var]
+        unit = ""
+    else:
+        raise KeyError(
+            f"multi_boxplot interval_var '{interval_var}' is neither an "
+            "hour keyword (local_hour/utc_hour) nor a variable in the "
+            "paired dataset."
+        )
+
+    entry = {"label": label,
+             "color": (plot_dict or {}).get("color", "0.7"),
+             "bins": {}}
+    for i in range(nbin):
+        lo, hi = edges[i], edges[i + 1]
+        mask = (bv >= lo) & ((bv <= hi) if i == nbin - 1 else (bv < hi))
+        v = np.asarray(da.where(mask).values, dtype=float).ravel()
+        v = v[np.isfinite(v)]
+        blabel = f"{lo:g}-{hi:g}{unit}"
+        if v.size == 0:
+            print(f"calculate_multi_boxplot: no '{label}' samples in bin "
+                  f"'{bin_names[i]}' [{blabel}]; box skipped.")
+            continue
+        p5, q1, med, q3, p95 = np.percentile(v, [5, 25, 50, 75, 95])
+        entry["bins"][bin_names[i]] = dict(
+            stats=dict(med=med, q1=q1, q3=q3, whislo=p5, whishi=p95,
+                       mean=float(v.mean()), fliers=[]),
+            n=int(v.size), blabel=blabel)
+    comb_bx.append(entry)
+    label_bx.append({"column": column, "label": label})
+    return comb_bx, label_bx, None
+
+def make_multi_boxplot(comb_bx, label_bx, region_bx=None, region_list=None,
+                       interval_labels=None, model_name_list=None,
+                       ylabel=None, xlabel=None, vmin=None, vmax=None,
+                       outname="plot", domain_type=None, domain_name=None,
+                       plot_dict=None, fig_dict=None, text_dict=None,
+                       gridlines=False, debug=False):
+    
+    """Grouped boxplot: x-axis = interval bins, hue = data source.
+
+    Satellite counterpart of surfplots.make_multi_boxplot (same
+    driver-facing signature): within each bin the obs box and one box per
+    model sit side by side. 
+    
+    """
+    import matplotlib.patches as mpatches
+
+    if debug is False:
+        plt.ioff()
+    text_kwargs = {**dict(fontsize=14), **(text_dict or {})}
+    if ylabel is None:
+        ylabel = label_bx[0]["column"] if label_bx else comb_bx[0]["label"]
+    names = ([e["label"] for e in comb_bx] if model_name_list is None
+             else list(model_name_list))
+
+    # bin order: as given in interval_labels, else first-seen across sources
+    if interval_labels is not None:
+        order = [str(b) for b in interval_labels]
+    else:
+        order = []
+        for e in comb_bx:
+            for b in e["bins"]:
+                if b not in order:
+                    order.append(b)
+    order = [b for b in order if any(b in e["bins"] for e in comb_bx)]
+    if not order:
+        print("make_multi_boxplot: no bin had data; no figure written.")
+        return
+
+    figsize = (fig_dict or {}).get("figsize", (10, 6))
+    f, ax = plt.subplots(figsize=figsize)
+    if gridlines:
+        ax.grid(axis="y", alpha=0.5)
+    nseries = len(comb_bx)
+    group_w = 0.8
+    box_w = group_w / nseries * 0.85
+    meanprops = {"marker": ".", "markerfacecolor": "black",
+                 "markeredgecolor": "black", "markersize": 14}
+    for i, e in enumerate(comb_bx):
+        stats, positions = [], []
+        for j, b in enumerate(order):
+            if b in e["bins"]:
+                stats.append(e["bins"][b]["stats"])
+                positions.append(
+                    j - group_w / 2 + (i + 0.5) * group_w / nseries)
+        if not stats:
+            continue
+        arts = ax.bxp(stats, positions=positions, widths=box_w,
+                      showfliers=False, showmeans=True, patch_artist=True,
+                      medianprops=dict(color="k", linewidth=1.5),
+                      meanprops=meanprops)
+        for bx_ in arts["boxes"]:
+            bx_.set(facecolor=e["color"], alpha=0.7, edgecolor="k")
+
+    def _btick(b):
+        # annotate with the first source that has this bin (usually obs)
+        for e in comb_bx:
+            if b in e["bins"]:
+                info = e["bins"][b]
+                return f"{b}\n[{info['blabel']}]\nn={info['n']:,}"
+        return b
+
+    ax.set_xticks(range(len(order)))
+    ax.set_xticklabels([_btick(b) for b in order],
+                       fontsize=text_kwargs["fontsize"] * 0.75)
+    ax.set_xlim(-0.6, len(order) - 0.4)
+    if xlabel:
+        ax.set_xlabel(xlabel, fontweight="bold", **text_kwargs)
+    ax.set_ylabel(ylabel, fontweight="bold", **text_kwargs)
+    ax.tick_params(axis="y", labelsize=text_kwargs["fontsize"] * 0.8)
+    if vmin is not None and vmax is not None:
+        ax.set_ylim(vmin, vmax)
+    ax.legend(handles=[mpatches.Patch(facecolor=e["color"], alpha=0.7,
+                                      edgecolor="k", label=nm)
+                       for e, nm in zip(comb_bx, names)],
+              frameon=False, fontsize=text_kwargs["fontsize"] * 0.8)
+    if domain_type is not None and domain_name is not None:
+        if domain_type == "epa_region":
+            ax.set_title("EPA Region " + str(domain_name),
+                         fontweight="bold", **text_kwargs)
+        else:
+            ax.set_title(str(domain_name), fontweight="bold", **text_kwargs)
+
+    plt.tight_layout()
+    savefig(outname + ".png", loc=4, logo_height=100, bbox_inches="tight",
+            dpi=200)
+    if debug is False:
+        plt.close(f)

@@ -445,7 +445,7 @@ class analysis:
                         self.open_models(load_files=False)
                     if not self.obs:
                         self.open_obs(load_files=False)
-                    self._relabel_relabel_read_pairs()
+                    self._relabel_read_pairs()
 
     # this is probably very specific to liam's coding mishap / mistake 
     # maintaining 4 YAML files for different runs is extremely cumbersome. Repairing is also a lot of time. 

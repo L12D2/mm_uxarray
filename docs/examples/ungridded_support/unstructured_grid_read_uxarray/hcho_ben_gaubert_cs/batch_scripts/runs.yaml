@@ -9,6 +9,7 @@ master: control_master.yaml
 common:
   add_domains:
     ATL_metro: {bounds: [-85.0, -83.7, 33.2, 34.4]}
+    MEX_metro: {bounds: [-99.6, -98.6, 18.9, 20.0]}
     SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}
     LA_metro:  {bounds: [-119.2, -117.3, 33.3, 34.7]}
     DEN_metro: {bounds: [-105.8, -104.3, 39.2, 40.3]}
@@ -46,6 +47,6 @@ runs:
     paired_dir: /glade/work/lcthompson/mm_output/mxcat
     model_files: /glade/campaign/acom/acom-weather/jjacdan/SCENICS.HAMAQ/f.e3beta01.FCts2nudged.MXCATL_ne30x16_cams_mosaic_v1.1_final.03/f.e3beta01.FCts2nudged.MXCATL_ne30x16_cams_mosaic_v1.1_final.03.cam.h3i.2024-06-01-03600.nc
     scrip_file: /glade/work/jjacdan/ne0np4.MXC.ATL.ne30x16/grids/MXC.ATL_ne30x16_np4_SCRIP.nc
-    add_domains:                 # mxcat mesh refines both cities
-      MEX_metro: {bounds: [-99.6, -98.6, 18.9, 20.0]}
+    # add_domains:                 # mxcat mesh refines both cities
+    #   MEX_metro: {bounds: [-99.6, -98.6, 18.9, 20.0]}
 
