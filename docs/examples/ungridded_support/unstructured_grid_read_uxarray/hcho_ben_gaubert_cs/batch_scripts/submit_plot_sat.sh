@@ -17,6 +17,13 @@ conda activate melodies-monet
 
 python plot_sat.py
 
-
+    # for GRID in obs model; do
+    #   for ONLY in grp1_ grp1b_ grp2_ grp3 grp4_ grp5; do
+    #     export PLOT_GRID=$GRID PLOT_ONLY=$ONLY
+    #     tag=${GRID}_${ONLY%_}
+    #     qsub -N p_${tag} -o p_${tag}.log -l select=1:ncpus=1:mem=48GB -V submit_plot_sat.sh
+    #   done
+    # done
+    
 # qsub -N p_co -o p_co.log -l select=1:ncpus=1:mem=48GB \
 #      -v PLOT_ONLY=_co submit_plot_sat.sh

@@ -10,8 +10,7 @@ from melodies_monet import driver
 BASE = ("/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/"
         "unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/control_tempo_l2_hcho_cesm_se.yaml")
 
-OUTDIR = ("//glade/work/lcthompson/mm_output/biog_refera5_dust/nonbiog_refera5_dust"
-          "unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/output")
+OUTDIR = ("/glade/work/lcthompson/mm_output/nonbiog_refera5_dust")
 
 YAMLDIR = OUTDIR + "/hcho_yaml"
 

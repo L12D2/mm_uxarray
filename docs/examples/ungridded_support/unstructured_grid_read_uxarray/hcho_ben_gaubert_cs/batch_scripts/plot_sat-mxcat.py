@@ -63,17 +63,20 @@ def main():
     an.read_analysis()
 
     for lbl, p in an.paired.items():
-        print("clipping....")
+        print("Clipping...")
         def clip(var, lo, hi):
-            if var in p.obj:
-                vc = p.obj[var]
-                p.obj[var] = vc.where(np.isfinite(vc) & (vc > lo) & (vc < hi))
+            if var not in p.obj:
+                return
+            da = p.obj[var]
+            a = np.asarray(da.values)                      # materialize once
+            np.putmask(a, (a <= lo) | (a >= hi), np.nan)    # mask in place -- no float duplicate
+            p.obj[var] = da.copy(data=a)                    
         for v in ("vertical_column", "formaldehyde_tropospheric_vertical_column", "CH2O"):
-            clip(v, -2e16, 5e16)   # HCHO
+            clip(v, -2e16, 5e16)
         for v in ("vertical_column_troposphere", "nitrogendioxide_tropospheric_column", "NO2"):
-            clip(v, -2e15, 5e16)   # NO2
+            clip(v, -2e15, 5e16)
         for v in ("carbonmonoxide_total_column", "CO"):
-            clip(v, 0, 1e19)       # CO
+            clip(v, 0, 1e19)
             
     print(f"[plot] plotting... ({time.time()-t0:.0f}s)", flush=True)
     an.plotting()

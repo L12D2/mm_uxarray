@@ -924,7 +924,8 @@ def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
                       vmax = None, nlevels = None, proj = None, outname = 'plot',
                       u_comp = None, v_comp = None, wind_barb = False, wind_barb_step=1, wind_barb_kwargs=None,
                       domain_type=None, domain_name=None, fig_dict=None, 
-                      text_dict=None, uxgrid = None, debug=False):
+                      text_dict=None, uxgrid = None, debug=False, gridlines=False,
+                      reduction_dict=None):
         
     """Creates spatial overlay plot. 
     
@@ -970,6 +971,15 @@ def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
         Dictionary containing information about text
     uxgrid: 
         Specifiy if plotting unstructured grid data
+    reduction_dict : dictionary
+        Time-reduction / diurnal-window controls, same keys as
+        satplots.make_spatial_overlay (time_reduction, daily_first,
+        common_mask, min_obs, hour_range, hour_basis). On the surface path
+        the obs site aggregates and the model time reduction honor them;
+        common_mask/min_obs apply to the site scatter only (the gridded
+        model background is complete, so they have nothing to mask there).
+        NOTE: not well tested on the surface path yet -- a warning prints
+        whenever these are set.
     debug : boolean
         Whether to plot interactively (True) or not (False). Flag for 
         submitting jobs to supercomputer turn off interactive mode.
@@ -982,6 +992,12 @@ def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
     """
     if debug is False:
         plt.ioff()
+
+    if reduction_dict:
+        print(
+            "Warning: time-reduction / diurnal-window controls on the surface "
+            "overlay have not been well tested. Verify results before use."
+        )
         
     def_map = dict(states=True,figsize=[15, 8])
     if fig_dict is not None:
@@ -1000,11 +1016,64 @@ def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
     if ylabel is None:
         ylabel = column_o
     
-    #Take the mean for each siteid
-    df_mean=df.groupby(['siteid'],as_index=False).mean(numeric_only=True)
+    # #Take the mean for each siteid
+    # df_mean=df.groupby(['siteid'],as_index=False).mean(numeric_only=True)
     
-    #Take the mean over time for the model output
-    vmodel_mean = vmodel[column_m].mean(dim='time').squeeze()
+    # #Take the mean over time for the model output
+    # vmodel_mean = vmodel[column_m].mean(dim='time').squeeze()
+
+    red = reduction_dict or {}
+    how = str(red.get("time_reduction", "mean")).lower()
+    if how not in ("mean", "median"):
+        print(f"make_spatial_overlay: unknown time_reduction '{how}', using 'mean'.")
+        how = "mean"
+    daily_first = bool(red.get("daily_first", False))
+    common_mask = bool(red.get("common_mask", True))
+    min_obs = int(red.get("min_obs", 0))
+    hour_range = red.get("hour_range")
+    hour_basis = red.get("hour_basis", "solar")
+
+    def _hour_keep(hh, lon):
+        """True where hour-of-day hh (+ basis offset) falls in hour_range."""
+        h0, h1 = float(hour_range[0]), float(hour_range[1])
+        b = str(hour_basis).lower()
+        if b == "utc":
+            lst = hh % 24
+        elif b == "solar":
+            lst = (hh + lon / 15.0) % 24
+        else:
+            lst = (hh + float(hour_basis)) % 24
+        return ((lst >= h0) & (lst < h1)) if h0 <= h1 else ((lst >= h0) | (lst < h1))
+
+    #Reduce the obs to one value per siteid (controlled by reduction_dict)
+    dfx = df
+    if hour_range is not None and "time" in dfx.columns:
+        _hh = dfx["time"].dt.hour + dfx["time"].dt.minute / 60.0
+        dfx = dfx[_hour_keep(_hh, dfx["longitude"])]
+    if common_mask and column_m in dfx.columns:
+        dfx = dfx[dfx[column_o].notna() & dfx[column_m].notna()]
+    _n_valid = dfx.groupby("siteid")[column_o].count()
+    if daily_first and "time" in dfx.columns:
+        dfx = (dfx.assign(_date=dfx["time"].dt.floor("D"))
+                  .groupby(["siteid", "_date"], as_index=False)
+                  .mean(numeric_only=True))
+    if how == "median":
+        df_mean = dfx.groupby(["siteid"], as_index=False).median(numeric_only=True)
+    else:
+        df_mean = dfx.groupby(["siteid"], as_index=False).mean(numeric_only=True)
+    if min_obs > 0:
+        df_mean = df_mean[df_mean["siteid"].map(_n_valid).fillna(0) >= min_obs]
+
+    #Reduce the model output over time (same window/compositing as the obs;
+    #common_mask/min_obs do not apply to the gridded background)
+    _vm = vmodel[column_m]
+    if hour_range is not None and "time" in _vm.dims:
+        _hh = _vm["time"].dt.hour + _vm["time"].dt.minute / 60.0
+        _lon = vmodel["longitude"] if "longitude" in vmodel else 0.0
+        _vm = _vm.where(_hour_keep(_hh, _lon))
+    if daily_first and "time" in _vm.dims:
+        _vm = _vm.resample(time="1D").mean()
+    vmodel_mean = getattr(_vm, how)(dim="time").squeeze()
     
     #Determine the domain
     if domain_type == 'all' and domain_name == 'CONUS':
@@ -1128,12 +1197,17 @@ def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
     plt.gcf().canvas.draw() 
     plt.tight_layout(pad=0)
     plt.title(title_add + label_o + ' overlaid on ' + label_m,fontweight='bold',**text_kwargs)
-     
+    
     ax.axes.scatter(df_mean.longitude.values, df_mean.latitude.values,s=30,c=df_mean[column_o], 
                     transform=ccrs.PlateCarree(), edgecolor='b', linewidth=.50, norm=norm, 
                     cmap=cmap)
     ax.axes.set_extent(map_kwargs['extent'],crs=ccrs.PlateCarree())    
-    
+
+    if gridlines:
+        gl = ax.axes.gridlines(draw_labels=True, lw=1.0, color="black", alpha=0.5, linestyle=":")
+        gl.top_labels = False
+        gl.right_labels = False
+        
     #Uncomment these lines if you update above just to verify colorbars are identical.
     #Also specify plot above scatter = ax.axes.scatter etc.
     #cbar = ax.figure.get_axes()[1] 
@@ -1154,6 +1228,10 @@ def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
     
     #plt.tight_layout(pad=0)
     savefig(outname + '.png', loc=4, logo_height=100, dpi=150)
+
+    if debug is False:
+        plt.close(plt.gcf())  # long multi-group jobs otherwise accumulate open figures
+            
     return ax
     
 

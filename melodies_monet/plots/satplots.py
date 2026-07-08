@@ -381,7 +381,7 @@ def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
                       vmax=None, nlevels=None, proj=None, outname='plot',
                       u_comp=None, v_comp=None, wind_barb=False, wind_barb_step = 1,  wind_barb_kwargs=None,
                       domain_type=None, domain_name=None, fig_dict=None,
-                      text_dict=None, debug=False, uxgrid=None):
+                      text_dict=None, debug=False, uxgrid=None, gridlines = False, reduction_dict = None):
         
     """Creates spatial overlay plot. 
     
@@ -417,11 +417,36 @@ def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
         Domain name specified in input yaml file
     fig_dict : dictionary
         Dictionary containing information about figure
+           - includes: cbar orientation and cbar kwargs
     text_dict : dictionary
         Dictionary containing information about text
     debug : boolean
         Whether to plot interactively (True) or not (False). Flag for 
         submitting jobs to supercomputer turn off interactive mode.
+    gridlines: boolean 
+        Draw lat lon lines with labels on each map 
+    reduction_dict : dictionary, optional
+        Controls how the per-granule paired time series is reduced to the
+        single map (satellite Dataset path only). Set in the plot group's
+        data_proc section of the YAML. Keys:
+        - time_reduction : {"mean", "median"}, default "mean"
+        - daily_first : bool, default False. First average granules within
+          each day, then reduce across days, so every day carries equal
+          weight regardless of how many valid scans/orbits it has.
+        - common_mask : bool, default True. Only reduce over times where BOTH
+          obs and model are valid, so all three panels (and the bias) are
+          computed from identical samples.
+        - min_obs : int, default 0. Mask cells with fewer than this many
+          valid granule samples over the analysis window.
+        - hour_range : [start, end], optional. Keep only samples whose
+          hour-of-day falls in this window (end exclusive; wraps midnight
+          if start > end, e.g. [22, 4]) before the time reduction. Use to
+          build e.g. morning-commute maps from hourly TEMPO scans.
+        - hour_basis : {"solar", "utc", <number>}, default "solar". How
+          hour_range is evaluated: "solar" = local solar time per cell
+          (UTC + lon/15), "utc" = as-is, or a fixed UTC offset in hours
+          (e.g. -6). The window is annotated in the figure suptitle.
+          
         
     Returns
     -------
@@ -538,11 +563,74 @@ def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
     # Structured -> quick_contourf (2-D lat/lon mesh). Unstructured (CESM-SE
     # ncol/n_face) goes via monet.draw_map + uxarray PolyCollection so we
     if _df_is_ds:
-        obs_field = df[column_o]
-        if "time" in obs_field.dims:
-            obs_field = obs_field.mean("time")
+        red = reduction_dict or {}
+        how = str(red.get("time_reduction", "mean")).lower()
+        if how not in ("mean", "median"):
+            print(f"make_spatial_overlay: unknown time_reduction '{how}', using 'mean'.")
+            how = "mean"
+        daily_first = bool(red.get("daily_first", False))
+        common_mask = bool(red.get("common_mask", True))
+        min_obs = int(red.get("min_obs", 0))
+
+        obs_da = df[column_o]
+        mod_da = vmodel[column_m]
+
+        _window_label = None # have a way to subset diurnal plots by a range 
+        
+        if "time" in obs_da.dims and "time" in mod_da.dims:
+            # Optional diurnal window:
+            # evaluated in UTC, at a fixed UTC offset,
+            # or in local solar time (longitude-dependent, UTC + lon/15 
+            # so the window means the same local hours across the whole map).
+            
+            hour_range = red.get("hour_range")
+            if hour_range is not None:
+                h0, h1 = (float(hour_range[0]), float(hour_range[1]))
+                basis = red.get("hour_basis", "solar")
+                hh = obs_da["time"].dt.hour + obs_da["time"].dt.minute / 60.0
+                if str(basis).lower() == "utc":
+                    lst = hh % 24
+                    _basis_label = "UTC"
+                elif str(basis).lower() == "solar":
+                    lst = (hh + df["longitude"] / 15.0) % 24
+                    _basis_label = "LST"
+                else:
+                    lst = (hh + float(basis)) % 24
+                    _basis_label = f"UTC{float(basis):+g}h"
+                if h0 <= h1:
+                    _keep = (lst >= h0) & (lst < h1)
+                else:  # window wraps midnight, e.g. [22, 4]
+                    _keep = (lst >= h0) | (lst < h1)
+                obs_da = obs_da.where(_keep)
+                mod_da = mod_da.where(_keep)
+                _window_label = f"{h0:g}-{h1:g} {_basis_label}"
+                if not bool(_keep.any()):
+                    print(
+                        f"make_spatial_overlay: no samples fall in hour_range "
+                        f"{_window_label} (a polar orbiter like TROPOMI only "
+                        "samples ~13:30 LST); map will be empty."
+                    )
+            if common_mask and set(obs_da.dims) == set(mod_da.dims):
+                _valid = obs_da.notnull() & mod_da.notnull()
+                obs_da = obs_da.where(_valid)
+                mod_da = mod_da.where(_valid)
+            # sample count per cell, before any daily compositing
+            n_valid = obs_da.notnull().sum("time")
+            if daily_first:
+                obs_da = obs_da.resample(time="1D").mean()
+                mod_da = mod_da.resample(time="1D").mean()
+            obs_field = getattr(obs_da, how)("time")
+            mod_field = getattr(mod_da, how)("time")
+            if min_obs > 0:
+                obs_field = obs_field.where(n_valid >= min_obs)
+                mod_field = mod_field.where(n_valid >= min_obs)
+        else:
+            obs_field = obs_da
+            mod_field = vmodel_mean
+
         obs_field = obs_field.squeeze()
-        mod_field = vmodel_mean
+        mod_field = mod_field.squeeze()
+        
         diff_field = (mod_field - obs_field)
 
         _is_unstruct = uxgrid is not None or any(
@@ -564,7 +652,7 @@ def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
                 return render_unstructured_field(
                     ax_, fld, uxgrid, cmap=cm, norm=nm,
                     extent=map_kwargs["extent"], coast=True, borders=True,
-                    states=map_kwargs.get("states", True), gridlines=True, colorbar=False)
+                    states=map_kwargs.get("states", True), gridlines=gridlines, colorbar=False)
         else:
             import cartopy.feature as cfeature
             
@@ -575,21 +663,43 @@ def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
                     transform=ccrs.PlateCarree(), shading="auto")
                 ax_.coastlines(linewidth=0.5)
                 ax_.add_feature(cfeature.BORDERS, linewidth=0.4)
+                
                 if map_kwargs.get("states", True):
                     ax_.add_feature(cfeature.STATES, linewidth=0.3)
                 ax_.set_extent(map_kwargs["extent"], crs=ccrs.PlateCarree())
+                
+                if gridlines:
+                    # same style as uxarray_render 
+                    gl = ax_.gridlines(draw_labels=True, lw=1.0, color="black",
+                                       alpha=0.5, linestyle=":")
+                    gl.top_labels = False
+                    gl.right_labels = False
+                                    
                 return pm
                 
         _proj = proj if proj is not None else ccrs.PlateCarree()
         figsize = map_kwargs.get("figsize", [22, 6])
-        fig, axes = plt.subplots(1, 3, figsize=figsize, subplot_kw={"projection": _proj})
+        
+        # Colorbar layout
+        # Orientation is a YAML option
+        cbar_orientation = str(map_kwargs.pop("cbar_orientation", "vertical")).lower()
+        _user_cbk = map_kwargs.pop("cbar_kwargs", None) or {}
+        if cbar_orientation == "horizontal":
+            cbk = dict(location="bottom", shrink=0.7, aspect=35, pad=0.04, extend="both")
+        else:
+            cbk = dict(location="right", shrink=0.75, aspect=25, pad=0.02, extend="both")
+        cbk.update(_user_cbk)
 
+        fig, axes = plt.subplots(1, 3, figsize=figsize,
+                                 subplot_kw={"projection": _proj},
+                                 constrained_layout=True)
+        
         # obs (left) + model (middle): shared Spectral_r scale
         _draw(axes[0], obs_field, cmap, norm)
         axes[0].set_title(label_o, fontweight="bold", **text_kwargs)
         poly = _draw(axes[1], mod_field, cmap, norm)
         axes[1].set_title(label_m, fontweight="bold", **text_kwargs)
-        cbar = fig.colorbar(poly, ax=axes[:2].tolist(), shrink=0.8, pad=0.04, extend="both")
+        cbar = fig.colorbar(poly, ax=axes[:2].tolist(), **cbk)
         cbar.set_label(ylabel, fontweight="bold", **text_kwargs)
         cbar.ax.tick_params(labelsize=text_kwargs["fontsize"] * 0.8)
 
@@ -604,14 +714,21 @@ def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
         _bnorm = mpl.colors.BoundaryNorm(np.linspace(-_vd, _vd, _bn), ncolors=_bcmap.N, clip=False)
         bpoly = _draw(axes[2], diff_field, _bcmap, _bnorm)
         axes[2].set_title(label_m + " - " + label_o, fontweight="bold", **text_kwargs)
-        bcbar = fig.colorbar(bpoly, ax=axes[2], shrink=0.8, pad=0.04, extend="both")
+        bcbar = fig.colorbar(bpoly, ax=axes[2], **cbk)
         bcbar.set_label(ylabel, fontweight="bold", **text_kwargs)
         bcbar.ax.tick_params(labelsize=text_kwargs["fontsize"] * 0.8)
 
-        _suptitle = (title_add or "").rstrip(":").rstrip().strip()
+        _suptitle = (title_add or "").strip().rstrip(":").strip()
+        if _window_label:
+            _suptitle = f"{_suptitle} [{_window_label}]" if _suptitle else f"[{_window_label}]"
+   
         if _suptitle:
             fig.suptitle(_suptitle, fontweight="bold", **text_kwargs)
         savefig(outname + ".png", loc=4, logo_height=100, bbox_inches="tight", dpi=150)
+
+        if debug is False:
+            plt.close(fig)  # long multi-group jobs otherwise accumulate open figures
+                    
         return axes[1]
     
 def calculate_boxplot(df, df_reg=None,column=None, label=None, plot_dict=None, comb_bx = None, label_bx = None):

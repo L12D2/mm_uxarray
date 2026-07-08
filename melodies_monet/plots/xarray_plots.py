@@ -1265,11 +1265,26 @@ def make_diurnal_cycle(dset, varname, ax=None, **kwargs):
     """
     dset_copy = dset.copy()
     time_offset = kwargs.get("time_offset", 0)
-    dset_copy["time"] = dset_copy["time"] + np.timedelta64(time_offset, "h")
+    # dset_copy["time"] = dset_copy["time"] + np.timedelta64(time_offset, "h")
+    # pd.to_timedelt so fractional hour offsets work 
+    dset_copy["time"] = dset_copy["time"] + pd.to_timedelta(time_offset, unit="h")
 
-    dset_copy = dset_copy.mean(dim=["x", "y"])
+    # Collapse all spatial dims (x/y swath, n_face/ncol unstructured, ...)
+    # so only time remains for the diurnal grouping.
+    spatial_dims = [d for d in dset_copy[varname].dims if d != "time"]
+    if spatial_dims:
+        dset_copy = dset_copy.mean(dim=spatial_dims)
     dset_diurnal_group = dset_copy[[varname]].groupby("time.hour")
     dset_diurnal = dset_diurnal_group.median()
+
+    n_hours = dset_diurnal.sizes.get("hour", 0)
+    if n_hours <= 3:
+        warnings.warn(
+            f"Diurnal cycle for '{varname}' only has data in {n_hours} distinct "
+            "hour(s) of the day. Your observation type may not have diurnal "
+            "resolution (e.g., a polar-orbiting satellite like TROPOMI samples "
+            "each location ~once per day)."
+        )
 
     # Set some defaults
     text_kwargs = {"fontsize": 14}
@@ -1293,7 +1308,7 @@ def make_diurnal_cycle(dset, varname, ax=None, **kwargs):
         dset_diurnal["hour"],
         dset_diurnal[varname],
         label=label,
-        **{**style_dict, **kwargs["plot_dict"]},
+        **{**style_dict, **(kwargs.get("plot_dict") or {})},
     )
     ax.set_xlabel(kwargs.get("xlabel", "hour"), **text_kwargs)
     ax.set_ylabel(ylabel, **text_kwargs)
@@ -1332,7 +1347,9 @@ def make_diurnal_cycle(dset, varname, ax=None, **kwargs):
     vmax = float(vmax) if vmax is not None else None
     vmin = float(vmin) if vmin is not None else None
     ax.set_ylim(top=vmax, bottom=vmin)
-    ax.set_title(f"{kwargs.get('domain_name', None)}", fontsize=text_kwargs["fontsize"])
+
+    if kwargs.get("domain_name"):
+        ax.set_title(f"{kwargs['domain_name']}", fontsize=text_kwargs["fontsize"])
     return ax
 
 

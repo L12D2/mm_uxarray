@@ -2101,6 +2101,17 @@ class analysis:
                                     make_timeseries = xrplots.make_timeseries
                                 else:
                                     make_timeseries = xrplots.make_diurnal_cycle
+
+                                    # provide warning for sat products that may not resolve a diurnal cycle 
+                                    _sat_type = self.obs[p.obs].sat_type
+                                    if not _sat_type.startswith("tempo"):
+                                        print(
+                                            f"Warning: satellite obs '{p.obs}' "
+                                            f"(sat_type='{_sat_type}') may not have diurnal "
+                                            "resolution (e.g., TROPOMI has "
+                                            "~one overpass per day at a fixed local time), so "
+                                            "the diurnal plot may be sparse or misleading."
+                                        )
                                 plot_kwargs = {"dset": pairdf, "varname": obsvar}
                             else:
                                 if plot_type.lower() == "timeseries":
@@ -3662,6 +3673,15 @@ class analysis:
                                 )
                                 
                                 _model_source = pairdf if _is_sat else vmodel
+
+                                # time reduction controls for satellite 
+                                _dp = grp_dict.get("data_proc", {}) or {}
+                                reduction_dict = {
+                                    k: _dp[k]
+                                    for k in ("time_reduction", "daily_first",
+                                              "common_mask", "min_obs", "hour_range", "hour_basis")
+                                    if k in _dp
+                                }
                                 
                                 splots.make_spatial_overlay(
                                     pairdf,
@@ -3687,6 +3707,8 @@ class analysis:
                                     text_dict=text_dict,
                                     uxgrid=self._pair_uxgrid(p),
                                     debug=self.debug,
+                                    gridlines=gridlines,
+                                    reduction_dict=reduction_dict,
                                 )
                             else:
                                 print(
