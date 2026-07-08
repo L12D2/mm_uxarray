@@ -899,7 +899,9 @@ def make_boxplot(comb_bx, label_bx, ylabel = None, vmin = None, vmax = None, out
     
     plt.tight_layout()
     savefig(outname + '.png',loc=4, logo_height=100, bbox_inches='tight', dpi=200)
-    
+    if debug is False:
+        plt.close(plt.gcf())  # free the figure; long jobs accumulate otherwise
+        
 def make_spatial_bias_gridded(df, column_o=None, label_o=None, column_m=None, 
                       label_m=None, ylabel = None, vmin=None, vdiff=None,
                       vmax = None, nlevels = None, proj = None, outname = 'plot', 
@@ -1031,6 +1033,8 @@ def make_spatial_bias_gridded(df, column_o=None, label_o=None, column_m=None,
     
     #plt.tight_layout(pad=0)
     savefig(outname + '.png',loc=4, logo_height=100, bbox_inches='tight', dpi=150)
+    if debug is False:
+        plt.close(plt.gcf())  # free the figure; long jobs accumulate otherwise
     return ax    
 
 def calculate_multi_boxplot(df, df_reg=None, region_name=None,

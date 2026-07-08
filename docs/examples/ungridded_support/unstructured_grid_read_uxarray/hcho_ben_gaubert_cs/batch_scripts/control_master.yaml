@@ -6,7 +6,7 @@
 # Per-run paths/model/scrip/domains come from runs.yaml via make_controls.py -- do NOT run this file directly.
 
 # when you update this yaml run: 
-python make_controls.py                      # control_{nonbiog,biog,grapes,mxcat}.yaml
+# python make_controls.py                      # control_{nonbiog,biog,grapes,mxcat}.yaml
 
 analysis:
   start_time: '2024-06-01'                 # UTC
@@ -735,7 +735,7 @@ plots:
     interval_list: [5, 11, 16, 20]          # edges ; morning/midday/evening
     interval_labels: [morning, midday, evening]
     xlabel: 'Local solar hour'
-    data_proc: {rem_obs_nan: True, set_axis: True}
+    data_proc: {rem_obs_nan: True, set_axis: False}
 
   # pollution-regime boxplots (sfc temperature-bins analog)
   grp8_multibox_regime_tempo_no2:
@@ -764,7 +764,7 @@ plots:
     interval_list: [5, 11, 16, 20]
     interval_labels: [morning, midday, evening]
     xlabel: 'Local solar hour'
-    data_proc: {rem_obs_nan: True, set_axis: True}
+    data_proc: {rem_obs_nan: True, set_axis: False}
 
   grp8_multibox_regime_tempo_hcho:
     type: 'multi_boxplot'

@@ -1851,7 +1851,7 @@ plots:
     xlabel: Local solar hour
     data_proc:
       rem_obs_nan: true
-      set_axis: true
+      set_axis: false
   grp8_multibox_regime_tempo_no2:
     type: multi_boxplot
     fig_kwargs:
@@ -1951,7 +1951,7 @@ plots:
     xlabel: Local solar hour
     data_proc:
       rem_obs_nan: true
-      set_axis: true
+      set_axis: false
   grp8_multibox_regime_tempo_hcho:
     type: multi_boxplot
     fig_kwargs:

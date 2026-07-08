@@ -2230,6 +2230,10 @@ class analysis:
                                     )
                                 savefig(outname + ".png", logo_height=150)
 
+                                # these need to close otherwise large batch jobs grow in memory
+                                if not self.debug:
+                                    plt.close(plt.gcf())
+
                                 del (
                                     ax,
                                     fig_dict,
@@ -2612,6 +2616,9 @@ class analysis:
                             # At the end save the plot.
                             if p_index == len(pair_labels) - 1:
                                 savefig(outname + ".png", logo_height=250)
+                                # these need to close otherwise large batch jobs grow in memory
+                                if not self.debug:
+                                    plt.close(plt.gcf())
                                 del (
                                     ax,
                                     fig_dict,
@@ -2729,6 +2736,9 @@ class analysis:
                                     logo_height=100,
                                     dpi=300,
                                 )
+                                # these need to close otherwise large batch jobs grow in memory
+                                if not self.debug:
+                                    plt.close(plt.gcf())
 
                                 del (
                                     comb_bx,
@@ -2799,6 +2809,11 @@ class analysis:
                                     logo_height=100,
                                     dpi=300,
                                 )
+                                
+                                # these need to close otherwise large batch jobs grow in memory
+                                if not self.debug:
+                                    plt.close(plt.gcf())
+                                    
                                 del (
                                     comb_bx,
                                     label_bx,
@@ -2864,6 +2879,9 @@ class analysis:
                                 logo_height=100,
                                 dpi=300,
                             )
+                            # these need to close otherwise large batch jobs grow in memory
+                            if not self.debug:
+                                plt.close(plt.gcf())
                             del pairdf
 
                         elif plot_type.lower() == "violin":
@@ -3424,6 +3442,10 @@ class analysis:
                                 plt.tight_layout()
                                 savefig(outname + "." + score_name + ".png", loc=1, logo_height=100)
 
+                                # these need to close otherwise large batch jobs grow in memory
+                                if not self.debug:
+                                    plt.close(plt.gcf())
+                                    
                                 # Clear info for next plot.
                                 del (
                                     comb_bx,
@@ -3493,6 +3515,10 @@ class analysis:
                             # At the end save the plot.
                             if p_index == len(pair_labels) - 1:
                                 savefig(outname + ".png", logo_height=70)
+                                # these need to close otherwise large batch jobs grow in memory
+                                if not self.debug:
+                                    plt.close(plt.gcf())
+                                    
                                 del (
                                     dia,
                                     fig_dict,

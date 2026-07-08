@@ -394,6 +394,8 @@ def make_spatial_bias(df, df_reg=None, column_o=None, label_o=None, column_m=Non
     
     #plt.tight_layout(pad=0)
     savefig(outname + '.png', loc=4, logo_height=120)
+    if debug is False:
+        plt.close(plt.gcf())  # free the figure; long jobs accumulate otherwise
     
 def make_timeseries(df, df_reg=None, column=None, label=None, ax=None, avg_window=None, ylabel=None,
                     vmin = None, vmax = None,
@@ -671,6 +673,8 @@ def make_scatter_density_plot(df, mod_var=None, obs_var=None, ax=None, color_map
     # Save the scatter density plot for the current pair immediately
     print(f"Saving scatter density plot to {outname}...")
     savefig(f"{outname}", loc=4, logo_height=100, dpi=300)
+    if not plt.isinteractive():
+        plt.close(plt.gcf())
     plt.show()
 
     return ax
@@ -1507,6 +1511,8 @@ def make_boxplot(comb_bx, label_bx, ylabel = None, vmin = None, vmax = None, out
 
     plt.tight_layout()
     savefig(outname + '.png', loc=4, logo_height=100)
+    if debug is False:
+        plt.close(plt.gcf())
   
 def make_multi_boxplot(comb_bx, label_bx,region_bx,region_list = None, interval_labels=None,
                        model_name_list=None,ylabel = None, xlabel = None, vmin = None, vmax = None, 
@@ -1666,6 +1672,8 @@ def make_multi_boxplot(comb_bx, label_bx,region_bx,region_list = None, interval_
     
     plt.tight_layout()
     savefig(outname + '.png', loc=4, logo_height=100)
+    if debug is False:
+        plt.close(plt.gcf())
 
 def make_rose_plot(rose_df, 
                    obsvar, # obs windspeed
@@ -1831,6 +1839,8 @@ def make_rose_plot(rose_df,
     
     print(f"Saving rose plot to {outname}...")
     savefig(outname + '.png', loc=4, logo_height=150, dpi=300)
+    if debug is False:
+        plt.close(plt.gcf())
     
     plt.show()
     return (ax1, ax2)
@@ -2232,6 +2242,8 @@ def scorecard_step9_makeplot(output_matrix=None,column=None,region_list=None,mod
     #save figure
     plt.tight_layout()
     savefig(outname + '.png', loc=4, logo_height=100)
+    if not plt.isinteractive():
+        plt.close(plt.gcf())
 
 
 from monet.util.stats import scores as scores_function
@@ -2498,6 +2510,8 @@ def make_spatial_bias_exceedance(df, df_wind=None, column_o=None, label_o=None, 
 
         #plt.tight_layout(pad=0)
         savefig(outname + '_exceedance.png', loc=4, logo_height=120)
+        if not plt.isinteractive():
+            plt.close(plt.gcf())
     else:
         print('No exceedance found!')
 

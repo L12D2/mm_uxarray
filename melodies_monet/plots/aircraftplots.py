@@ -176,6 +176,8 @@ def make_spatial_bias(df, df_reg=None, column_o=None, label_o=None, column_m=Non
     
     #plt.tight_layout(pad=0)
     savefig(outname + '.png', loc=4, logo_height=120)
+    if debug is False:
+        plt.close(plt.gcf())  # free the figure; long jobs accumulate otherwise
     
 ####NEW function for adding 'altitude' variable as secondary y- axis (qzr++)
 def add_yax2_altitude(ax, pairdf, altitude_yax2, text_kwargs, vmin_y2, vmax_y2): 

@@ -617,6 +617,8 @@ def make_boxplot(
         bbox_inches="tight",
         dpi=200,
     )
+    if debug is False:
+        plt.close(plt.gcf())
 
 
 def make_spatial_dist(
@@ -832,6 +834,8 @@ def make_spatial_dist(
         bbox_inches="tight",
         dpi=150,
     )
+    if debug is False:
+        plt.close(plt.gcf())
     return ax
 
 
@@ -1072,6 +1076,8 @@ def make_spatial_bias_gridded(
         bbox_inches="tight",
         dpi=150,
     )
+    if debug is False:
+        plt.close(plt.gcf())
     return ax
 
 
@@ -1204,6 +1210,8 @@ def make_multi_boxplot(
 
     plt.tight_layout()
     savefig(outname + ".png", loc=4, logo_height=100)
+    if debug is False:
+        plt.close(plt.gcf())
 
 
 def make_diurnal_cycle(dset, varname, ax=None, **kwargs):
