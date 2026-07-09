@@ -1538,10 +1538,13 @@ class analysis:
                         mod_obj_for_sat = mod_obj_for_sat.load()
                         
                         _targets, _res, _units, _extent = self._sat_regrid_targets(obs)
+
+                        print(f"TEMPO pairing [{obs.label}]: targets={_targets} "
+                              f"crop_extent={_extent}", flush=True)
                         
                         paired_data_atswath = sutil.regrid_and_apply_weights(
                             obs.obj, mod_obj_for_sat, species=mod_sp, method=regrid_method,
-                            tempo_sp=sat_sp)
+                            tempo_sp=sat_sp, crop_extent=_extent,)
                         
                         paired_dict = sutil.back_to_modgrid_multiscan(
                             paired_data_atswath, model_obj, method=regrid_method,

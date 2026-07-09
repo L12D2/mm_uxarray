@@ -60,6 +60,10 @@ def main():
         print(f"[plot] grid={grid!r} only={only!r}: {len(used)} labels, "
               f"{len(cd['plots'])} plot groups", flush=True)
 
+    _od = cd.get("analysis", {}).get("output_dir")
+    if _od:
+        os.makedirs(_od, exist_ok=True)
+        
     print(f"[plot] opening model... ({time.time()-t0:.0f}s)", flush=True)
     an.open_models()
     print(f"[plot] reading paired... ({time.time()-t0:.0f}s)", flush=True)

@@ -19,6 +19,7 @@ METHOD_TAG = {"conservative": "cons", "conservative_normed": "consn",
 METHOD = os.environ.get("MM_NATIVE_METHOD", "conservative").strip()
 
 MTAG = METHOD_TAG.get(METHOD, METHOD[:5])
+MIN_OBS = int(os.environ.get("MM_NATIVE_MIN_OBS", "3"))
 
 # cities paired per run (must match what you actually ran through pair_tempo_native.py)
 RUN_CITIES = {
@@ -70,7 +71,7 @@ def main():
             for sp, obs_name in SPECIES.items():
                 label = f"{city}_{obs_name}_cam-chem-se_obsgrid"
                 filenames[label] = [
-                    f"{paired_dir}/{city}_{RESTAG}*_{obs_name}_cam-chem-se_obsgrid.nc4"
+                    f"{paired_dir}/{city}_{RESTAG}_{MTAG}_*_{obs_name}_cam-chem-se_obsgrid.nc4"
                 ]
                 plots[f"grp_native_{city}_{sp}"] = {
                     "type": "spatial_overlay",
@@ -83,8 +84,8 @@ def main():
                     "domain_info": {box: boxes[box]},
                     "data": [label],
                     "data_proc": {"time_reduction": "mean", "daily_first": True,
-                                  "common_mask": True, "min_obs": 3,
-                                  "set_axis": True, "rem_obs_nan": True},
+                                  "common_mask": True, "min_obs": MIN_OBS,
+                                  "set_axis": False, "rem_obs_nan": True},
                 }
         an["read"] = {"paired": {"method": "netcdf", "filenames": filenames}}
         cd["plots"] = plots

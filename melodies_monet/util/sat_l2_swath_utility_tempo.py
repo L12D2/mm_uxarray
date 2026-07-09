@@ -182,7 +182,52 @@ def _conservative_mod2swath(modobj, obsobj, method="conservative"):
     # model grid file (e.g. SCRIP) or the native MPAS native mesh 
     grid_file = (modobj.attrs.get("mio_scrip_file")
                  or modobj.attrs.get("mio_mesh_file"))
-    out = regrid(modobj, method=method, src_grid=grid_file, target_grid=swath_grid)
+
+    # need to figure out how to prevent the OOM on conservative regridding 
+    # out = regrid(modobj, method=method, src_grid=grid_file, target_grid=swath_grid)
+    src_for_regrid, src_grid_for_regrid = modobj, grid_file
+    try:
+        import uxarray as ux
+        from melodies_monet.util.uxarray_util import (
+            open_uxgrid, _face_centers, uxgrid_from_corner_bounds)
+
+        _uxgrid = open_uxgrid(grid_file)
+        _cd = next((d for d, n in modobj.sizes.items() if n == _uxgrid.n_face), None)
+        # keep model faces whose centers fall in the swath bbox (+pad)
+        _flon, _flat = _face_centers(_uxgrid)
+        _flon = np.where(_flon > 180, _flon - 360, _flon)   # -> [-180, 180]
+        _pad = 0.5
+        _lo, _hi = float(np.nanmin(clon)) - _pad, float(np.nanmax(clon)) + _pad
+        _la, _lb = float(np.nanmin(clat)) - _pad, float(np.nanmax(clat)) + _pad
+        _keep = np.where((_flon >= _lo) & (_flon <= _hi)
+                         & (_flat >= _la) & (_flat <= _lb))[0]
+        if _cd is not None and 0 < _keep.size < int(_uxgrid.n_face):
+            _ds = modobj if hasattr(modobj, "data_vars") else modobj.to_dataset()
+            if _cd != "n_face":
+                _ds = _ds.rename({_cd: "n_face"})
+            # rebuild the subset grid from this run's SCRIP corners with the
+            # same builder that made the full grid (face order matches, so
+            # _keep indexes both the data and the corners consistently).
+            _s = xr.open_dataset(grid_file)
+            _sclat = np.asarray(_s["grid_corner_lat"].values)[_keep]
+            _sclon = np.asarray(_s["grid_corner_lon"].values)[_keep]
+            if "rad" in str(_s["grid_corner_lat"].attrs.get("units", "")).lower():
+                _sclat, _sclon = np.rad2deg(_sclat), np.rad2deg(_sclon)
+            _subgrid = uxgrid_from_corner_bounds(_sclon, _sclat)
+            src_for_regrid = ux.UxDataset(_ds.isel(n_face=_keep), uxgrid=_subgrid)
+            src_grid_for_regrid = None
+            print(f"_conservative_mod2swath: mesh subset "
+                  f"{int(_uxgrid.n_face)} -> {_keep.size} faces | "
+                  f"bounds lon[{_lo:.1f},{_hi:.1f}] lat[{_la:.1f},{_lb:.1f}] | "
+                  f"centers lon[{float(np.nanmin(olon)):.1f},"
+                  f"{float(np.nanmax(olon)):.1f}] lat[{float(np.nanmin(olat)):.1f},"
+                  f"{float(np.nanmax(olat)):.1f}]", flush=True)
+    except Exception as e:  # noqa: BLE001
+        print(f"_conservative_mod2swath: mesh subset skipped ({e!r}); "
+              "regridding full mesh.", flush=True)
+
+    out = regrid(src_for_regrid, method=method,
+                 src_grid=src_grid_for_regrid, target_grid=swath_grid)
 
     # out is on the swath face dim (= nx*ny). Identify it by size match
     # (robust to its name), reshape each var back to (x, y).
@@ -852,10 +897,19 @@ def regrid_and_apply_weights(
                 
             granule = obsobj[ref_time]
             if crop_extent is not None:
+                _pre = dict(granule.sizes)
                 granule = _crop_swath_to_extent(granule, crop_extent)
                 if granule is None:
+                    if verbose:
+                        print(f"  {ref_time}: no overlap with crop_extent="
+                              f"{crop_extent}; granule discarded", flush=True)
                     continue
-                    
+                if verbose:
+                    print(f"  {ref_time}: cropped {_pre} -> "
+                          f"{dict(granule.sizes)}", flush=True)
+            elif verbose:
+                print(f"  {ref_time}: crop_extent is None; granule NOT cropped",
+                      flush=True)
             if verbose:
                 print(f"Regridding {ref_time} and applying AMF and weights")
             output_multiple[ref_time] = _regrid_and_apply_weights(
