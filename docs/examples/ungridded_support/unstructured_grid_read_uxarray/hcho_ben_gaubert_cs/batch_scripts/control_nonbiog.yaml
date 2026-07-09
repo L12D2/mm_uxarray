@@ -78,7 +78,7 @@ obs:
       vertical_column:
         ylabel_plot: HCHO column (molec cm$^{-2}$)
         vmin_plot: 0.3
-        vmax_plot: 2.0e+16
+        vmax_plot: 3.0e+16
         nlevels_plot: 21
       pressure: {}
       scattering_weights: {}
@@ -289,7 +289,7 @@ plots:
     data_proc:
       rem_obs_nan: true
       ts_avg_window: h
-      set_axis: true
+      set_axis: false
   plot_grp1_no2_tempo:
     type: timeseries
     fig_kwargs:
@@ -331,7 +331,7 @@ plots:
     data_proc:
       rem_obs_nan: true
       ts_avg_window: h
-      set_axis: true
+      set_axis: false
   plot_grp1_no2_tropo:
     type: timeseries
     fig_kwargs:
@@ -373,7 +373,7 @@ plots:
     data_proc:
       rem_obs_nan: true
       ts_avg_window: h
-      set_axis: true
+      set_axis: false
   plot_grp1_hcho_tropo:
     type: timeseries
     fig_kwargs:
@@ -415,7 +415,7 @@ plots:
     data_proc:
       rem_obs_nan: true
       ts_avg_window: h
-      set_axis: true
+      set_axis: false
   plot_grp1_co_tropo:
     type: timeseries
     fig_kwargs:
@@ -457,7 +457,7 @@ plots:
     data_proc:
       rem_obs_nan: true
       ts_avg_window: h
-      set_axis: true
+      set_axis: false
   plot_grp1_hcho_tempo_obs:
     type: timeseries
     fig_kwargs:
@@ -499,7 +499,7 @@ plots:
     data_proc:
       rem_obs_nan: true
       ts_avg_window: h
-      set_axis: true
+      set_axis: false
   plot_grp1_no2_tempo_obs:
     type: timeseries
     fig_kwargs:
@@ -541,7 +541,7 @@ plots:
     data_proc:
       rem_obs_nan: true
       ts_avg_window: h
-      set_axis: true
+      set_axis: false
   plot_grp1_no2_tropo_obs:
     type: timeseries
     fig_kwargs:
@@ -583,7 +583,7 @@ plots:
     data_proc:
       rem_obs_nan: true
       ts_avg_window: h
-      set_axis: true
+      set_axis: false
   plot_grp1_hcho_tropo_obs:
     type: timeseries
     fig_kwargs:
@@ -625,7 +625,7 @@ plots:
     data_proc:
       rem_obs_nan: true
       ts_avg_window: h
-      set_axis: true
+      set_axis: false
   plot_grp1_co_tropo_obs:
     type: timeseries
     fig_kwargs:
@@ -667,7 +667,7 @@ plots:
     data_proc:
       rem_obs_nan: true
       ts_avg_window: h
-      set_axis: true
+      set_axis: false
   plot_grp1b_hcho_tempo_series:
     type: timeseries
     fig_kwargs:
@@ -688,7 +688,7 @@ plots:
     data_proc:
       rem_obs_nan: true
       ts_avg_window: h
-      set_axis: true
+      set_axis: false
   plot_grp1b_no2_tempo_series:
     type: timeseries
     fig_kwargs:
@@ -709,7 +709,7 @@ plots:
     data_proc:
       rem_obs_nan: true
       ts_avg_window: h
-      set_axis: true
+      set_axis: false
   plot_grp1b_no2_tropo_series:
     type: timeseries
     fig_kwargs:
@@ -730,7 +730,7 @@ plots:
     data_proc:
       rem_obs_nan: true
       ts_avg_window: h
-      set_axis: true
+      set_axis: false
   plot_grp1b_hcho_tropo_series:
     type: timeseries
     fig_kwargs:
@@ -751,7 +751,7 @@ plots:
     data_proc:
       rem_obs_nan: true
       ts_avg_window: h
-      set_axis: true
+      set_axis: false
   plot_grp1b_co_tropo_series:
     type: timeseries
     fig_kwargs:
@@ -772,7 +772,7 @@ plots:
     data_proc:
       rem_obs_nan: true
       ts_avg_window: h
-      set_axis: true
+      set_axis: false
   plot_grp4_hcho_tempo:
     type: boxplot
     fig_kwargs:
@@ -810,7 +810,7 @@ plots:
     - tempo_l2_hcho_cam-chem-se
     data_proc:
       rem_obs_nan: true
-      set_axis: true
+      set_axis: false
   plot_grp4_hcho_tropo:
     type: boxplot
     fig_kwargs:
@@ -848,7 +848,7 @@ plots:
     - tropomi_l2_hcho_cam-chem-se
     data_proc:
       rem_obs_nan: true
-      set_axis: true
+      set_axis: false
   plot_grp4_no2_tempo:
     type: boxplot
     fig_kwargs:
@@ -886,7 +886,7 @@ plots:
     - tempo_l2_no2_cam-chem-se
     data_proc:
       rem_obs_nan: true
-      set_axis: true
+      set_axis: false
   plot_grp4_no2_tropo:
     type: boxplot
     fig_kwargs:
@@ -924,7 +924,7 @@ plots:
     - tropomi_l2_no2_cam-chem-se
     data_proc:
       rem_obs_nan: true
-      set_axis: true
+      set_axis: false
   plot_grp4_co:
     type: boxplot
     fig_kwargs:
@@ -962,7 +962,7 @@ plots:
     - tropomi_l2_co_cam-chem-se
     data_proc:
       rem_obs_nan: true
-      set_axis: true
+      set_axis: false
   plot_grp4_hcho_tempo_obs:
     type: boxplot
     fig_kwargs:
@@ -1000,7 +1000,7 @@ plots:
     - tempo_l2_hcho_cam-chem-se_obsgrid
     data_proc:
       rem_obs_nan: true
-      set_axis: true
+      set_axis: false
   plot_grp4_hcho_tropo_obs:
     type: boxplot
     fig_kwargs:
@@ -1038,7 +1038,7 @@ plots:
     - tropomi_l2_hcho_cam-chem-se_obsgrid
     data_proc:
       rem_obs_nan: true
-      set_axis: true
+      set_axis: false
   plot_grp4_no2_tempo_obs:
     type: boxplot
     fig_kwargs:
@@ -1076,7 +1076,7 @@ plots:
     - tempo_l2_no2_cam-chem-se_obsgrid
     data_proc:
       rem_obs_nan: true
-      set_axis: true
+      set_axis: false
   plot_grp4_no2_tropo_obs:
     type: boxplot
     fig_kwargs:
@@ -1114,7 +1114,7 @@ plots:
     - tropomi_l2_no2_cam-chem-se_obsgrid
     data_proc:
       rem_obs_nan: true
-      set_axis: true
+      set_axis: false
   plot_grp4_co_obs:
     type: boxplot
     fig_kwargs:
@@ -1152,7 +1152,7 @@ plots:
     - tropomi_l2_co_cam-chem-se_obsgrid
     data_proc:
       rem_obs_nan: true
-      set_axis: true
+      set_axis: false
   plot_grp5:
     type: spatial_overlay
     text_kwargs:
@@ -1193,7 +1193,7 @@ plots:
       daily_first: true
       common_mask: true
       min_obs: 5
-      set_axis: true
+      set_axis: false
       rem_obs_nan: true
     fig_kwargs:
       figsize:
@@ -1240,7 +1240,7 @@ plots:
       daily_first: true
       common_mask: true
       min_obs: 5
-      set_axis: true
+      set_axis: false
       rem_obs_nan: true
     fig_kwargs:
       figsize:
@@ -1287,7 +1287,7 @@ plots:
       daily_first: true
       common_mask: true
       min_obs: 5
-      set_axis: true
+      set_axis: false
       rem_obs_nan: true
     fig_kwargs:
       figsize:
@@ -1334,7 +1334,7 @@ plots:
       daily_first: true
       common_mask: true
       min_obs: 5
-      set_axis: true
+      set_axis: false
       rem_obs_nan: true
     fig_kwargs:
       figsize:
@@ -1381,7 +1381,7 @@ plots:
       daily_first: true
       common_mask: true
       min_obs: 5
-      set_axis: true
+      set_axis: false
       rem_obs_nan: true
     fig_kwargs:
       figsize:
@@ -1428,7 +1428,7 @@ plots:
       daily_first: true
       common_mask: true
       min_obs: 5
-      set_axis: true
+      set_axis: false
       rem_obs_nan: true
     fig_kwargs:
       figsize:

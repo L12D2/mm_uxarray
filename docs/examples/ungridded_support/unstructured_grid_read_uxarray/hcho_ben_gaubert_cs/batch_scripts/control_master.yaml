@@ -66,7 +66,7 @@ obs:
       vertical_column:
         ylabel_plot: 'HCHO column (molec cm$^{-2}$)'
         vmin_plot: 0.3
-        vmax_plot: 2.0e+16
+        vmax_plot: 3.0e+16
         nlevels_plot: 21
       pressure: {}
       scattering_weights: {}
@@ -188,7 +188,7 @@ plots:
     domain_name: # will come from common, add domains, in run yaml
     domain_info: # will come from common, add domains, in run yaml
     data: ['tempo_l2_hcho_cam-chem-se']
-    data_proc: {rem_obs_nan: True, ts_avg_window: 'h', set_axis: True}
+    data_proc: {rem_obs_nan: True, ts_avg_window: 'h', set_axis: False}
 
   plot_grp1_no2_tempo:
     type: 'timeseries'
@@ -199,7 +199,7 @@ plots:
     domain_name: # will come from common, add domains, in run yaml
     domain_info: # will come from common, add domains, in run yaml
     data: ['tempo_l2_no2_cam-chem-se']
-    data_proc: {rem_obs_nan: True, ts_avg_window: 'h', set_axis: True}
+    data_proc: {rem_obs_nan: True, ts_avg_window: 'h', set_axis: False}
 
   plot_grp1_no2_tropo:
     type: 'timeseries'
@@ -210,7 +210,7 @@ plots:
     domain_name: # will come from common, add domains, in run yaml
     domain_info: # will come from common, add domains, in run yaml
     data: ['tropomi_l2_no2_cam-chem-se']
-    data_proc: {rem_obs_nan: True, ts_avg_window: 'h', set_axis: True}
+    data_proc: {rem_obs_nan: True, ts_avg_window: 'h', set_axis: False}
 
   plot_grp1_hcho_tropo:
     type: 'timeseries'
@@ -221,7 +221,7 @@ plots:
     domain_name: # will come from common, add domains, in run yaml
     domain_info: # will come from common, add domains, in run yaml
     data: ['tropomi_l2_hcho_cam-chem-se']
-    data_proc: {rem_obs_nan: True, ts_avg_window: 'h', set_axis: True}
+    data_proc: {rem_obs_nan: True, ts_avg_window: 'h', set_axis: False}
 
   plot_grp1_co_tropo:
     type: 'timeseries'
@@ -232,7 +232,7 @@ plots:
     domain_name: # will come from common, add domains, in run yaml
     domain_info: # will come from common, add domains, in run yaml
     data: ['tropomi_l2_co_cam-chem-se']
-    data_proc: {rem_obs_nan: True, ts_avg_window: 'h', set_axis: True}
+    data_proc: {rem_obs_nan: True, ts_avg_window: 'h', set_axis: False}
 
   # obsgrid ts
   plot_grp1_hcho_tempo_obs:
@@ -244,7 +244,7 @@ plots:
     domain_name: # will come from common, add domains, in run yaml
     domain_info: # will come from common, add domains, in run yaml
     data: ['tempo_l2_hcho_cam-chem-se_obsgrid']
-    data_proc: {rem_obs_nan: True, ts_avg_window: 'h', set_axis: True}
+    data_proc: {rem_obs_nan: True, ts_avg_window: 'h', set_axis: False}
 
   plot_grp1_no2_tempo_obs:
     type: 'timeseries'
@@ -255,7 +255,7 @@ plots:
     domain_name: # will come from common, add domains, in run yaml
     domain_info: # will come from common, add domains, in run yaml
     data: ['tempo_l2_no2_cam-chem-se_obsgrid']
-    data_proc: {rem_obs_nan: True, ts_avg_window: 'h', set_axis: True}
+    data_proc: {rem_obs_nan: True, ts_avg_window: 'h', set_axis: False}
 
   plot_grp1_no2_tropo_obs:
     type: 'timeseries'
@@ -266,7 +266,7 @@ plots:
     domain_name: # will come from common, add domains, in run yaml
     domain_info: # will come from common, add domains, in run yaml
     data: ['tropomi_l2_no2_cam-chem-se_obsgrid']
-    data_proc: {rem_obs_nan: True, ts_avg_window: 'h', set_axis: True}
+    data_proc: {rem_obs_nan: True, ts_avg_window: 'h', set_axis: False}
 
   plot_grp1_hcho_tropo_obs:
     type: 'timeseries'
@@ -277,7 +277,7 @@ plots:
     domain_name: # will come from common, add domains, in run yaml
     domain_info: # will come from common, add domains, in run yaml
     data: ['tropomi_l2_hcho_cam-chem-se_obsgrid']
-    data_proc: {rem_obs_nan: True, ts_avg_window: 'h', set_axis: True}
+    data_proc: {rem_obs_nan: True, ts_avg_window: 'h', set_axis: False}
 
   plot_grp1_co_tropo_obs:
     type: 'timeseries'
@@ -288,7 +288,7 @@ plots:
     domain_name: # will come from common, add domains, in run yaml
     domain_info: # will come from common, add domains, in run yaml
     data: ['tropomi_l2_co_cam-chem-se_obsgrid']
-    data_proc: {rem_obs_nan: True, ts_avg_window: 'h', set_axis: True}
+    data_proc: {rem_obs_nan: True, ts_avg_window: 'h', set_axis: False}
 
   # CONUS-mean weighted ts (not well tested)
   plot_grp1b_hcho_tempo_series:
@@ -299,7 +299,7 @@ plots:
     domain_type: ["all"]
     domain_name: ["CONUS"]
     data: ['tempo_l2_hcho_cam-chem-se_series']
-    data_proc: {rem_obs_nan: True, ts_avg_window: 'h', set_axis: True}
+    data_proc: {rem_obs_nan: True, ts_avg_window: 'h', set_axis: False}
 
   plot_grp1b_no2_tempo_series:
     type: 'timeseries'
@@ -309,7 +309,7 @@ plots:
     domain_type: ["all"]
     domain_name: ["CONUS"]
     data: ['tempo_l2_no2_cam-chem-se_series']
-    data_proc: {rem_obs_nan: True, ts_avg_window: 'h', set_axis: True}
+    data_proc: {rem_obs_nan: True, ts_avg_window: 'h', set_axis: False}
 
   plot_grp1b_no2_tropo_series:
     type: 'timeseries'
@@ -319,7 +319,7 @@ plots:
     domain_type: ["all"]
     domain_name: ["CONUS"]
     data: ['tropomi_l2_no2_cam-chem-se_series']
-    data_proc: {rem_obs_nan: True, ts_avg_window: 'h', set_axis: True}
+    data_proc: {rem_obs_nan: True, ts_avg_window: 'h', set_axis: False}
 
   plot_grp1b_hcho_tropo_series:
     type: 'timeseries'
@@ -329,7 +329,7 @@ plots:
     domain_type: ["all"]
     domain_name: ["CONUS"]
     data: ['tropomi_l2_hcho_cam-chem-se_series']
-    data_proc: {rem_obs_nan: True, ts_avg_window: 'h', set_axis: True}
+    data_proc: {rem_obs_nan: True, ts_avg_window: 'h', set_axis: False}
 
   plot_grp1b_co_tropo_series:
     type: 'timeseries'
@@ -339,7 +339,7 @@ plots:
     domain_type: ["all"]
     domain_name: ["CONUS"]
     data: ['tropomi_l2_co_cam-chem-se_series']
-    data_proc: {rem_obs_nan: True, ts_avg_window: 'h', set_axis: True}
+    data_proc: {rem_obs_nan: True, ts_avg_window: 'h', set_axis: False}
 
   # # gridded spatial bias ----
   # # spatial overlay can make these plots on one axis. 
@@ -412,7 +412,7 @@ plots:
     domain_name: # will come from common, add domains, in run yaml
     domain_info: # will come from common, add domains, in run yaml
     data: ['tempo_l2_hcho_cam-chem-se']
-    data_proc: {rem_obs_nan: True, set_axis: True}
+    data_proc: {rem_obs_nan: True, set_axis: False}
 
   plot_grp4_hcho_tropo:
     type: "boxplot"
@@ -422,7 +422,7 @@ plots:
     domain_name: # will come from common, add domains, in run yaml
     domain_info: # will come from common, add domains, in run yaml
     data: ['tropomi_l2_hcho_cam-chem-se']
-    data_proc: {rem_obs_nan: True, set_axis: True}
+    data_proc: {rem_obs_nan: True, set_axis: False}
 
   plot_grp4_no2_tempo:
     type: "boxplot"
@@ -432,7 +432,7 @@ plots:
     domain_name: # will come from common, add domains, in run yaml
     domain_info: # will come from common, add domains, in run yaml
     data: ['tempo_l2_no2_cam-chem-se']
-    data_proc: {rem_obs_nan: True, set_axis: True}
+    data_proc: {rem_obs_nan: True, set_axis: False}
 
   plot_grp4_no2_tropo:
     type: "boxplot"
@@ -442,7 +442,7 @@ plots:
     domain_name: # will come from common, add domains, in run yaml
     domain_info: # will come from common, add domains, in run yaml
     data: ['tropomi_l2_no2_cam-chem-se']
-    data_proc: {rem_obs_nan: True, set_axis: True}
+    data_proc: {rem_obs_nan: True, set_axis: False}
 
   plot_grp4_co:
     type: "boxplot"
@@ -452,7 +452,7 @@ plots:
     domain_name: # will come from common, add domains, in run yaml
     domain_info: # will come from common, add domains, in run yaml
     data: ['tropomi_l2_co_cam-chem-se']
-    data_proc: {rem_obs_nan: True, set_axis: True}
+    data_proc: {rem_obs_nan: True, set_axis: False}
 
   plot_grp4_hcho_tempo_obs:
     type: "boxplot"
@@ -462,7 +462,7 @@ plots:
     domain_name: # will come from common, add domains, in run yaml
     domain_info: # will come from common, add domains, in run yaml
     data: ['tempo_l2_hcho_cam-chem-se_obsgrid']
-    data_proc: {rem_obs_nan: True, set_axis: True}
+    data_proc: {rem_obs_nan: True, set_axis: False}
 
   plot_grp4_hcho_tropo_obs:
     type: "boxplot"
@@ -472,7 +472,7 @@ plots:
     domain_name: # will come from common, add domains, in run yaml
     domain_info: # will come from common, add domains, in run yaml
     data: ['tropomi_l2_hcho_cam-chem-se_obsgrid']
-    data_proc: {rem_obs_nan: True, set_axis: True}
+    data_proc: {rem_obs_nan: True, set_axis: False}
 
   plot_grp4_no2_tempo_obs:
     type: "boxplot"
@@ -482,7 +482,7 @@ plots:
     domain_name: # will come from common, add domains, in run yaml
     domain_info: # will come from common, add domains, in run yaml
     data: ['tempo_l2_no2_cam-chem-se_obsgrid']
-    data_proc: {rem_obs_nan: True, set_axis: True}
+    data_proc: {rem_obs_nan: True, set_axis: False}
 
   plot_grp4_no2_tropo_obs:
     type: "boxplot"
@@ -492,7 +492,7 @@ plots:
     domain_name: # will come from common, add domains, in run yaml
     domain_info: # will come from common, add domains, in run yaml
     data: ['tropomi_l2_no2_cam-chem-se_obsgrid']
-    data_proc: {rem_obs_nan: True, set_axis: True}
+    data_proc: {rem_obs_nan: True, set_axis: False}
 
   plot_grp4_co_obs:
     type: "boxplot"
@@ -502,7 +502,7 @@ plots:
     domain_name: # will come from common, add domains, in run yaml
     domain_info: # will come from common, add domains, in run yaml
     data: ['tropomi_l2_co_cam-chem-se_obsgrid']
-    data_proc: {rem_obs_nan: True, set_axis: True}
+    data_proc: {rem_obs_nan: True, set_axis: False}
 
   # spatial overlay 
   plot_grp5:
@@ -518,7 +518,7 @@ plots:
       daily_first: True        # daily means first, then mean across days (equal day weighting)
       common_mask: True        # reduce only over times where BOTH obs & model valid
       min_obs: 5               # mask cells with < 5 valid granule samples in the window
-      set_axis: True
+      set_axis: False
       rem_obs_nan: True
     fig_kwargs:
       figsize: [18, 5]
@@ -539,7 +539,7 @@ plots:
       daily_first: True
       common_mask: True
       min_obs: 5
-      set_axis: True
+      set_axis: False
       rem_obs_nan: True
     fig_kwargs:
       figsize: [18, 5]
@@ -560,7 +560,7 @@ plots:
       daily_first: True
       common_mask: True
       min_obs: 5
-      set_axis: True
+      set_axis: False
       rem_obs_nan: True
     fig_kwargs:
       figsize: [18, 5]
@@ -581,7 +581,7 @@ plots:
       daily_first: True
       common_mask: True
       min_obs: 5
-      set_axis: True
+      set_axis: False
       rem_obs_nan: True
     fig_kwargs:
       figsize: [18, 5]
@@ -602,7 +602,7 @@ plots:
       daily_first: True
       common_mask: True
       min_obs: 5
-      set_axis: True
+      set_axis: False
       rem_obs_nan: True
     fig_kwargs:
       figsize: [18, 5]
@@ -623,7 +623,7 @@ plots:
       daily_first: True
       common_mask: True
       min_obs: 5
-      set_axis: True
+      set_axis: False
       rem_obs_nan: True
     fig_kwargs:
       figsize: [18, 5]

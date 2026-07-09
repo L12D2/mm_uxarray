@@ -32,9 +32,27 @@ Per-run edits applied to a deep copy of the master:
 #   done
 # done
 
+# # cons mod space
+# python make_controls.py nonbiog_cons biog_cons grapes_cons mxcat_cons
+# for RUN in nonbiog_cons biog_cons grapes_cons mxcat_cons; do
+#   for ONLY in grp6 grp7 grp8; do          # TEMPO model-grid groups ONLY
+#     export MM_CONTROL=$PWD/control_${RUN}.yaml PLOT_GRID=model PLOT_ONLY=$ONLY
+#     qsub -N pc_${RUN}_${ONLY} -o pc_${RUN}_${ONLY}.log -l select=1:ncpus=1:mem=40GB -V submit_plot_sat.sh
+#   done
+# done
+
+# # native obs space
+# python make_native_controls.py
+# for RUN in nonbiog biog grapes mxcat; do
+#   export MM_CONTROL=$PWD/control_${RUN}_native_cons.yaml PLOT_GRID=obs PLOT_ONLY=grp_native
+#   qsub -N pnc_${RUN} -o pnc_${RUN}.log -l select=1:ncpus=1:mem=30GB -V submit_plot_sat.sh
+# done
+# # then flip METHOD="radius_mean" at top of make_native_controls.py, rerun it, and plot control_*_native_rmean.yaml
+
 import copy
 import pathlib
 import sys
+import os
 
 import yaml
 
@@ -56,7 +74,7 @@ def render(master, name, spec, common=None):
         an["montage"]["plot_dir"] = spec["plot_dir"]
         an["montage"]["outdir"] = spec["plot_dir"] + "/montages"
 
-    prefix = an["save"]["paired"]["prefix"]
+    prefix = spec.get("paired_prefix") or an["save"]["paired"]["prefix"]
     fns = an["read"]["paired"]["filenames"]
     for label in fns:
         fns[label] = [f"{spec['paired_dir']}/{prefix}*_{label}.nc4"]

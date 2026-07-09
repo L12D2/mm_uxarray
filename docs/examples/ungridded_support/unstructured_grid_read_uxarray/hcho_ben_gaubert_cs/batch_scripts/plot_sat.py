@@ -107,3 +107,59 @@ if __name__ == "__main__":
     #     qsub -N p_${tag} -o p_${tag}.log -l select=1:ncpus=1:mem=48GB -V submit_plot_sat.sh
     #   done
     # done
+
+    
+
+    # # gen controls
+    # python make_native_controls.py                           
+    
+    # # plot
+    # for RUN in nonbiog biog grapes mxcat; do
+    #   export MM_CONTROL=$PWD/control_${RUN}_native.yaml PLOT_GRID=obs PLOT_ONLY=grp_native
+    #   qsub -N pnat_${RUN} -o pnat_${RUN}.log -l select=1:ncpus=1:mem=64GB -V submit_plot_sat.sh
+    # done
+
+    
+    # python make_controls.py                     
+    # for RUN in nonbiog biog grapes mxcat; do
+    #   for ONLY in grp5 grp6 grp7; do
+    #     export MM_CONTROL=$PWD/control_${RUN}.yaml PLOT_GRID=model PLOT_ONLY=$ONLY
+    #     tag=${RUN}_model_${ONLY}
+    #     qsub -N p_$tag -o p_$tag.log -l select=1:ncpus=1:mem=64GB -V submit_plot_sat.sh
+    #   done
+    # done
+
+
+    # # ### addtl regridding options 
+    
+    # # mxcat model-space
+    # qsub -N pm_mxcat_cons -o pm_mxcat_cons.log \
+    #      -l select=1:ncpus=1:mem=200GB -l walltime=24:00:00 \
+    #      -v RUN=mxcat,REGRID_METHOD=conservative,REGRID_TARGET=model \
+    #      submit_pair_tempo_native.sh
+    
+    # # ne0CONUS model-space
+    # for RUN in nonbiog biog grapes; do
+    #   qsub -N pm_${RUN}_cons -o pm_${RUN}_cons.log \
+    #        -l select=1:ncpus=1:mem=128GB -l walltime=24:00:00 \
+    #        -v RUN=$RUN,REGRID_METHOD=conservative,REGRID_TARGET=model \
+    #        submit_pair_tempo_native.sh
+    # done
+    
+    # # obs-grid native, conservative — CONUS cities on the ne0CONUS runs
+    # for RUN in nonbiog biog grapes; do
+    #   for CITY in atl dfw la den; do
+    #     qsub -N po_${RUN}_${CITY}_cons -o po_${RUN}_${CITY}_cons.log \
+    #          -l select=1:ncpus=1:mem=96GB -l walltime=24:00:00 \
+    #          -v RUN=$RUN,CITY=$CITY,REGRID_METHOD=conservative,REGRID_TARGET=obs \
+    #          submit_pair_tempo_native.sh
+    #   done
+    # done
+    # # obs-grid native, conservative — mxcat over ATL + MEX
+    # for CITY in atl mex; do
+    #   qsub -N po_mxcat_${CITY}_cons -o po_mxcat_${CITY}_cons.log \
+    #        -l select=1:ncpus=1:mem=128GB -l walltime=24:00:00 \
+    #        -v RUN=mxcat,CITY=$CITY,REGRID_METHOD=conservative,REGRID_TARGET=obs \
+    #        submit_pair_tempo_native.sh
+    # done
+
