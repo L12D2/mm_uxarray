@@ -1238,11 +1238,22 @@ def _swath_extent(lon, lat, pad=0.05):
     dy = max((lb - la) * pad, 0.02)
     return [lo - dx, hi + dx, la - dy, lb + dy]
 
+def _swath_binned_mean(lon, lat, val, lon_edges, lat_edges):
+    """Mean of ``val`` per (lon,lat) cell to (nlat, nlon) array, NaN where empty."""
+    ok = np.isfinite(lon) & np.isfinite(lat) & np.isfinite(val)
+    s, _, _ = np.histogram2d(lon[ok], lat[ok], bins=[lon_edges, lat_edges],
+                             weights=val[ok])
+    c, _, _ = np.histogram2d(lon[ok], lat[ok], bins=[lon_edges, lat_edges])
+    with np.errstate(invalid="ignore"):
+        mean = s / c
+    return np.where(c > 0, mean, np.nan).T 
+    
 def plot_swath_scatter(ds, model_var, obs_var, unc_var=None,
                        label_m="model", label_o="obs", ylabel=None,
                        outname="swath_scatter", extent=None, proj=None,
                        vmin=None, vmax=None, markersize=6, text_dict=None,
-                       states=True, debug=False): # create a lot of yaml customizations
+                       states=True, gridlines=True, render="auto",
+                       bin_deg=None, debug=False): # create a lot of yaml customizations
     
     """Native-TEMPO pixel scatter: obs | model | bias(model-obs), 3 panels.
 
@@ -1265,23 +1276,57 @@ def plot_swath_scatter(ds, model_var, obs_var, unc_var=None,
     o = np.asarray(ds[obs_var].values, dtype=float).ravel()
     m = np.asarray(ds[model_var].values, dtype=float).ravel()
     d = m - o
+    n = int(np.isfinite(o).sum())
 
     if extent is None:
         extent = _swath_extent(lon, lat)
     _proj = proj if proj is not None else ccrs.PlateCarree()
 
     # shared obs+model scale
+    mode = render
+    if mode == "auto":
+        mode = "binned" if n > 5_000 else "scatter"
+
+    # Adaptive bin size when unset: target ~4 pixels/cell so the field stays
+    # filled for sparse/coarse instruments (TROPOMI ~0.04-0.1 deg) 
+    if bin_deg is None:
+        _area = max((extent[1] - extent[0]) * (extent[3] - extent[2]), 1e-6)
+        bin_deg = float(np.clip(np.sqrt(_area / max(n / 4.0, 1.0)), 0.02, 0.2))
+        
     _finite = o[np.isfinite(o)]
     if vmin is None or vmax is None:
-        if _finite.size:
-            _lo, _hi = np.percentile(_finite, [2, 98])
-        else:
-            _lo, _hi = 0.0, 1.0
+        _lo, _hi = (np.percentile(_finite, [2, 98]) if _finite.size else (0.0, 1.0))
+        
         vmin = _lo if vmin is None else vmin
         vmax = _hi if vmax is None else vmax
     norm = mpl.colors.Normalize(vmin=vmin, vmax=vmax)
     cmap = mpl.cm.get_cmap("Spectral_r")
+    _df = d[np.isfinite(d)]
+    _vd = float(np.nanmax(np.abs(np.percentile(_df, [1, 99])))) if _df.size else 1.0
+    if not np.isfinite(_vd) or _vd == 0:
+        _vd = 1.0
+    bnorm = mpl.colors.Normalize(vmin=-_vd, vmax=_vd)
+    bcmap = mpl.cm.get_cmap("RdBu_r")
 
+    if mode == "binned":
+        lon_e = np.arange(extent[0], extent[1] + bin_deg, bin_deg)
+        lat_e = np.arange(extent[2], extent[3] + bin_deg, bin_deg)
+        Fo = _swath_binned_mean(lon, lat, o, lon_e, lat_e)
+        Fm = _swath_binned_mean(lon, lat, m, lon_e, lat_e)
+        Fd = _swath_binned_mean(lon, lat, d, lon_e, lat_e)
+
+        def _paint(ax_, F, cm, nm):
+            return ax_.pcolormesh(lon_e, lat_e, F, cmap=cm, norm=nm,
+                                  transform=ccrs.PlateCarree(), shading="flat")
+    else:
+        _s = markersize if n < 20_000 else (2 if n < 200_000 else 0.5)
+
+        def _paint(ax_, V, cm, nm):
+            return ax_.scatter(lon, lat, c=V, s=_s, marker="s", cmap=cm, norm=nm,
+                               transform=ccrs.PlateCarree(), linewidths=0,
+                               rasterized=True)
+        Fo, Fm, Fd = o, m, d
+        
     figsize = [22, 6]
     fig, axes = plt.subplots(1, 3, figsize=figsize,
                              subplot_kw={"projection": _proj},
@@ -1290,41 +1335,41 @@ def plot_swath_scatter(ds, model_var, obs_var, unc_var=None,
     def _base(ax_):
         ax_.coastlines(linewidth=0.5)
         ax_.add_feature(cfeature.BORDERS, linewidth=0.4)
+        
         if states:
             ax_.add_feature(cfeature.STATES, linewidth=0.3)
+        if gridlines:
+            gl = ax_.gridlines(draw_labels=True, lw=0.5, color="gray",
+                               alpha=0.4, linestyle=":")
+            gl.top_labels = False
+            gl.right_labels = False
+            
         ax_.set_extent(extent, crs=ccrs.PlateCarree())
 
-    sc = axes[0].scatter(lon, lat, c=o, s=markersize, cmap=cmap, norm=norm,
-                         transform=ccrs.PlateCarree(), linewidths=0)
+    im = _paint(axes[0], Fo, cmap, norm)
+    
     _base(axes[0]); axes[0].set_title(label_o, fontweight="bold", **text_kwargs)
-    axes[1].scatter(lon, lat, c=m, s=markersize, cmap=cmap, norm=norm,
-                    transform=ccrs.PlateCarree(), linewidths=0)
+    _paint(axes[1], Fm, cmap, norm)
+    
     _base(axes[1]); axes[1].set_title(label_m, fontweight="bold", **text_kwargs)
-    cbar = fig.colorbar(sc, ax=axes[:2].tolist(), location="right",
+    cbar = fig.colorbar(im, ax=axes[:2].tolist(), location="right",
                         shrink=0.75, aspect=25, pad=0.02, extend="both")
     cbar.set_label(ylabel, fontweight="bold", **text_kwargs)
     cbar.ax.tick_params(labelsize=text_kwargs["fontsize"] * 0.8)
-
-    _df = d[np.isfinite(d)]
-    _vd = float(np.nanmax(np.abs(np.percentile(_df, [1, 99])))) if _df.size else 1.0
-    if not np.isfinite(_vd) or _vd == 0:
-        _vd = 1.0
-    bnorm = mpl.colors.Normalize(vmin=-_vd, vmax=_vd)
-    bsc = axes[2].scatter(lon, lat, c=d, s=markersize, cmap=mpl.cm.get_cmap("RdBu_r"),
-                          norm=bnorm, transform=ccrs.PlateCarree(), linewidths=0)
+    
+    bim = _paint(axes[2], Fd, bcmap, bnorm)
     _base(axes[2])
     axes[2].set_title(label_m + " - " + label_o, fontweight="bold", **text_kwargs)
-    bcbar = fig.colorbar(bsc, ax=axes[2], location="right",
+    bcbar = fig.colorbar(bim, ax=axes[2], location="right",
                          shrink=0.75, aspect=25, pad=0.02, extend="both")
     bcbar.set_label(ylabel, fontweight="bold", **text_kwargs)
     bcbar.ax.tick_params(labelsize=text_kwargs["fontsize"] * 0.8)
 
-    fig.suptitle(f"native TEMPO pixels (n={np.isfinite(o).sum()})",
-                 fontweight="bold", **text_kwargs)
+    _how = f"{bin_deg:g}° binned" if mode == "binned" else "native pixels"
+    fig.suptitle(f"native swath ({_how}, n={n})", fontweight="bold", **text_kwargs)
     savefig(outname + ".png", loc=4, logo_height=100, bbox_inches="tight", dpi=150)
     if debug is False:
         plt.close(fig)
-    return axes
 
 def plot_swath_oversampling(ds, bin_deg=0.02, outname="swath_oversampling",
                             extent=None, proj=None, text_dict=None,
