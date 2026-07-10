@@ -700,7 +700,43 @@ def _mod2tropomi_swath(modobj, o, method, mod_vars, grid_file):
 
     if method in _CONSERVATIVE:
         swath_grid, _ = _tropomi_swath_mesh(o)
-        out = regrid(msrc, method=method, src_grid=grid_file, target_grid=swath_grid)
+        
+        # Subset the model mesh to the swath bbox before building conservative
+        # weights (far faces contribute zero) . Mirrors the TEMPO forward path.
+        src_for_regrid, src_grid_for_regrid = msrc, grid_file
+        try:
+            import uxarray as ux
+            from melodies_monet.util.uxarray_util import (
+                open_uxgrid, _face_centers, uxgrid_from_corner_bounds)
+            _uxgrid = open_uxgrid(grid_file)
+            _cd = next((d for d, n in msrc.sizes.items() if n == _uxgrid.n_face), None)
+            _flon, _flat = _face_centers(_uxgrid)
+            _flon = np.where(_flon > 180, _flon - 360, _flon)   # -> [-180, 180]
+            _pad = 0.5
+            _lo, _hi = float(np.nanmin(olon)) - _pad, float(np.nanmax(olon)) + _pad
+            _la, _lb = float(np.nanmin(olat)) - _pad, float(np.nanmax(olat)) + _pad
+            _keep = np.where((_flon >= _lo) & (_flon <= _hi)
+                             & (_flat >= _la) & (_flat <= _lb))[0]
+            if _cd is not None and 0 < _keep.size < int(_uxgrid.n_face):
+                _s = xr.open_dataset(grid_file)
+                _sclat = np.asarray(_s["grid_corner_lat"].values)[_keep]
+                _sclon = np.asarray(_s["grid_corner_lon"].values)[_keep]
+                if "rad" in str(_s["grid_corner_lat"].attrs.get("units", "")).lower():
+                    _sclat, _sclon = np.rad2deg(_sclat), np.rad2deg(_sclon)
+                _subgrid = uxgrid_from_corner_bounds(_sclon, _sclat)
+                _mds = msrc if hasattr(msrc, "data_vars") else msrc.to_dataset()
+                if _cd != "n_face":
+                    _mds = _mds.rename({_cd: "n_face"})
+                src_for_regrid = ux.UxDataset(_mds.isel(n_face=_keep), uxgrid=_subgrid)
+                src_grid_for_regrid = None
+                print(f"_mod2tropomi_swath: mesh subset {int(_uxgrid.n_face)} -> "
+                      f"{_keep.size} faces", flush=True)
+        except Exception as e:  # noqa: BLE001
+            print(f"_mod2tropomi_swath: mesh subset skipped ({e!r}); full mesh.",
+                  flush=True)
+        out = regrid(src_for_regrid, method=method,
+                     src_grid=src_grid_for_regrid, target_grid=swath_grid)
+        
         nface = ny * nx
         res = xr.Dataset()
         for v in out.data_vars:
@@ -751,12 +787,59 @@ def _tropomi_swath2mod(swath, modobj, method, data_vars):
         )
         src = ux.UxDataset(flat, uxgrid=swath_grid)
         model_grid = open_uxgrid(grid_file)
-        out = regrid(src, method=method, target_grid=model_grid)
+        n_col = int(model_grid.n_face)
 
+        # Subset the TARGET mesh to the swath bbox before building weights, then
+        # scatter results back to the full mesh (faces outside the swath go NaN).
+        # Mirrors the TEMPO backward path.
+        out = None
+        try:
+            from melodies_monet.util.uxarray_util import (
+                _face_centers, uxgrid_from_corner_bounds)
+            _flon, _flat = _face_centers(model_grid)
+            _flon = np.where(_flon > 180, _flon - 360, _flon)   # -> [-180, 180]
+            _slon = np.asarray(swath["longitude"].values)
+            _slat = np.asarray(swath["latitude"].values)
+            _pad = 0.5
+            _lo, _hi = float(np.nanmin(_slon)) - _pad, float(np.nanmax(_slon)) + _pad
+            _la, _lb = float(np.nanmin(_slat)) - _pad, float(np.nanmax(_slat)) + _pad
+            _keep = np.where((_flon >= _lo) & (_flon <= _hi)
+                             & (_flat >= _la) & (_flat <= _lb))[0]
+            if 0 < _keep.size < n_col:
+                _s = xr.open_dataset(grid_file)
+                _cla = np.asarray(_s["grid_corner_lat"].values)[_keep]
+                _clo = np.asarray(_s["grid_corner_lon"].values)[_keep]
+                if "rad" in str(_s["grid_corner_lat"].attrs.get("units", "")).lower():
+                    _cla, _clo = np.rad2deg(_cla), np.rad2deg(_clo)
+                _subgrid = uxgrid_from_corner_bounds(_clo, _cla)
+                out_sub = regrid(src, method=method, target_grid=_subgrid)
+                _sfd = next((d for d in out_sub.dims
+                             if out_sub.sizes[d] == _keep.size), None)
+                out = xr.Dataset(attrs=dict(out_sub.attrs))
+                for v in out_sub.data_vars:
+                    da = out_sub[v]
+                    if _sfd is None or _sfd not in da.dims:
+                        out[v] = da
+                        continue
+                    da = da.transpose(..., _sfd)
+                    arr = np.asarray(da.values)
+                    full = np.full(arr.shape[:-1] + (n_col,), np.nan, dtype="float64")
+                    full[..., _keep] = arr
+                    out[v] = xr.DataArray(full, dims=da.dims[:-1] + (_sfd,),
+                                          attrs=dict(da.attrs))
+                print(f"_tropomi_swath2mod: target mesh subset {n_col} -> "
+                      f"{_keep.size} faces", flush=True)
+        except Exception as e:  # noqa: BLE001
+            print(f"_tropomi_swath2mod: target subset skipped ({e!r}); full mesh.",
+                  flush=True)
+            out = None
+        if out is None:
+            out = regrid(src, method=method, target_grid=model_grid)
+            
         # Conservative regrid fills model cells with no swath overlap with exactly 0.
         out = out.where(out != 0)
         
-        n_col = int(model_grid.n_face)
+        # n_col = int(model_grid.n_face)
         d = next((dd for dd in out.dims if out.sizes[dd] == n_col), None)
         if d is not None and d != col_dim:
             out = out.rename({d: col_dim})
@@ -970,6 +1053,36 @@ _TROPOMI_PRODUCTS = {
                species="CO", qa_min=0.5, prefer_corrected=True),
 }
 
+def _tropomi_swath_pixels(swath, sp, obs_var, gtime):
+    """Flatten one paired TROPOMI granule to a native-pixel vector.
+
+    The 'swath' target keeps every footprint (no gridding): a 1-D ``obs``
+    vector carrying longitude/latitude/time as per-pixel coords, plus the
+    per-pixel retrieval uncertainty (renamed ``<obs_var>_uncertainty``).
+    All-NaN pixels dropped.
+    """
+    sdims = tuple(swath[obs_var].dims)                       # (y, x)
+    keep_vars = [sp, obs_var] + (["_obs_err"] if "_obs_err" in swath.variables else [])
+    flat = swath[keep_vars].stack(obs=sdims).reset_index("obs", drop=True)
+    lon = np.asarray(
+        swath["longitude"].stack(obs=sdims).reset_index("obs", drop=True).values)
+    lat = np.asarray(
+        swath["latitude"].stack(obs=sdims).reset_index("obs", drop=True).values)
+    n = flat.sizes["obs"]
+    _t = (np.datetime64(gtime if np.ndim(gtime) == 0
+                        else np.asarray(gtime).ravel()[0])
+          if gtime is not None else np.datetime64("NaT"))
+    flat = flat.assign_coords(longitude=("obs", lon), latitude=("obs", lat),
+                              time=("obs", np.full(n, _t)))
+    if "_obs_err" in flat.data_vars:
+        flat = flat.rename({"_obs_err": obs_var + "_uncertainty"})
+    keep = np.zeros(n, dtype=bool)
+    for v in (sp, obs_var):
+        if v in flat.data_vars:
+            keep |= np.isfinite(np.asarray(flat[v].values))
+    return flat.isel(obs=np.where(keep)[0])
+
+
 def _pair_tropomi(product, obsobj, modobj, species=None, method="conservative",
                   qa_min=None, regrid_target="model", obs_grid_res=0.1,
                   obs_grid_units="deg", obs_grid_extent=None):
@@ -1059,6 +1172,12 @@ def _pair_tropomi(product, obsobj, modobj, species=None, method="conservative",
         _attach_obs_err(swath, o, obs_var)
         
         for t in targets:
+            if t == "swath":
+                # native pixel vector (no gridding); time is a per-pixel coord,
+                # so it concatenates along 'obs', not 'time'.
+                out_by[t].append(_tropomi_swath_pixels(swath, sp, obs_var, gtime))
+                continue
+                
             on = _swath_to_target(swath, modobj, method, [sp, obs_var],
                                   t, obs_grid_res, extent, units=obs_grid_units)
             if gtime is not None:
@@ -1066,8 +1185,13 @@ def _pair_tropomi(product, obsobj, modobj, species=None, method="conservative",
                 on = on.expand_dims(time=[np.datetime64(tval)])
             out_by[t].append(on)
 
-    return {t: (xr.concat(lst, dim="time") if lst else xr.Dataset())
-            for t, lst in out_by.items()}
+    def _cat(t, lst):
+        if not lst:
+            return xr.Dataset()
+        return xr.concat(lst, dim="obs" if t == "swath" else "time")
+
+    return {t: _cat(t, lst) for t, lst in out_by.items()}
+    
 
 
     
