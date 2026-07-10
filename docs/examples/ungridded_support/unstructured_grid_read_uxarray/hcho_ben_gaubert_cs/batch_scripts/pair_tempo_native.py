@@ -66,8 +66,8 @@ def main():
     method = os.environ.get("REGRID_METHOD", "conservative").strip()
     methodtag = METHOD_TAG.get(method, method[:5])
     target = os.environ.get("REGRID_TARGET", "obs").strip().lower()
-    if target not in ("obs", "model"):
-        raise SystemExit(f"REGRID_TARGET={target!r} must be 'obs' or 'model'")
+    if target not in ("obs", "model", "swath"):
+        raise SystemExit(f"REGRID_TARGET={target!r} must be 'obs', 'model', or 'swath'")
 
     city_env = os.environ.get("CITY", "").strip().lower()
     if city_env:
@@ -116,7 +116,10 @@ def main():
                 cd["obs"][name]["filename"] = obs_pat[name]
                 cd["obs"][name]["regrid_target"] = [target]
                 cd["obs"][name]["regrid_method"] = method
-                if target == "obs":                    # mesh target ignores these
+                if target in ("obs", "swath"):                    # mesh target ignores these
+                # 'obs' needs res+extent to build the lat/lon grid; 'swath' needs
+                # only the extent so the granule is CROPPED to the city (keeping the
+                # native pixel vector small). 'model' ignores both.
                     cd["obs"][name]["obs_grid_res"] = res
                     cd["obs"][name]["obs_grid_extent"] = box
                 present.append(name)

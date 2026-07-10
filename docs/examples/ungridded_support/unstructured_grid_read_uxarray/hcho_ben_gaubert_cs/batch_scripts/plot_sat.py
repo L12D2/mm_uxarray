@@ -35,6 +35,54 @@ def _keep_plot(name, g, grid, only):
         return False
     return True
 
+def _swath_vars(p):
+    """(model_var, obs_var, unc_var) for a native-swath pair."""
+    dvs = list(p.obj.data_vars)
+    unc = next((v for v in dvs if v.endswith(("_uncertainty", "_precision"))), None)
+    mvs = getattr(p, "model_vars", None) or []
+    model = next((v for v in mvs if v in dvs), None)
+    if model is None:
+        model = next((v for v in dvs if v != unc and "column" not in v), None)
+    obs = next((v for v in dvs if v not in (model, unc)), None)
+    return model, obs, unc
+
+
+def _plot_swath(an, t0):
+    """Standalone native-TEMPO swath plots (scatter + oversampling density).
+
+    Triggered by env PLOT_SWATH=1. Iterates the *_swath pairs in an.paired and
+    renders, per pair, a 3-panel obs/model/bias pixel scatter and a pixel-count
+    oversampling density map. Bypasses an.plotting() -- the swath pixel vector
+    (dims 'obs') does not fit the x/time spatial dispatch.
+    """
+    from melodies_monet.plots import satplots as splots
+
+    out = an.control_dict.get("analysis", {}).get("output_dir") or "."
+    os.makedirs(out, exist_ok=True)
+    n = 0
+    for label, p in an.paired.items():
+        if not label.endswith("_swath") or "obs" not in getattr(p.obj, "dims", {}):
+            continue
+        model_var, obs_var, unc_var = _swath_vars(p)
+        if model_var is None or obs_var is None:
+            print(f"[swath] {label}: could not resolve model/obs vars "
+                  f"from {list(p.obj.data_vars)}; skipping", flush=True)
+            continue
+        ylabel = p.obj[obs_var].attrs.get("units", "")
+        print(f"[swath] {label}: model={model_var} obs={obs_var} "
+              f"unc={unc_var} n={p.obj.sizes.get('obs')}", flush=True)
+        splots.plot_swath_scatter(
+            p.obj, model_var, obs_var, unc_var=unc_var,
+            label_m=p.model, label_o=p.obs, ylabel=ylabel,
+            outname=f"{out}/{label}.scatter",
+        )
+        splots.plot_swath_oversampling(
+            p.obj, outname=f"{out}/{label}.oversampling",
+        )
+        n += 1
+    print(f"[swath] plotted {n} swath pair(s) in {time.time()-t0:.0f}s", flush=True)
+
+
 def main():
     t0 = time.time()
     grid = os.environ.get("PLOT_GRID", "").strip()   # "obs" | "model" | ""
@@ -68,6 +116,11 @@ def main():
     an.open_models()
     print(f"[plot] reading paired... ({time.time()-t0:.0f}s)", flush=True)
     an.read_analysis()
+
+    if os.environ.get("PLOT_SWATH", "").strip():
+        _plot_swath(an, t0)
+        print(f"[plot] DONE (swath) in {time.time()-t0:.0f}s", flush=True)
+        return
 
     for lbl, p in an.paired.items():
         print("Clipping...")

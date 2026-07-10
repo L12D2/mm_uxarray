@@ -1229,3 +1229,150 @@ def make_multi_boxplot(comb_bx, label_bx, region_bx=None, region_list=None,
             dpi=200)
     if debug is False:
         plt.close(f)
+
+def _swath_extent(lon, lat, pad=0.05):
+    """[W, E, S, N] bounding box of the pixel cloud, padded a touch."""
+    lo, hi = float(np.nanmin(lon)), float(np.nanmax(lon))
+    la, lb = float(np.nanmin(lat)), float(np.nanmax(lat))
+    dx = max((hi - lo) * pad, 0.02)
+    dy = max((lb - la) * pad, 0.02)
+    return [lo - dx, hi + dx, la - dy, lb + dy]
+
+def plot_swath_scatter(ds, model_var, obs_var, unc_var=None,
+                       label_m="model", label_o="obs", ylabel=None,
+                       outname="swath_scatter", extent=None, proj=None,
+                       vmin=None, vmax=None, markersize=6, text_dict=None,
+                       states=True, debug=False): # create a lot of yaml customizations
+    
+    """Native-TEMPO pixel scatter: obs | model | bias(model-obs), 3 panels.
+
+    Plots every swath pixel at its own longitude/latitude with ``ax.scatter``
+    (no gridding). Operates on the 'swath' pair vector (dims ``obs``, coords
+    ``longitude``/``latitude``). ``unc_var`` is unused here but accepted so
+    callers can pass the pair's uncertainty name uniformly.
+
+    Parameters mirror make_spatial_overlay where sensible. ``vmin``/``vmax``
+    bound the obs+model color scale; if None they are the 2/98th percentiles
+    of the obs values.
+    """
+    import cartopy.feature as cfeature
+
+    text_kwargs = dict(text_dict) if text_dict else {"fontsize": 14}
+    text_kwargs.setdefault("fontsize", 14)
+
+    lon = np.asarray(ds["longitude"].values, dtype=float).ravel()
+    lat = np.asarray(ds["latitude"].values, dtype=float).ravel()
+    o = np.asarray(ds[obs_var].values, dtype=float).ravel()
+    m = np.asarray(ds[model_var].values, dtype=float).ravel()
+    d = m - o
+
+    if extent is None:
+        extent = _swath_extent(lon, lat)
+    _proj = proj if proj is not None else ccrs.PlateCarree()
+
+    # shared obs+model scale
+    _finite = o[np.isfinite(o)]
+    if vmin is None or vmax is None:
+        if _finite.size:
+            _lo, _hi = np.percentile(_finite, [2, 98])
+        else:
+            _lo, _hi = 0.0, 1.0
+        vmin = _lo if vmin is None else vmin
+        vmax = _hi if vmax is None else vmax
+    norm = mpl.colors.Normalize(vmin=vmin, vmax=vmax)
+    cmap = mpl.cm.get_cmap("Spectral_r")
+
+    figsize = [22, 6]
+    fig, axes = plt.subplots(1, 3, figsize=figsize,
+                             subplot_kw={"projection": _proj},
+                             constrained_layout=True)
+
+    def _base(ax_):
+        ax_.coastlines(linewidth=0.5)
+        ax_.add_feature(cfeature.BORDERS, linewidth=0.4)
+        if states:
+            ax_.add_feature(cfeature.STATES, linewidth=0.3)
+        ax_.set_extent(extent, crs=ccrs.PlateCarree())
+
+    sc = axes[0].scatter(lon, lat, c=o, s=markersize, cmap=cmap, norm=norm,
+                         transform=ccrs.PlateCarree(), linewidths=0)
+    _base(axes[0]); axes[0].set_title(label_o, fontweight="bold", **text_kwargs)
+    axes[1].scatter(lon, lat, c=m, s=markersize, cmap=cmap, norm=norm,
+                    transform=ccrs.PlateCarree(), linewidths=0)
+    _base(axes[1]); axes[1].set_title(label_m, fontweight="bold", **text_kwargs)
+    cbar = fig.colorbar(sc, ax=axes[:2].tolist(), location="right",
+                        shrink=0.75, aspect=25, pad=0.02, extend="both")
+    cbar.set_label(ylabel, fontweight="bold", **text_kwargs)
+    cbar.ax.tick_params(labelsize=text_kwargs["fontsize"] * 0.8)
+
+    _df = d[np.isfinite(d)]
+    _vd = float(np.nanmax(np.abs(np.percentile(_df, [1, 99])))) if _df.size else 1.0
+    if not np.isfinite(_vd) or _vd == 0:
+        _vd = 1.0
+    bnorm = mpl.colors.Normalize(vmin=-_vd, vmax=_vd)
+    bsc = axes[2].scatter(lon, lat, c=d, s=markersize, cmap=mpl.cm.get_cmap("RdBu_r"),
+                          norm=bnorm, transform=ccrs.PlateCarree(), linewidths=0)
+    _base(axes[2])
+    axes[2].set_title(label_m + " - " + label_o, fontweight="bold", **text_kwargs)
+    bcbar = fig.colorbar(bsc, ax=axes[2], location="right",
+                         shrink=0.75, aspect=25, pad=0.02, extend="both")
+    bcbar.set_label(ylabel, fontweight="bold", **text_kwargs)
+    bcbar.ax.tick_params(labelsize=text_kwargs["fontsize"] * 0.8)
+
+    fig.suptitle(f"native TEMPO pixels (n={np.isfinite(o).sum()})",
+                 fontweight="bold", **text_kwargs)
+    savefig(outname + ".png", loc=4, logo_height=100, bbox_inches="tight", dpi=150)
+    if debug is False:
+        plt.close(fig)
+    return axes
+
+def plot_swath_oversampling(ds, bin_deg=0.02, outname="swath_oversampling",
+                            extent=None, proj=None, text_dict=None,
+                            states=True, debug=False):
+    """Pixel-count density map: where TEMPO oversamples.
+
+    2-D histogram of TEMPO pixel centers into ``bin_deg`` cells over the
+    analysis window lead to repeat coverage / oversampling structure. Operates on
+    the 'swath' pair vector (dims ``obs``, coords ``longitude``/``latitude``).
+    """
+    import cartopy.feature as cfeature
+
+    text_kwargs = dict(text_dict) if text_dict else {"fontsize": 14}
+    text_kwargs.setdefault("fontsize", 14)
+
+    lon = np.asarray(ds["longitude"].values, dtype=float).ravel()
+    lat = np.asarray(ds["latitude"].values, dtype=float).ravel()
+    ok = np.isfinite(lon) & np.isfinite(lat)
+    lon, lat = lon[ok], lat[ok]
+
+    if extent is None:
+        extent = _swath_extent(lon, lat)
+    _proj = proj if proj is not None else ccrs.PlateCarree()
+
+    lon_edges = np.arange(extent[0], extent[1] + bin_deg, bin_deg)
+    lat_edges = np.arange(extent[2], extent[3] + bin_deg, bin_deg)
+    counts, _, _ = np.histogram2d(lon, lat, bins=[lon_edges, lat_edges])
+    counts = counts.T                      # (lat, lon) for pcolormesh
+    counts = np.where(counts > 0, counts, np.nan)
+
+    fig, ax = plt.subplots(figsize=[10, 8],
+                           subplot_kw={"projection": _proj},
+                           constrained_layout=True)
+    cmap = mpl.cm.get_cmap("viridis")
+    pm = ax.pcolormesh(lon_edges, lat_edges, counts, cmap=cmap,
+                       transform=ccrs.PlateCarree(), shading="flat")
+    ax.coastlines(linewidth=0.5)
+    ax.add_feature(cfeature.BORDERS, linewidth=0.4)
+    if states:
+        ax.add_feature(cfeature.STATES, linewidth=0.3)
+    ax.set_extent(extent, crs=ccrs.PlateCarree())
+    cbar = fig.colorbar(pm, ax=ax, shrink=0.8, aspect=25, pad=0.02, extend="max")
+    cbar.set_label(f"pixel count per {bin_deg:g}° cell",
+                   fontweight="bold", **text_kwargs)
+    cbar.ax.tick_params(labelsize=text_kwargs["fontsize"] * 0.8)
+    ax.set_title(f"TEMPO sampling density (n={lon.size} pixels)",
+                 fontweight="bold", **text_kwargs)
+    savefig(outname + ".png", loc=4, logo_height=100, bbox_inches="tight", dpi=150)
+    if debug is False:
+        plt.close(fig)
+    return ax

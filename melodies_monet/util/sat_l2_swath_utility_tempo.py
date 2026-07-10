@@ -865,6 +865,20 @@ def regrid_and_apply_weights(
         assert tempo_sp == "HCHO", "TEMPO species must be HCHO or NO2."
         sat_species_name = "vertical_column"
 
+    def _obs_pair_vars(src):
+        """Obs column + any per-pixel retrieval uncertainty/precision that goes
+        with it. Carrying the error forward lets 'series' inverse-variance
+        weight (instead of silently falling back to area) and lets 'swath'
+        preserve per-pixel uncertainty. 
+        """
+        names = [sat_species_name]
+        for v in src.variables:
+            if v == sat_species_name:
+                continue
+            if v.startswith(sat_species_name) and v.endswith(("_uncertainty", "_precision")):
+                names.append(v)
+        return src[names]
+        
     # crop granule to region of interest
     from melodies_monet.util.sat_l2_swath_utility import _crop_swath_to_extent
     
@@ -883,7 +897,7 @@ def regrid_and_apply_weights(
         output.attrs["scan_num"] = obsobj.attrs["scan_num"]
         output.attrs["granule_number"] = obsobj.attrs["granule_number"]
         if pair:
-            output = xr.merge([output, obsobj[sat_species_name]])
+            output = xr.merge([output, _obs_pair_vars(obsobj)])
         if "lat" in output.variables:
             output = output.rename({"lat": "latitude", "lon": "longitude"})
         output = _carry_swath_bounds(output, obsobj)
@@ -932,7 +946,7 @@ def regrid_and_apply_weights(
                 output_multiple[ref_time] = xr.merge(
                     [
                         output_multiple[ref_time],
-                        granule[sat_species_name],   # cropped, aligns with model
+                        _obs_pair_vars(granule),  # obs col + uncertainty, cropped 
                     ]
                 )
             if "lat" in output_multiple[ref_time].variables:
@@ -1036,6 +1050,114 @@ def _conservative_swath2mod(concatenated, modobj, method="conservative"):
     })
     return out
 
+def _conservative_swath2mod_scan(granules, modobj, method="conservative"):
+    """Conservative swath to unstructured-mesh regrid, accumulated PER GRANULE.
+
+    Regridding a whole scan at once builds a (huge swath mesh x full model
+    mesh) weight matrix that OOMs
+    
+    Regrid each granule separately against a model-mesh SUBSET (the granule's bbox) and coverage-accumulate
+    the NON-normalized conservative outputs onto the full mesh::
+
+        combined_mean = sum_g(raw_g) / sum_g(cov_g)
+
+    where ``raw_g`` is the (destarea) regrid of the field for granule g and
+    ``cov_g`` is the regrid of ones (fraction of each model cell covered by
+    that granule). Both source (one granule) and target (a strip) stay small,
+    so it scales to the full ne0CONUS mesh without OOM. Uncovered cells
+    (sum cov ~ 0) become NaN.
+    
+    """
+    import uxarray as ux
+    from melodies_monet.util.regrid_util import regrid
+    from melodies_monet.util.uxarray_util import (
+        open_uxgrid, uxgrid_from_corner_bounds, _face_centers)
+
+    _grid_file = (modobj.attrs.get("mio_scrip_file")
+                  or modobj.attrs.get("mio_mesh_file"))
+    model_grid = open_uxgrid(_grid_file)
+    n_col_full = int(model_grid.n_face)
+    _flon, _flat = _face_centers(model_grid)
+    _flon = np.where(_flon > 180, _flon - 360, _flon)     # [-180, 180]
+    _scrip = xr.open_dataset(_grid_file)
+    _cc_lat = np.asarray(_scrip["grid_corner_lat"].values)
+    _cc_lon = np.asarray(_scrip["grid_corner_lon"].values)
+    if "rad" in str(_scrip["grid_corner_lat"].attrs.get("units", "")).lower():
+        _cc_lat, _cc_lon = np.rad2deg(_cc_lat), np.rad2deg(_cc_lon)
+
+    num = {}                                       # var full-mesh numerator
+    attrs_by_var = {}
+    den = np.zeros(n_col_full, dtype="float64")    # coverage accumulator
+    _pad = 0.5
+
+    for g in granules:
+        lon_b, lat_b = _swath_corner_bounds(g)
+        if lon_b is None:
+            continue
+        olon = np.asarray(g["longitude"].values if "longitude" in g.variables
+                          else g["lon"].values)
+        nx, ny = olon.shape
+        clon = np.asarray(lon_b.values).reshape(nx * ny, -1)
+        clat = np.asarray(lat_b.values).reshape(nx * ny, -1)
+        swath_grid = uxgrid_from_corner_bounds(clon, clat)
+
+        drop = [v for v in (lon_b.name, lat_b.name, "longitude", "latitude",
+                            "lon", "lat") if v in g.variables]
+        flat = (g.drop_vars(drop, errors="ignore")
+                 .stack(n_face=("x", "y")).reset_index("n_face", drop=True))
+        flat = flat.drop_vars(
+            [c for c in flat.coords if "n_face" in flat[c].dims], errors="ignore")
+        flat = flat.assign(
+            _mm_cov=(("n_face",), np.ones(flat.sizes["n_face"], dtype="float64")))
+        src_uxds = ux.UxDataset(flat, uxgrid=swath_grid)
+
+        # target subset = model faces in this granule's bbox
+        _lo, _hi = float(np.nanmin(clon)) - _pad, float(np.nanmax(clon)) + _pad
+        _la, _lb = float(np.nanmin(clat)) - _pad, float(np.nanmax(clat)) + _pad
+        _keep = np.where((_flon >= _lo) & (_flon <= _hi)
+                         & (_flat >= _la) & (_flat <= _lb))[0]
+        if _keep.size == 0:
+            continue
+        if _keep.size < n_col_full:
+            tgt = uxgrid_from_corner_bounds(_cc_lon[_keep], _cc_lat[_keep])
+        else:
+            tgt, _keep = model_grid, np.arange(n_col_full)
+
+        out_sub = regrid(src_uxds, method=method, target_grid=tgt)
+        _sfd = next((d for d in out_sub.dims if out_sub.sizes[d] == _keep.size), None)
+        if _sfd is None:
+            continue
+        den[_keep] += np.nan_to_num(
+            np.asarray(out_sub["_mm_cov"].transpose(_sfd).values))
+        for v in out_sub.data_vars:
+            if v == "_mm_cov":
+                continue
+            da = out_sub[v].transpose(..., _sfd)
+            arr = np.nan_to_num(np.asarray(da.values))
+            if v not in num:
+                num[v] = np.zeros(arr.shape[:-1] + (n_col_full,), dtype="float64")
+                attrs_by_var[v] = dict(out_sub[v].attrs)
+            num[v][..., _keep] += arr
+        print(f"_conservative_swath2mod_scan: granule nx*ny={nx * ny} | "
+              f"target {n_col_full} -> {_keep.size} faces", flush=True)
+        del out_sub, src_uxds
+        gc.collect()
+
+    col_dim = modobj["longitude"].dims[0]
+    den_ok = den > 1e-6
+    out = xr.Dataset()
+    for v, arr in num.items():
+        with np.errstate(invalid="ignore", divide="ignore"):
+            mean = arr / den
+        mean = np.where(den_ok, mean, np.nan)
+        extra = tuple(f"_stack{i}" for i in range(arr.ndim - 1))
+        out[v] = xr.DataArray(mean, dims=extra + (col_dim,), attrs=attrs_by_var[v])
+    out = out.assign_coords({
+        "longitude": (col_dim, np.asarray(modobj["longitude"].values).ravel()),
+        "latitude": (col_dim, np.asarray(modobj["latitude"].values).ravel()),
+    })
+    return out
+
 def back_to_modgrid(
     paireddict,
     modobj,
@@ -1086,7 +1208,19 @@ def back_to_modgrid(
         ordered_keys = sorted(list(paireddict.keys()))
     else:
         ordered_keys = sorted(list(keys_to_merge))
-    concatenated = paireddict[ordered_keys[0]]
+
+    def _yidx(ds):
+        # Give the across-track dim a positional index so sibling granules of a
+        # scan cropped to DIFFERENT across-track windows can be outer-joined at
+        # concat instead of raising an unindexed-dim size mismatch
+        # Every pixel keeps its own 2-D lon/lat, so per-pixel regrids are unaffected by the
+        # positional alignment; padded cells are NaN and ignored downstream.
+        if "y" in ds.dims and "y" not in ds.indexes:
+            return ds.assign_coords(y=("y", np.arange(ds.sizes["y"])))
+        return ds
+
+    concatenated = _yidx(paireddict[ordered_keys[0]])
+    
     scan_num = concatenated.attrs["scan_num"]
     granules = [concatenated.attrs["granule_number"]]
     ref_times = [concatenated.attrs["reference_time_string"][:-1]]  # Remove unneeded Z
@@ -1099,7 +1233,8 @@ def back_to_modgrid(
                     + f"However, {ordered_keys[0]} is from scan {scan_num} and "
                     + f"{k} if from scan {ds_to_add.attrs['scan_num']}."
                 )
-            concatenated = xr.concat([concatenated, paireddict[k]], dim="x")
+            concatenated = xr.concat(
+                [concatenated, _yidx(paireddict[k])], dim="x", join="outer")
             granules.append(paireddict[k].attrs["granule_number"])
             ref_times.append(paireddict[k].attrs["reference_time_string"][:-1])
 
@@ -1118,14 +1253,40 @@ def back_to_modgrid(
     results = {}
     for _tgt in targets:
         if _tgt == "obs":
-            _dvars = [
-                v for v in concatenated.data_vars
-                if v not in ("lon", "lat", "longitude", "latitude")
-                and "bounds" not in v
-            ]
-            out_regridded = _swath2latlon(
-                concatenated, _dvars, obs_grid_res, _extent, units=obs_grid_units, method=method,
-            )
+            # _dvars = [
+            #     v for v in concatenated.data_vars
+            #     if v not in ("lon", "lat", "longitude", "latitude")
+            #     and "bounds" not in v
+            # ]
+            # out_regridded = _swath2latlon(
+            #     concatenated, _dvars, obs_grid_res, _extent, units=obs_grid_units, method=method,
+            # )
+
+            # Regrid EACH granule onto the fixed lat/lon grid and coverage-mean,
+            # rather than the outer-join-padded scan concat. Keeps each source
+            # small AND avoids NaN-padded corner bounds that would silently knock
+            # conservative down to radius_mean inside _swath2latlon.
+            _acc_sum, _acc_cnt = None, None
+            for _gk in ordered_keys:
+                _g = paireddict[_gk]
+                _gdv = [
+                    v for v in _g.data_vars
+                    if v not in ("lon", "lat", "longitude", "latitude")
+                    and "bounds" not in v
+                ]
+                _one = _swath2latlon(
+                    _g, _gdv, obs_grid_res, _extent,
+                    units=obs_grid_units, method=method,
+                )
+                _cnt = _one.notnull().astype("float64")
+                _one0 = _one.fillna(0.0)
+                if _acc_sum is None:
+                    _acc_sum, _acc_cnt = _one0, _cnt
+                else:
+                    _acc_sum = _acc_sum + _one0
+                    _acc_cnt = _acc_cnt + _cnt
+            out_regridded = (_acc_sum / _acc_cnt).where(_acc_cnt > 0)
+
         elif _tgt =="series": # time domain vector 
             _errs = [v for v in concatenated.data_vars
                      if v.endswith(("_uncertainty", "_precision"))]
@@ -1146,10 +1307,19 @@ def back_to_modgrid(
             out_regridded = regridder(concatenated)
         elif modobj.attrs.get("mio_has_unstructured_grid", False):
             # Unstructured target bypass xESMF (memory issues on 1-D ncol targets)
-            # Conservative goes mesh-to-mesh via xregrid; else cKDTree radius-mean
-            out_regridded = _unstructured_back_to_modgrid(
-                concatenated, modobj, method=method
-            )
+            # Conservative goes mesh-to-mesh via xregrid; else cKDTree radius-mean.
+            # For conservative, regrid PER GRANULE and coverage-accumulate onto
+            # the full mesh -- concatenating the whole scan first builds a
+            # (huge swath x full mesh) weight matrix that OOMs.
+            if (method in _UNSTRUCT_CONSERVATIVE
+                    and _swath_corner_bounds(concatenated)[0] is not None):
+                out_regridded = _conservative_swath2mod_scan(
+                    [paireddict[k] for k in ordered_keys], modobj, method=method
+                )
+            else:
+                out_regridded = _unstructured_back_to_modgrid(
+                    concatenated, modobj, method=method
+                )
         else:
             regridder = xe.Regridder(concatenated, modobj, method=method, unmapped_to_nan=True)
             out_regridded = regridder(concatenated)
@@ -1188,6 +1358,53 @@ def back_to_modgrid(
                 out_regridded.to_netcdf(path)
         results[_tgt] = out_regridded
     return results
+
+def _swath_pixels_from_paireddict(paireddict):
+    """Native-swath output: every valid TEMPO pixel across all
+    granules as a 1-D ``obs`` vector, carrying ``longitude``/``latitude``/
+    ``time`` as per-pixel coords. 
+    
+    No regridding onto any imposed grid -- the
+    most faithful product. All-NaN pixels dropped. 
+
+    Only variables that live purely on the swath spatial dims (x, y) are
+    kept, so vertical-level fields and any stray non-spatial dims are skipped.
+    """
+    pieces = []
+    for k in sorted(paireddict):
+        g = paireddict[k]
+        sp = [d for d in ("x", "y") if d in g.dims]
+        if not sp:
+            continue
+        t = np.array(g.attrs["reference_time_string"][:-1], dtype="datetime64[ns]")
+        dvars = [
+            v for v in g.data_vars
+            if "bounds" not in v
+            and v not in ("lon", "lat", "longitude", "latitude")
+            and set(g[v].dims) <= set(sp)
+        ]
+        if not dvars:
+            continue
+        flat = g[dvars].stack(obs=sp).reset_index("obs", drop=True)
+        lon = np.asarray(g["lon"].stack(obs=sp).reset_index("obs", drop=True).values)
+        lat = np.asarray(g["lat"].stack(obs=sp).reset_index("obs", drop=True).values)
+        n = flat.sizes["obs"]
+        flat = flat.assign_coords(
+            longitude=("obs", lon), latitude=("obs", lat),
+            time=("obs", np.full(n, t)),
+        )
+        pieces.append(flat)
+    if not pieces:
+        return xr.Dataset()
+    out = xr.concat(pieces, dim="obs")
+    # drop pixels that are NaN in every data var (outside cropped granule, masked)
+    keep = np.zeros(out.sizes["obs"], dtype=bool)
+    for v in out.data_vars:
+        keep |= np.isfinite(np.asarray(out[v].values))
+    out = out.isel(obs=np.where(keep)[0])
+    print(f"_swath_pixels_from_paireddict: {out.sizes.get('obs', 0)} valid pixels "
+          f"from {len(paireddict)} granules; vars={list(out.data_vars)}", flush=True)
+    return out
 
 def back_to_modgrid_multiscan(
     paireddict,
@@ -1239,28 +1456,37 @@ def back_to_modgrid_multiscan(
             "Every granule was discarded as 'no overlap with model' upstream. "
             "Check is_nonpairable() and the model/obs longitude conventions "
             "(model in 0..360 vs obs in -180..180 is a common cause).")
-    
-    _kw = dict(
-        method=method, grid_path=grid_path, regrid_target=targets,
-        obs_grid_res=obs_grid_res, obs_grid_units=obs_grid_units,
-        obs_grid_extent=obs_grid_extent,
-    )
-    
-    scan_num = paireddict[ordered_keys[0]].attrs["scan_num"]
-    keys_in_scan = [ordered_keys[0]]
-    if len(ordered_keys) > 1:
-        for k in ordered_keys[1:]:
-            if paireddict[k].attrs["scan_num"] == scan_num:
-                keys_in_scan.append(k)
-            else:
-                scan_dict = back_to_modgrid(paireddict, modobj, keys_in_scan, **_kw)
-                for t in targets:
-                    out_by[t] = xr.merge([out_by[t], scan_dict[t]])
-                scan_num = paireddict[k].attrs["scan_num"]
-                keys_in_scan = [k]
-    scan_dict = back_to_modgrid(paireddict, modobj, keys_in_scan, add_time=True, **_kw)
-    for t in targets:
-        out_by[t] = xr.merge([out_by[t], scan_dict[t]])
+
+    # "swath" (native pixels) is handled separately -- it is NOT gridded,
+    # so it never enters the back_to_modgrid target loop (which would try to
+    # build a regridder for it). The remaining targets grid as before.
+    grid_targets = [t for t in targets if t != "swath"]
+
+    if grid_targets:
+        _kw = dict(
+            method=method, grid_path=grid_path, regrid_target=grid_targets,
+            obs_grid_res=obs_grid_res, obs_grid_units=obs_grid_units,
+            obs_grid_extent=obs_grid_extent,
+        )
+
+        scan_num = paireddict[ordered_keys[0]].attrs["scan_num"]
+        keys_in_scan = [ordered_keys[0]]
+        if len(ordered_keys) > 1:
+            for k in ordered_keys[1:]:
+                if paireddict[k].attrs["scan_num"] == scan_num:
+                    keys_in_scan.append(k)
+                else:
+                    scan_dict = back_to_modgrid(paireddict, modobj, keys_in_scan, **_kw)
+                    for t in grid_targets:
+                        out_by[t] = xr.merge([out_by[t], scan_dict[t]])
+                    scan_num = paireddict[k].attrs["scan_num"]
+                    keys_in_scan = [k]
+        scan_dict = back_to_modgrid(paireddict, modobj, keys_in_scan, add_time=True, **_kw)
+        for t in grid_targets:
+            out_by[t] = xr.merge([out_by[t], scan_dict[t]])
+
+    if "swath" in targets:
+        out_by["swath"] = _swath_pixels_from_paireddict(paireddict)
 
     if to_netcdf:
         for t in targets:

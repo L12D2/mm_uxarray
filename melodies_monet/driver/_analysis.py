@@ -357,7 +357,20 @@ class analysis:
             p.model = mod.label
             p.model_vars = keys
             p.obs_vars = obs_vars
-            p.obj = atgrid.sel(time=slice(self.start_time, self.end_time))
+            # p.obj = atgrid.sel(time=slice(self.start_time, self.end_time))
+
+            if "time" in atgrid.dims:
+                p.obj = atgrid.sel(time=slice(self.start_time, self.end_time))
+            elif "time" in atgrid.coords:
+                # native-swath ('swath') output: time is a per-pixel coord on the
+                # 'obs' dim, not a dimension 
+                _t = atgrid["time"]
+                _dim = _t.dims[0]
+                _mask = np.asarray(
+                    ((_t >= self.start_time) & (_t <= self.end_time)).values)
+                p.obj = atgrid.isel({_dim: np.where(_mask)[0]})
+            else:
+                p.obj = atgrid
             suffix = {"model": "", "obs": "_obsgrid", "series": "_series"}.get(tgt, "_" + str(tgt))
             label = "{}_{}{}".format(p.obs, p.model, suffix)
             p.filename = "{}.nc".format(label)
