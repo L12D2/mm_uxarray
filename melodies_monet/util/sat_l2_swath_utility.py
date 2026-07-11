@@ -635,7 +635,6 @@ def apply_weights_mod2tropomi_no2(obsobj, modobj_on_tropomi_layers, species="NO2
     g, M_air, NA = 9.80665, 0.0289644, 6.022e23
 
     vmr = _to_molmol(modobj_on_tropomi_layers[species]).transpose("z", "y", "x")
-
     pint = obsobj["pres_pa_int"].transpose("z_stagg", "y", "x")
     dp = np.abs(
         pint.isel(z_stagg=slice(0, -1)).values
@@ -652,6 +651,17 @@ def apply_weights_mod2tropomi_no2(obsobj, modobj_on_tropomi_layers, species="NO2
 
     vcd = (ak_trop * subcol).where(trop).sum("z", skipna=True)
     vcd = vcd.where(np.isfinite(vmr.isel(z=0)))
+    # diagnostic: AK-applied vs RAW tropospheric column (should be < 1)
+    try:
+        _raw = subcol.where(trop).sum("z", skipna=True)
+        _r = (vcd / _raw).where(_raw != 0)
+        print(f"[AK] TROPOMI {species}: raw_col mean={float(np.nanmean(_raw.values)):.2e} "
+              f"molec/cm2 | AK-applied mean={float(np.nanmean(vcd.values)):.2e} "
+              f"| AK/raw mean={float(np.nanmean(_r.values)):.3f} "
+              f"median={float(np.nanmedian(_r.values)):.3f} (=AMF_mod/AMF_ret)", flush=True)
+    except Exception as _e:  # noqa: BLE001
+        print(f"[AK] TROPOMI {species} ratio diag skipped: {_e!r}", flush=True)
+        
     vcd.attrs = {
         "units": "molecules/cm2",
         "description": "model NO2 tropospheric column after applying TROPOMI averaging kernel",

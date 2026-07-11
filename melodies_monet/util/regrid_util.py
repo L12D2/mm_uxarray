@@ -313,7 +313,34 @@ def _as_src_uxds(src, src_grid):
     if col_dim != "n_face":
         src_ds = src_ds.rename({col_dim: "n_face"})
     return ux.UxDataset(src_ds, uxgrid=uxgrid)
-    
+
+def _coverage_normalize(out):
+    """Divide every regridded variable by the regridded ones-field.
+
+    The installed xregrid's conservative weights row-sum to ~2 instead of 1
+    (verified with two unit squares regridded onto themselves: a constant 1
+    comes back as exactly 2). Sigma(w*v)/Sigma(w*1) is the correct
+    area-weighted mean whatever the row scaling, so this is exact -- and a
+    harmless divide-by-1.0 if/when xregrid is fixed. Cells the source does
+    not reach get coverage 0/NaN and come out NaN, as they should.
+    """
+    if "_mm_cov" not in getattr(out, "data_vars", {}):
+        return out
+    cov = out["_mm_cov"]
+    covd = cov.where(np.isfinite(cov) & (cov != 0))
+    _cm = float(np.nanmean(np.asarray(covd.values, dtype=float)))
+    if abs(_cm - 1.0) > 0.05:
+        print(f"regrid: xregrid weight row-sums ~{_cm:.2f}; "
+              "coverage-normalized to a true area-weighted mean.", flush=True)
+    for v in out.data_vars:
+        if v == "_mm_cov":
+            continue
+        attrs = out[v].attrs
+        out[v] = out[v] / covd
+        out[v].attrs = attrs
+    return out.drop_vars("_mm_cov")
+
+
 def _regrid_xregrid(src, target, method, src_grid=None, target_grid=None):
     """xregrid/ESMF backend for conservative & bilinear regridding.
 
@@ -344,17 +371,22 @@ def _regrid_xregrid(src, target, method, src_grid=None, target_grid=None):
             {"_mm_face_loc": (("n_face",), np.zeros(n_face, dtype="float32"))},
             uxgrid=target_grid,
         )
-        rg = Regridder(src_uxds, tgt_uxds, method=method)
-
-        out = rg(src_uxds)
-
+        src_uxds["_mm_cov"] = (
+            ("n_face",), np.ones(int(src_uxds.sizes["n_face"]), dtype="float64")
+        )
+        try:
+            rg = Regridder(src_uxds, tgt_uxds, method=method)
+            out = rg(src_uxds)
+            
         # free memory
-        out = out.compute()
-        _release_esmf(rg)
+            out = out.compute()
+            _release_esmf(rg)
+        finally:
+            del src_uxds["_mm_cov"]
 
         if hasattr(out, "data_vars") and "_mm_face_loc" in out.data_vars:
             out = out.drop_vars("_mm_face_loc")
-        return out
+        return _coverage_normalize(out)
 
     # --- Rectilinear target from 1-D lon/lat axes. ---
     if target is None:
@@ -372,10 +404,16 @@ def _regrid_xregrid(src, target, method, src_grid=None, target_grid=None):
             "target, build a uxarray.Grid and pass target_grid instead."
         )
     target_ds = xr.Dataset(coords={"lon": ("lon", tlon), "lat": ("lat", tlat)})
-    rg = Regridder(src_uxds, target_ds, method=method, periodic=True)
-    out = rg(src_uxds).compute()
-    _release_esmf(rg)
-    return out
+    src_uxds["_mm_cov"] = (
+        ("n_face",), np.ones(int(src_uxds.sizes["n_face"]), dtype="float64")
+    )
+    try:
+        rg = Regridder(src_uxds, target_ds, method=method, periodic=True)
+        out = rg(src_uxds).compute()
+        _release_esmf(rg)
+    finally:
+        del src_uxds["_mm_cov"]
+    return _coverage_normalize(out)
 
 
 def _resolve_coord_name(obj, given, candidates, kind):

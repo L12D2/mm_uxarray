@@ -634,6 +634,24 @@ def apply_weights_mod2tempo_no2(obsobj, modobj, species="NO2", column_type="trop
         amf_troposphere = obsobj["amf_troposphere"]
     modno2col_trfmd = (scattering_weights * partial_col).sum(dim="z") / amf_troposphere
     modno2col_trfmd = modno2col_trfmd.where(modobj[f"{species}_col"].isel(z=0).notnull())
+
+    # diagnostic: AK-applied vs RAW tropospheric column. The AK should suppress
+    # (ratio < 1)
+
+    # [AK-prof] TEMPO pres_pa_mid (top..bot): [1.e+05 9.e+04 7.e+04 3.e+04 7.e+03 2.e+03 2.e+02 2.e+01] 
+    # AK prof pressure being applied backwards?? 
+    try:
+        _raw = partial_col.where(scattering_weights.notnull()).sum(dim="z")
+        _r = (modno2col_trfmd / _raw).where(_raw != 0)
+        _swm = float(np.nanmean(scattering_weights.values))
+        _amfm = float(np.nanmean(np.asarray(amf_troposphere.values)))
+        print(f"[AK] TEMPO {species}: <SW>={_swm:.3f} <AMF_trop>={_amfm:.4f} "
+              f"SW/AMF={_swm / _amfm:.2f} | raw_col={float(np.nanmean(_raw.values)):.2e} "
+              f"AK-applied={float(np.nanmean(modno2col_trfmd.values)):.2e} "
+              f"AK/raw={float(np.nanmean(_r.values)):.2f} (=AMF_mod/AMF_ret)", flush=True)
+    except Exception as _e:  # noqa: BLE001
+        print(f"[AK] TEMPO {species} ratio diag skipped: {_e!r}", flush=True)
+        
     modno2col_trfmd.attrs = {
         "units": "molecules/cm2",
         "description": "model NO2 tropospheric column after applying TEMPO scattering weights and AMF",
@@ -806,6 +824,57 @@ def _regrid_and_apply_weights(
         )
         modobj_swath["dz_m"] = calc_dz_m_from_altitude(modobj_swath["altitude"])
         modobj_swath[f"{species[0]}_col"] = calc_partialcolumn(modobj_swath, var=species[0])
+
+        # more debugging
+
+        # [AK-cons] column conservation across the vertical interp: the
+        # tropospheric column on NATIVE model levels vs after interp to TEMPO
+        # levels must match (~1); a big departure = the interp misplaces mass,
+        # while ~1 means any AK/raw > 1 is profile-shape physics.
+        
+        try:
+            _sp = species[0]
+            # bug in xeregrid? 
+            # # pre-regrid (straight from the reader) vs post-regrid surface values.
+            # # If post = 2x pre, the horizontal regrid double-counts; if T is also
+            # # ~2x (~580 K), EVERY field is doubled (unnormalized weights).
+            # _p0v = float(np.nanmax(np.asarray(modobj["pres_pa_mid"].values)))
+            # _p1v = float(np.nanmax(np.asarray(modobj_hs["pres_pa_mid"].values)))
+            # _t1v = float(np.nanmean(np.asarray(modobj_hs["temperature_k"].isel(z=0).values)))
+            # print(f"[AK-rgd] pres max pre-regrid={_p0v:.0f} Pa | post-regrid={_p1v:.0f} Pa "
+            #       f"(ratio {_p1v / _p0v:.2f}) | post-regrid sfc T={_t1v:.0f} K (expect ~290)",
+            #       flush=True)
+            # _pn = np.nanmean(np.asarray(modobj_hs["pres_pa_mid"].values), axis=(1, 2))
+            # _xn = np.nanmean(np.asarray(modobj_hs[_sp].values), axis=(1, 2))
+            # _pi = np.nanmean(np.asarray(modobj_swath["pres_pa_mid"].values), axis=(1, 2))
+            # _xi = np.nanmean(np.asarray(modobj_swath[_sp].values), axis=(1, 2))
+            # _k = max(len(_pn) // 8, 1)
+            # _ki = max(len(_pi) // 8, 1)
+            # print(f"[AK-nat] native pres : {np.array2string(_pn[::_k], precision=0)}", flush=True)
+            # print(f"[AK-nat] native {_sp} : {np.array2string(_xn[::_k], precision=3)}", flush=True)
+            # print(f"[AK-int] interp pres : {np.array2string(_pi[::_ki], precision=0)}", flush=True)
+            # print(f"[AK-int] interp {_sp} : {np.array2string(_xi[::_ki], precision=3)}", flush=True)
+            
+            # # [AK-cons] column conservation across the vertical interp: the
+            # # tropospheric column on NATIVE model levels vs after interp to
+            # # TEMPO levels must match (~1). A big departure = the interp is
+            # # misplacing mass; ~1 = any AK/raw > 1 is profile-shape physics.
+            _pc_nat = calc_partialcolumn(modobj_hs, var=_sp)
+            if "tropopause_pressure" in obsobj:
+                _tp = obsobj["tropopause_pressure"] * 100
+            else:
+                _tp = 0.0 * modobj_hs["pres_pa_mid"].isel(z=0)  # full column
+            _cn = _pc_nat.where(modobj_hs["pres_pa_mid"] >= _tp).sum("z")
+            _ci = (modobj_swath[f"{_sp}_col"]
+                   .where(modobj_swath["pres_pa_mid"] >= _tp).sum("z"))
+            _cr = (_ci / _cn).where(_cn != 0)
+            print(f"[AK-cons] {_sp} trop col native={float(np.nanmean(_cn.values)):.2e} "
+                  f"interp={float(np.nanmean(_ci.values)):.2e} "
+                  f"interp/native mean={float(np.nanmean(_cr.values)):.2f} "
+                  f"median={float(np.nanmedian(_cr.values)):.2f} (expect ~1)", flush=True)
+            
+        except Exception as _e:  # noqa: BLE001
+            print(f"[AK-cons] skipped: {_e!r}", flush=True)
         da_out = apply_weights(obsobj, modobj_swath, species=f"{species[0]}")
     else:
         warnings.warn(

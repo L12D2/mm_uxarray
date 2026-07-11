@@ -1252,7 +1252,7 @@ def plot_swath_scatter(ds, model_var, obs_var, unc_var=None,
                        label_m="model", label_o="obs", ylabel=None,
                        outname="swath_scatter", extent=None, proj=None,
                        vmin=None, vmax=None, markersize=6, text_dict=None,
-                       states=True, gridlines=True, render="auto",
+                       states=True, gridlines=True, render="auto", share_scale=True,
                        bin_deg=None, debug=False): # create a lot of yaml customizations
     
     """Native-TEMPO pixel scatter: obs | model | bias(model-obs), 3 panels.
@@ -1376,18 +1376,40 @@ def plot_swath_scatter(ds, model_var, obs_var, unc_var=None,
             gl.right_labels = False
             
         ax_.set_extent(extent, crs=ccrs.PlateCarree())
-
+    
+    # model color scale: shared with obs (default)   
+    if share_scale:
+        norm_m = norm
+    else:
+        _fm = m[np.isfinite(m)]
+        _mlo, _mhi = (np.percentile(_fm, [2, 98]) if _fm.size else (vmin, vmax))
+        norm_m = mpl.colors.Normalize(vmin=_mlo, vmax=_mhi)
+        
     im = _paint(axes[0], Fo, cmap, norm)
     
     _base(axes[0]); axes[0].set_title(label_o, fontweight="bold", **text_kwargs)
-    _paint(axes[1], Fm, cmap, norm)
-    
+    # _paint(axes[1], Fm, cmap, norm)
+
+    im_m = _paint(axes[1], Fm, cmap, norm_m)
     _base(axes[1]); axes[1].set_title(label_m, fontweight="bold", **text_kwargs)
-    cbar = fig.colorbar(im, ax=axes[:2].tolist(), location="right",
-                        shrink=0.75, aspect=25, pad=0.02, extend="both")
-    cbar.set_label(ylabel, fontweight="bold", **text_kwargs)
-    cbar.ax.tick_params(labelsize=text_kwargs["fontsize"] * 0.8)
-    
+    # cbar = fig.colorbar(im, ax=axes[:2].tolist(), location="right",
+    #                     shrink=0.75, aspect=25, pad=0.02, extend="both")
+    # cbar.set_label(ylabel, fontweight="bold", **text_kwargs)
+    # cbar.ax.tick_params(labelsize=text_kwargs["fontsize"] * 0.8)
+
+    if share_scale:
+        cbar = fig.colorbar(im, ax=axes[:2].tolist(), location="right",
+                            shrink=0.75, aspect=25, pad=0.02, extend="both")
+        cbar.set_label(ylabel, fontweight="bold", **text_kwargs)
+        cbar.ax.tick_params(labelsize=text_kwargs["fontsize"] * 0.8)
+    else:
+        # obs and model each get their own colorbar (different ranges)
+        for _ax, _im in ((axes[0], im), (axes[1], im_m)):
+            _cb = fig.colorbar(_im, ax=_ax, location="right",
+                               shrink=0.75, aspect=25, pad=0.02, extend="both")
+            _cb.set_label(ylabel, fontweight="bold", **text_kwargs)
+            _cb.ax.tick_params(labelsize=text_kwargs["fontsize"] * 0.8)
+            
     bim = _paint(axes[2], Fd, bcmap, bnorm)
     _base(axes[2])
     axes[2].set_title(label_m + " - " + label_o, fontweight="bold", **text_kwargs)
