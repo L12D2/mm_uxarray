@@ -1393,13 +1393,23 @@ def _swath_pixels_from_paireddict(paireddict):
             longitude=("obs", lon), latitude=("obs", lat),
             time=("obs", np.full(n, t)),
         )
+        # carry the pixel CORNER bounds (obs, corner) so the footprint
+        # polygons can be drawn without resampling
+        for _bn in ("longitude_bounds", "latitude_bounds"):
+            if _bn in g.variables:
+                _bb = g[_bn].stack(obs=sp).reset_index("obs", drop=True)
+                _cd = next((d for d in _bb.dims if d != "obs"), None)
+                if _cd is not None:
+                    flat[_bn] = _bb.transpose("obs", _cd)
+                    
         pieces.append(flat)
     if not pieces:
         return xr.Dataset()
     out = xr.concat(pieces, dim="obs")
     # drop pixels that are NaN in every data var (outside cropped granule, masked)
+    _sci = [v for v in out.data_vars if "bounds" not in v]
     keep = np.zeros(out.sizes["obs"], dtype=bool)
-    for v in out.data_vars:
+    for v in _sci:
         keep |= np.isfinite(np.asarray(out[v].values))
     out = out.isel(obs=np.where(keep)[0])
     print(f"_swath_pixels_from_paireddict: {out.sizes.get('obs', 0)} valid pixels "

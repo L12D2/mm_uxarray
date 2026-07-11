@@ -1076,6 +1076,15 @@ def _tropomi_swath_pixels(swath, sp, obs_var, gtime):
                               time=("obs", np.full(n, _t)))
     if "_obs_err" in flat.data_vars:
         flat = flat.rename({"_obs_err": obs_var + "_uncertainty"})
+        
+    # carry pixel CORNER bounds (obs, corner) for footprint-polygon rendering
+    for _bn in ("longitude_bounds", "latitude_bounds"):
+        if _bn in swath.variables:
+            _bb = swath[_bn].stack(obs=sdims).reset_index("obs", drop=True)
+            _cd = next((d for d in _bb.dims if d != "obs"), None)
+            if _cd is not None:
+                flat[_bn] = _bb.transpose("obs", _cd)
+                
     keep = np.zeros(n, dtype=bool)
     for v in (sp, obs_var):
         if v in flat.data_vars:

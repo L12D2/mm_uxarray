@@ -1365,7 +1365,8 @@ def plot_swath_scatter(ds, model_var, obs_var, unc_var=None,
     bcbar.set_label(ylabel, fontweight="bold", **text_kwargs)
     bcbar.ax.tick_params(labelsize=text_kwargs["fontsize"] * 0.8)
 
-    _how = f"{bin_deg:g}° binned" if mode == "binned" else "native pixels"
+    _how = {"binned": f"{bin_deg:g}° binned", "footprint": "pixel footprints"}.get(
+        mode, "native pixels")
     fig.suptitle(f"native swath ({_how}, n={n})", fontweight="bold", **text_kwargs)
     savefig(outname + ".png", loc=4, logo_height=100, bbox_inches="tight", dpi=150)
     if debug is False:

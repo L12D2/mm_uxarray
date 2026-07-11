@@ -1647,6 +1647,78 @@ class analysis:
         """
         pass
 
+    def _plot_spatial_swath(self, p, grp, plot_type, obsvar, modvar,
+                            domain_name, domain_info, grp_dict):
+        """Render a native-swath ('swath' pair) plot from a YAML plot group.
+
+        The generalized MM entry point for the native pixel-vector products
+        (dims ``obs``). Parallels the ``spatial_overlay`` dispatch but calls the
+        satplots swath renderers instead of the gridded path:
+          - ``spatial_swath``      -> obs | model | bias pixel field (auto-binned)
+          - ``swath_oversampling`` -> pixel-count density map
+
+        All styling is YAML-driven (fig_kwargs / text_kwargs / data_proc /
+        vmin_plot / vmax_plot / domain_info)
+        """
+        import os
+        from melodies_monet.plots import satplots as splots
+
+        ds = p.obj
+        if "obs" not in getattr(ds, "dims", {}):
+            print(f"Warning: plot group {grp!r} ({plot_type}) expects a native-swath "
+                  f"pair (an 'obs' dimension); {p.obs}_{p.model} has dims "
+                  f"{dict(getattr(ds, 'sizes', {}))}. Skipping.", flush=True)
+            return
+
+        # per-pixel retrieval uncertainty, if carried
+        unc = next((v for v in ds.data_vars
+                    if v.endswith(("_uncertainty", "_precision"))), None)
+
+        # obs plot settings: obs variable_dict (if the control defines obs),
+        # overridden by anything set directly on the plot group.
+        obs_plot_dict = {}
+        _obs = self.obs.get(p.obs) if isinstance(getattr(self, "obs", None), dict) else None
+        if _obs is not None and getattr(_obs, "variable_dict", None):
+            obs_plot_dict = dict(_obs.variable_dict.get(obsvar, {}) or {})
+        for _k in ("vmin_plot", "vmax_plot", "ylabel_plot"):
+            if _k in grp_dict:
+                obs_plot_dict[_k] = grp_dict[_k]
+        ylabel = obs_plot_dict.get("ylabel_plot") or ds[obsvar].attrs.get("units", "")
+
+        fig_dict = grp_dict.get("fig_kwargs", {}) or {}
+        text_dict = grp_dict.get("text_kwargs", None)
+        dp = grp_dict.get("data_proc", {}) or {}
+
+        # plot extent: prefer the domain box bounds, else auto-fit to the pixels
+        extent = None
+        if domain_info and "bounds" in domain_info:
+            b = domain_info["bounds"]
+            extent = [b[0], b[1], b[2], b[3]]
+
+        out = (self.control_dict.get("analysis", {}) or {}).get("output_dir") or "."
+        os.makedirs(out, exist_ok=True)
+        outname = "{}/{}.{}.{}.{}".format(out, grp, plot_type, obsvar, domain_name)
+
+        if plot_type.lower() == "swath_oversampling":
+            splots.plot_swath_oversampling(
+                ds, outname=outname, extent=extent,
+                text_dict=text_dict, states=fig_dict.get("states", True),
+                bin_deg=dp.get("bin_deg", 0.02), debug=self.debug,
+            )
+        else:
+            splots.plot_swath_scatter(
+                ds, modvar, obsvar, unc_var=unc,
+                label_m=p.model, label_o=p.obs, ylabel=ylabel,
+                outname=outname, extent=extent,
+                vmin=obs_plot_dict.get("vmin_plot"),
+                vmax=obs_plot_dict.get("vmax_plot"),
+                text_dict=text_dict, states=fig_dict.get("states", True),
+                gridlines=grp_dict.get("gridlines", True),
+                render=dp.get("render", "auto"), bin_deg=dp.get("bin_deg", None),
+                debug=self.debug,
+            )
+        print(f"  saved {grp}: {plot_type} to {outname}.png", flush=True)
+    
     ### TODO: Create the plotting driver (most complicated one)
     # def plotting(self):
     def plotting(self):
@@ -1814,6 +1886,14 @@ class analysis:
                         ):
                             modvar = modvar + "trpcol"   
 
+                        # native-swath plots (obs pixel vector)
+                        # Generalized YAML plot type -- parallels spatial_overlay but for native pixels.
+                        if plot_type.lower() in ("spatial_swath", "swath_oversampling"):
+                            self._plot_spatial_swath(
+                                p, grp, plot_type, obsvar, modvar,
+                                domain_name, domain_info, grp_dict)
+                            continue
+                            
                         # for pt_sfc data, convert to pandas dataframe, format, and trim
                         # Query selected points if applicable
                         if domain_type != "all":

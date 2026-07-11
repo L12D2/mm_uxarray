@@ -58,6 +58,12 @@ import yaml
 
 HERE = pathlib.Path(__file__).parent
 
+METHOD_TAG = {"conservative": "cons", "conservative_normed": "consn",
+              "radius_mean": "rmean", "nearest_s2d": "nn", "nearest_d2s": "nnd",
+              "bilinear": "bilin"}
+CITY_BOX = {"atl": "ATL_metro", "mex": "MEX_metro", "la": "LA_metro",
+            "den": "DEN_metro", "dfw": "DFW_metro", "seus": "SE_US"}
+
 class NoAliasDumper(yaml.SafeDumper):
     """Dump shared objects (from master YAML anchors) as plain copies, not *id aliases."""
     def ignore_aliases(self, data):
@@ -80,10 +86,73 @@ def render(master, name, spec, common=None):
         fns[label] = [f"{spec['paired_dir']}/{prefix}*_{label}.nc4"]
 
     mod = next(iter(cd["model"].values()))
+
+    mod = next(iter(cd["model"].values()))
     mod["files"] = spec["model_files"]
     mod["scrip_file"] = spec["scrip_file"]
 
+    # instrument / target scoping 
+    inst = spec.get("instrument")
+    targets = spec.get("targets")
+
+    def _label_ok(label):
+        if inst and not label.startswith(f"{inst}_l2"):
+            return False
+        if targets is not None:
+            tgt = ("obsgrid" if label.endswith("_obsgrid")
+                   else "series" if label.endswith("_series") else "model")
+            if tgt not in targets:
+                return False
+        return True
+
+    if inst or targets is not None:
+        an["read"]["paired"]["filenames"] = {
+            lbl: v for lbl, v in fns.items() if _label_ok(lbl)}
+        _plots = cd.get("plots", {})
+        for gname in list(_plots):
+            g = _plots[gname]
+            g["data"] = [d for d in (g.get("data") or []) if _label_ok(d)]
+            if not g["data"]:
+                del _plots[gname]        # nothing left to plot for this run
+        if isinstance(cd.get("stats"), dict):
+            cd["stats"]["data"] = [d for d in (cd["stats"].get("data") or [])
+                                   if _label_ok(d)]
+            if not cd["stats"]["data"]:
+                cd.pop("stats", None)
+        print(f"  [{name}] scoped to instrument={inst!r} targets={targets!r}: "
+              f"{len(an['read']['paired']['filenames'])} labels, "
+              f"{len(cd.get('plots', {}))} plot groups")
+
+    def _label_ok(label):
+        if inst and not label.startswith(f"{inst}_l2"):
+            return False
+        if targets is not None:
+            tgt = ("obsgrid" if label.endswith("_obsgrid")
+                   else "series" if label.endswith("_series") else "model")
+            if tgt not in targets:
+                return False
+        return True
+
+    if inst or targets is not None:
+        an["read"]["paired"]["filenames"] = {
+            lbl: v for lbl, v in fns.items() if _label_ok(lbl)}
+        _plots = cd.get("plots", {})
+        for gname in list(_plots):
+            g = _plots[gname]
+            g["data"] = [d for d in (g.get("data") or []) if _label_ok(d)]
+            if not g["data"]:
+                del _plots[gname]        # nothing left to plot for this run
+        if isinstance(cd.get("stats"), dict):
+            cd["stats"]["data"] = [d for d in (cd["stats"].get("data") or [])
+                                   if _label_ok(d)]
+            if not cd["stats"]["data"]:
+                cd.pop("stats", None)
+        print(f"  [{name}] scoped to instrument={inst!r} targets={targets!r}: "
+              f"{len(an['read']['paired']['filenames'])} labels, "
+              f"{len(cd.get('plots', {}))} plot groups")
+        
     blocks = list(cd.get("plots", {}).values())
+
     if isinstance(cd.get("stats"), dict):
         blocks.append(cd["stats"])
     # shared domains first, then per-run (per-run keys win on conflict)
@@ -131,14 +200,111 @@ def render(master, name, spec, common=None):
         yaml.safe_dump(cd, f, sort_keys=False, width=120)
     print(f"wrote {out}")
 
+def render_native(master, run, inst, product, ncfg, spec, boxes):
+    """Render one native-resolution city control (obsgrid or swath).
+
+    Same master skeleton as the standard controls, but the obs/model reads and
+    plot groups are BUILT here (per city x species) for the native product,
+    rather than reused from the master's authored plots. Emits
+    control_{run}_[<inst>_]native_{mtag}[_swath].yaml.
+    """
+    mtag = METHOD_TAG.get(ncfg["method"], ncfg["method"][:5])
+    icfg = ncfg["instruments"][inst]
+    res = icfg["res"]
+    restag = ("%g" % res).replace(".", "p")
+    root = ncfg["root"]
+    min_obs = ncfg.get("min_obs", 3)
+
+    paired_dir = f"{root}/{run}_{inst}_native"
+    plot_dir = spec["plot_dir"].rstrip("/") + (
+        "_native" if inst == "tempo" else f"_{inst}_native")
+
+    cd = copy.deepcopy(master)
+    an = cd["analysis"]
+    an["output_dir"] = plot_dir
+    an["output_dir_save"] = paired_dir
+    an["output_dir_read"] = paired_dir
+    if "montage" in an:
+        an["montage"]["plot_dir"] = plot_dir
+        an["montage"]["outdir"] = plot_dir + "/montages"
+    an.pop("save", None)                       # plotting only
+
+    mod = next(iter(cd["model"].values()))
+    mod["files"] = spec["model_files"]
+    mod["scrip_file"] = spec["scrip_file"]
+
+    cd.pop("stats", None)                      # obs blocks kept (ylabel/vmin lookup)
+
+    filenames, plots = {}, {}
+    for city in ncfg["cities"].get(run, []):
+        box = CITY_BOX.get(city)
+        if box is None or box not in boxes:
+            print(f"  WARNING: native {run}/{city}: box {box} not in add_domains; skipping.")
+            continue
+        for sp in icfg["species"]:
+            obs_name = f"{inst}_l2_{sp}"
+            label = f"{city}_{obs_name}_cam-chem-se_{product}"
+            filenames[label] = [
+                f"{paired_dir}/{city}_{restag}_{mtag}_*_{obs_name}_cam-chem-se_{product}.nc4"]
+            common_grp = {
+                "domain_type": ["auto-region:box"],
+                "domain_name": [box],
+                "domain_info": {box: boxes[box]},
+                "data": [label],
+            }
+            if product == "swath":
+                plots[f"grp_swath_{city}_{sp}"] = {
+                    "type": "spatial_swath",
+                    "fig_kwargs": {"figsize": [22, 6], "states": True},
+                    "text_kwargs": {"fontsize": 14},
+                    "data_proc": {"render": "auto"},
+                    **common_grp,
+                }
+            else:                              # obsgrid -> gridded spatial_overlay
+                plots[f"grp_native_{city}_{sp}"] = {
+                    "type": "spatial_overlay",
+                    "fig_kwargs": {"figsize": [18, 5], "cbar_orientation": "horizontal",
+                                   "cbar_kwargs": {"shrink": 0.6},
+                                   "states": True, "counties": True},
+                    "text_kwargs": {"fontsize": 16},
+                    "data_proc": {"time_reduction": "mean", "daily_first": True,
+                                  "common_mask": True, "min_obs": min_obs,
+                                  "set_axis": False, "rem_obs_nan": True},
+                    **common_grp,
+                }
+    an["read"] = {"paired": {"method": "netcdf", "filenames": filenames}}
+    cd["plots"] = plots
+
+    itag = "" if inst == "tempo" else f"{inst}_"
+    psfx = "" if product == "obsgrid" else f"_{product}"
+    out = HERE / f"control_{run}_{itag}native_{mtag}{psfx}.yaml"
+    with open(out, "w") as f:
+        f.write(f"# GENERATED by make_controls.py (native {inst}/{product}, run: {run}).\n"
+                "# Do not edit -- edit runs.yaml and regenerate.\n")
+        yaml.safe_dump(cd, f, sort_keys=False, width=120)
+    print(f"wrote {out}  ({len(plots)} groups, {len(filenames)} labels)")
+
 def main():
     cfg = yaml.safe_load(open(HERE / "runs.yaml"))
     master = yaml.safe_load(open(HERE / cfg.get("master", "control_master.yaml")))
-    common = cfg.get("common")        
-    wanted = sys.argv[1:] or list(cfg["runs"])
+    common = cfg.get("common")
+    boxes = (common or {}).get("add_domains") or {}
+    args = sys.argv[1:]
+
+    # standard (master-driven) controls
+    wanted = args or list(cfg["runs"])
+    
     for name in wanted:
         render(master, name, cfg["runs"][name], common=common)
 
+    # native city products -- only on a full run (no explicit run args)
+    ncfg = cfg.get("native")
+    if ncfg and not args:
+        for run in ncfg.get("cities", {}):
+            spec = cfg["runs"][run]
+            for inst in ncfg["instruments"]:
+                for product in ncfg["products"]:
+                    render_native(master, run, inst, product, ncfg, spec, boxes)
 
 if __name__ == "__main__":
     main()
