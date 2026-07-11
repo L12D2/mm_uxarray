@@ -671,36 +671,21 @@ def is_nonpairable(obsobj, k, modobj):
 
     Return
     ------
-    collections.OrderedDict[str, xr.Dataset]
+    bool
+        True when the granule's bbox has no overlap with the model domain.
     """
-    
-    # if obsobj[k]["lon"].max() < modobj["longitude"].min():
+    from melodies_monet.util.uxarray_util import to_neg180
     
     # Normalize longitudes to the same [-180, 180] convention before
-    # comparing. CESM-SE (and several other models) store lon in 0..360, while
-    # TEMPO L2 reports in -180..180; a CONUS model and CONUS
-    # swath look non-overlapping (e.g. model min=200 vs obs max=-60) and every
-    # granule is discarded.
+    # comparing: a 0..360 model and a -180..180 swath otherwise look
+    # disjoint and every granule gets discarded.
+    mlon = to_neg180(modobj["longitude"].values)
+    olon = to_neg180(obsobj[k]["lon"].values)
     
-    def _to_neg180(a):
-        import numpy as np
-        return ((np.asarray(a) + 180.0) % 360.0) - 180.0
-
-    mlon = _to_neg180(modobj["longitude"].values)
-    olon = _to_neg180(obsobj[k]["lon"].values)
-            
-    if olon.max() < mlon.min():
+    if olon.max() < mlon.min() or olon.min() > mlon.max():
         return True
-    elif olon.min() > mlon.max():
-        return True
-
-    #elif obsobj[k]["lon"].min() > modobj["longitude"].max():
-    elif olon.min() > mlon.max():
-        return True
-    elif obsobj[k]["lat"].max() < modobj["latitude"].min():
-        return True
-    elif obsobj[k]["lat"].min() > modobj["latitude"].max():
-        return True
+    if (obsobj[k]["lat"].max() < modobj["latitude"].min()
+            or obsobj[k]["lat"].min() > modobj["latitude"].max()):
     return False
 
 
@@ -851,6 +836,23 @@ def regrid_and_apply_weights(
                 names.append(v)
         return src[names]
         
+    def _finalize_paired_granule(regridded, granule, ref_time=None):
+        """Wrap one regridded granule as a paired Dataset: attach the granule
+        attrs, merge the obs column (+uncertainty) when pairing, restore the
+        long lat/lon names, and carry the pixel corner bounds forward."""
+        out = regridded.to_dataset(name=species[0])
+        out.attrs["reference_time_string"] = (
+            ref_time if ref_time is not None
+            else granule.attrs["reference_time_string"])
+        out.attrs["final_time_string"] = granule["time"][-1].values.astype(str)
+        out.attrs["scan_num"] = granule.attrs["scan_num"]
+        out.attrs["granule_number"] = granule.attrs["granule_number"]
+        if pair:
+            out = xr.merge([out, _obs_pair_vars(granule)])
+        if "lat" in out.variables:
+            out = out.rename({"lat": "latitude", "lon": "longitude"})
+        return _carry_swath_bounds(out, granule)
+        
     # crop granule to region of interest
     from melodies_monet.util.sat_l2_swath_utility import _crop_swath_to_extent
     
@@ -863,17 +865,7 @@ def regrid_and_apply_weights(
         regridded = _regrid_and_apply_weights(
             obsobj, modobj, method=method, weights=weights, species=species, tempo_sp=tempo_sp
         )
-        output = regridded.to_dataset(name=species[0])
-        output.attrs["reference_time_string"] = obsobj.attrs["reference_time_string"]
-        output.attrs["final_time_string"] = obsobj["time"][-1].values.astype(str)
-        output.attrs["scan_num"] = obsobj.attrs["scan_num"]
-        output.attrs["granule_number"] = obsobj.attrs["granule_number"]
-        if pair:
-            output = xr.merge([output, _obs_pair_vars(obsobj)])
-        if "lat" in output.variables:
-            output = output.rename({"lat": "latitude", "lon": "longitude"})
-        output = _carry_swath_bounds(output, obsobj)
-        return output
+        return _finalize_paired_granule(regridded, obsobj)
     if isinstance(obsobj, dict):
         output_multiple = {}
         for ref_time in obsobj.keys():
@@ -898,46 +890,21 @@ def regrid_and_apply_weights(
                       flush=True)
             if verbose:
                 print(f"Regridding {ref_time} and applying AMF and weights")
-            output_multiple[ref_time] = _regrid_and_apply_weights(
+            regridded = _regrid_and_apply_weights(
                 granule,
                 modobj,
                 method=method,
                 weights=weights,
                 species=species,
                 tempo_sp=tempo_sp,
-            ).to_dataset(name=species[0])
-            output_multiple[ref_time].attrs["reference_time_string"] = ref_time
-            output_multiple[ref_time].attrs["scan_num"] = obsobj[ref_time].attrs["scan_num"]
-            output_multiple[ref_time].attrs["granule_number"] = obsobj[ref_time].attrs[
-                "granule_number"
-            ]
-            output_multiple[ref_time].attrs["final_time_string"] = obsobj[ref_time]["time"][
-                -1
-            ].values.astype(str)
-            if pair:
-                output_multiple[ref_time] = xr.merge(
-                    [
-                        output_multiple[ref_time],
-                        _obs_pair_vars(granule),  # obs col + uncertainty, cropped 
-                    ]
-                )
-            if "lat" in output_multiple[ref_time].variables:
-                output_multiple[ref_time] = output_multiple[ref_time].rename(
-                    {"lat": "latitude", "lon": "longitude"}
-                )
-
-            # better memory handling 
-            output_multiple[ref_time] = _carry_swath_bounds(
-                output_multiple[ref_time], granule
             )
-            
-            # better memory handling 
-            output_multiple[ref_time] = output_multiple[ref_time].load()
-            gc.collect()
 
-            import psutil, os
-            proc = psutil.Process(os.getpid())
-            print(f"  rss={proc.memory_info().rss / 1e9:.2f} GB")
+            # load + collect per granule to keep the peak footprint at
+            # one-granule scale instead of accumulating lazy graphs.
+            output_multiple[ref_time] = _finalize_paired_granule(
+                regridded, granule, ref_time=ref_time
+            ).load()
+            gc.collect()
 
         return output_multiple
     raise TypeError("Obsobj must be xr.Dataset or dict")
@@ -1133,15 +1100,6 @@ def back_to_modgrid(
     results = {}
     for _tgt in targets:
         if _tgt == "obs":
-            # _dvars = [
-            #     v for v in concatenated.data_vars
-            #     if v not in ("lon", "lat", "longitude", "latitude")
-            #     and "bounds" not in v
-            # ]
-            # out_regridded = _swath2latlon(
-            #     concatenated, _dvars, obs_grid_res, _extent, units=obs_grid_units, method=method,
-            # )
-
             # Regrid EACH granule onto the fixed lat/lon grid and coverage-mean,
             # rather than the outer-join-padded scan concat. Keeps each source
             # small AND avoids NaN-padded corner bounds that would silently knock
