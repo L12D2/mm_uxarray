@@ -89,25 +89,36 @@ def main():
                     f"{paired_dir}/{city}_{RESTAG}_{MTAG}_*_{obs_name}_cam-chem-se_{PRODUCT}.nc4"
                 ]
 
-                if PRODUCT == "swath":
-                    # native pixel vector is plotted standalone (plot_sat.py
-                    # PLOT_SWATH)
-                    continue
-                    
-                plots[f"grp_native_{city}_{sp}"] = {
-                    "type": "spatial_overlay",
-                    "fig_kwargs": {"figsize": [18, 5], "cbar_orientation": "horizontal",
-                                   "cbar_kwargs": {"shrink": 0.6},
-                                   "states": True, "counties": True},
-                    "text_kwargs": {"fontsize": 16},
+                # shared, generalized plot-group skeleton (no hardcoding per city)
+                common = {
                     "domain_type": ["auto-region:box"],
                     "domain_name": [box],
                     "domain_info": {box: boxes[box]},
                     "data": [label],
-                    "data_proc": {"time_reduction": "mean", "daily_first": True,
-                                  "common_mask": True, "min_obs": MIN_OBS,
-                                  "set_axis": False, "rem_obs_nan": True},
                 }
+                if PRODUCT == "swath":
+                    # native pixel vector -> generalized spatial_swath type,
+                    # dispatched through an.plotting() (driver _plot_spatial_swath).
+                    plots[f"grp_swath_{city}_{sp}"] = {
+                        "type": "spatial_swath",
+                        "fig_kwargs": {"figsize": [22, 6], "states": True},
+                        "text_kwargs": {"fontsize": 14},
+                        "data_proc": {"render": "auto"},   # bin_deg auto by density
+                        **common,
+                    }
+                else:  # obsgrid -> gridded spatial_overlay (unchanged)
+                    plots[f"grp_native_{city}_{sp}"] = {
+                        "type": "spatial_overlay",
+                        "fig_kwargs": {"figsize": [18, 5], "cbar_orientation": "horizontal",
+                                       "cbar_kwargs": {"shrink": 0.6},
+                                       "states": True, "counties": True},
+                        "text_kwargs": {"fontsize": 16},
+                        "data_proc": {"time_reduction": "mean", "daily_first": True,
+                                      "common_mask": True, "min_obs": MIN_OBS,
+                                      "set_axis": False, "rem_obs_nan": True},
+                        **common,
+                    }
+                    
         an["read"] = {"paired": {"method": "netcdf", "filenames": filenames}}
         cd["plots"] = plots
         cd.pop("stats", None)

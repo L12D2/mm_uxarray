@@ -1282,10 +1282,24 @@ def plot_swath_scatter(ds, model_var, obs_var, unc_var=None,
         extent = _swath_extent(lon, lat)
     _proj = proj if proj is not None else ccrs.PlateCarree()
 
-    # shared obs+model scale
+    # true pixel footprints require the corner bounds carried on the vector
+    _has_bounds = ("longitude_bounds" in ds and "latitude_bounds" in ds)
+    
     mode = render
     if mode == "auto":
+        # footprints (no resampling) are the correct native rendering when the
+        # corner bounds are present; else fall back to scatter (small N) / bin.
+        mode = "footprint" if _has_bounds else ("binned" if n > 5_000 else "scatter")
+    if mode == "footprint" and not _has_bounds:
+        print("plot_swath_scatter: render='footprint' but the swath has no "
+              "longitude_bounds/latitude_bounds (re-pair to carry them); "
+              "falling back to scatter.", flush=True)
         mode = "binned" if n > 5_000 else "scatter"
+    if mode == "footprint" and n > 800_000:
+        print(f"plot_swath_scatter: {n} footprint polygons is heavy and will "
+              "overlap across overpasses -- consider time-subsetting to one "
+              "overpass, or use the conservative obsgrid for aggregate maps.",
+              flush=True)
 
     # Adaptive bin size when unset: target ~4 pixels/cell so the field stays
     # filled for sparse/coarse instruments (TROPOMI ~0.04-0.1 deg) 
@@ -1308,7 +1322,24 @@ def plot_swath_scatter(ds, model_var, obs_var, unc_var=None,
     bnorm = mpl.colors.Normalize(vmin=-_vd, vmax=_vd)
     bcmap = mpl.cm.get_cmap("RdBu_r")
 
-    if mode == "binned":
+    if mode == "footprint":
+        # draw each pixel as its true quadrilateral from the corner bounds --
+        # no resampling
+        from matplotlib.collections import PolyCollection
+        _lonb = np.asarray(ds["longitude_bounds"].values, dtype=float)   # (obs, 4)
+        _latb = np.asarray(ds["latitude_bounds"].values, dtype=float)
+        _verts = np.stack([_lonb, _latb], axis=-1)                       # (obs, 4, 2)
+        _ok = np.isfinite(_verts).all(axis=(1, 2))                       # complete quads
+
+        def _paint(ax_, V, cm, nm):
+            pc = PolyCollection(list(_verts[_ok]), array=np.asarray(V, float)[_ok],
+                                cmap=cm, norm=nm, edgecolors="none", linewidths=0,
+                                transform=ccrs.PlateCarree())
+            pc.set_rasterized(True)
+            ax_.add_collection(pc)
+            return pc
+        Fo, Fm, Fd = o, m, d
+    elif mode == "binned":
         lon_e = np.arange(extent[0], extent[1] + bin_deg, bin_deg)
         lat_e = np.arange(extent[2], extent[3] + bin_deg, bin_deg)
         Fo = _swath_binned_mean(lon, lat, o, lon_e, lat_e)
