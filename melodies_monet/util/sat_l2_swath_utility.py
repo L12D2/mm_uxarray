@@ -709,58 +709,23 @@ def _mod2tropomi_swath(modobj, o, method, mod_vars, grid_file):
     ny, nx = olon.shape
 
     if method in _CONSERVATIVE:
-        swath_grid, _ = _tropomi_swath_mesh(o)
+        from melodies_monet.util.uxarray_util import (
+            faces_to_grid, subset_model_source)
         
         # Subset the model mesh to the swath bbox before building conservative
-        # weights (far faces contribute zero) . Mirrors the TEMPO forward path.
-        src_for_regrid, src_grid_for_regrid = msrc, grid_file
-        try:
-            import uxarray as ux
-            from melodies_monet.util.uxarray_util import (
-                open_uxgrid, _face_centers, uxgrid_from_corner_bounds)
-            _uxgrid = open_uxgrid(grid_file)
-            _cd = next((d for d, n in msrc.sizes.items() if n == _uxgrid.n_face), None)
-            _flon, _flat = _face_centers(_uxgrid)
-            _flon = np.where(_flon > 180, _flon - 360, _flon)   # -> [-180, 180]
-            _pad = 0.5
-            _lo, _hi = float(np.nanmin(olon)) - _pad, float(np.nanmax(olon)) + _pad
-            _la, _lb = float(np.nanmin(olat)) - _pad, float(np.nanmax(olat)) + _pad
-            _keep = np.where((_flon >= _lo) & (_flon <= _hi)
-                             & (_flat >= _la) & (_flat <= _lb))[0]
-            if _cd is not None and 0 < _keep.size < int(_uxgrid.n_face):
-                _s = xr.open_dataset(grid_file)
-                _sclat = np.asarray(_s["grid_corner_lat"].values)[_keep]
-                _sclon = np.asarray(_s["grid_corner_lon"].values)[_keep]
-                if "rad" in str(_s["grid_corner_lat"].attrs.get("units", "")).lower():
-                    _sclat, _sclon = np.rad2deg(_sclat), np.rad2deg(_sclon)
-                _subgrid = uxgrid_from_corner_bounds(_sclon, _sclat)
-                _mds = msrc if hasattr(msrc, "data_vars") else msrc.to_dataset()
-                if _cd != "n_face":
-                    _mds = _mds.rename({_cd: "n_face"})
-                src_for_regrid = ux.UxDataset(_mds.isel(n_face=_keep), uxgrid=_subgrid)
-                src_grid_for_regrid = None
-                print(f"_mod2tropomi_swath: mesh subset {int(_uxgrid.n_face)} -> "
-                      f"{_keep.size} faces", flush=True)
-        except Exception as e:  # noqa: BLE001
-            print(f"_mod2tropomi_swath: mesh subset skipped ({e!r}); full mesh.",
-                  flush=True)
-        out = regrid(src_for_regrid, method=method,
-                     src_grid=src_grid_for_regrid, target_grid=swath_grid)
-        
-        nface = ny * nx
-        res = xr.Dataset()
-        for v in out.data_vars:
-            da = out[v]
-            fd = next((d for d in da.dims if da.sizes[d] == nface), None)
-            if fd is None:
-                continue
-            t = da.transpose(..., fd)
-            arr = np.asarray(t.values).reshape(t.shape[:-1] + (ny, nx))
-            res[v] = xr.DataArray(arr, dims=t.dims[:-1] + ("y", "x"),
-                                  attrs=dict(da.attrs))
-        res = res.assign_coords(longitude=(("y", "x"), olon),
-                                latitude=(("y", "x"), olat))
-        return res
+        # weights (far faces contribute zero). Mirrors the TEMPO forward path.
+        src, src_grid = subset_model_source(
+            msrc, grid_file,
+            float(np.nanmin(olon)), float(np.nanmax(olon)),
+            float(np.nanmin(olat)), float(np.nanmax(olat)),
+            label="_mod2tropomi_swath",
+        )
+        out = regrid(src, method=method, src_grid=src_grid,
+                     target_grid=swath_grid)
+
+        res = faces_to_grid(out, (ny, nx), ("y", "x"))
+        return res.assign_coords(longitude=(("y", "x"), olon),
+                                 latitude=(("y", "x"), olat))
 
     # nearest family
     out = regrid(msrc, target={"lon": olon, "lat": olat},
@@ -786,15 +751,10 @@ def _tropomi_swath2mod(swath, modobj, method, data_vars):
                  or modobj.attrs.get("mio_mesh_file"))
 
     if method in _CONSERVATIVE and "longitude_bounds" in swath.variables:
+        from melodies_monet.util.uxarray_util import (
+            flatten_to_faces, subset_mesh_to_bbox)
         swath_grid, (ny, nx) = _tropomi_swath_mesh(swath)
-        flat = (
-            swath[data_vars]
-            .stack(n_face=("y", "x"))
-            .reset_index("n_face", drop=True)
-        )
-        flat = flat.drop_vars(
-            [c for c in flat.coords if "n_face" in flat[c].dims], errors="ignore"
-        )
+        flat = flatten_to_faces(swath[data_vars], ("y", "x"))
         src = ux.UxDataset(flat, uxgrid=swath_grid)
         model_grid = open_uxgrid(grid_file)
         n_col = int(model_grid.n_face)
@@ -804,24 +764,13 @@ def _tropomi_swath2mod(swath, modobj, method, data_vars):
         # Mirrors the TEMPO backward path.
         out = None
         try:
-            from melodies_monet.util.uxarray_util import (
-                _face_centers, uxgrid_from_corner_bounds)
-            _flon, _flat = _face_centers(model_grid)
-            _flon = np.where(_flon > 180, _flon - 360, _flon)   # -> [-180, 180]
             _slon = np.asarray(swath["longitude"].values)
             _slat = np.asarray(swath["latitude"].values)
-            _pad = 0.5
-            _lo, _hi = float(np.nanmin(_slon)) - _pad, float(np.nanmax(_slon)) + _pad
-            _la, _lb = float(np.nanmin(_slat)) - _pad, float(np.nanmax(_slat)) + _pad
-            _keep = np.where((_flon >= _lo) & (_flon <= _hi)
-                             & (_flat >= _la) & (_flat <= _lb))[0]
-            if 0 < _keep.size < n_col:
-                _s = xr.open_dataset(grid_file)
-                _cla = np.asarray(_s["grid_corner_lat"].values)[_keep]
-                _clo = np.asarray(_s["grid_corner_lon"].values)[_keep]
-                if "rad" in str(_s["grid_corner_lat"].attrs.get("units", "")).lower():
-                    _cla, _clo = np.rad2deg(_cla), np.rad2deg(_clo)
-                _subgrid = uxgrid_from_corner_bounds(_clo, _cla)
+            _keep, _subgrid = subset_mesh_to_bbox(
+                grid_file,
+                float(np.nanmin(_slon)), float(np.nanmax(_slon)),
+                float(np.nanmin(_slat)), float(np.nanmax(_slat)))
+            if _subgrid is not None:
                 out_sub = regrid(src, method=method, target_grid=_subgrid)
                 _sfd = next((d for d in out_sub.dims
                              if out_sub.sizes[d] == _keep.size), None)

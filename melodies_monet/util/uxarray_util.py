@@ -24,6 +24,125 @@ import xarray as xr
 # 174k-face SCRIP takes a few seconds, so build once per process.
 _CLEAN_UXGRID_CACHE = {}
 
+def to_neg180(lon):
+    """Normalize longitudes to the [-180, 180] convention.
+
+    CESM-SE (and several other models) store longitude in 0..360 while the
+    satellite L2 products report -180..180; every overlap/bbox comparison
+    must normalize first or a CONUS model and CONUS swath look disjoint.
+    """
+    return ((np.asarray(lon) + 180.0) % 360.0) - 180.0
+
+
+def read_scrip_corners(grid_file):
+    """Return ``(corner_lon, corner_lat)`` in degrees from a SCRIP file.
+
+    Shape ``(n_face, n_corners)``; radians are converted if the units
+    attribute says so. Raises ``KeyError`` for non-SCRIP files (e.g. MPAS
+    meshes), which callers treat as "cannot subset, use the full mesh".
+    """
+    with xr.open_dataset(grid_file) as s:
+        clat = np.asarray(s["grid_corner_lat"].values)
+        clon = np.asarray(s["grid_corner_lon"].values)
+        units = str(s["grid_corner_lat"].attrs.get("units", "")).lower()
+    if "rad" in units:
+        clat, clon = np.rad2deg(clat), np.rad2deg(clon)
+    return clon, clat
+
+
+def subset_mesh_to_bbox(grid_file, lon_min, lon_max, lat_min, lat_max, pad=0.5):
+    """Faces of ``grid_file`` whose centers fall inside the padded bbox.
+
+    Returns ``(keep, subgrid)``: integer indices into the full mesh's face
+    dim, and a Grid rebuilt from the kept SCRIP corners with the same
+    builder that made the full grid -- so ``keep`` indexes data and corners
+    consistently. ``subgrid`` is ``None`` when no subset is useful: the bbox
+    keeps nothing (``keep.size == 0`` -- callers usually skip) or everything
+    (callers use the full mesh).
+    """
+    full = open_uxgrid(grid_file)
+    flon, flat = _face_centers(full)
+    flon = to_neg180(flon)
+    keep = np.where(
+        (flon >= lon_min - pad) & (flon <= lon_max + pad)
+        & (flat >= lat_min - pad) & (flat <= lat_max + pad)
+    )[0]
+    if keep.size == 0 or keep.size >= int(full.n_face):
+        return keep, None
+    clon, clat = read_scrip_corners(grid_file)
+    return keep, uxgrid_from_corner_bounds(clon[keep], clat[keep])
+
+
+def subset_model_source(ds, grid_file, lon_min, lon_max, lat_min, lat_max,
+                        pad=0.5, label="subset_model_source"):
+    """Subset an unstructured model Dataset + its mesh to a bbox for regridding.
+
+    The forward (model -> swath) conservative regrid only needs the model
+    faces near the swath; building ESMF weights against the full mesh wastes
+    memory (this is the OOM fix). On success returns ``(UxDataset on the
+    subset mesh, None)`` ready for ``regrid(src, src_grid=None, ...)``; on
+    any failure or full/zero coverage returns ``(ds, grid_file)`` unchanged
+    so the caller falls back to the full mesh.
+    """
+    try:
+        keep, subgrid = subset_mesh_to_bbox(
+            grid_file, lon_min, lon_max, lat_min, lat_max, pad=pad)
+        if subgrid is None:
+            return ds, grid_file
+        n_face_full = int(open_uxgrid(grid_file).n_face)
+        col_dim = next((d for d, n in ds.sizes.items() if n == n_face_full), None)
+        if col_dim is None:
+            return ds, grid_file
+        sub = ds if hasattr(ds, "data_vars") else ds.to_dataset()
+        if col_dim != "n_face":
+            sub = sub.rename({col_dim: "n_face"})
+        print(f"{label}: mesh subset {n_face_full} -> {keep.size} faces",
+              flush=True)
+        return ux.UxDataset(sub.isel(n_face=keep), uxgrid=subgrid), None
+    except Exception as e:  # noqa: BLE001
+        print(f"{label}: mesh subset skipped ({e!r}); regridding full mesh.",
+              flush=True)
+        return ds, grid_file
+
+
+def flatten_to_faces(ds, dims, drop=()):
+    """Stack swath spatial dims to an unindexed ``n_face`` dim.
+
+    Prepares swath-shaped data as an xregrid source: geometry vars in
+    ``drop`` are removed, and any coord riding the stacked dim is dropped
+    (xregrid copies source coords to the output, where a swath-sized coord
+    collides with the model-sized output dim).
+    """
+    flat = (
+        ds.drop_vars([v for v in drop if v in ds.variables], errors="ignore")
+        .stack(n_face=dims)
+        .reset_index("n_face", drop=True)
+    )
+    return flat.drop_vars(
+        [c for c in flat.coords if "n_face" in flat[c].dims], errors="ignore")
+
+
+def faces_to_grid(out, shape, dims):
+    """Reshape each var's face-sized dim back to 2-D swath dims.
+
+    Inverse of :func:`flatten_to_faces` for the regrid output: any variable
+    with a dim of length ``shape[0]*shape[1]`` is reshaped (row-major, so
+    flatten order must match) to ``dims``; vars without one (grid/node
+    artifacts) are skipped.
+    """
+    n_face = int(np.prod(shape))
+    res = xr.Dataset(attrs=dict(out.attrs))
+    for v in out.data_vars:
+        da = out[v]
+        face_dim = next((d for d in da.dims if da.sizes[d] == n_face), None)
+        if face_dim is None:
+            continue
+        t = da.transpose(..., face_dim)
+        arr = np.asarray(t.values).reshape(t.shape[:-1] + tuple(shape))
+        res[v] = xr.DataArray(arr, dims=t.dims[:-1] + tuple(dims),
+                              attrs=dict(da.attrs))
+    return res
+
 def clean_uxgrid_from_scrip(scrip_path, fill_value=-1):
     """Build a degeneracy-free uxarray Grid from a SCRIP file.
 
@@ -53,14 +172,7 @@ def clean_uxgrid_from_scrip(scrip_path, fill_value=-1):
     if hit is not None:
         return hit
 
-    s = xr.open_dataset(scrip_path)
-    clat = np.asarray(s["grid_corner_lat"].values)  # (n_face, n_corners)
-    clon = np.asarray(s["grid_corner_lon"].values)
-    units = str(s["grid_corner_lat"].attrs.get("units", "")).lower()
-    if "rad" in units:
-        clat = np.rad2deg(clat)
-        clon = np.rad2deg(clon)
-
+    clon, clat = read_scrip_corners(scrip_path)
     grid = uxgrid_from_corner_bounds(clon, clat, fill_value=fill_value)
     _CLEAN_UXGRID_CACHE[scrip_path] = grid
     return grid

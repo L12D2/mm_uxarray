@@ -159,7 +159,8 @@ def _conservative_mod2swath(modobj, obsobj, method="conservative"):
     the convention downstream vertical-interp / apply-weights code expects.
     """
     from melodies_monet.util.regrid_util import regrid
-    from melodies_monet.util.uxarray_util import uxgrid_from_corner_bounds
+    from melodies_monet.util.uxarray_util import (
+        faces_to_grid, subset_model_source, uxgrid_from_corner_bounds)
 
     lon_b, lat_b = _swath_corner_bounds(obsobj)
     if lon_b is None:
@@ -179,78 +180,24 @@ def _conservative_mod2swath(modobj, obsobj, method="conservative"):
     clat = np.asarray(lat_b.values).reshape(nx * ny, -1)
     swath_grid = uxgrid_from_corner_bounds(clon, clat)
 
-    # model grid file (e.g. SCRIP) or the native MPAS native mesh 
+     # model grid file (e.g. SCRIP) or the native MPAS mesh
     grid_file = (modobj.attrs.get("mio_scrip_file")
                  or modobj.attrs.get("mio_mesh_file"))
 
-    # need to figure out how to prevent the OOM on conservative regridding 
-    # out = regrid(modobj, method=method, src_grid=grid_file, target_grid=swath_grid)
-    src_for_regrid, src_grid_for_regrid = modobj, grid_file
-    try:
-        import uxarray as ux
-        from melodies_monet.util.uxarray_util import (
-            open_uxgrid, _face_centers, uxgrid_from_corner_bounds)
-
-        _uxgrid = open_uxgrid(grid_file)
-        _cd = next((d for d, n in modobj.sizes.items() if n == _uxgrid.n_face), None)
-        # keep model faces whose centers fall in the swath bbox (+pad)
-        _flon, _flat = _face_centers(_uxgrid)
-        _flon = np.where(_flon > 180, _flon - 360, _flon)   # -> [-180, 180]
-        _pad = 0.5
-        _lo, _hi = float(np.nanmin(clon)) - _pad, float(np.nanmax(clon)) + _pad
-        _la, _lb = float(np.nanmin(clat)) - _pad, float(np.nanmax(clat)) + _pad
-        _keep = np.where((_flon >= _lo) & (_flon <= _hi)
-                         & (_flat >= _la) & (_flat <= _lb))[0]
-        if _cd is not None and 0 < _keep.size < int(_uxgrid.n_face):
-            _ds = modobj if hasattr(modobj, "data_vars") else modobj.to_dataset()
-            if _cd != "n_face":
-                _ds = _ds.rename({_cd: "n_face"})
-            # rebuild the subset grid from this run's SCRIP corners with the
-            # same builder that made the full grid (face order matches, so
-            # _keep indexes both the data and the corners consistently).
-            _s = xr.open_dataset(grid_file)
-            _sclat = np.asarray(_s["grid_corner_lat"].values)[_keep]
-            _sclon = np.asarray(_s["grid_corner_lon"].values)[_keep]
-            if "rad" in str(_s["grid_corner_lat"].attrs.get("units", "")).lower():
-                _sclat, _sclon = np.rad2deg(_sclat), np.rad2deg(_sclon)
-            _subgrid = uxgrid_from_corner_bounds(_sclon, _sclat)
-            src_for_regrid = ux.UxDataset(_ds.isel(n_face=_keep), uxgrid=_subgrid)
-            src_grid_for_regrid = None
-            print(f"_conservative_mod2swath: mesh subset "
-                  f"{int(_uxgrid.n_face)} -> {_keep.size} faces | "
-                  f"bounds lon[{_lo:.1f},{_hi:.1f}] lat[{_la:.1f},{_lb:.1f}] | "
-                  f"centers lon[{float(np.nanmin(olon)):.1f},"
-                  f"{float(np.nanmax(olon)):.1f}] lat[{float(np.nanmin(olat)):.1f},"
-                  f"{float(np.nanmax(olat)):.1f}]", flush=True)
-    except Exception as e:  # noqa: BLE001
-        print(f"_conservative_mod2swath: mesh subset skipped ({e!r}); "
-              "regridding full mesh.", flush=True)
-
-    out = regrid(src_for_regrid, method=method,
-                 src_grid=src_grid_for_regrid, target_grid=swath_grid)
-
-    # out is on the swath face dim (= nx*ny). Identify it by size match
-    # (robust to its name), reshape each var back to (x, y).
-    n_face = nx * ny
-    result = xr.Dataset(attrs=dict(modobj.attrs))
-    for v in out.data_vars:
-        da = out[v]
-        face_dim = next((d for d in da.dims if da.sizes[d] == n_face), None)
-        if face_dim is None:
-            continue  # skip grid/node artifacts that aren't on the faces
-        transposed = da.transpose(..., face_dim)
-        arr = np.asarray(transposed.values)
-        new_shape = arr.shape[:-1] + (nx, ny)
-        new_dims = transposed.dims[:-1] + ("x", "y")
-        result[v] = xr.DataArray(
-            arr.reshape(new_shape), dims=new_dims, attrs=dict(da.attrs)
-        )
-
-    result = result.assign_coords(
+    src, src_grid = subset_model_source(
+        modobj, grid_file,
+        float(np.nanmin(clon)), float(np.nanmax(clon)),
+        float(np.nanmin(clat)), float(np.nanmax(clat)),
+        label="_conservative_mod2swath",
+    )
+    out = regrid(src, method=method, src_grid=src_grid, target_grid=swath_grid)
+    
+    result = faces_to_grid(out, (nx, ny), ("x", "y"))
+    result.attrs = dict(modobj.attrs)
+    return result.assign_coords(
         lon=(("x", "y"), olon),
         lat=(("x", "y"), olat),
     )
-    return result
 
 def _unstructured_back_to_modgrid(
     concatenated, modobj, method="radius_mean", radius_deg=0.1,):
@@ -270,7 +217,7 @@ def _unstructured_back_to_modgrid(
     if method in _UNSTRUCT_CONSERVATIVE:
         lon_b, _ = _swath_corner_bounds(concatenated)
         if lon_b is not None:
-            return _conservative_swath2mod(concatenated, modobj, method=method)
+            return _conservative_swath2mod_scan([concatenated], modobj, method=method)
         warnings.warn(
             "_unstructured_back_to_modgrid: conservative requested but the "
             "paired swath has no corner bounds; falling back to radius_mean. "
@@ -1039,86 +986,6 @@ def regrid_and_apply_weights(
         return output_multiple
     raise TypeError("Obsobj must be xr.Dataset or dict")
 
-def _conservative_swath2mod(concatenated, modobj, method="conservative"):
-    """Conservatively regrid swath-paired data onto unstructured model columns.
-
-    Builds a uxarray Grid from the swath pixel corner bounds (carried
-    through by :func:`_carry_swath_bounds`), wraps the paired swath data on
-    it, and uses xregrid mesh-to-mesh conservative regridding onto the
-    model's (depadded SCRIP) mesh. Result is on the model column dim.
-    """
-    import uxarray as ux
-    from melodies_monet.util.regrid_util import regrid
-    from melodies_monet.util.uxarray_util import (
-        open_uxgrid,
-        uxgrid_from_corner_bounds,
-    )
-
-    lon_b, lat_b = _swath_corner_bounds(concatenated)
-    if lon_b is None:
-        raise ValueError(
-            "_conservative_swath2mod: no swath corner bounds on paired data."
-        )
-
-    # Centers just to recover (nx, ny) and the flatten order.
-    if "longitude" in concatenated.variables:
-        olon = np.asarray(concatenated["longitude"].values)
-    else:
-        olon = np.asarray(concatenated["lon"].values)
-    nx, ny = olon.shape
-
-    clon = np.asarray(lon_b.values).reshape(nx * ny, -1)
-    clat = np.asarray(lat_b.values).reshape(nx * ny, -1)
-    swath_grid = uxgrid_from_corner_bounds(clon, clat)
-
-    # Flatten paired data to n_face (row-major over (x, y)) and wrap on the
-    # swath mesh as the regrid source. Drop the bounds/center vars -- they're
-    # geometry, not data to regrid.
-    drop = [v for v in (lon_b.name, lat_b.name, "longitude", "latitude",
-                         "lon", "lat") if v in concatenated.variables]
-    flat = (
-        concatenated.drop_vars(drop, errors="ignore")
-        .stack(n_face=("x", "y"))
-        .reset_index("n_face", drop=True)
-    )
-    # Drop coords riding on the swath spatial dim (time, scan_num, ...).
-    # xregrid copies source coords to the output; a coord on the swath
-    # n_face (270336) collides with the model-grid output n_face (174098).
-    flat = flat.drop_vars(
-        [c for c in flat.coords if "n_face" in flat[c].dims], errors="ignore"
-    )
-
-    # Coverage tracer: ones regridded with the SAME weights = fraction of
-    # each model column covered by swath cells. Divide data by it to get the
-    # true area-average over the covered part, and send uncovered (coverage 0)
-    # columns to NaN instead of a spurious 0.
-    flat = flat.assign(
-        _mm_cov=(("n_face",), np.ones(flat.sizes["n_face"], dtype="float64"))
-    )
-    src_uxds = ux.UxDataset(flat, uxgrid=swath_grid)
-
-    _grid_file = (modobj.attrs.get("mio_scrip_file")
-                  or modobj.attrs.get("mio_mesh_file"))
-    model_grid = open_uxgrid(_grid_file)
-    out = regrid(src_uxds, method=method, target_grid=model_grid)
-
-    cov = out["_mm_cov"]
-    out = out.drop_vars("_mm_cov")
-    cov_ok = cov > 1e-6
-    out = (out / cov).where(cov_ok)
-
-    # Rename the output's model-face dim ...
-    col_dim = modobj["longitude"].dims[0]
-    n_col = int(model_grid.n_face)
-    out_face_dim = next((d for d in out.dims if out.sizes[d] == n_col), None)
-    if out_face_dim is not None and out_face_dim != col_dim:
-        out = out.rename({out_face_dim: col_dim})
-    out = out.assign_coords({
-        "longitude": (col_dim, np.asarray(modobj["longitude"].values).ravel()),
-        "latitude": (col_dim, np.asarray(modobj["latitude"].values).ravel()),
-    })
-    return out
-
 def _conservative_swath2mod_scan(granules, modobj, method="conservative"):
     """Conservative swath to unstructured-mesh regrid, accumulated PER GRANULE.
 
@@ -1140,24 +1007,17 @@ def _conservative_swath2mod_scan(granules, modobj, method="conservative"):
     import uxarray as ux
     from melodies_monet.util.regrid_util import regrid
     from melodies_monet.util.uxarray_util import (
-        open_uxgrid, uxgrid_from_corner_bounds, _face_centers)
+        flatten_to_faces, open_uxgrid, subset_mesh_to_bbox,
+        uxgrid_from_corner_bounds)
 
     _grid_file = (modobj.attrs.get("mio_scrip_file")
                   or modobj.attrs.get("mio_mesh_file"))
     model_grid = open_uxgrid(_grid_file)
     n_col_full = int(model_grid.n_face)
-    _flon, _flat = _face_centers(model_grid)
-    _flon = np.where(_flon > 180, _flon - 360, _flon)     # [-180, 180]
-    _scrip = xr.open_dataset(_grid_file)
-    _cc_lat = np.asarray(_scrip["grid_corner_lat"].values)
-    _cc_lon = np.asarray(_scrip["grid_corner_lon"].values)
-    if "rad" in str(_scrip["grid_corner_lat"].attrs.get("units", "")).lower():
-        _cc_lat, _cc_lon = np.rad2deg(_cc_lat), np.rad2deg(_cc_lon)
 
     num = {}                                       # var full-mesh numerator
     attrs_by_var = {}
     den = np.zeros(n_col_full, dtype="float64")    # coverage accumulator
-    _pad = 0.5
 
     for g in granules:
         lon_b, lat_b = _swath_corner_bounds(g)
@@ -1170,28 +1030,23 @@ def _conservative_swath2mod_scan(granules, modobj, method="conservative"):
         clat = np.asarray(lat_b.values).reshape(nx * ny, -1)
         swath_grid = uxgrid_from_corner_bounds(clon, clat)
 
-        drop = [v for v in (lon_b.name, lat_b.name, "longitude", "latitude",
-                            "lon", "lat") if v in g.variables]
-        flat = (g.drop_vars(drop, errors="ignore")
-                 .stack(n_face=("x", "y")).reset_index("n_face", drop=True))
-        flat = flat.drop_vars(
-            [c for c in flat.coords if "n_face" in flat[c].dims], errors="ignore")
+        flat = flatten_to_faces(
+            g, ("x", "y"),
+            drop=(lon_b.name, lat_b.name, "longitude", "latitude", "lon", "lat"))
+        
         flat = flat.assign(
             _mm_cov=(("n_face",), np.ones(flat.sizes["n_face"], dtype="float64")))
         src_uxds = ux.UxDataset(flat, uxgrid=swath_grid)
 
         # target subset = model faces in this granule's bbox
-        _lo, _hi = float(np.nanmin(clon)) - _pad, float(np.nanmax(clon)) + _pad
-        _la, _lb = float(np.nanmin(clat)) - _pad, float(np.nanmax(clat)) + _pad
-        _keep = np.where((_flon >= _lo) & (_flon <= _hi)
-                         & (_flat >= _la) & (_flat <= _lb))[0]
+        _keep, tgt = subset_mesh_to_bbox(
+            _grid_file,
+            float(np.nanmin(clon)), float(np.nanmax(clon)),
+            float(np.nanmin(clat)), float(np.nanmax(clat)))
         if _keep.size == 0:
             continue
-        if _keep.size < n_col_full:
-            tgt = uxgrid_from_corner_bounds(_cc_lon[_keep], _cc_lat[_keep])
-        else:
-            tgt, _keep = model_grid, np.arange(n_col_full)
-
+        if tgt is None:
+            _keep, tgt = np.arange(n_col_full), model_grid
         out_sub = regrid(src_uxds, method=method, target_grid=tgt)
         _sfd = next((d for d in out_sub.dims if out_sub.sizes[d] == _keep.size), None)
         if _sfd is None:

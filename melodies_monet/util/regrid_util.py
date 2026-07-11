@@ -371,9 +371,19 @@ def _regrid_xregrid(src, target, method, src_grid=None, target_grid=None):
             {"_mm_face_loc": (("n_face",), np.zeros(n_face, dtype="float32"))},
             uxgrid=target_grid,
         )
-        src_uxds["_mm_cov"] = (
-            ("n_face",), np.ones(int(src_uxds.sizes["n_face"]), dtype="float64")
-        )
+        # A caller may pre-seed its OWN "_mm_cov" ones-field when it wants
+        # the raw (un-normalized) conservative sums plus the regridded
+        # coverage back -- e.g. _conservative_swath2mod_scan accumulates
+        # sum(raw_g)/sum(cov_g) across granules, a ratio that cancels the
+        # weight row scaling by itself. In that case skip both the
+        # injection and the internal normalization.
+        caller_cov = "_mm_cov" in src_uxds.data_vars
+        if not caller_cov:
+            src_uxds["_mm_cov"] = (
+                ("n_face",),
+                np.ones(int(src_uxds.sizes["n_face"]), dtype="float64"),
+            )
+            
         try:
             rg = Regridder(src_uxds, tgt_uxds, method=method)
             out = rg(src_uxds)
@@ -382,11 +392,12 @@ def _regrid_xregrid(src, target, method, src_grid=None, target_grid=None):
             out = out.compute()
             _release_esmf(rg)
         finally:
-            del src_uxds["_mm_cov"]
+            if not caller_cov:
+                del src_uxds["_mm_cov"]
 
         if hasattr(out, "data_vars") and "_mm_face_loc" in out.data_vars:
             out = out.drop_vars("_mm_face_loc")
-        return _coverage_normalize(out)
+        return out if caller_cov else _coverage_normalize(out)
 
     # --- Rectilinear target from 1-D lon/lat axes. ---
     if target is None:
@@ -404,16 +415,19 @@ def _regrid_xregrid(src, target, method, src_grid=None, target_grid=None):
             "target, build a uxarray.Grid and pass target_grid instead."
         )
     target_ds = xr.Dataset(coords={"lon": ("lon", tlon), "lat": ("lat", tlat)})
-    src_uxds["_mm_cov"] = (
-        ("n_face",), np.ones(int(src_uxds.sizes["n_face"]), dtype="float64")
-    )
+    caller_cov = "_mm_cov" in src_uxds.data_vars
+    if not caller_cov:
+        src_uxds["_mm_cov"] = (
+            ("n_face",), np.ones(int(src_uxds.sizes["n_face"]), dtype="float64")
+        )
     try:
         rg = Regridder(src_uxds, target_ds, method=method, periodic=True)
         out = rg(src_uxds).compute()
         _release_esmf(rg)
     finally:
-        del src_uxds["_mm_cov"]
-    return _coverage_normalize(out)
+        if not caller_cov:
+            del src_uxds["_mm_cov"]
+    return out if caller_cov else _coverage_normalize(out)
 
 
 def _resolve_coord_name(obj, given, candidates, kind):
