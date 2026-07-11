@@ -7,8 +7,6 @@
 
 """Python utility for TEMPO use."""
 
-import collections
-import glob
 import gc
 import logging
 import warnings
@@ -17,6 +15,8 @@ import numba
 import numpy as np
 import xarray as xr
 import xesmf as xe
+
+from melodies_monet.util.tools import calc_partialcolumn
 
 numba_logger = logging.getLogger("numba")
 numba_logger.setLevel(logging.WARNING)
@@ -74,27 +74,6 @@ def calc_grid_corners(ds, lat="latitude", lon="longitude"):
     ds["lat_b"] = cfxr.bounds_to_vertices(corners[f"{lat}_bounds"], "bounds", order=None)
     ds["lon_b"] = cfxr.bounds_to_vertices(corners[f"{lon}_bounds"], "bounds", order=None)
     return
-
-
-def speedup_regridding(dset, variables="all"):
-    """Makes modobj latitude and longitude C_contiguous, which speeds up regridding.
-    It makes the changes inplace
-
-    Parameters
-    ----------
-    dset : xr.Dataset
-        Dataset containing latitude and longitude
-
-    Returns
-    -------
-    None
-    """
-    if variables == "all":
-        variables = dset.variables
-    for v in variables:
-        if not dset[v].values.flags["C_CONTIGUOUS"]:
-            dtype = dset[v].dtype
-            dset[v] = dset[v].astype(dtype, order="C")
 
 def _nearest_mod2swath(modobj, obsobj):
     """Sample an unstructured model at swath pixel locations.
@@ -483,37 +462,6 @@ def interp_vertical_mod2swath(obsobj, modobj, variables="NO2_col"):
     _interp_description = "Mid layer pressure interpolated to TEMPO mid swt_layer pressures"
     modsatlayers["pres_pa_mid"].attrs["description"] = _interp_description
     return modsatlayers
-
-
-def calc_partialcolumn(modobj, var="NO2"):
-    """Calculates the partial column of a species from its concentration.
-
-    Parameters
-    ----------
-    modobj : xr.Dataset
-        Model data
-    var : str
-        variable to calculate the partial column from
-
-    Returns
-    -------
-    xr.DataArray
-        DataArray containing the partial column of the species.
-    """
-    R = 8.314  # m3 * Pa / K / mol
-    NA = 6.022e23
-    ppbv2molmol = 1e-9
-    m2_to_cm2 = 1e4
-    fac_units = ppbv2molmol * NA / m2_to_cm2
-    partial_col = (
-        modobj[var]
-        * modobj["pres_pa_mid"]
-        * modobj["dz_m"]
-        * fac_units
-        / (R * modobj["temperature_k"])
-    )
-    return partial_col
-
 
 def _apply_scattering_weights(obsobj, modobj, species, amf_var, tropospheric):
     """Core AK operator shared by the TEMPO NO2/HCHO variants.
@@ -1347,123 +1295,3 @@ def back_to_modgrid_multiscan(
                 out_by[t].to_netcdf(_p)
 
     return out_by
-
-
-def read_paired_gridded_tempo_model(path):
-    """Reads in paired gridded tempo and model data
-
-    Parameters
-    ----------
-    path : str or globobject
-
-    Returns
-    -------
-    xr.Dataset
-        combined dataset with paired tempo and gridded data.
-    """
-
-    pathlist = sorted(glob.glob(path))
-    return xr.open_mfdataset(pathlist)
-
-
-def read_paired_swath(path):
-    """Read in paired swath data
-
-    Parameters
-    ----------
-    path : str or globobject
-
-    Returns
-    -------
-    collections.OrderedDict[str, xr.Dataset]
-        OrderedDict with datasets containing every swath
-    """
-    pathlist = sorted(glob.glob(path))
-    swaths = collections.OrderedDict()
-    for f in pathlist:
-        ds = xr.open_dataset(f)
-        time = ds.attrs["reference_time_string"]
-        swaths[time] = ds
-    return swaths
-
-
-def save_paired_swath(moddict, path="Paired_swath_XYZ.nc"):
-    """Saves each swath individually
-
-    Parameters
-    ----------
-    moddict : collections.OrderedDict[str, xr.Dataset]
-        Ordered dict containing all of the paired model and swath.
-    path : str
-        Path to save the swath. If XYZ is present, it will be replaced
-        by the date, number of scan and number of granule.
-
-    Returns
-    -------
-    None
-    """
-    for i, k in enumerate(moddict.keys()):
-        scan_num = moddict[k].attrs["scan_num"]
-        gran_num = moddict[k].attrs["granule_number"]
-        if isinstance(path, str):
-            if "XYZ" in path:
-                pathout = path.replace("XYZ", f"{k[:-1]}_S{scan_num:03d}G{gran_num:03d}")
-            else:
-                pathout = path.replace(".nc", f"{i}.nc")
-        else:
-            pathout = f"{i}_paired.nc"
-        moddict[k].to_netcdf(pathout)
-
-
-def select_by_keys(data_names, period="per_scan"):
-    """Selects data containing the same scan or day. It does
-    so by file name, so it is important that the standard naming
-    is not altered.
-
-    Parameters
-    ----------
-    data_names : list[str]
-        list containing the names of the files to select from.
-    selection_criteria : str
-        str with the selection criteria. If "all", the function does nothing.
-        If "per_scan", it will return a list of lists[str], with each inner
-        list containing one complete scan.
-        If "per_day", it will return a list of lists[str], with each inner
-        list containing one complete day.
-
-    Returns
-    -------
-    list[str] | list[list[str]]
-        A sorted list of strings if "all" is provided, a list[list[str]]
-        if a different criteria is provided.
-    """
-    import re
-
-    date_names_sorted = sorted(data_names)
-
-    if period not in ("all", "per_day", "per_scan"):
-        warnings.warn(
-            "Could not understand looping recommendations for processing files."
-            ' Not in "all", "per_day" nor "per_scan". Adopting "all".'
-        )
-        period = "all"
-
-    if period != "all":
-        days = sorted({re.search(r"((\d{8}))T(\d{6})", s).group(1) for s in date_names_sorted})
-        subgroups = []
-        for day in days:
-            subgroups.append([d for d in date_names_sorted if day in d])
-
-        if period == "per_day":
-            return subgroups
-
-        if period == "per_scan":
-            scans = []
-            for sg in subgroups:
-                scan = sorted({re.search(r"(S(\d{3}))G(\d{2})", s).group(1) for s in sg})
-                for s in scan:
-                    scans.append([f for f in sg if s in f])
-            return scans
-
-    # This only should happen if period == "all"
-    return [date_names_sorted]
