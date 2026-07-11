@@ -62,6 +62,9 @@ _LAT_NAMES = ("latitude", "lat", "Latitude")
 _CKDTREE_METHODS = ("nearest_s2d", "nearest_d2s", "radius_mean")
 _XREGRID_METHODS = ("conservative", "conservative_normed", "bilinear", "patch")
 
+# One-shot notice flag for the xregrid weight-row-sum workaround.
+_COVERAGE_NOTICE_SHOWN = False
+
 def _release_esmf(rg):
     """Best-effort release of ESMF-side memory held by an xregrid Regridder.
 
@@ -324,14 +327,17 @@ def _coverage_normalize(out):
     harmless divide-by-1.0 if/when xregrid is fixed. Cells the source does
     not reach get coverage 0/NaN and come out NaN, as they should.
     """
+    global _COVERAGE_NOTICE_SHOWN
     if "_mm_cov" not in getattr(out, "data_vars", {}):
         return out
     cov = out["_mm_cov"]
     covd = cov.where(np.isfinite(cov) & (cov != 0))
     _cm = float(np.nanmean(np.asarray(covd.values, dtype=float)))
-    if abs(_cm - 1.0) > 0.05:
-        print(f"regrid: xregrid weight row-sums ~{_cm:.2f}; "
-              "coverage-normalized to a true area-weighted mean.", flush=True)
+    if abs(_cm - 1.0) > 0.05 and not _COVERAGE_NOTICE_SHOWN:
+        _COVERAGE_NOTICE_SHOWN = True
+        print(f"regrid: xregrid weight row-sums ~{_cm:.2f} (known xregrid "
+              "0.1.0 bug); coverage-normalizing every conservative regrid "
+              "to a true area-weighted mean. Shown once per run.", flush=True)
     for v in out.data_vars:
         if v == "_mm_cov":
             continue

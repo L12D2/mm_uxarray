@@ -21,6 +21,8 @@ import xesmf as xe
 numba_logger = logging.getLogger("numba")
 numba_logger.setLevel(logging.WARNING)
 
+logger = logging.getLogger(__name__)
+
 # Regridding methods valid for unstructured (cell-data) models such as
 # CESM-SE / MUSICA. ESMF 'bilinear' and 'patch' interpolate from mesh
 # NODES, but model output lives on cell centers (faces) -- DO NOT USE. 
@@ -513,166 +515,146 @@ def calc_partialcolumn(modobj, var="NO2"):
     return partial_col
 
 
-def apply_weights_mod2tempo_no2_hydrostatic(obsobj, modobj, species="NO2"):
-    """Apply the scattering weights and air mass factors according to
-    Cooper et. al, 2020, doi: https://doi.org/10.5194/acp-20-7231-2020,
-    assuming the hydrostatic equation. It does not require temperature
-    nor geometric layer thickness.
+def _apply_scattering_weights(obsobj, modobj, species, amf_var, tropospheric):
+    """Core AK operator shared by the TEMPO NO2/HCHO variants.
+
+    Computes ``sum_l(SW_l * partial_col_l) / AMF`` on the retrieval layers.
+    For tropospheric products the scattering weights are masked above the
+    retrieval tropopause (reported in hPa; model pressures are Pa) so the
+    stratosphere does not enter the sum.
 
     Parameters
     ----------
     obsobj : xr.Dataset
-        TEMPO data, including pressure and scattering weights
+        TTEMPO data, including scattering weights and the AMF.
     modobj : xr.Dataset
-        Model data, already interpolated to TEMPO grid
+        Model data on TEMPO layers, with ``{species}_col`` partial columns.
+    species : str
+        Model species name (e.g. "NO2", "CH2O").
+    amf_var : str
+        Name of the AMF variable in ``obsobj`` ("amf_troposphere" or "amf").
+    tropospheric : bool
+        If True, mask above ``tropopause_pressure`` before summing.
 
     Returns
     -------
     xr.DataArray
-        A xr.DataArray containing the NO2 model data after applying
-        the air mass factors and scattering weights
+        Model column after applying scattering weights and AMF (molec/cm2).
     """
-    unit_c = 6.022e23 * 9.8 / 1e4  # NA * g / m2_to_cm2
-    dp = _calc_dp(obsobj).rename({"swt_level": "z"})
-    ppbv2molmol = 1e-9
-    tropopause_pressure = obsobj["tropopause_pressure"]
-    scattering_weights = obsobj["scattering_weights"].transpose("swt_level", "x", "y")
-    scattering_weights = scattering_weights.rename({"swt_level": "z"})
-    scattering_weights = scattering_weights.where(modobj["pres_pa_mid"] >= tropopause_pressure)
-    modno2 = modobj[species].where(modobj["pres_pa_mid"] >= tropopause_pressure)
-    amf_troposphere = obsobj["amf_troposphere"]
-    modno2col_trfmd = (dp * scattering_weights * modno2).sum(dim="z") * unit_c * ppbv2molmol
-    modno2col_trfmd = modno2col_trfmd.where(modno2.isel(z=0).notnull())
-    modno2col_trfmd = modno2col_trfmd / amf_troposphere
-    modno2col_trfmd.attrs = {
-        "units": "molecules/cm2",
-        "description": "model NO2 tropospheric column after applying TEMPO scattering weights and AMF",
-        "history": "Created by MELODIES-MONET, apply_weights_mod2tempo_no2_hydrostatic, TEMPO util",
-    }
-    return modno2col_trfmd.where(np.isfinite(modno2col_trfmd))
-
-
-def apply_weights_mod2tempo_no2(obsobj, modobj, species="NO2", column_type="tropospheric"):
-    """Apply the scattering weights and air mass factors according to
-    Cooper et. al, 2020, doi: https://doi.org/10.5194/acp-20-7231-2020
-
-    Parameters
-    ----------
-    obsobj : xr.Dataset
-        TEMPO data, including pressure and scattering weights
-    modobj : xr.Dataset
-        Model data, already interpolated to TEMPO grid
-    column_type : str
-        Whether the "tropospheric" or "total" column should be used for the calculation
-
-    Returns
-    -------
-    xr.DataArray
-        A xr.DataArray containing the NO2 model data after applying
-        the air mass factors and scattering weights
-    """
+    
     partial_col = modobj[f"{species}_col"]
+    scattering_weights = (
+        obsobj["scattering_weights"]
+        .transpose("swt_level", "x", "y")
+        .rename({"swt_level": "z"})
+    )
+    if tropospheric:
+        tropopause_pa = obsobj["tropopause_pressure"] * 100  # hPa -> Pa
+        scattering_weights = scattering_weights.where(
+            modobj["pres_pa_mid"] >= tropopause_pa)
+    amf = obsobj[amf_var]
+    col = (scattering_weights * partial_col).sum(dim="z") / amf
+    col = col.where(partial_col.isel(z=0).notnull())
 
-    scattering_weights = obsobj["scattering_weights"].transpose("swt_level", "x", "y")
-    scattering_weights = scattering_weights.rename({"swt_level": "z"})
-    if column_type == "tropospheric":
-        tropopause_pressure = obsobj["tropopause_pressure"] * 100
-        scattering_weights = scattering_weights.where(modobj["pres_pa_mid"] >= tropopause_pressure)
-        amf_troposphere = obsobj["amf_troposphere"]
-    modno2col_trfmd = (scattering_weights * partial_col).sum(dim="z") / amf_troposphere
-    modno2col_trfmd = modno2col_trfmd.where(modobj[f"{species}_col"].isel(z=0).notnull())
+    # AK sanity diagnostic (enable with logging DEBUG): the AK-applied/raw
+    # ratio equals AMF_model/AMF_retrieval. This helped exposed
+    # the xregrid conservative doubling; keep it cheap and available.
+    if logger.isEnabledFor(logging.DEBUG):
+        try:
+            raw = partial_col.where(scattering_weights.notnull()).sum(dim="z")
+            ratio = (col / raw).where(raw != 0)
+            logger.debug(
+                "[AK] TEMPO %s: raw_col=%.2e AK-applied=%.2e AK/raw=%.2f "
+                "(=AMF_mod/AMF_ret)", species,
+                float(np.nanmean(raw.values)), float(np.nanmean(col.values)),
+                float(np.nanmean(ratio.values)))
+        except Exception as e:  # noqa: BLE001
+            logger.debug("[AK] TEMPO %s ratio diag skipped: %r", species, e)
 
-    # diagnostic: AK-applied vs RAW tropospheric column. The AK should suppress
-    # (ratio < 1)
-
-    # [AK-prof] TEMPO pres_pa_mid (top..bot): [1.e+05 9.e+04 7.e+04 3.e+04 7.e+03 2.e+03 2.e+02 2.e+01] 
-    # AK prof pressure being applied backwards?? 
-    try:
-        _raw = partial_col.where(scattering_weights.notnull()).sum(dim="z")
-        _r = (modno2col_trfmd / _raw).where(_raw != 0)
-        _swm = float(np.nanmean(scattering_weights.values))
-        _amfm = float(np.nanmean(np.asarray(amf_troposphere.values)))
-        print(f"[AK] TEMPO {species}: <SW>={_swm:.3f} <AMF_trop>={_amfm:.4f} "
-              f"SW/AMF={_swm / _amfm:.2f} | raw_col={float(np.nanmean(_raw.values)):.2e} "
-              f"AK-applied={float(np.nanmean(modno2col_trfmd.values)):.2e} "
-              f"AK/raw={float(np.nanmean(_r.values)):.2f} (=AMF_mod/AMF_ret)", flush=True)
-    except Exception as _e:  # noqa: BLE001
-        print(f"[AK] TEMPO {species} ratio diag skipped: {_e!r}", flush=True)
-        
-    modno2col_trfmd.attrs = {
+    col.attrs = {
         "units": "molecules/cm2",
-        "description": "model NO2 tropospheric column after applying TEMPO scattering weights and AMF",
-        "history": "Created by MELODIES-MONET, apply_weights_mod2tempo_no2, TEMPO util",
+        "description": (f"model {species} "
+                        f"{'tropospheric ' if tropospheric else ''}column "
+                        "after applying TEMPO scattering weights and AMF"),
+        "history": "Created by MELODIES-MONET, _apply_scattering_weights, TEMPO util",
     }
-    return modno2col_trfmd.where(np.isfinite(modno2col_trfmd))
+    return col.where(np.isfinite(col))
 
 
-def apply_weights_mod2tempo_hcho_hydrostatic(obsobj, modobj, species="HCHO"):
-    """Apply the scattering weights and air mass factors according to
-    Cooper et. al, 2020, doi: https://doi.org/10.5194/acp-20-7231-2020,
-    assuming the hydrostatic equation. It does not require temperature
-    nor geometric layer thickness.
+def _apply_scattering_weights_hydrostatic(obsobj, modobj, species, amf_var,
+                                          tropospheric):
+    """Hydrostatic variant of :func:`_apply_scattering_weights`.
 
-    Parameters
-    ----------
-    obsobj : xr.Dataset
-        TEMPO data, including pressure and scattering weights
-    modobj : xr.Dataset
-        Model data, already interpolated to TEMPO grid
-
-    Returns
-    -------
-    xr.DataArray
-        A xr.DataArray containing the NO2 model data after applying
-        the air mass factors and scattering weights
+    Used when the model provides no ``dz_m``: the partial column is built
+    from the retrieval layer pressure thickness (``dp * VMR * NA/g``,
+    Cooper et al. 2020, doi:10.5194/acp-20-7231-2020) instead of the
+    model's geometric thickness and temperature.
+    
     """
-    unit_c = 6.022e23 * 9.8 / 1e4  # NA * g / m2_to_cm2
+    unit_c = 6.022e23 * 9.8 / 1e4 * 1e-9  # NA * g / m2_to_cm2 * ppbv2molmol
     dp = _calc_dp(obsobj).rename({"swt_level": "z"})
-    ppbv2molmol = 1e-9
-    scattering_weights = obsobj["scattering_weights"].transpose("swt_level", "x", "y")
-    scattering_weights = scattering_weights.rename({"swt_level": "z"})
-    modhcho = modobj[species]
-    amf = obsobj["amf"]
-    modhcho_col = (dp * scattering_weights * modhcho).sum(dim="z") * unit_c * ppbv2molmol
-    modhcho_col = modhcho_col / amf
-    modhcho_col.attrs = {
+    scattering_weights = (
+        obsobj["scattering_weights"]
+        .transpose("swt_level", "x", "y")
+        .rename({"swt_level": "z"})
+    )
+    mod = modobj[species]
+    if tropospheric:
+        tropopause_pa = obsobj["tropopause_pressure"] * 100  # hPa -> Pa
+        scattering_weights = scattering_weights.where(
+            modobj["pres_pa_mid"] >= tropopause_pa)
+        mod = mod.where(modobj["pres_pa_mid"] >= tropopause_pa)
+    col = (dp * scattering_weights * mod).sum(dim="z") * unit_c / obsobj[amf_var]
+    col = col.where(mod.isel(z=0).notnull())
+    col.attrs = {
         "units": "molecules/cm2",
-        "description": "model HCHO column after applying TEMPO scattering weights and AMF",
-        "history": "Created by MELODIES-MONET, apply_weights_mod2tempo_hcho_hydrostatic, TEMPO util",
+        "description": (f"model {species} "
+                        f"{'tropospheric ' if tropospheric else ''}column "
+                        "after applying TEMPO scattering weights and AMF "
+                        "(hydrostatic)"),
+        "history": ("Created by MELODIES-MONET, "
+                    "_apply_scattering_weights_hydrostatic, TEMPO util"),
     }
-    return modhcho_col.where(np.isfinite(modhcho_col))
+    return col.where(np.isfinite(col))
+
+
+def apply_weights_mod2tempo_no2(obsobj, modobj, species="NO2",
+                                column_type="tropospheric"):
+    """TEMPO NO2 AK operator (tropospheric column).
+
+    See :func:`_apply_scattering_weights` for the calculation.
+    """
+    if column_type != "tropospheric":
+        raise NotImplementedError(
+            "apply_weights_mod2tempo_no2: only column_type='tropospheric' "
+            "is implemented for TEMPO NO2.")
+    return _apply_scattering_weights(
+        obsobj, modobj, species, "amf_troposphere", tropospheric=True)
+
+def apply_weights_mod2tempo_no2_hydrostatic(obsobj, modobj, species="NO2"):
+    """TEMPO NO2 AK operator, hydrostatic fallback (no ``dz_m``).
+
+    See :func:`_apply_scattering_weights_hydrostatic`.
+    """
+    return _apply_scattering_weights_hydrostatic(
+        obsobj, modobj, species, "amf_troposphere", tropospheric=True)
 
 
 def apply_weights_mod2tempo_hcho(obsobj, modobj, species="HCHO"):
-    """Apply the scattering weights and air mass factors according to
-    Cooper et. al, 2020, doi: https://doi.org/10.5194/acp-20-7231-2020
-
-    Parameters
-    ----------
-    obsobj : xr.Dataset
-        TEMPO data, including pressure and scattering weights
-    modobj : xr.Dataset
-        Model data, already interpolated to TEMPO grid
-
-    Returns
-    -------
-    xr.DataArray
-        A xr.DataArray containing the NO2 model data after applying
-        the air mass factors and scattering weights
+    """TEMPO HCHO AK operator (total column).
+    
+    See :func:`_apply_scattering_weights` for the calculation.
     """
-    partial_col = modobj[f"{species}_col"]
+    return _apply_scattering_weights(
+        obsobj, modobj, species, "amf", tropospheric=False)
 
-    scattering_weights = obsobj["scattering_weights"].transpose("swt_level", "x", "y")
-    scattering_weights = scattering_weights.rename({"swt_level": "z"})
-    amf = obsobj["amf"]
-    modhcho_col = (scattering_weights * partial_col).sum(dim="z") / amf
-    modhcho_col = modhcho_col.where(modobj[f"{species}_col"].isel(z=0).notnull())
-    modhcho_col.attrs = {
-        "units": "molecules/cm2",
-        "description": "model HCHO column after applying TEMPO scattering weights and AMF",
-        "history": "Created by MELODIES-MONET, apply_weights_mod2tempo_hcho, TEMPO util",
-    }
-    return modhcho_col.where(np.isfinite(modhcho_col))
+def apply_weights_mod2tempo_hcho_hydrostatic(obsobj, modobj, species="HCHO"):
+    """TEMPO HCHO AK operator, hydrostatic fallback (no ``dz_m``).
+
+    See :func:`_apply_scattering_weights_hydrostatic`.
+    """
+    return _apply_scattering_weights_hydrostatic(
+        obsobj, modobj, species, "amf", tropospheric=False)
 
 
 def is_nonpairable(obsobj, k, modobj):
@@ -772,56 +754,30 @@ def _regrid_and_apply_weights(
         modobj_swath["dz_m"] = calc_dz_m_from_altitude(modobj_swath["altitude"])
         modobj_swath[f"{species[0]}_col"] = calc_partialcolumn(modobj_swath, var=species[0])
 
-        # more debugging
-
-        # [AK-cons] column conservation across the vertical interp: the
+        # Column-conservation diagnostic (enable with logging DEBUG): the
         # tropospheric column on NATIVE model levels vs after interp to TEMPO
-        # levels must match (~1); a big departure = the interp misplaces mass,
-        # while ~1 means any AK/raw > 1 is profile-shape physics.
-        
-        try:
-            _sp = species[0]
-            # bug in xeregrid? 
-            # # pre-regrid (straight from the reader) vs post-regrid surface values.
-            # # If post = 2x pre, the horizontal regrid double-counts; if T is also
-            # # ~2x (~580 K), EVERY field is doubled (unnormalized weights).
-            # _p0v = float(np.nanmax(np.asarray(modobj["pres_pa_mid"].values)))
-            # _p1v = float(np.nanmax(np.asarray(modobj_hs["pres_pa_mid"].values)))
-            # _t1v = float(np.nanmean(np.asarray(modobj_hs["temperature_k"].isel(z=0).values)))
-            # print(f"[AK-rgd] pres max pre-regrid={_p0v:.0f} Pa | post-regrid={_p1v:.0f} Pa "
-            #       f"(ratio {_p1v / _p0v:.2f}) | post-regrid sfc T={_t1v:.0f} K (expect ~290)",
-            #       flush=True)
-            # _pn = np.nanmean(np.asarray(modobj_hs["pres_pa_mid"].values), axis=(1, 2))
-            # _xn = np.nanmean(np.asarray(modobj_hs[_sp].values), axis=(1, 2))
-            # _pi = np.nanmean(np.asarray(modobj_swath["pres_pa_mid"].values), axis=(1, 2))
-            # _xi = np.nanmean(np.asarray(modobj_swath[_sp].values), axis=(1, 2))
-            # _k = max(len(_pn) // 8, 1)
-            # _ki = max(len(_pi) // 8, 1)
-            # print(f"[AK-nat] native pres : {np.array2string(_pn[::_k], precision=0)}", flush=True)
-            # print(f"[AK-nat] native {_sp} : {np.array2string(_xn[::_k], precision=3)}", flush=True)
-            # print(f"[AK-int] interp pres : {np.array2string(_pi[::_ki], precision=0)}", flush=True)
-            # print(f"[AK-int] interp {_sp} : {np.array2string(_xi[::_ki], precision=3)}", flush=True)
-            
-            # # [AK-cons] column conservation across the vertical interp: the
-            # # tropospheric column on NATIVE model levels vs after interp to
-            # # TEMPO levels must match (~1). A big departure = the interp is
-            # # misplacing mass; ~1 = any AK/raw > 1 is profile-shape physics.
-            _pc_nat = calc_partialcolumn(modobj_hs, var=_sp)
-            if "tropopause_pressure" in obsobj:
-                _tp = obsobj["tropopause_pressure"] * 100
-            else:
-                _tp = 0.0 * modobj_hs["pres_pa_mid"].isel(z=0)  # full column
-            _cn = _pc_nat.where(modobj_hs["pres_pa_mid"] >= _tp).sum("z")
-            _ci = (modobj_swath[f"{_sp}_col"]
-                   .where(modobj_swath["pres_pa_mid"] >= _tp).sum("z"))
-            _cr = (_ci / _cn).where(_cn != 0)
-            print(f"[AK-cons] {_sp} trop col native={float(np.nanmean(_cn.values)):.2e} "
-                  f"interp={float(np.nanmean(_ci.values)):.2e} "
-                  f"interp/native mean={float(np.nanmean(_cr.values)):.2f} "
-                  f"median={float(np.nanmedian(_cr.values)):.2f} (expect ~1)", flush=True)
-            
-        except Exception as _e:  # noqa: BLE001
-            print(f"[AK-cons] skipped: {_e!r}", flush=True)
+
+        # levels must match (~1); a big departure = the interp misplaces mass.
+        if logger.isEnabledFor(logging.DEBUG):
+            try:
+                sp = species[0]
+                pc_nat = calc_partialcolumn(modobj_hs, var=sp)
+                if "tropopause_pressure" in obsobj:
+                    tp = obsobj["tropopause_pressure"] * 100  # hPa -> Pa
+                else:
+                    tp = 0.0 * modobj_hs["pres_pa_mid"].isel(z=0)  # full column
+                cn = pc_nat.where(modobj_hs["pres_pa_mid"] >= tp).sum("z")
+                ci = (modobj_swath[f"{sp}_col"]
+                      .where(modobj_swath["pres_pa_mid"] >= tp).sum("z"))
+                cr = (ci / cn).where(cn != 0)
+                logger.debug(
+                    "[AK-cons] %s trop col native=%.2e interp=%.2e "
+                    "interp/native mean=%.2f (expect ~1)", sp,
+                    float(np.nanmean(cn.values)), float(np.nanmean(ci.values)),
+                    float(np.nanmean(cr.values)))
+            except Exception as e:  # noqa: BLE001
+                logger.debug("[AK-cons] skipped: %r", e)
+                
         da_out = apply_weights(obsobj, modobj_swath, species=f"{species[0]}")
     else:
         warnings.warn(

@@ -14,6 +14,8 @@ import logging
 numba_logger = logging.getLogger('numba')
 numba_logger.setLevel(logging.WARNING)
 
+logger = logging.getLogger(__name__)
+
 def trp_interp_swatogrd(obsobj, modobj,no2varname='no2'):
 
     """
@@ -651,16 +653,20 @@ def apply_weights_mod2tropomi_no2(obsobj, modobj_on_tropomi_layers, species="NO2
 
     vcd = (ak_trop * subcol).where(trop).sum("z", skipna=True)
     vcd = vcd.where(np.isfinite(vmr.isel(z=0)))
-    # diagnostic: AK-applied vs RAW tropospheric column (should be < 1)
-    try:
-        _raw = subcol.where(trop).sum("z", skipna=True)
-        _r = (vcd / _raw).where(_raw != 0)
-        print(f"[AK] TROPOMI {species}: raw_col mean={float(np.nanmean(_raw.values)):.2e} "
-              f"molec/cm2 | AK-applied mean={float(np.nanmean(vcd.values)):.2e} "
-              f"| AK/raw mean={float(np.nanmean(_r.values)):.3f} "
-              f"median={float(np.nanmedian(_r.values)):.3f} (=AMF_mod/AMF_ret)", flush=True)
-    except Exception as _e:  # noqa: BLE001
-        print(f"[AK] TROPOMI {species} ratio diag skipped: {_e!r}", flush=True)
+
+    # AK sanity diagnostic (enable with logging DEBUG): AK/raw equals
+    # AMF_model/AMF_retrieval. This one-liner exposed the xregrid doubling.
+    if logger.isEnabledFor(logging.DEBUG):
+        try:
+            raw = subcol.where(trop).sum("z", skipna=True)
+            ratio = (vcd / raw).where(raw != 0)
+            logger.debug(
+                "[AK] TROPOMI %s: raw_col=%.2e AK-applied=%.2e AK/raw=%.2f "
+                "(=AMF_mod/AMF_ret)", species,
+                float(np.nanmean(raw.values)), float(np.nanmean(vcd.values)),
+                float(np.nanmean(ratio.values)))
+        except Exception as e:  # noqa: BLE001
+            logger.debug("[AK] TROPOMI %s ratio diag skipped: %r", species, e)
         
     vcd.attrs = {
         "units": "molecules/cm2",
