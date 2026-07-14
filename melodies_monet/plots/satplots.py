@@ -736,9 +736,12 @@ def make_spatial_overlay(df, vmodel, column_o=None, label_o=None, column_m=None,
         _bnorm = mpl.colors.BoundaryNorm(np.linspace(-_vd, _vd, _bn), ncolors=_bcmap.N, clip=False)
         bpoly = _draw(axes[2], diff_field, _bcmap, _bnorm)
         axes[2].set_title(label_m + " - " + label_o, fontweight="bold", **text_kwargs)
-        bcbar = fig.colorbar(bpoly, ax=axes[2], **cbk)
+
+        bcbar = fig.colorbar(bpoly, ax=axes[2], ticks=np.linspace(-_vd, _vd, 5), **cbk)
         bcbar.set_label(ylabel, fontweight="bold", **text_kwargs)
         bcbar.ax.tick_params(labelsize=text_kwargs["fontsize"] * 0.8)
+        _bax = bcbar.ax.xaxis if cbk.get("location") == "bottom" else bcbar.ax.yaxis
+        _bax.set_major_formatter(mpl.ticker.FormatStrFormatter("%.2g"))
 
         _suptitle = (title_add or "").strip().rstrip(":").strip()
         if _window_label:
@@ -1253,7 +1256,7 @@ def plot_swath_scatter(ds, model_var, obs_var, unc_var=None,
                        outname="swath_scatter", extent=None, proj=None,
                        vmin=None, vmax=None, markersize=6, text_dict=None,
                        states=True, gridlines=True, render="auto", share_scale=True,
-                       bin_deg=None, debug=False): # create a lot of yaml customizations
+                       bin_deg=None, common_mask=True, debug=False): # create a lot of yaml customizations
     
     """Native-TEMPO pixel scatter: obs | model | bias(model-obs), 3 panels.
 
@@ -1275,6 +1278,16 @@ def plot_swath_scatter(ds, model_var, obs_var, unc_var=None,
     lat = np.asarray(ds["latitude"].values, dtype=float).ravel()
     o = np.asarray(ds[obs_var].values, dtype=float).ravel()
     m = np.asarray(ds[model_var].values, dtype=float).ravel()
+
+    # Common mask: the model is defined wherever the mesh covers, but the obs
+    # is QA/cloud-filtered
+    # eventually shouldnt this default to using the paired df which drops rows where there are nans in either 
+    # obs / mod? 
+    if common_mask:
+        _both = np.isfinite(o) & np.isfinite(m)
+        o = np.where(_both, o, np.nan)
+        m = np.where(_both, m, np.nan)
+        
     d = m - o
     n = int(np.isfinite(o).sum())
 
@@ -1424,6 +1437,84 @@ def plot_swath_scatter(ds, model_var, obs_var, unc_var=None,
     savefig(outname + ".png", loc=4, logo_height=100, bbox_inches="tight", dpi=150)
     if debug is False:
         plt.close(fig)
+
+def plot_swath_obs_vs_model(ds, model_var, obs_var, unc_var=None,
+                            label_m="model", label_o="obs", ylabel=None,
+                            outname="swath_obs_vs_model", text_dict=None,
+                            color_by_unc=True, xylim=None, debug=False):
+    """Pixel-level obs-vs-model scatter for a native swath pair.
+
+    The purest validation in the pipeline: every swath pixel already carries
+    the observation and the AK-applied model colocated at the native
+    footprint and overpass time, so this is a straight ``x = obs, y = model``
+    scatter over the ``obs`` pixel dimension -- NO regridding, NO time
+    averaging, NO colocation error. Draws the 1:1 line, a least-squares fit,
+    and an N/r/slope/MB/RMSE box (computed on ALL finite pixels). If the pair
+    carries per-pixel uncertainty (``unc_var``) the points are colored by it
+    -- something the gridded products cannot show.
+
+    Pass a single-overpass subset (e.g. from plot_one_overpass's TIME=/MATCH=
+    selection) for a per-overpass scatter, or the full file for the aggregate.
+    """
+    tk = {"fontsize": 14, **(text_dict or {})}
+    x = np.asarray(ds[obs_var].values, dtype=float).ravel()
+    y = np.asarray(ds[model_var].values, dtype=float).ravel()
+    c = None
+    if color_by_unc and unc_var and unc_var in ds.variables:
+        c = np.asarray(ds[unc_var].values, dtype=float).ravel()
+
+    good = np.isfinite(x) & np.isfinite(y)
+    if c is not None:
+        c = c[good]
+    x, y = x[good], y[good]
+    if x.size < 3:
+        print(f"plot_swath_obs_vs_model: only {x.size} valid pixels; skipping.",
+              flush=True)
+        return
+
+    n = int(x.size)
+    mb = float(np.mean(y - x))
+    rmse = float(np.sqrt(np.mean((y - x) ** 2)))
+    r = float(np.corrcoef(x, y)[0, 1])
+    slope, intercept = (float(v) for v in np.polyfit(x, y, 1))
+    
+    if xylim is not None:
+        lo, hi = float(xylim[0]), float(xylim[1])
+    else:
+        lo = float(min(x.min(), y.min()))
+        hi = float(max(x.max(), y.max()))
+        pad = 0.05 * (hi - lo or 1.0)
+        lo, hi = lo - pad, hi + pad
+
+    fig, ax = plt.subplots(figsize=(7.5, 7))
+    ax.plot([lo, hi], [lo, hi], color="0.4", lw=1.2, zorder=1, label="1:1")
+    sc = ax.scatter(x, y, c=(c if c is not None else "steelblue"),
+                    s=8, alpha=0.5, edgecolors="none",
+                    cmap="viridis" if c is not None else None, zorder=2)
+    if c is not None:
+        cb = fig.colorbar(sc, ax=ax, shrink=0.85)
+        cb.set_label(f"{unc_var}", fontsize=tk["fontsize"] * 0.8)
+    xs = np.linspace(lo, hi, 50)
+    ax.plot(xs, slope * xs + intercept, "k--", lw=1.8, zorder=3,
+            label=f"fit: slope={slope:.2f}")
+    ax.text(0.03, 0.97,
+            (f"N = {n}\nr = {r:.2f}\nslope = {slope:.2f}\n"
+             f"MB = {mb:.2e}\nRMSE = {rmse:.2e}"),
+            transform=ax.transAxes, va="top", ha="left",
+            fontsize=tk["fontsize"] * 0.8,
+            bbox=dict(boxstyle="round", fc="white", ec="0.6", alpha=0.85))
+    ax.set_xlim(lo, hi)
+    ax.set_ylim(lo, hi)
+    ax.set_aspect("equal", adjustable="box")
+    yl = ylabel or "molecules/cm2"
+    ax.set_xlabel(f"{label_o} ({yl})", fontweight="bold", fontsize=tk["fontsize"])
+    ax.set_ylabel(f"{label_m} ({yl})", fontweight="bold", fontsize=tk["fontsize"])
+    ax.legend(loc="lower right", fontsize=tk["fontsize"] * 0.75)
+    savefig(outname + ".png", loc=4, logo_height=100, bbox_inches="tight", dpi=150)
+    if debug is False:
+        plt.close(fig)
+    print(f"plot_swath_obs_vs_model: wrote {outname}.png (N={n}, r={r:.2f}, "
+          f"slope={slope:.2f})", flush=True)
 
 def plot_swath_oversampling(ds, bin_deg=0.02, outname="swath_oversampling",
                             extent=None, proj=None, text_dict=None,

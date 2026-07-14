@@ -3,13 +3,24 @@
 #PBS -N pair_month_sat_data
 #PBS -A P19010000
 #PBS -q casper
-#PBS -l select=1:ncpus=1:mem=200GB
+#PBS -l select=1:ncpus=1:mem=128GB
 #PBS -l walltime=24:00:00
 #PBS -J 1-30%6
 #PBS -j oe
 #PBS -o pair_month_sat_data.log
 
-# One month sat pairing 
+# One month of standard CONUS sat pairing (radius_mean products), one array
+# element per June day. RUN selects the emissions run (see RUNS in
+# pair_daily_sat.py); OBS_GROUP optionally splits by obs product.
+# Peak memory ~74 GB per element (full model day) -> 96 GB.
+#
+#   for RUN in nonbiog biog grapes mxcat; do
+#     qsub -N ptm_${RUN} -o ptm_${RUN}.log -v RUN=$RUN submit_pair_month.sh
+#   done
+#
+#   # or split TROPOMI products into their own jobs:
+#   # qsub -N ptm_${RUN}_no2 -v RUN=$RUN,OBS_GROUP=tropomi_l2_no2 submit_pair_month.sh
+
 
 cd /glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/batch_scripts
 

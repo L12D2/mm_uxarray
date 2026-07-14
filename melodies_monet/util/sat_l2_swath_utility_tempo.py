@@ -632,8 +632,8 @@ def is_nonpairable(obsobj, k, modobj):
     
     if olon.max() < mlon.min() or olon.min() > mlon.max():
         return True
-    if (obsobj[k]["lat"].max() < modobj["latitude"].min()
-            or obsobj[k]["lat"].min() > modobj["latitude"].max()):
+    if (obsobj[k]["lat"].max() < modobj["latitude"].min() or obsobj[k]["lat"].min() > modobj["latitude"].max()):
+        return True
     return False
 
 

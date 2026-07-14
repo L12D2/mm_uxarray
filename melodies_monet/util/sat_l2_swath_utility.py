@@ -340,9 +340,19 @@ def interp_vertical_mod2tropomi(obsobj, modobj_swath, variables=("NO2",)):
                 if good.sum() < 2 or not np.isfinite(tp).any():
                     continue
                 order = np.argsort(mp[good])
+                
+                # Edge behavior: CLAMP (np.interp default), matching TEMPO's
+                # _interp_vert. Retrieval levels below the model's lowest
+                # mid-level get the lowest-layer mixing ratio; levels above
+                # the model top get the top layer (tropopause-masked for
+                # tropospheric columns anyway). NaN edges here silently
+                # discarded ~85% of pixels: the retrieval surface level
+                # (~actual sfc pressure) usually sits below the model's
+                # lowest MID-level, so z=0 went NaN and the AK step's
+                # isfinite(vmr[0]) mask dropped the entire pixel.
                 dest[:, j, i] = np.interp(
                     np.log10(tp), np.log10(mp[good][order]), mc[good][order],
-                    left=np.nan, right=np.nan,
+                    #left=np.nan, right=np.nan,
                 )
         out[var] = xr.DataArray(dest, dims=("z", "y", "x"))
     return out
@@ -717,7 +727,8 @@ def _mod2tropomi_swath(modobj, o, method, mod_vars, grid_file):
     if method in _CONSERVATIVE:
         from melodies_monet.util.uxarray_util import (
             faces_to_grid, subset_model_source)
-        
+
+        swath_grid, _ = _tropomi_swath_mesh(o)
         # Subset the model mesh to the swath bbox before building conservative
         # weights (far faces contribute zero). Mirrors the TEMPO forward path.
         src, src_grid = subset_model_source(

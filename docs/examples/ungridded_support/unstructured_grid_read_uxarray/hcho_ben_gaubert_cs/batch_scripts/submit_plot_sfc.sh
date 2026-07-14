@@ -10,6 +10,10 @@
 
 # One-time sat plotting job 
 
+  # for RUN in nonbiog biog grapes mxcat; do
+  #   qsub -N psfc_${RUN} -o psfc_${RUN}.log -v RUN=$RUN submit_plot_sfc.sh
+  # done
+
 cd /glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/batch_scripts
 
 module load conda

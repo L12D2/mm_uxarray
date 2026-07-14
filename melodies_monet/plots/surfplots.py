@@ -1379,8 +1379,9 @@ def calculate_multi_boxplot(df, df_reg=None, region_name= None, interval_list=No
     return comb_bx, label_bx,region_bx             
 
 def make_boxplot(comb_bx, label_bx, ylabel = None, vmin = None, vmax = None, outname='plot',
-                 domain_type=None, domain_name=None,
-                 plot_dict=None, fig_dict=None,text_dict=None,debug=False, set_stat_sig=False, gridlines = False, showfliers=True):
+                 domain_type=None, domain_name=None, 
+                 plot_dict=None, fig_dict=None,text_dict=None,debug=False, set_stat_sig=False, gridlines = False, showfliers=True,
+                 hline=None):
 
     """Creates box-plot. 
 
@@ -1509,6 +1510,11 @@ def make_boxplot(comb_bx, label_bx, ylabel = None, vmin = None, vmax = None, out
     if vmin is not None and vmax is not None:
         ax.set_ylim(ymin = vmin, ymax = vmax)
 
+    # reference line (e.g. hline: 0 for bias boxplots)
+    if hline is not None:
+        plt.gca().axhline(float(hline), color="k", linestyle="--",
+                          linewidth=1.2, zorder=0)
+        
     plt.tight_layout()
     savefig(outname + '.png', loc=4, logo_height=100)
     if debug is False:
