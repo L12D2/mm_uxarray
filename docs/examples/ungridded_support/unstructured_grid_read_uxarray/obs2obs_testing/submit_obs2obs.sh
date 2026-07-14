@@ -17,12 +17,14 @@ conda activate melodies-monet
 
 python obs2obs.py
 
-# export PLOT_GRID=obs
-# qsub -N plot_obs   -o plot_obs.log   -l select=1:ncpus=1:mem=96GB -V submit_sat.sh
-# export PLOT_GRID=model
-# qsub -N plot_model -o plot_model.log -l select=1:ncpus=1:mem=96GB -V submit_sat.sh
 
-# for ONLY in em_no2col em_no2sfc em_o3sfc em_hchocol no2_bias coupling skill diurnal multiscale; do
+# for ONLY in em_no2col em_no2sfc em_o3sfc em_hchocol no2_bias skill diurnal multiscale; do
 #   export OBS2OBS_ONLY=$ONLY
-#   qsub -N o2o_$ONLY -o o2o_$ONLY.log -l select=1:ncpus=1:mem=48GB -V submit_obs2obs.sh
+#   qsub -N o2o_$ONLY -o o2o_$ONLY.log -l select=1:ncpus=1:mem=64GB -V submit_obs2obs.sh
+# done
+
+# these ones require more mem 
+# for ONLY in coupling operator grid; do
+#   export OBS2OBS_ONLY=$ONLY
+#   qsub -N o2o_$ONLY -o o2o_$ONLY.log -l select=1:ncpus=1:mem=96GB -V submit_obs2obs.sh
 # done

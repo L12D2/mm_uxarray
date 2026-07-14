@@ -3,8 +3,8 @@
 #PBS -N pair_month_sat_data
 #PBS -A P19010000
 #PBS -q casper
-#PBS -l select=1:ncpus=1:mem=128GB
-#PBS -l walltime=24:00:00
+#PBS -l select=1:ncpus=1:mem=150GB
+#PBS -l walltime=06:00:00
 #PBS -J 1-30%6
 #PBS -j oe
 #PBS -o pair_month_sat_data.log

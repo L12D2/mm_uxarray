@@ -10,707 +10,335 @@
 
 analysis:
   start_time: '2024-06-01'                 #UTC  
-  end_time:   '2024-06-30 23:59:00'        #UTC
-  
-  # start_time: '2024-04-14'                 #UTC  
-  # end_time:   '2024-04-14 23:59:00'        #UTC
-  
-  # start_time: '2024-03-01'                 #UTC  
-  # end_time:   '2024-03-31 23:59:00'        #UTC
-
-  # start_time: '2024-06-01'                 #UTC  
-  # end_time:   '2024-06-01 23:59:00'        #UTC
-
-  # start_time: '2024-03-15'                 #UTC  
-  # end_time:   '2024-03-15 23:59:00'        #UTC
-  
+  end_time:   '2024-06-30 23:59:00'        #UTC  
   output_dir: ./output
   output_dir_save: /glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/output
   output_dir_read: /glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/output 
   
   save:
-    # paired: {method: 'netcdf', prefix: 'test', data: all}
-    # paired: {method: 'netcdf', prefix: '20240331', data: all}
     paired: {method: 'netcdf', prefix: '202406', data: all}
   
   read:
     paired:
       method: 'netcdf'
       filenames:
-        # TEMPO HCHO 
-        tempo_l2_hcho_cam-chem-se:          ['/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/output/202406*_tempo_l2_hcho_cam-chem-se.nc4']
-        tempo_l2_hcho_cam-chem-se_obsgrid:  ['/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/output/202406*_tempo_l2_hcho_cam-chem-se_obsgrid.nc4']
-        tempo_l2_hcho_cam-chem-se_series:   ['/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/output/202406*_tempo_l2_hcho_cam-chem-se_series.nc4']
-
-        # TEMPO NO2 
-        tempo_l2_no2_cam-chem-se:           ['/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/output/202406*_tempo_l2_no2_cam-chem-se.nc4']
-        tempo_l2_no2_cam-chem-se_obsgrid:   ['/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/output/202406*_tempo_l2_no2_cam-chem-se_obsgrid.nc4']
-        tempo_l2_no2_cam-chem-se_series:    ['/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/output/202406*_tempo_l2_no2_cam-chem-se_series.nc4']
-
-        # TROPOMI NO2
-        tropomi_l2_no2_cam-chem-se:         ['/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/output/202406*_tropomi_l2_no2_cam-chem-se.nc4']
-        tropomi_l2_no2_cam-chem-se_obsgrid: ['/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/output/202406*_tropomi_l2_no2_cam-chem-se_obsgrid.nc4']
-        tropomi_l2_no2_cam-chem-se_series:  ['/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/output/202406*_tropomi_l2_no2_cam-chem-se_series.nc4']
-
-        # TROPOMI HCHO
-        tropomi_l2_hcho_cam-chem-se:        ['/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/output/202406*_tropomi_l2_hcho_cam-chem-se.nc4']
-        tropomi_l2_hcho_cam-chem-se_obsgrid: ['/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/output/202406*_tropomi_l2_hcho_cam-chem-se_obsgrid.nc4']
-        tropomi_l2_hcho_cam-chem-se_series: ['/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/output/202406*_tropomi_l2_hcho_cam-chem-se_series.nc4']
-
-        # TROPOMI CO 
-        tropomi_l2_co_cam-chem-se:          ['/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/output/202406*_tropomi_l2_co_cam-chem-se.nc4']
-        tropomi_l2_co_cam-chem-se_obsgrid:  ['/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/output/202406*_tropomi_l2_co_cam-chem-se_obsgrid.nc4']
-        tropomi_l2_co_cam-chem-se_series:   ['/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/output/202406*_tropomi_l2_co_cam-chem-se_series.nc4']
-
-        # sfc
-        airnow_cam-chem-se: ['/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/output/202406_sfc_airnow_cam-chem-se.nc4']
-        aqs_cam-chem-se: ['/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/output/202406_sfc_aqs_cam-chem-se.nc4']
+        # arbritrary grid 
+        # 0.03x0.03 for TEMPO and 0.05x0.05 for TROPOMI 
+        nonbiog_tempo_no2_fg: ['/glade/work/lcthompson/mm_output/nonbiog_refera5_dust/202406*_tempo_l2_no2_cam-chem-se_obsgrid.nc4']
+        biog_tempo_no2_fg:    ['/glade/work/lcthompson/mm_output/biog_refera5_dust/202406*_tempo_l2_no2_cam-chem-se_obsgrid.nc4']
+        grapes_tempo_no2_fg:  ['/glade/work/lcthompson/mm_output/grapes/202406*_tempo_l2_no2_cam-chem-se_obsgrid.nc4']
+        mxcat_tempo_no2_fg:   ['/glade/work/lcthompson/mm_output/mxcat/202406*_tempo_l2_no2_cam-chem-se_obsgrid.nc4']
         
+        nonbiog_tempo_hcho_fg: ['/glade/work/lcthompson/mm_output/nonbiog_refera5_dust/202406*_tempo_l2_hcho_cam-chem-se_obsgrid.nc4']
+        biog_tempo_hcho_fg:    ['/glade/work/lcthompson/mm_output/biog_refera5_dust/202406*_tempo_l2_hcho_cam-chem-se_obsgrid.nc4']
+        grapes_tempo_hcho_fg:  ['/glade/work/lcthompson/mm_output/grapes/202406*_tempo_l2_hcho_cam-chem-se_obsgrid.nc4']
+        mxcat_tempo_hcho_fg:   ['/glade/work/lcthompson/mm_output/mxcat/202406*_tempo_l2_hcho_cam-chem-se_obsgrid.nc4']
+
+        nonbiog_tropomi_no2_fg: ['/glade/work/lcthompson/mm_output/nonbiog_refera5_dust/202406*_tropomi_l2_no2_cam-chem-se_obsgrid.nc4']
+        biog_tropomi_no2_fg:    ['/glade/work/lcthompson/mm_output/biog_refera5_dust/202406*_tropomi_l2_no2_cam-chem-se_obsgrid.nc4']
+        grapes_tropomi_no2_fg:  ['/glade/work/lcthompson/mm_output/grapes/202406*_tropomi_l2_no2_cam-chem-se_obsgrid.nc4']
+        mxcat_tropomi_no2_fg:   ['/glade/work/lcthompson/mm_output/mxcat/202406*_tropomi_l2_no2_cam-chem-se_obsgrid.nc4']
+        
+        nonbiog_tropomi_no2_fg: ['/glade/work/lcthompson/mm_output/nonbiog_refera5_dust/202406*_tropomi_l2_no2_cam-chem-se_obsgrid.nc4']
+        biog_tropomi_no2_fg:    ['/glade/work/lcthompson/mm_output/biog_refera5_dust/202406*_tropomi_l2_no2_cam-chem-se_obsgrid.nc4']
+        grapes_tropomi_no2_fg:  ['/glade/work/lcthompson/mm_output/grapes/202406*_tropomi_l2_no2_cam-chem-se_obsgrid.nc4']
+        mxcat_tropomi_no2_fg:   ['/glade/work/lcthompson/mm_output/mxcat/202406*_tropomi_l2_no2_cam-chem-se_obsgrid.nc4']
+
+        # native model grid 
+        nonbiog_tempo_no2_ng: ['/glade/work/lcthompson/mm_output/nonbiog_refera5_dust/202406*_tempo_l2_no2_cam-chem-se.nc4']
+        biog_tempo_no2_ng:    ['/glade/work/lcthompson/mm_output/biog_refera5_dust/202406*_tempo_l2_no2_cam-chem-se.nc4']
+        grapes_tempo_no2_ng:  ['/glade/work/lcthompson/mm_output/grapes/202406*_tempo_l2_no2_cam-chem-se.nc4']
+        mxcat_tempo_no2_ng:   ['/glade/work/lcthompson/mm_output/mxcat/202406*_tempo_l2_no2_cam-chem-se.nc4']
+        
+        nonbiog_tempo_hcho_ng: ['/glade/work/lcthompson/mm_output/nonbiog_refera5_dust/202406*_tempo_l2_hcho_cam-chem-se.nc4']
+        biog_tempo_hcho_ng:    ['/glade/work/lcthompson/mm_output/biog_refera5_dust/202406*_tempo_l2_hcho_cam-chem-se.nc4']
+        grapes_tempo_hcho_ng:  ['/glade/work/lcthompson/mm_output/grapes/202406*_tempo_l2_hcho_cam-chem-se.nc4']
+        mxcat_tempo_hcho_ng:   ['/glade/work/lcthompson/mm_output/mxcat/202406*_tempo_l2_hcho_cam-chem-se.nc4']
+
+        nonbiog_tropomi_no2_ng: ['/glade/work/lcthompson/mm_output/nonbiog_refera5_dust/202406*_tropomi_l2_no2_cam-chem-se.nc4']
+        biog_tropomi_no2_ng:    ['/glade/work/lcthompson/mm_output/biog_refera5_dust/202406*_tropomi_l2_no2_cam-chem-se.nc4']
+        grapes_tropomi_no2_ng:  ['/glade/work/lcthompson/mm_output/grapes/202406*_tropomi_l2_no2_cam-chem-se.nc4']
+        mxcat_tropomi_no2_ng:   ['/glade/work/lcthompson/mm_output/mxcat/202406*_tropomi_l2_no2_cam-chem-se.nc4']
+        
+        nonbiog_tropomi_no2_ng: ['/glade/work/lcthompson/mm_output/nonbiog_refera5_dust/202406*_tropomi_l2_no2_cam-chem-se.nc4']
+        biog_tropomi_no2_ng:    ['/glade/work/lcthompson/mm_output/biog_refera5_dust/202406*_tropomi_l2_no2_cam-chem-se.nc4']
+        grapes_tropomi_no2_ng:  ['/glade/work/lcthompson/mm_output/grapes/202406*_tropomi_l2_no2_cam-chem-se_obsgrid.nc4']
+        mxcat_tropomi_no2_ng:   ['/glade/work/lcthompson/mm_output/mxcat/202406*_tropomi_l2_no2_cam-chem-se_obsgrid.nc4']
+
+        # sfc data 
+        nonbiog_airnow: ['/glade/work/lcthompson/mm_output/nonbiog_refera5_dust/202406_sfc*_airnow_cam-chem-se.nc4']
+        biog_airnow:    ['/glade/work/lcthompson/mm_output/biog_refera5_dust/202406_bio*_airnow_cam-chem-se.nc4']
+        grapes_airnow:  ['/glade/work/lcthompson/mm_output/grapes/202406_gr*_airnow_cam-chem-se.nc4']
+        mxcat_airnow:   ['/glade/work/lcthompson/mm_output/mxcat/202406_mx*_airnow_cam-chem-se.nc4']
+
+        nonbiog_aqs: ['/glade/work/lcthompson/mm_output/nonbiog_refera5_dust/202406_sfc*_aqs_cam-chem-se.nc4']
+        biog_aqs:    ['/glade/work/lcthompson/mm_output/biog_refera5_dust/202406_bio*_aqs_cam-chem-se.nc4']
+        grapes_aqs:  ['/glade/work/lcthompson/mm_output/grapes/202406_gr*_aqs_cam-chem-se.nc4']
+        mxcat_aqs:   ['/glade/work/lcthompson/mm_output/mxcat/202406_mx*_aqs_cam-chem-se.nc4']
         
   debug: false
-
-  # # add this as example to yaml 
-  # montage:
-  #   plot_dir: /glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/satellite_img # where are the single images written too
-  #   outdir: /glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/satellite_img/montages # where do you want the montages written too
-  #   group_by: type     # puts all outputted figs in montage
-  #   # options include: "all", "plotname", "type"
-  #   search: "*.png"
-  #   cols: 6
-  #   thumb_width: 420
-
-# python -c "from melodies_monet import driver; an=driver.analysis(); an.control='/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/control_tempo_l2_hcho_cesm_se.yaml'; an.read_control(); an.montage()"
-
+  
 ### obs2obs yaml section. Behaves like the stat bloc
+
+# theoretically, because each emissions scenario is paired to tropomi, tempo, or airnow, you could treat each combination as a model bloc. This only
+# answers how different is each model to one another. the current structure of MM does not allow you to compare tropomi and tempo directly
+# This section is being designed to cross compare the observations. Eventually, this should include the ability to compare aircraft observations
+
+# obs2obs is currently designed to "pair" the paired dfs that MM creates for each obs to model pair. AKA you need the saved output to use this block
+
 obs2obs:
   output_dir: /glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/obs2obs_testing/output
-  time_match: {window_local: [12.5, 14.5]}   # co-locate TEMPO to the ~13:30 LT TROPOMI window
-  groups:
+  time_match:
+    window_local: [12.5, 14.5]
 
-    # THE AMF DECOMPOSITION (same units: molec/cm2) ----
-    hcho_intercomp:
+  groups:
+    # ---- TEMPO NO2 column, model-in-obs-space, by emissions run (obs-grid) ----
+    em_no2col_atl: &em_no2col
+      type: [multi_boxplot, multi_timeseries]
+      data_proc: {showfliers: false, common_mask: true}
+      ylabel: 'NO$_2$ trop. column (molec cm$^{-2}$)'
+      clip: [-2.0e+15, 3.0e+16]
+      #time_match: {window_local: [12.5, 14.5]}
+
+      time_match: daily
+      avg_window: '1D'
+      
+      bounds: [-85.0, -83.7, 33.2, 34.4]
+      series:
+        - {label: nonbiog_tempo_no2_fg, var: vertical_column_troposphere, name: TEMPO obs, color: black}
+        - {label: nonbiog_tempo_no2_fg, var: NO2, name: nonbiog, color: steelblue}
+        - {label: biog_tempo_no2_fg,    var: NO2, name: biog,    color: seagreen}
+        - {label: grapes_tempo_no2_fg,  var: NO2, name: grapes,  color: purple}
+        - {label: mxcat_tempo_no2_fg,   var: NO2, name: mxcat,   color: orange}
+    em_no2col_seus:
+      <<: *em_no2col
+      bounds: [-92.0, -75.0, 24.5, 37.0]
+
+    # ---- TROPOMI NO2 column, by emissions run ----
+    em_no2col_tropomi_atl: &em_no2col_trop
+      type: [multi_boxplot, multi_timeseries]
+      ylabel: 'TROPOMI NO$_2$ trop. column (molec cm$^{-2}$)'
+      clip: [-2.0e+15, 3.0e+16]
+      avg_window: '1D'
+      bounds: [-85.0, -83.7, 33.2, 34.4]
+      series:
+        - {label: nonbiog_tropomi_no2_fg, var: nitrogendioxide_tropospheric_column, name: TROPOMI obs, color: black}
+        - {label: nonbiog_tropomi_no2_fg, var: NO2, name: nonbiog, color: steelblue}
+        - {label: biog_tropomi_no2_fg,    var: NO2, name: biog,    color: seagreen}
+        - {label: grapes_tropomi_no2_fg,  var: NO2, name: grapes,  color: purple}
+        - {label: mxcat_tropomi_no2_fg,   var: NO2, name: mxcat,   color: orange}
+      data_proc:
+        set_axis: False
+    em_no2col_tropomi_seus:
+      <<: *em_no2col_trop
+      bounds: [-92.0, -75.0, 24.5, 37.0]
+
+    # ---- surface<->column coupling (obs cloud + one model cloud per run) ----
+    coupling_no2_atl:
+      type: xplatform_scatter
+      bounds: [-85.0, -83.7, 33.2, 34.4]
+      xlabel: 'AirNow surface NO$_2$ (ppb)'
+      ylabel: 'TROPOMI NO$_2$ column (molec cm$^{-2}$)'
+      surface:
+        obs:    {label: nonbiog_airnow, var: NO2}
+        models:
+          - {name: nonbiog, color: steelblue, label: nonbiog_airnow, var: NO2_new}
+          - {name: biog,    color: seagreen,  label: biog_airnow,    var: NO2_new}
+          - {name: grapes,  color: purple,    label: grapes_airnow,  var: NO2_new}
+          - {name: mxcat,   color: orange,    label: mxcat_airnow,   var: NO2_new}
+      column:
+        obs:    {label: nonbiog_tropomi_no2_fg, var: nitrogendioxide_tropospheric_column}
+        models:
+          - {name: nonbiog, color: steelblue, label: nonbiog_tropomi_no2_fg, var: NO2}
+          - {name: biog,    color: seagreen,  label: biog_tropomi_no2_fg,    var: NO2}
+          - {name: grapes,  color: purple,    label: grapes_tropomi_no2_fg,  var: NO2}
+          - {name: mxcat,   color: orange,    label: mxcat_tropomi_no2_fg,   var: NO2}
+
+    # ---- averaging-kernel operator effect (stacked: model AK-spread / obs) ----
+    operator_no2_atl:
+      type: operator_effect
+      bounds: [-85.0, -83.7, 33.2, 34.4]
+      ylabel: 'NO$_2$ trop. column (molec cm$^{-2}$)'
+      instruments:
+        tempo:   {obs_var: vertical_column_troposphere,         mod_var: NO2}
+        tropomi: {obs_var: nitrogendioxide_tropospheric_column, mod_var: NO2}
+      runs:
+        - {name: nonbiog, color: steelblue, tempo: nonbiog_tempo_no2_fg, tropomi: nonbiog_tropomi_no2_fg}
+        - {name: biog,    color: seagreen,  tempo: biog_tempo_no2_fg,    tropomi: biog_tropomi_no2_fg}
+        - {name: grapes,  color: purple,    tempo: grapes_tempo_no2_fg,  tropomi: grapes_tropomi_no2_fg}
+        - {name: mxcat,   color: orange,    tempo: mxcat_tempo_no2_fg,   tropomi: mxcat_tropomi_no2_fg}
+
+    # ---- diurnal cycles (via make_diurnal_cycle: range_shading + time_offset) ----
+    diurnal_no2col_atl:
+      type: diurnal
+      time_match: none
+      normalize: true
+      range_shading: std
+      # time_offset: -4                # ATL = UTC-4
+      ylabel: 'NO$_2$ column (normalized to daily mean)'
+      bounds: [-85.0, -83.7, 33.2, 34.4]
+      series:
+        - {label: nonbiog_tempo_no2_fg, var: vertical_column_troposphere, name: TEMPO obs, color: black}
+        - {label: nonbiog_tempo_no2_fg, var: NO2, name: nonbiog, color: steelblue}
+        - {label: biog_tempo_no2_fg,    var: NO2, name: biog,    color: seagreen}
+        - {label: grapes_tempo_no2_fg,  var: NO2, name: grapes,  color: purple}
+        - {label: mxcat_tempo_no2_fg,   var: NO2, name: mxcat,   color: orange}
+      data_proc:
+        set_axis: False
+        
+    diurnal_no2sfc_atl:
+      type: diurnal
+      time_match: none
+      normalize: true
+      range_shading: std
+      time_offset: -4
+      ylabel: 'surface NO$_2$ (normalized to daily mean)'
+      bounds: [-85.0, -83.7, 33.2, 34.4]
+      series:
+        - {label: nonbiog_airnow, var: NO2,     name: AirNow obs, color: black}
+        - {label: nonbiog_airnow, var: NO2_new, name: nonbiog, color: steelblue}
+        - {label: biog_airnow,    var: NO2_new, name: biog,    color: seagreen}
+        - {label: grapes_airnow,  var: NO2_new, name: grapes,  color: purple}
+        - {label: mxcat_airnow,   var: NO2_new, name: mxcat,   color: orange}
+      data_proc:
+        set_axis: False
+        
+    # ---- AirNow surface NO2, by emissions run ----
+    em_no2sfc_atl: &em_no2sfc
+      type: [multi_boxplot, multi_timeseries]
+      ylabel: 'surface NO$_2$ (ppb)'
+      time_match: daily
+      avg_window: '1D'
+      bounds: [-85.0, -83.7, 33.2, 34.4]
+      series:
+        - {label: nonbiog_airnow, var: NO2,     name: AirNow obs, color: black}
+        - {label: nonbiog_airnow, var: NO2_new, name: nonbiog, color: steelblue}
+        - {label: biog_airnow,    var: NO2_new, name: biog,    color: seagreen}
+        - {label: grapes_airnow,  var: NO2_new, name: grapes,  color: purple}
+        - {label: mxcat_airnow,   var: NO2_new, name: mxcat,   color: orange}
+      data_proc:
+        set_axis: False
+    em_no2sfc_seus:
+      <<: *em_no2sfc
+      bounds: [-92.0, -75.0, 24.5, 37.0]
+
+    # ---- AirNow + AQS surface O3, by emissions run (AQS is valid for O3) ----
+    em_o3sfc_atl: &em_o3sfc
+      type: [multi_boxplot, multi_timeseries]
+      ylabel: 'surface O$_3$ (ppb)'
+      time_match: daily
+      avg_window: '1D'
+      bounds: [-85.0, -83.7, 33.2, 34.4]
+      series:
+        - {label: nonbiog_airnow, var: OZONE,     name: AirNow obs, color: black}
+        - {label: nonbiog_airnow, var: OZONE_new, name: nonbiog, color: steelblue}
+        - {label: biog_airnow,    var: OZONE_new, name: biog,    color: seagreen}
+        - {label: grapes_airnow,  var: OZONE_new, name: grapes,  color: purple}
+        - {label: mxcat_airnow,   var: OZONE_new, name: mxcat,   color: orange}
+    em_o3sfc_seus:
+      <<: *em_o3sfc
+      bounds: [-92.0, -75.0, 24.5, 37.0]
+
+    # ---- TEMPO HCHO column, by emissions run (obs-grid) ----
+    em_hchocol_atl: &em_hchocol
       type: [multi_boxplot, multi_timeseries]
       ylabel: 'HCHO column (molec cm$^{-2}$)'
       clip: [-2.0e+16, 5.0e+16]
-      data_proc:
-        showfliers: false
-      series:
-        - {label: tempo_l2_hcho_cam-chem-se_obsgrid,   var: vertical_column,                           name: TEMPO obs,            color: black}
-        - {label: tempo_l2_hcho_cam-chem-se_obsgrid,   var: CH2O,                                      name: CAM-chem (TEMPO AK),  color: purple}
-        - {label: tropomi_l2_hcho_cam-chem-se_obsgrid, var: formaldehyde_tropospheric_vertical_column, name: TROPOMI obs,          color: grey}
-        - {label: tropomi_l2_hcho_cam-chem-se_obsgrid, var: CH2O,                                      name: CAM-chem (TROPOMI AK), color: orchid}
-
-    hcho_operator_effect:            # same model, different AK
-      type: diff_map
-      clip: [-2.0e+16, 5.0e+16] 
-      fig_kwargs: {states: true, counties: false}
-      ylabel: 'model(TEMPO AK) - model(TROPOMI AK) (molec cm$^{-2}$)'
       time_match: {window_local: [12.5, 14.5]}
+      bounds: [-85.0, -83.7, 33.2, 34.4]
       series:
-        - {label: tempo_l2_hcho_cam-chem-se_obsgrid,   var: CH2O, name: model TEMPO-AK}
-        - {label: tropomi_l2_hcho_cam-chem-se_obsgrid, var: CH2O, name: model TROPOMI-AK}
+        - {label: nonbiog_tempo_hcho_fg, var: vertical_column, name: TEMPO obs, color: black}
+        - {label: nonbiog_tempo_hcho_fg, var: CH2O, name: nonbiog, color: steelblue}
+        - {label: biog_tempo_hcho_fg,    var: CH2O, name: biog,    color: seagreen}
+        - {label: grapes_tempo_hcho_fg,  var: CH2O, name: grapes,  color: purple}
+        - {label: mxcat_tempo_hcho_fg,   var: CH2O, name: mxcat,   color: orange}
+    em_hchocol_seus:
+      <<: *em_hchocol
+      bounds: [-92.0, -75.0, 24.5, 37.0]
 
-    # multiscale surface + satellite on ONE axis (dimensionless) 
-    no2_bias_by_platform:
+    # ---- Taylor: CAM-chem NO2 skill by platform ----
+    skill_no2_atl:
+      type: taylor
+      bounds: [-85.0, -83.7, 33.2, 34.4]
+      title: 'CAM-chem NO2 skill by platform (ATL)'
+      series:
+        - {label: grapes_airnow,        obs_var: NO2, mod_var: NO2_new, name: AirNow sfc, color: teal}
+        - {label: grapes_tempo_no2_fg,  obs_var: vertical_column_troposphere,         mod_var: NO2, name: TEMPO col,   color: black}
+        - {label: grapes_tropomi_no2_fg, obs_var: nitrogendioxide_tropospheric_column, mod_var: NO2, name: TROPOMI col, color: purple}
+
+    # # ---- normalized multiscale map: surface dots on the column field ----
+    # multiscale_no2_seus:
+    #   type: norm_spatial
+    #   bounds: [-92.0, -75.0, 24.5, 37.0]
+    #   title: 'NO2 relative to domain mean (column field + surface dots)'
+    #   surface: {label: grapes_airnow,       obs_var: NO2, mod_var: NO2_new}
+    #   column:  {label: grapes_tempo_no2_fg, obs_var: vertical_column_troposphere, mod_var: NO2}
+
+    # ---- relative-bias multiscale: surface + both satellites on one % axis ----
+    no2_bias_platform_atl:
       type: multi_boxplot
-      clip: [-500, 500]
       ylabel: 'model - obs relative bias (%)'
+      clip: [-200, 500]
       hline: 0
-      time_match: daily
+      bounds: [-85.0, -83.7, 33.2, 34.4]
+      data_proc: {showfliers: false, common_mask: true}
       series:
-        - {label: airnow_cam-chem-se, obs_var: NO2, mod_var: NO2_new,
-           mode: relative_bias, name: AirNow sfc NO2}
-        - {label: tempo_l2_no2_cam-chem-se_obsgrid,   obs_var: vertical_column_troposphere, mod_var: NO2,
-           mode: relative_bias, name: TEMPO NO2 col}
-        - {label: tropomi_l2_no2_cam-chem-se_obsgrid, obs_var: nitrogendioxide_tropospheric_column, mod_var: NO2,
-           mode: relative_bias, name: TROPOMI NO2 col}
+        - {label: grapes_airnow,         obs_var: NO2,                                 mod_var: NO2_new, mode: relative_bias, name: AirNow sfc NO2, color: teal}
+        - {label: grapes_tempo_no2_fg,   obs_var: vertical_column_troposphere,         mod_var: NO2,     mode: relative_bias, name: TEMPO NO2 col,  color: black}
+        - {label: grapes_tropomi_no2_fg, obs_var: nitrogendioxide_tropospheric_column, mod_var: NO2,     mode: relative_bias, name: TROPOMI NO2 col, color: grey}
+        
+    # ---- grid sensitivity: obs-grid (fg) vs native model grid (ng), NO2 column ----
+    # Same TEMPO pairing, two representations. Boxes are interleaved fg|ng per
+    # series so the grid effect reads left-to-right within each pair.
+    grid_no2col_atl: &grid_no2col
+      type: multi_boxplot
+      ylabel: 'NO$_2$ trop. column (molec cm$^{-2}$)'
+      clip: [-2.0e+15, 3.0e+16]
+      time_match: {window_local: [12.5, 14.5]}
+      bounds: [-85.0, -83.7, 33.2, 34.4]          # ATL_metro
+      data_proc: {showfliers: false}
+      series:
+        - {label: nonbiog_tempo_no2_fg, var: vertical_column_troposphere, name: 'TEMPO obs (fg)', color: black}
+        - {label: nonbiog_tempo_no2_ng, var: vertical_column_troposphere, name: 'TEMPO obs (ng)', color: dimgray}
+        - {label: nonbiog_tempo_no2_fg, var: NO2, name: 'nonbiog (fg)', color: steelblue}
+        - {label: nonbiog_tempo_no2_ng, var: NO2, name: 'nonbiog (ng)', color: lightsteelblue}
+        - {label: biog_tempo_no2_fg,    var: NO2, name: 'biog (fg)',    color: seagreen}
+        - {label: biog_tempo_no2_ng,    var: NO2, name: 'biog (ng)',    color: mediumaquamarine}
+        - {label: grapes_tempo_no2_fg,  var: NO2, name: 'grapes (fg)',  color: purple}
+        - {label: grapes_tempo_no2_ng,  var: NO2, name: 'grapes (ng)',  color: plum}
+        - {label: mxcat_tempo_no2_fg,   var: NO2, name: 'mxcat (fg)',   color: orange}
+        - {label: mxcat_tempo_no2_ng,   var: NO2, name: 'mxcat (ng)',   color: navajowhite}
+    grid_no2col_seus:
+      <<: *grid_no2col
+      bounds: [-92.0, -75.0, 24.5, 37.0]          # SE_US     
+        
+    # ---- grid sensitivity: obs-grid (fg) vs native model grid (ng), NO2 column ----
+    # Same tropomi pairing, two representations. Boxes are interleaved fg|ng per
+    # series so the grid effect reads left-to-right within each pair.
+    grid_no2col_atl_trop: &grid_no2col_trop
+      type: multi_boxplot
+      ylabel: 'NO$_2$ trop. column (molec cm$^{-2}$)'
+      clip: [-2.0e+15, 3.0e+16]
+      time_match: {window_local: [12.5, 14.5]}
+      bounds: [-85.0, -83.7, 33.2, 34.4]          # ATL_metro
+      data_proc: {showfliers: false}
+      series:
+        - {label: nonbiog_tropomi_no2_fg, var: nitrogendioxide_tropospheric_column, name: TROPOMI obs, color: black}
+        - {label: nonbiog_tropomi_no2_ng, var: nitrogendioxide_tropospheric_column, name: TROPOMI obs, color: black}
+        - {label: nonbiog_tropomi_no2_fg, var: vertical_column_troposphere, name: 'TEMPO obs (fg)', color: black}
+        - {label: nonbiog_tropomi_no2_ng, var: vertical_column_troposphere, name: 'TEMPO obs (ng)', color: dimgray}
+        - {label: nonbiog_tropomi_no2_fg, var: NO2, name: 'nonbiog (fg)', color: steelblue}
+        - {label: nonbiog_tropomi_no2_ng, var: NO2, name: 'nonbiog (ng)', color: lightsteelblue}
+        - {label: biog_tropomi_no2_fg,    var: NO2, name: 'biog (fg)',    color: seagreen}
+        - {label: biog_tropomi_no2_ng,    var: NO2, name: 'biog (ng)',    color: mediumaquamarine}
+        - {label: grapes_tropomi_no2_fg,  var: NO2, name: 'grapes (fg)',  color: purple}
+        - {label: grapes_tropomi_no2_ng,  var: NO2, name: 'grapes (ng)',  color: plum}
+        - {label: mxcat_tropomi_no2_fg,   var: NO2, name: 'mxcat (fg)',   color: orange}
+        - {label: mxcat_tropomi_no2_ng,   var: NO2, name: 'mxcat (ng)',   color: navajowhite}
 
-
-
-           
-
-########
-obs:
-  tempo_l2_hcho:
-    regrid_method: radius_mean #nearest_s2d # conservative
-    #filename: /glade/campaign/acom/acom-da/sma/TEMPO_HCHO_V03/TEMPO_HCHO_L2_V03_20240630T*_S0*
-    #filename: /glade/campaign/acom/acom-da/sma/TEMPO_HCHO_V03/TEMPO_HCHO_L2_V03_202403*_S*
-    filename: /glade/campaign/acom/acom-da/sma/TEMPO_HCHO_V03/TEMPO_HCHO_L2_V03_202406*_S*
-    # filename: /glade/campaign/acom/acom-da/sma/TEMPO_HCHO_V03/TEMPO_HCHO_L2_V03_202403*_S*
-    # filename: /glade/campaign/acom/acom-da/sma/TEMPO_HCHO_V03/TEMPO_HCHO_L2_V03_20240315*_S*
-    
-    regrid_target: [obs, model, series]   #[model, obs]   # default 'model'; 'obs' = lat/lon L3 grid
-    obs_grid_res: 0.1
-    obs_grid_extent: [-130, -60, 20, 55] # [lonW, lonE, latS, latN]; default = model extent
-    obs_grid_units: deg            # 'deg' (default) | 'km' | 'm'
-    
-    obs_type: sat_swath_clm
-    sat_type: tempo_l2_hcho
-    variables:
-      main_data_quality_flag:
-        main_data_quality_flag_max: 0
-        var_applied: ['vertical_column']
-      vertical_column:                 # HCHO total column (molecules/cm^2)
-        ylabel_plot: 'HCHO column (molec cm$^{-2}$)'
-        vmin_plot: 0.3
-        vmax_plot: 2.0e+16
-        nlevels_plot: 21
-      pressure: {}
-      scattering_weights: {}
-      amf: {}
-      latitude_bounds: {}
-      longitude_bounds: {}
-      vertical_column_uncertainty: {}
+    grid_no2col_seus_trop:
+      <<: *grid_no2col_trop
+      bounds: [-92.0, -75.0, 24.5, 37.0]          # SE_US  
       
-  tempo_l2_no2:
-    obs_type: sat_swath_clm
-    sat_type: tempo_l2_no2
-    regrid_method: radius_mean
 
-    regrid_target: [obs, model, series]     # default 'model'; 'obs' = lat/lon L3 grid
-    obs_grid_res: 0.1
-    obs_grid_extent: [-130, -60, 20, 55] # [lonW, lonE, latS, latN]; default = model extent
-    obs_grid_units: deg            # 'deg' (default) | 'km' | 'm'
-    
-    filename: /glade/campaign/acom/acom-da/sma/TEMPO_NO2_V03/TEMPO_NO2_L2_V03_202406*_S0*
-    variables:
-      main_data_quality_flag: {main_data_quality_flag_max: 0, var_applied: ['vertical_column_troposphere']}
-      vertical_column_troposphere: {ylabel_plot: 'NO$_2$ trop. column (molec cm$^{-2}$)', vmin_plot: 0, vmax_plot: 1.0e+16}
-      pressure: {}
-      tropopause_pressure: {}
-      scattering_weights: {}
-      amf_troposphere: {}
-      latitude_bounds: {}
-      longitude_bounds: {}
-      vertical_column_troposphere_uncertainty: {}
-      
-  
-  tropomi_l2_no2:
-    obs_type: sat_swath_clm
-    sat_type: tropomi_l2_no2
-    regrid_method: radius_mean
 
-    regrid_target: [obs, model, series]   # default 'model'; 'obs' = lat/lon L3 grid
-    obs_grid_res: 0.1
-    obs_grid_extent: [-130, -60, 20, 55] # [lonW, lonE, latS, latN]; default = model extent
-    obs_grid_units: deg            # 'deg' (default) | 'km' | 'm'
-    
-    filename: /glade/derecho/scratch/lcthompson/tropomi/no2_2024/S5P_OFFL_L2__NO2____202406*.nc
-    variables:
-      qa_value: {}
-      nitrogendioxide_tropospheric_column: {ylabel_plot: 'NO$_2$ trop. column (molec cm$^{-2}$)', vmin_plot: 0, vmax_plot: 1.0e+16}
-      averaging_kernel: {}
-      air_mass_factor_troposphere: {}
-      air_mass_factor_total: {}
-      tm5_tropopause_pressure: {}
-      latitude_bounds: {}
-      longitude_bounds: {}
-      qa_value: {}
-      nitrogendioxide_tropospheric_column_precision: {}
-
-  tropomi_l2_hcho:
-    obs_type: sat_swath_clm
-    sat_type: tropomi_l2_hcho
-    regrid_method: radius_mean # nearest_s2d #conservative
-
-    regrid_target: [obs, model, series]   # default 'model'; 'obs' = lat/lon L3 grid
-    obs_grid_res: 0.1
-    obs_grid_extent: [-130, -60, 20, 55] # [lonW, lonE, latS, latN]; default = model extent
-    obs_grid_units: deg            # 'deg' (default) | 'km' | 'm'
-    
-    filename: /glade/derecho/scratch/lcthompson/tropomi/hcho_2024/S5P_OFFL_L2__HCHO___202406*.nc
-    # /glade/campaign/acom/acom-da/sma/TROPOMI-HCHO-DATA/2024/S5P_OFFL_L2__HCHO___202403*.nc
-    # filename: /glade/campaign/acom/acom-da/sma/TROPOMI-HCHO-DATA/2024/S5P_OFFL_L2__HCHO___202406*.nc
-    # filename: /glade/campaign/acom/acom-da/sma/TROPOMI-HCHO-DATA/2024/S5P_OFFL_L2__HCHO___202403*.nc
-    # filename: /glade/campaign/acom/acom-da/sma/TROPOMI-HCHO-DATA/2024/S5P_OFFL_L2__HCHO___20240315*.nc
-    variables:
-      qa_value: {qa_min: 0.5}
-      formaldehyde_tropospheric_vertical_column: 
-        ylabel_plot: 'HCHO column (molec cm$^{-2}$)'
-        vmin_plot: 0.3
-        vmax_plot: 2.0e+16
-        nlevels_plot: 21
-      averaging_kernel: {}
-      formaldehyde_tropospheric_air_mass_factor: {}
-      surface_pressure: {}
-      tm5_constant_a: {}
-      tm5_constant_b: {}
-      latitude_bounds: {}
-      longitude_bounds: {}
-      formaldehyde_tropospheric_vertical_column_precision: {}
-
-  tropomi_l2_co:
-    obs_type: sat_swath_clm
-    sat_type: tropomi_l2_co
-    regrid_method: radius_mean # nearest_s2d #conservative
-
-    regrid_target: [obs, model, series]   # default 'model'; 'obs' = lat/lon L3 grid
-    obs_grid_res: 0.1
-    obs_grid_extent: [-130, -60, 20, 55] # [lonW, lonE, latS, latN]; default = model extent
-    obs_grid_units: deg            # 'deg' (default) | 'km' | 'm'
-    
-    filename: /glade/derecho/scratch/lcthompson/tropomi/co_2024/S5P_OFFL_L2__CO_____20240601*.nc #/glade/derecho/scratch/lcthompson/tropomi/co_2024/S5P_OFFL_L2__CO___202406*.nc
-    variables:
-      qa_value: {qa_min: 0.5}
-      carbonmonoxide_total_column: 
-        ylabel_plot: 'CO column (molec cm$^{-2}$)'
-        vmin_plot: 0
-        vmax_plot: 3.0e+18
-        nlevels_plot: 21
-      column_averaging_kernel: {}
-      pressure_levels: {}
-      latitude_bounds: {}
-      longitude_bounds: {}
-      carbonmonoxide_total_column_precision: {}
-      carbonmonoxide_total_column_corrected: {}
-
-      #  data: ['tempo_l2_hcho_cam-chem-se', 'tempo_l2_no2_cam-chem-se', 'tropomi_l2_no2_cam-chem-se', 'tropomi_l2_hcho_cam-chem-se', 'tropomi_l2_co_cam-chem-se']
-      # data: ["tempo_l2_hcho_cam-chem-se"]
-
-      # data: ["tempo_l2_hcho_cam-chem-se", 'tropomi_l2_hcho_cam-chem-se']
-      
-model:
-  cam-chem-se:
-    #files: /glade/campaign/acom/acom-da/conus_outputs/f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.ERA5_ref_dust_M1.1.002/H1/f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.ERA5_ref_dust_M1.1.002.cam.h1.2024-06*.nc
-
-    # for plotting model, it only needs a single model to get the grid. No need to load the whole month 
-    files: /glade/campaign/acom/acom-da/conus_outputs/f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.ERA5_ref_dust_M1.1.002/H1/f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.ERA5_ref_dust_M1.1.002.cam.h1.2024-06-01-03600.nc 
-    # /glade/campaign/acom/acom-da/conus_outputs/f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.biog_ERA5_ref_dust_M1.1.001/H1/
-    scrip_file: "/glade/campaign/acom/MUSICA/grids/ne0CONUSne30x8/ne0CONUS_ne30x8_np4_SCRIP.nc"
-    mod_type: 'cesm_se' 
-    mapping:
-      tempo_l2_hcho:  {CH2O: "vertical_column"}
-      tempo_l2_no2:   {NO2:  "vertical_column_troposphere"}
-      tropomi_l2_no2: {NO2:  "nitrogendioxide_tropospheric_column"}    
-      tropomi_l2_hcho: {CH2O: "formaldehyde_tropospheric_vertical_column"}
-      tropomi_l2_co: {CO: "carbonmonoxide_total_column"}
-    projection: ~
-    mod_kwargs:
-      convert_to_ppb: True
-    plot_kwargs: {color: 'purple', marker: '^', linestyle: 'dotted'}
-
-plots:
-  plot_grp1_hcho_tempo:
-    type: 'timeseries'
-    fig_kwargs: {figsize: [12, 6]}
-    default_plot_kwargs: {linewidth: 2.0, markersize: 10.}
-    text_kwargs: {fontsize: 18.}
-    # domain_type: ["all", "auto-region:box"]
-    # domain_name: ["CONUS", "SE_US"]
-    domain_type: ["auto-region:box"]
-    domain_name: ["SE_US"]
-    domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
-    data: ['tempo_l2_hcho_cam-chem-se']
-    data_proc:
-      rem_obs_nan: True 
-      ts_avg_window: 'h' 
-      set_axis: True 
-
-  plot_grp1_no2_tempo:
-    type: 'timeseries'
-    fig_kwargs: {figsize: [12, 6]}
-    default_plot_kwargs: {linewidth: 2.0, markersize: 10.}
-    text_kwargs: {fontsize: 18.}
-    domain_type: ["auto-region:box"]
-    domain_name: ["SE_US"]
-    domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
-    data: ['tempo_l2_no2_cam-chem-se']
-    data_proc:
-      rem_obs_nan: True 
-      ts_avg_window: 'h' 
-      set_axis: True 
-      
-  plot_grp1_no2_tropo:
-    type: 'timeseries'
-    fig_kwargs: {figsize: [12, 6]}
-    default_plot_kwargs: {linewidth: 2.0, markersize: 10.}
-    text_kwargs: {fontsize: 18.}
-    domain_type: ["auto-region:box"]
-    domain_name: ["SE_US"]
-    domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
-    data: ['tropomi_l2_no2_cam-chem-se']
-    data_proc:
-      rem_obs_nan: True 
-      ts_avg_window: 'h' 
-      set_axis: True 
-
-  plot_grp1_hcho_tropo:
-    type: 'timeseries'
-    fig_kwargs: {figsize: [12, 6]}
-    default_plot_kwargs: {linewidth: 2.0, markersize: 10.}
-    text_kwargs: {fontsize: 18.}
-    domain_type: ["auto-region:box"]
-    domain_name: ["SE_US"]
-    domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
-    data: ['tropomi_l2_hcho_cam-chem-se']
-    data_proc:
-      rem_obs_nan: True 
-      ts_avg_window: 'h' 
-      set_axis: True 
-      
-  plot_grp1_co_tropo:
-    type: 'timeseries'
-    fig_kwargs: {figsize: [12, 6]}
-    default_plot_kwargs: {linewidth: 2.0, markersize: 10.}
-    text_kwargs: {fontsize: 18.}
-    domain_type: ["auto-region:box"]
-    domain_name: ["SE_US"]
-    domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
-    data: ['tropomi_l2_co_cam-chem-se']
-    data_proc:
-      rem_obs_nan: True 
-      ts_avg_window: 'h' 
-      set_axis: True 
-
-  plot_grp1_hcho_tempo_obs:
-    type: 'timeseries'
-    fig_kwargs: {figsize: [12, 6]}
-    default_plot_kwargs: {linewidth: 2.0, markersize: 10.}
-    text_kwargs: {fontsize: 18.}
-    domain_type: ["auto-region:box"]
-    domain_name: ["SE_US"]
-    domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
-    data: ['tempo_l2_hcho_cam-chem-se_obsgrid']
-    data_proc: {rem_obs_nan: True, ts_avg_window: 'h', set_axis: True}
-
-  plot_grp1_no2_tempo_obs:
-    type: 'timeseries'
-    fig_kwargs: {figsize: [12, 6]}
-    default_plot_kwargs: {linewidth: 2.0, markersize: 10.}
-    text_kwargs: {fontsize: 18.}
-    domain_type: ["auto-region:box"]
-    domain_name: ["SE_US"]
-    domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
-    data: ['tempo_l2_no2_cam-chem-se_obsgrid']
-    data_proc: {rem_obs_nan: True, ts_avg_window: 'h', set_axis: True}
-
-  plot_grp1_no2_tropo_obs:
-    type: 'timeseries'
-    fig_kwargs: {figsize: [12, 6]}
-    default_plot_kwargs: {linewidth: 2.0, markersize: 10.}
-    text_kwargs: {fontsize: 18.}
-    domain_type: ["auto-region:box"]
-    domain_name: ["SE_US"]
-    domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
-    data: ['tropomi_l2_no2_cam-chem-se_obsgrid']
-    data_proc: {rem_obs_nan: True, ts_avg_window: 'h', set_axis: True}
-
-  plot_grp1_hcho_tropo_obs:
-    type: 'timeseries'
-    fig_kwargs: {figsize: [12, 6]}
-    default_plot_kwargs: {linewidth: 2.0, markersize: 10.}
-    text_kwargs: {fontsize: 18.}
-    domain_type: ["auto-region:box"]
-    domain_name: ["SE_US"]
-    domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
-    data: ['tropomi_l2_hcho_cam-chem-se_obsgrid']
-    data_proc: {rem_obs_nan: True, ts_avg_window: 'h', set_axis: True}
-
-  plot_grp1_co_tropo_obs:
-    type: 'timeseries'
-    fig_kwargs: {figsize: [12, 6]}
-    default_plot_kwargs: {linewidth: 2.0, markersize: 10.}
-    text_kwargs: {fontsize: 18.}
-    domain_type: ["auto-region:box"]
-    domain_name: ["SE_US"]
-    domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
-    data: ['tropomi_l2_co_cam-chem-se_obsgrid']
-    data_proc: {rem_obs_nan: True, ts_avg_window: 'h', set_axis: True}
-
-  plot_grp1b_hcho_tempo_series:
-    type: 'timeseries'
-    fig_kwargs: {figsize: [12, 6]}
-    default_plot_kwargs: {linewidth: 2.0, markersize: 10.}
-    text_kwargs: {fontsize: 18.}
-    domain_type: ["all"]
-    domain_name: ["CONUS"]
-    data: ['tempo_l2_hcho_cam-chem-se_series']
-    data_proc: {rem_obs_nan: True, ts_avg_window: 'h', set_axis: True}
-
-  plot_grp1b_no2_tempo_series:
-    type: 'timeseries'
-    fig_kwargs: {figsize: [12, 6]}
-    default_plot_kwargs: {linewidth: 2.0, markersize: 10.}
-    text_kwargs: {fontsize: 18.}
-    domain_type: ["all"]
-    domain_name: ["CONUS"]
-    data: ['tempo_l2_no2_cam-chem-se_series']
-    data_proc: {rem_obs_nan: True, ts_avg_window: 'h', set_axis: True}
-
-  plot_grp1b_no2_tropo_series:
-    type: 'timeseries'
-    fig_kwargs: {figsize: [12, 6]}
-    default_plot_kwargs: {linewidth: 2.0, markersize: 10.}
-    text_kwargs: {fontsize: 18.}
-    domain_type: ["all"]
-    domain_name: ["CONUS"]
-    data: ['tropomi_l2_no2_cam-chem-se_series']
-    data_proc: {rem_obs_nan: True, ts_avg_window: 'h', set_axis: True}
-
-  plot_grp1b_hcho_tropo_series:
-    type: 'timeseries'
-    fig_kwargs: {figsize: [12, 6]}
-    default_plot_kwargs: {linewidth: 2.0, markersize: 10.}
-    text_kwargs: {fontsize: 18.}
-    domain_type: ["all"]
-    domain_name: ["CONUS"]
-    data: ['tropomi_l2_hcho_cam-chem-se_series']
-    data_proc: {rem_obs_nan: True, ts_avg_window: 'h', set_axis: True}
-
-  plot_grp1b_co_tropo_series:
-    type: 'timeseries'
-    fig_kwargs: {figsize: [12, 6]}
-    default_plot_kwargs: {linewidth: 2.0, markersize: 10.}
-    text_kwargs: {fontsize: 18.}
-    domain_type: ["all"]
-    domain_name: ["CONUS"]
-    data: ['tropomi_l2_co_cam-chem-se_series']
-    data_proc: {rem_obs_nan: True, ts_avg_window: 'h', set_axis: True}
-    
-  plot_grp2_hcho:
-    type: 'gridded_spatial_bias'
-    fig_kwargs: {states: true, counties: false}
-    text_kwargs: {fontsize: 16}
-    
-    domain_type: ["auto-region:box"]
-    domain_name: ["SE_US"]
-    domain_info:
-      SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}
-    
-    data: ['tempo_l2_hcho_cam-chem-se','tropomi_l2_hcho_cam-chem-se']
-    data_proc: 
-      set_axis: true
-      #vdiff: 1.0e+16 
-
-  plot_grp2_no2:
-    type: 'gridded_spatial_bias'
-    fig_kwargs: {states: true, counties: false}
-    text_kwargs: {fontsize: 16}
-    
-    domain_type: ["auto-region:box"]
-    domain_name: ["SE_US"]
-    domain_info:
-      SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}
-    
-    data: ['tempo_l2_no2_cam-chem-se', 'tropomi_l2_no2_cam-chem-se']
-    data_proc: 
-      set_axis: true
-      #vdiff: 5.0e+15
-
-  plot_grp2_co:
-    type: 'gridded_spatial_bias'
-    fig_kwargs: {states: true, counties: false}
-    text_kwargs: {fontsize: 16}
-    
-    domain_type: ["auto-region:box"]
-    domain_name: ["SE_US"]
-    domain_info:
-      SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}
-    
-    data: ['tropomi_l2_co_cam-chem-se']
-    data_proc: 
-      set_axis: true
-      #vdiff: 1.0e+18
-
-  plot_grp2_hcho_obs:
-    type: 'gridded_spatial_bias'
-    fig_kwargs: {states: true, counties: false}
-    text_kwargs: {fontsize: 16}
-    domain_type: ["auto-region:box"]
-    domain_name: ["SE_US"]
-    domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
-    data: ['tempo_l2_hcho_cam-chem-se_obsgrid', 'tropomi_l2_hcho_cam-chem-se_obsgrid']
-    data_proc: {set_axis: true}
-
-  plot_grp2_no2_obs:
-    type: 'gridded_spatial_bias'
-    fig_kwargs: {states: true, counties: false}
-    text_kwargs: {fontsize: 16}
-    domain_type: ["auto-region:box"]
-    domain_name: ["SE_US"]
-    domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
-    data: ['tempo_l2_no2_cam-chem-se_obsgrid', 'tropomi_l2_no2_cam-chem-se_obsgrid']
-    data_proc: {set_axis: true}
-
-  plot_grp2_co_obs:
-    type: 'gridded_spatial_bias'
-    fig_kwargs: {states: true, counties: false}
-    text_kwargs: {fontsize: 16}
-    domain_type: ["auto-region:box"]
-    domain_name: ["SE_US"]
-    domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
-    data: ['tropomi_l2_co_cam-chem-se_obsgrid']
-    data_proc: {set_axis: true}
-    
-  # plot_grp3:
-  #   type: 'spatial_dist'
-  #   fig_kwargs: {states: true, counties: false}
-  #   text_kwargs: {fontsize: 16}
-    
-  #   domain_type: ["auto-region:box"]
-  #   domain_name: ["SE_US"]
-  #   domain_info:
-  #     SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}
-
-  #   data: ['tempo_l2_hcho_cam-chem-se', 'tempo_l2_no2_cam-chem-se', 'tropomi_l2_no2_cam-chem-se', 'tropomi_l2_hcho_cam-chem-se', 'tropomi_l2_co_cam-chem-se']
-  #   data_proc:
-  #     set_axis: True
-
-  # plot_grp3_obs:
-  #   type: 'spatial_dist'
-  #   fig_kwargs: {states: true, counties: false}
-  #   text_kwargs: {fontsize: 16}
-  #   domain_type: ["auto-region:box"]
-  #   domain_name: ["SE_US"]
-  #   domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
-  #   data: ['tempo_l2_hcho_cam-chem-se_obsgrid', 'tempo_l2_no2_cam-chem-se_obsgrid',
-  #          'tropomi_l2_no2_cam-chem-se_obsgrid', 'tropomi_l2_hcho_cam-chem-se_obsgrid',
-  #          'tropomi_l2_co_cam-chem-se_obsgrid']
-  #   data_proc: {set_axis: True}
-    
-  plot_grp4_hcho_tempo:
-    type: "boxplot"
-    fig_kwargs: {figsize: [8, 6]}
-    text_kwargs: {fontsize: 20.}
-    domain_type: ["auto-region:box"]
-    domain_name: ["SE_US"]
-    domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
-    data: ['tempo_l2_hcho_cam-chem-se']
-    data_proc: {rem_obs_nan: True, set_axis: True }
-
-  plot_grp4_hcho_tropo:
-    type: "boxplot"
-    fig_kwargs: {figsize: [8, 6]}
-    text_kwargs: {fontsize: 20.}
-    domain_type: ["auto-region:box"]
-    domain_name: ["SE_US"]
-    domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
-    data: ['tropomi_l2_hcho_cam-chem-se']
-    data_proc: {rem_obs_nan: True, set_axis: True }
-    
-  plot_grp4_no2_tempo:
-    type: "boxplot"
-    fig_kwargs: {figsize: [8, 6]}
-    text_kwargs: {fontsize: 20.}
-    domain_type: ["auto-region:box"]
-    domain_name: ["SE_US"]
-    domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
-    data: ['tempo_l2_no2_cam-chem-se']
-    data_proc: {rem_obs_nan: True, set_axis: True }
-
-  plot_grp4_no2_tropo:
-    type: "boxplot"
-    fig_kwargs: {figsize: [8, 6]}
-    text_kwargs: {fontsize: 20.}
-    domain_type: ["auto-region:box"]
-    domain_name: ["SE_US"]
-    domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
-    data: ['tropomi_l2_no2_cam-chem-se']
-    data_proc: {rem_obs_nan: True, set_axis: True }
-    
-  plot_grp4_co:
-    type: "boxplot"
-    fig_kwargs: {figsize: [8, 6]}
-    text_kwargs: {fontsize: 20.}
-    domain_type: ["auto-region:box"]
-    domain_name: ["SE_US"]
-    domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
-    data: ['tropomi_l2_co_cam-chem-se']
-    data_proc: {rem_obs_nan: True, set_axis: True }
-
-  # plot_grp4_hcho_tempo_obs:
-  #   type: "boxplot"
-  #   fig_kwargs: {figsize: [8, 6]}
-  #   text_kwargs: {fontsize: 20.}
-  #   domain_type: ["auto-region:box"]
-  #   domain_name: ["SE_US"]
-  #   domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
-  #   data: ['tempo_l2_hcho_cam-chem-se_obsgrid']
-  #   data_proc: {rem_obs_nan: True, set_axis: True}
-
-  # plot_grp4_hcho_tropo_obs:
-  #   type: "boxplot"
-  #   fig_kwargs: {figsize: [8, 6]}
-  #   text_kwargs: {fontsize: 20.}
-  #   domain_type: ["auto-region:box"]
-  #   domain_name: ["SE_US"]
-  #   domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
-  #   data: ['tropomi_l2_hcho_cam-chem-se_obsgrid']
-  #   data_proc: {rem_obs_nan: True, set_axis: True}
-
-  # plot_grp4_no2_tempo_obs:
-  #   type: "boxplot"
-  #   fig_kwargs: {figsize: [8, 6]}
-  #   text_kwargs: {fontsize: 20.}
-  #   domain_type: ["auto-region:box"]
-  #   domain_name: ["SE_US"]
-  #   domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
-  #   data: ['tempo_l2_no2_cam-chem-se_obsgrid']
-  #   data_proc: {rem_obs_nan: True, set_axis: True}
-
-  # plot_grp4_no2_tropo_obs:
-  #   type: "boxplot"
-  #   fig_kwargs: {figsize: [8, 6]}
-  #   text_kwargs: {fontsize: 20.}
-  #   domain_type: ["auto-region:box"]
-  #   domain_name: ["SE_US"]
-  #   domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
-  #   data: ['tropomi_l2_no2_cam-chem-se_obsgrid']
-  #   data_proc: {rem_obs_nan: True, set_axis: True}
-
-  # plot_grp4_co_obs:
-  #   type: "boxplot"
-  #   fig_kwargs: {figsize: [8, 6]}
-  #   text_kwargs: {fontsize: 20.}
-  #   domain_type: ["auto-region:box"]
-  #   domain_name: ["SE_US"]
-  #   domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
-  #   data: ['tropomi_l2_co_cam-chem-se_obsgrid']
-  #   data_proc: {rem_obs_nan: True, set_axis: True}
-    
-  plot_grp5:
-    type: 'spatial_overlay'
-    fig_kwargs: {states: true, counties: false, figsize: [12, 8]}
-    text_kwargs: {fontsize: 16}
-    domain_type: ["auto-region:box"]
-    domain_name: ["SE_US"]
-    domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
-    data: ['tempo_l2_hcho_cam-chem-se', 'tempo_l2_no2_cam-chem-se', 'tropomi_l2_no2_cam-chem-se', 
-           'tropomi_l2_hcho_cam-chem-se', 'tropomi_l2_co_cam-chem-se']
-    data_proc: {set_axis: True, rem_obs_nan: True}
-
-  plot_grp5_obs:
-    type: 'spatial_overlay'
-    fig_kwargs: {states: true, counties: false, figsize: [12, 8]}
-    text_kwargs: {fontsize: 16}
-    domain_type: ["auto-region:box"]
-    domain_name: ["SE_US"]
-    domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
-    data: ['tempo_l2_hcho_cam-chem-se_obsgrid', 'tempo_l2_no2_cam-chem-se_obsgrid',
-           'tropomi_l2_no2_cam-chem-se_obsgrid', 'tropomi_l2_hcho_cam-chem-se_obsgrid',
-           'tropomi_l2_co_cam-chem-se_obsgrid']
-    data_proc: {set_axis: True, rem_obs_nan: True}
-    
-stats:
-  stat_list: ["MB", "MdnB", "R2", "RMSE"]
-  round_output: 2
-  output_table: False
-  
-  domain_type: ["auto-region:box"]
-  domain_name: ["SE_US"]
-  domain_info:
-    SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}
-      
-  data: ['tempo_l2_hcho_cam-chem-se', 'tempo_l2_no2_cam-chem-se', 'tropomi_l2_no2_cam-chem-se', 
-  'tropomi_l2_hcho_cam-chem-se', 'tropomi_l2_co_cam-chem-se',
-  
-  'tempo_l2_hcho_cam-chem-se_obsgrid', 'tempo_l2_no2_cam-chem-se_obsgrid',
-           'tropomi_l2_no2_cam-chem-se_obsgrid', 'tropomi_l2_hcho_cam-chem-se_obsgrid',
-           'tropomi_l2_co_cam-chem-se_obsgrid',
-           
-           'tempo_l2_hcho_cam-chem-se_series',
-           'tempo_l2_no2_cam-chem-se_series',
-           'tropomi_l2_no2_cam-chem-se_series',
-           'tropomi_l2_hcho_cam-chem-se_series',
-           'tropomi_l2_co_cam-chem-se_series'
-]

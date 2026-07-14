@@ -3,21 +3,54 @@ pair ONE day of TEMPO L2 HCHO vs CESM-SE. Driven by env YMD
 """
 
 import os, glob, copy, time
-from datetime import datetime
+from datetime import datetime, timedelta
 import yaml
 from melodies_monet import driver
 
 BASE = ("/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/"
         "unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/control_tempo_l2_hcho_cesm_se.yaml")
 
-OUTDIR = ("/glade/work/lcthompson/mm_output/nonbiog_refera5_dust")
+OUTROOT = "/glade/work/lcthompson/mm_output"
+_NE0 = "/glade/campaign/acom/MUSICA/grids/ne0CONUSne30x8/ne0CONUS_ne30x8_np4_SCRIP.nc"
 
+# per-emissions-run model source + mesh + paired dir (mirrors pair_tempo_native.py
+# and runs.yaml)
+RUNS = {
+    "nonbiog": dict(
+        model_dir="/glade/campaign/acom/acom-da/conus_outputs/"
+                  "f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.ERA5_ref_dust_M1.1.002/H1",
+        model_stem="f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.ERA5_ref_dust_M1.1.002.cam.h1",
+        scrip=_NE0,
+        paired_dir=f"{OUTROOT}/nonbiog_refera5_dust"),
+    "biog": dict(
+        model_dir="/glade/campaign/acom/acom-da/conus_outputs/"
+                  "f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.biog_ERA5_ref_dust_M1.1.001/H1",
+        model_stem="f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.biog_ERA5_ref_dust_M1.1.001.cam.h1",
+        scrip=_NE0,
+        paired_dir=f"{OUTROOT}/biog_refera5_dust"),
+    "grapes": dict(
+        model_dir="/glade/campaign/acom/acom-da/conus_outputs/"
+                  "f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.nox_grapes.001/H1",
+        model_stem="f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.nox_grapes.001.cam.h1",
+        scrip=_NE0,
+        paired_dir=f"{OUTROOT}/grapes"),
+    "mxcat": dict(
+        model_dir="/glade/campaign/acom/acom-weather/jjacdan/SCENICS.HAMAQ/"
+                  "f.e3beta01.FCts2nudged.MXCATL_ne30x16_cams_mosaic_v1.1_final.03",
+        model_stem="f.e3beta01.FCts2nudged.MXCATL_ne30x16_cams_mosaic_v1.1_final.03.cam.h3i",
+        scrip="/glade/work/jjacdan/ne0np4.MXC.ATL.ne30x16/grids/MXC.ATL_ne30x16_np4_SCRIP.nc",
+        paired_dir=f"{OUTROOT}/mxcat"),
+}
+
+RUN = os.environ.get("RUN", "nonbiog").strip()
+if RUN not in RUNS:
+    raise SystemExit(f"RUN={RUN!r} not in {sorted(RUNS)}")
+_R = RUNS[RUN]
+
+OUTDIR = _R["paired_dir"]
 YAMLDIR = OUTDIR + "/hcho_yaml"
-
-MODEL_DIR = ("/glade/campaign/acom/acom-da/conus_outputs/"
-             "f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.ERA5_ref_dust_M1.1.002/H1")
-
-MODEL_STEM = "f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.ERA5_ref_dust_M1.1.002.cam.h1"
+MODEL_DIR = _R["model_dir"]
+MODEL_STEM = _R["model_stem"]
 
 OBS_SOURCES = {
     
@@ -43,12 +76,19 @@ os.makedirs(YAMLDIR, exist_ok=True)
 
 def main():
     ymd = os.environ["YMD"]
-    iso = datetime.strptime(ymd, "%Y%m%d").strftime("%Y-%m-%d")
+    d0 = datetime.strptime(ymd, "%Y%m%d")
+    iso = d0.strftime("%Y-%m-%d")
     t0 = time.time()
-    mfiles = sorted(glob.glob(f"{MODEL_DIR}/{MODEL_STEM}.{iso}-*.nc"))
-    if not mfiles:
+
+    # Require the target day's model file (skip logic keys off THIS day only).
+    if not glob.glob(f"{MODEL_DIR}/{MODEL_STEM}.{iso}-*.nc"):
         print(f"SKIP {ymd}: no model H1 file", flush=True); return
 
+    # cam h1 files stamped at end of ouytput. FIlename carries the first sample time. 
+    # the model steps that line up with a TEMPO/TROPOMI overpass get regridded   
+    days = [(d0 + timedelta(days=k)).strftime("%Y-%m-%d") for k in (-1, 0, 1)]
+    mfiles = sorted(f for day in days
+                    for f in glob.glob(f"{MODEL_DIR}/{MODEL_STEM}.{day}-*.nc")) 
     cd = copy.deepcopy(yaml.safe_load(open(BASE)))
     cd["analysis"]["start_time"] = iso
     cd["analysis"]["end_time"] = f"{iso} 23:59:00"
@@ -56,6 +96,7 @@ def main():
         cd["analysis"][k] = OUTDIR
     cd["analysis"]["save"]["paired"]["prefix"] = ymd
     cd["model"]["cam-chem-se"]["files"] = mfiles
+    cd["model"]["cam-chem-se"]["scrip_file"] = _R["scrip"]
 
     # break job up 
     _grp = os.environ.get("OBS_GROUP", "").strip()

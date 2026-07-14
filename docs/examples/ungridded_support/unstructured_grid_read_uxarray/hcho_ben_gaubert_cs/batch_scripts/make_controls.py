@@ -87,41 +87,12 @@ def render(master, name, spec, common=None):
 
     mod = next(iter(cd["model"].values()))
 
-    mod = next(iter(cd["model"].values()))
     mod["files"] = spec["model_files"]
     mod["scrip_file"] = spec["scrip_file"]
 
     # instrument / target scoping 
     inst = spec.get("instrument")
     targets = spec.get("targets")
-
-    def _label_ok(label):
-        if inst and not label.startswith(f"{inst}_l2"):
-            return False
-        if targets is not None:
-            tgt = ("obsgrid" if label.endswith("_obsgrid")
-                   else "series" if label.endswith("_series") else "model")
-            if tgt not in targets:
-                return False
-        return True
-
-    if inst or targets is not None:
-        an["read"]["paired"]["filenames"] = {
-            lbl: v for lbl, v in fns.items() if _label_ok(lbl)}
-        _plots = cd.get("plots", {})
-        for gname in list(_plots):
-            g = _plots[gname]
-            g["data"] = [d for d in (g.get("data") or []) if _label_ok(d)]
-            if not g["data"]:
-                del _plots[gname]        # nothing left to plot for this run
-        if isinstance(cd.get("stats"), dict):
-            cd["stats"]["data"] = [d for d in (cd["stats"].get("data") or [])
-                                   if _label_ok(d)]
-            if not cd["stats"]["data"]:
-                cd.pop("stats", None)
-        print(f"  [{name}] scoped to instrument={inst!r} targets={targets!r}: "
-              f"{len(an['read']['paired']['filenames'])} labels, "
-              f"{len(cd.get('plots', {}))} plot groups")
 
     def _label_ok(label):
         if inst and not label.startswith(f"{inst}_l2"):
@@ -297,6 +268,21 @@ def main():
     for name in wanted:
         render(master, name, cfg["runs"][name], common=common)
 
+    # surface controls
+    sfc = cfg.get("sfc")
+    if sfc and not args:
+        sfc_master = yaml.safe_load(open(HERE / sfc.get("master", "control_sfc_master.yaml")))
+        for run, sspec in sfc.get("runs", {}).items():
+            base = cfg["runs"][run]
+            spec = {
+                "plot_dir": sspec["plot_dir"],
+                "paired_dir": base["paired_dir"],
+                "paired_prefix": sspec["prefix"],
+                "model_files": sspec.get("model_files", base["model_files"]),
+                "scrip_file": base["scrip_file"],
+            }
+            render(sfc_master, f"{run}_sfc", spec, common=common)
+            
     # native city products -- only on a full run (no explicit run args)
     ncfg = cfg.get("native")
     if ncfg and not args:

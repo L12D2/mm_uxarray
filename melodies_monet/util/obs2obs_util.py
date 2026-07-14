@@ -2,6 +2,8 @@
 Need a way to compare different obs simultaneously rather than one at a time. Because of how involved this may become, i wrote a septerate 
 obs2obs util folder to keep any issues with it seperate (as much as possible) from the rest of the MM 
 
+Goal: Use this file to put diverse obs in mm plotting compliant format using the saved paired dfs. As many plots as possible should route throug
+normal satplots or sfcplots to reduce upkeep
 
 obs2obs: compare multiple obs AND multiple models simultaneously.
 
@@ -203,44 +205,49 @@ def _extract(spec, paired, time_match, max_points=2_000_000):
 
 # MM plotting 
 
-def _ts_to_dataset(ts):
-    """Aligned pandas Series: 1-var Dataset xrplots.make_timeseries accepts."""
+def _series_dataset(s):
+    """1-var Dataset ('v') with a time dim for make_timeseries: prefer the
+    masked (time, spatial) DataArray from _extract; fall back to the reduced
+    domain-mean timeseries for point pairs that produced no 'da'."""
+    da = s.get("da")
+    if da is not None and "time" in getattr(da, "dims", ()):
+        return da.to_dataset(name="v")
+    ts = s.get("ts")
+    if ts is None or ts.empty:
+        return None
     idx = pd.DatetimeIndex(ts.index, name="time")
-    da = xr.DataArray(ts.values, dims=("time",), coords={"time": idx}, name="v")
-    return da.to_dataset()
-
+    return xr.DataArray(ts.to_numpy(dtype=float), dims=("time",),
+                        coords={"time": idx}, name="v").to_dataset()
 
 def multi_timeseries(series, outname, ylabel=None, title=None, avg_window=None,
-                     fig_dict=None, text_dict=None):
+                     vmin=None, vmax=None, set_axis=False, fig_dict=None,
+                     text_dict=None):
     """Overlay every series on one axis via xrplots.make_timeseries."""
 
     tk = {"fontsize": 16, **(text_dict or {})}
     fig, ax = plt.subplots(figsize=(fig_dict or {}).get("figsize", (12, 6)))
-    lo, hi, drawn = np.inf, -np.inf, 0
-    
+    drawn = 0
     for s in series:
-        ts = s["ts"]
-        if avg_window and not ts.empty:
-            ts = ts.resample(avg_window).mean()
-        ts = ts.dropna()
-        if ts.notna().sum() == 0:
-            print(f"obs2obs: no timeseries for {s['name']}; skipping.", flush=True)
+        dset = _series_dataset(s)
+        if dset is None:
+            print(f"obs2obs: no timeseries for {s['name']}; skipping.",
+                  flush=True)
             continue
-        ax.plot(ts.index, ts.values, marker="*", linewidth=2.0,
-                color=s["color"], label=s["name"])
-        lo = min(lo, float(np.nanmin(ts.values)))
-        hi = max(hi, float(np.nanmax(ts.values)))
+        # always pass our ax (overlay branch) and a non-None plot_dict
+        xrplots.make_timeseries(
+            dset, varname="v", label=s["name"], ax=ax, avg_window=avg_window,
+            ylabel=ylabel, vmin=vmin, vmax=vmax,
+            plot_dict=({"color": s["color"]} if s["color"] else {}),
+            text_dict=text_dict, debug=False)
         drawn += 1
     if not drawn:
         plt.close(fig)
         return
-    pad = 0.05 * (hi - lo or 1.0)
-    ax.set_ylim(lo - pad, hi + pad)           # span all series, not just obs
-    if ylabel:
-        ax.set_ylabel(ylabel, fontweight="bold", fontsize=tk["fontsize"])
-    ax.set_xlabel("time", fontweight="bold", fontsize=tk["fontsize"])
-    
-    ax.legend(fontsize=tk["fontsize"] * 0.7)
+    if set_axis:                       # keep the pinned vmin/vmax limits
+        ax.set_ylim(vmin, vmax)
+    else:                              # span every series (obs + all models)
+        ax.relim()
+        ax.autoscale(enable=True, axis="y")
     if title:
         ax.set_title(title, fontweight="bold", fontsize=tk["fontsize"])
     plt.tight_layout()
@@ -475,18 +482,16 @@ def _series_points(spec, paired, tm, max_points=2_000_000):
         df = df.iloc[:: int(np.ceil(len(df) / max_points))]
     return df.reset_index(drop=True)
 
-def taylor(specs, paired, tm, outname, title=None, text_dict=None,
-           fig_dict=None, max_points=2_000_000):
+def taylor(specs, paired, tm, outname, title=None, ylabel=None, text_dict=None,
+           fig_dict=None, ty_scale=1.6, max_points=2_000_000):
     """Normalized Taylor diagram: one point per platform (surface/TEMPO/
     TROPOMI). Each platform's std is normalized by its OWN obs std, so the
     reference std is 1 for all and different-unit platforms share one plot.
     """
-    from monet.plots.taylordiagram import TaylorDiagram as td
-    tk = {"fontsize": 14, **(text_dict or {})}
     _markers = ["o", "s", "^", "D", "v", "P", "*"]
-    
-    fig = plt.figure(figsize=(fig_dict or {}).get("figsize", (9, 8)))
+    tk = {"fontsize": 14, **(text_dict or {})}
     dia, drawn = None, 0
+    
     for i, spec in enumerate(specs):
         try:
             df = _series_points(spec, paired, tm, max_points=max_points)
@@ -498,26 +503,30 @@ def taylor(specs, paired, tm, outname, title=None, text_dict=None,
             print(f"obs2obs taylor: {spec.get('name', spec['label'])}: "
                   "too few points / zero variance; skipping.", flush=True)
             continue
-        cc = float(np.corrcoef(o, m)[0, 1])
-        nstd = float(m.std() / o.std())          # model std / obs std
-        if dia is None:
-            dia = td(1.0, scale=1.6, fig=fig, label="obs (ref)")
-        dia.add_sample(nstd, cc, marker=_markers[i % len(_markers)], ms=11,
-                       ls="", label=spec.get("name", spec["label"]),
-                       color=spec.get("color"))
+            
+        # 1-D record Dataset; make_taylor stacks all dims + dropna internally.
+        dset = xr.Dataset({"obs": ("rec", o), "mod": ("rec", m)})
+        dia = xrplots.make_taylor(
+            dset, varname_o="obs", varname_m="mod",
+            label_o="obs (ref)", label_m=spec.get("name", spec["label"]),
+            dia=dia, normalize=True, ty_scale=ty_scale, ylabel=ylabel or "",
+            plot_dict={"marker": _markers[i % len(_markers)], "ms": 11,
+                       "ls": "", "color": spec.get("color")},
+            fig_dict=fig_dict, text_dict=text_dict, debug=False)
         drawn += 1
-    if not drawn:
-        plt.close(fig)
+    if not drawn or dia is None:
+        plt.close("all")
         return
-    fig.legend(loc="upper right", fontsize=tk["fontsize"] * 0.8)
+
     if title:
-        fig.suptitle(title, fontweight="bold", fontsize=tk["fontsize"])
+        plt.title(title, fontweight="bold", fontsize=tk["fontsize"])
     _save(outname + ".png")
-    plt.close(fig)
+    plt.close(all)
     print(f"obs2obs: wrote {outname}.png (taylor, {drawn} platforms)", flush=True)
 
 def diurnal(specs, paired, tm, outname, ylabel=None, title=None,
-            normalize=False, text_dict=None, fig_dict=None,
+            normalize=False, range_shading="IQR", time_offset=0,
+            vmin=None, vmax=None, text_dict=None, fig_dict=None,
             max_points=2_000_000):
     """Mean value vs local solar hour, obs and model, one line pair per
     series. ``normalize: true`` divides each curve by its own 24-h mean so
@@ -525,44 +534,34 @@ def diurnal(specs, paired, tm, outname, ylabel=None, title=None,
     diurnal SHAPES. The window in ``tm`` is ignored here , so pass time_match: none/daily at the group.
     """
     tk = {"fontsize": 14, **(text_dict or {})}
-    tm_full = "none" if isinstance(tm, dict) else tm    # never window a diurnal
     fig, ax = plt.subplots(figsize=(fig_dict or {}).get("figsize", (10, 6)))
     drawn = 0
     for spec in specs:
         try:
-            df = _series_points(spec, paired, tm_full, max_points=max_points)
-        except KeyError as e:
-            print(f"obs2obs diurnal: {e}; skipping.", flush=True)
+            e = _extract(spec, paired, "none", max_points=max_points)  # no window
+        except KeyError as ex:
+            print(f"obs2obs diurnal: {ex}; skipping.", flush=True)
             continue
-        if "local_hour" not in df or df.empty:
+        da = e.get("da")
+        if da is None or "time" not in getattr(da, "dims", ()):
+            print(f"obs2obs diurnal: {e['name']} has no time dimension; "
+                  "skipping.", flush=True)
             continue
-        hb = df["local_hour"].round().astype(int) % 24
-
-        c = spec.get("color")
-        nm = spec.get("name", spec["label"])
-        if "var" in spec and "mod_var" not in spec:      # value mode: one line
-            g = df.groupby(hb)["obs"].mean()
-            if normalize and g.mean():
-                g = g / g.mean()
-            ax.plot(g.index, g.values, "-o", color=c, label=nm)
-        else:                                            # obs + model lines
-            go = df.groupby(hb)["obs"].mean()
-            gm = df.groupby(hb)["mod"].mean()
-            if normalize:
-                go = go / go.mean() if go.mean() else go
-                gm = gm / gm.mean() if gm.mean() else gm
-            ax.plot(go.index, go.values, "-o", color=c, label=f"{nm} obs")
-            ax.plot(gm.index, gm.values, "--s", color=c, alpha=0.7,
-                    label=f"{nm} model")
+        if normalize:
+            mn = float(da.mean(skipna=True))
+            if mn:
+                da = da / mn
+        var = spec.get("var", "value")
+        xrplots.make_diurnal_cycle(
+            da.to_dataset(name=var), var, ax=ax, time_offset=time_offset,
+            range_shading=range_shading, label=e["name"],
+            plot_dict=({"color": e["color"]} if e["color"] else None),
+            ylabel=ylabel, vmin=vmin, vmax=vmax,
+            text_dict=text_dict, fig_dict=fig_dict, debug=False)
         drawn += 1
     if not drawn:
         plt.close(fig)
         return
-    ax.set_xlabel("local solar hour", fontweight="bold", fontsize=tk["fontsize"])
-    ax.set_ylabel(ylabel or ("normalized (/24h mean)" if normalize else "value"),
-                  fontweight="bold", fontsize=tk["fontsize"])
-    ax.set_xticks(range(0, 24, 3))
-    ax.legend(fontsize=tk["fontsize"] * 0.7, ncol=2)
     if title:
         ax.set_title(title, fontweight="bold", fontsize=tk["fontsize"])
     plt.tight_layout()
@@ -570,142 +569,212 @@ def diurnal(specs, paired, tm, outname, ylabel=None, title=None,
     plt.close(fig)
     print(f"obs2obs: wrote {outname}.png (diurnal, {drawn} series)", flush=True)
     
-def xplatform_scatter(grp, paired, tm, outname, text_dict=None, fig_dict=None,
-                      max_points=2_000_000):
-    """Surface<->column coupling: x = surface conc, y = colocated satellite
-    column, one cloud for OBS and one for MODEL, with best-fit slopes.
+def _coupling_block(block, gbounds=None, gclip=None):
+    
+    """Normalize a surface:/column: config into (obs_spec, [model_specs]).
 
-    Colocation is daily: surface sites are daily-averaged; the satellite
-    column is daily-averaged per cell; each site-day is matched to the
-    nearest column cell that same day (cKDTree). A model that preserves the
-    vertical coupling (mixing height + profile) reproduces the observed
-    surface->column slope; a flatter/steeper model slope does not.
+    Accepts three forms:
+      - {label, obs_var, mod_var}             single run (obs + its one model)
+      - {obs: {...}, models: [{...}, ...]}    explicit obs + N model runs
+      - [obs_entry, model_entry, ...]         list; the FIRST entry is the obs
+    Every returned spec is value-mode (carries 'var'), so _series_points yields
+    the chosen field directly in df['obs']. Group bounds/clip are pushed on.
+    Model runs carry 'name' so surface and column can be matched across blocks.
+    """
+    def _vspec(d, default_name=None):
+        s = dict(d)
+        if "var" not in s:                       # accept obs_var/mod_var too
+            s["var"] = s.get("obs_var") or s.get("mod_var")
+        s.pop("obs_var", None)                   # force value-mode so
+        s.pop("mod_var", None)                   # _series_points uses df['obs']
+        s.setdefault("name", default_name or s.get("label"))
+        return _with_group_defaults(s, gbounds, gclip)
+
+    if isinstance(block, dict) and "obs" in block:            # explicit form
+        obs = _vspec(block["obs"], "obs")
+        mods = [_vspec(m) for m in block.get("models", [])]
+    elif isinstance(block, dict):                             # single-run dict
+        obs = _vspec({"label": block["label"], "var": block["obs_var"]}, "obs")
+        mods = [_vspec({"label": block["label"], "var": block["mod_var"],
+                        "name": block.get("name", "model"),
+                        "color": block.get("color", "purple")})]
+    else:                                                     # list; first=obs
+        obs = _vspec(block[0], "obs")
+        mods = [_vspec(m) for m in block[1:]]
+    return obs, mods
+
+def _colocate_fields(sfc_spec, col_spec, paired, tm, max_points, max_sep):
+    """Daily, nearest-cell colocation of a surface field with a column field.
+    Returns (sfc_vals, col_vals) numpy arrays -- one pair per matched site-day
+    within ``max_sep`` degrees. Uses each spec's value field (df['obs'] in
+    value mode); cKDTree matches each surface site to its nearest column cell.
     """
     from scipy.spatial import cKDTree
-    scfg, ccfg = grp["surface"], grp["column"]
-    for cfg in (scfg, ccfg):
-        if grp.get("bounds") is not None and "bounds" not in cfg:
-            cfg["bounds"] = grp["bounds"]
-        if grp.get("clip") is not None and "clip" not in cfg:
-            cfg["clip"] = grp["clip"]
     try:
-        sdf = _series_points(scfg, paired, tm, max_points=max_points)
-        cdf = _series_points(ccfg, paired, tm, max_points=max_points)
+        sdf = _series_points(sfc_spec, paired, tm, max_points=max_points)
+        cdf = _series_points(col_spec, paired, tm, max_points=max_points)
     except KeyError as e:
-        print(f"obs2obs xplatform_scatter: {e}; skipping.", flush=True)
-        return
-    if sdf.empty or cdf.empty or "longitude" not in cdf:
-        print("obs2obs xplatform_scatter: empty surface or column frame.", flush=True)
-        return
-    
+        print(f"obs2obs coupling: {e}; skipping.", flush=True)
+        return np.array([]), np.array([])
+    if (sdf.empty or cdf.empty or "longitude" not in cdf
+            or "time" not in cdf or "time" not in sdf):
+        return np.array([]), np.array([])
     sdf = sdf.assign(day=sdf.time.dt.floor("D"))
     cdf = cdf.assign(day=cdf.time.dt.floor("D"))
-    # daily mean per surface site (unique lon/lat) and per column cell
-    s_day = (sdf.groupby(["day", "longitude", "latitude"])[["obs", "mod"]]
+    s_day = (sdf.groupby(["day", "longitude", "latitude"])["obs"]
              .mean().reset_index())
-    c_day = (cdf.groupby(["day", "longitude", "latitude"])[["obs", "mod"]]
+    c_day = (cdf.groupby(["day", "longitude", "latitude"])["obs"]
              .mean().reset_index())
-
-    rows = []
+    xs, ys = [], []
     for day, cg in c_day.groupby("day"):
         sg = s_day[s_day.day == day]
         if sg.empty or cg.empty:
             continue
         tree = cKDTree(cg[["longitude", "latitude"]].to_numpy())
         d, idx = tree.query(sg[["longitude", "latitude"]].to_numpy(), k=1)
-        near = cg.iloc[idx]
-        rows.append(pd.DataFrame({
-            "sfc_obs": sg["obs"].to_numpy(), "sfc_mod": sg["mod"].to_numpy(),
-            "col_obs": near["obs"].to_numpy(), "col_mod": near["mod"].to_numpy(),
-            "sep_deg": d}))
-    if not rows:
-        print("obs2obs xplatform_scatter: no colocated site-days.", flush=True)
-        return
-    m = pd.concat(rows, ignore_index=True)
-    m = m[m.sep_deg < grp.get("max_sep_deg", 0.5)]                # drop far matches
-    m = m.replace([np.inf, -np.inf], np.nan).dropna(
-        subset=["sfc_obs", "sfc_mod", "col_obs", "col_mod"])
-    if len(m) < 3:
-        print("obs2obs xplatform_scatter: <3 colocated pairs.", flush=True)
-        return
-        
+        keep = d < max_sep
+        xs.append(sg["obs"].to_numpy()[keep])
+        ys.append(cg["obs"].to_numpy()[idx][keep])
+    if not xs:
+        return np.array([]), np.array([])
+    x, y = np.concatenate(xs), np.concatenate(ys)
+    m = np.isfinite(x) & np.isfinite(y)
+    return x[m], y[m]
+
+def xplatform_scatter(grp, paired, tm, outname, text_dict=None, fig_dict=None,
+                      max_points=2_000_000):
+    """Surface<->column coupling scatter. x = surface conc, y = colocated
+    column. One black cloud for OBS (surface obs vs column obs) plus one cloud
+    per emissions run (surface model vs column model), each with a best-fit
+    slope. A model that preserves the vertical coupling (mixing height +
+    profile) reproduces the observed surface->column slope.
+
+    surface:/column: accept a single {label,obs_var,mod_var} dict (one run) or
+    the multi-run {obs:{...}, models:[...]} / list forms (see _coupling_block);
+    model runs are matched between surface and column by 'name'.
+    """
+    max_sep = float(grp.get("max_sep_deg", 0.5))
+    gbounds, gclip = grp.get("bounds"), grp.get("clip")
+    s_obs, s_mods = _coupling_block(grp["surface"], gbounds, gclip)
+    c_obs, c_mods = _coupling_block(grp["column"], gbounds, gclip)
+
     tk = {"fontsize": 14, **(text_dict or {})}
     fig, ax = plt.subplots(figsize=(fig_dict or {}).get("figsize", (8, 7)))
 
     def _cloud(x, y, color, label):
-        ax.scatter(x, y, s=10, alpha=0.4, color=color, edgecolors="none")
+        if x.size < 3:
+            print(f"obs2obs xplatform_scatter: <3 pairs for {label}; skip.",
+                  flush=True)
+            return 0
+        ax.scatter(x, y, s=10, alpha=0.35, color=color, edgecolors="none")
         sl, ic = np.polyfit(x, y, 1)
         r = np.corrcoef(x, y)[0, 1]
         xs = np.linspace(np.nanmin(x), np.nanmax(x), 50)
         ax.plot(xs, sl * xs + ic, color=color, lw=2,
                 label=f"{label}: slope={sl:.2e}, r={r:.2f}")
-        return sl, r
+        return 1
 
-    _cloud(m.sfc_obs.to_numpy(), m.col_obs.to_numpy(), "black", "observed")
-    _cloud(m.sfc_mod.to_numpy(), m.col_mod.to_numpy(), "purple", "model")
-    ax.set_xlabel(grp.get("xlabel", f"surface {scfg['obs_var']}"),
-                  fontweight="bold", fontsize=tk["fontsize"])
-    ax.set_ylabel(grp.get("ylabel", f"column {ccfg['obs_var']}"),
-                  fontweight="bold", fontsize=tk["fontsize"])
-    ax.legend(fontsize=tk["fontsize"] * 0.75)
-    ax.set_title(grp.get("title", "surface↔column coupling"),
+    drawn = 0
+    xo, yo = _colocate_fields(s_obs, c_obs, paired, tm, max_points, max_sep)
+    drawn += _cloud(xo, yo, s_obs.get("color", "black"),
+                    grp.get("obs_label", "observed"))
+    c_by = {m.get("name"): m for m in c_mods}          # match runs by name
+    for sm in s_mods:
+        cm = c_by.get(sm.get("name"))
+        if cm is None:
+            print(f"obs2obs xplatform_scatter: no column run named "
+                  f"{sm.get('name')!r}; skip.", flush=True)
+            continue
+        x, y = _colocate_fields(sm, cm, paired, tm, max_points, max_sep)
+        drawn += _cloud(x, y, sm.get("color", "purple"), sm.get("name", "model"))
+
+    if not drawn:
+        plt.close(fig)
+        print("obs2obs xplatform_scatter: nothing drawn.", flush=True)
+        return
+    ax.set_xlabel(grp.get("xlabel", "surface"), fontweight="bold",
+                  fontsize=tk["fontsize"])
+    ax.set_ylabel(grp.get("ylabel", "column"), fontweight="bold",
+                  fontsize=tk["fontsize"])
+    ax.legend(fontsize=tk["fontsize"] * 0.7)
+    ax.set_title(grp.get("title", "surface-column coupling"),
                  fontweight="bold", fontsize=tk["fontsize"])
     plt.tight_layout()
     _save(outname + ".png")
     plt.close(fig)
-    print(f"obs2obs: wrote {outname}.png (xplatform_scatter, N={len(m)})", flush=True)
+    print(f"obs2obs: wrote {outname}.png (xplatform_scatter, {drawn} clouds)",
+          flush=True)
 
+def _norm_point_df(obj, var):
+    """[longitude, latitude, var] rows, whether the pair is a pandas DataFrame
+    or an xarray Dataset (netcdf-backed pairs load as the latter)."""
+    if isinstance(obj, xr.Dataset):
+        ds = obj[[var]]
+        for c in ("longitude", "latitude"):
+            if c in obj.coords or c in obj.variables:
+                ds = ds.assign_coords({c: obj[c]})
+        d = ds.to_dataframe().reset_index()
+    else:
+        d = _as_dataframe(obj)
+    return d[["longitude", "latitude", var]].dropna()
+    
 def norm_spatial(grp, paired, tm, outname, text_dict=None, fig_dict=None):
-    """Normalized multiscale map: satellite column time-mean field + surface
-    site time-means, each divided by its domain mean (dimensionless ratio),
-    obs and model side by side on a shared 0-2 scale. Shows whether surface
-    and column hotspots co-locate and whether the model reproduces both.
+    """Normalized multiscale map: column time-mean field + surface site
+    time-means, each divided by its own domain mean (dimensionless ratio) on a
+    shared 0-2 scale. One panel for OBS, then one panel per emissions run
+    (surface/column matched by 'name'). Shows whether surface and column
+    hotspots co-locate and whether each run reproduces both.
+
+    surface:/column: use the same forms as xplatform_scatter (single dict or
+    multi-run {obs, models}/list); see _coupling_block.
     """
-    scfg, ccfg = grp["surface"], grp["column"]
-    cobj = _pair_obj(paired, ccfg["label"])
-    sobj = _pair_obj(paired, scfg["label"])
+    import cartopy.crs as ccrs
+    import cartopy.feature as cfeature
+
     bnds = grp.get("bounds")
     tk = {"fontsize": 14, **(text_dict or {})}
+    s_obs, s_mods = _coupling_block(grp["surface"], bnds, grp.get("clip"))
+    c_obs, c_mods = _coupling_block(grp["column"], bnds, grp.get("clip"))
+    c_by = {m.get("name"): m for m in c_mods}
 
-    def _point_df(obj, var):
-        """[longitude, latitude, var] rows, whether the surface pair is a
-        pandas DataFrame or an xarray Dataset (netcdf-backed pairs load as
-        the latter)."""
-        if isinstance(obj, xr.Dataset):
-            ds = obj[[var]]
-            for c in ("longitude", "latitude"):
-                if c in obj.coords or c in obj.variables:
-                    ds = ds.assign_coords({c: obj[c]})
-            d = ds.to_dataframe().reset_index()
-        else:
-            d = _as_dataframe(obj)
-        return d[["longitude", "latitude", var]].dropna()
-        
-    def _field(var):
-        da = cobj[var]
+    # panel list: obs first, then each model run present in BOTH blocks
+    panels = [("observed", s_obs, c_obs)]
+    for sm in s_mods:
+        cm = c_by.get(sm.get("name"))
+        if cm is not None:
+            panels.append((sm.get("name", "model"), sm, cm))
+
+    def _field(cspec):
+        obj = _pair_obj(paired, cspec["label"])
+        da = obj[cspec["var"]]
         da = da.mean("time", skipna=True) if "time" in da.dims else da
         mean = float(np.nanmean(da.values))
-        return da / mean if mean else da
+        return obj, (da / mean if mean else da)
 
-    def _sites(var):
-        d = _point_df(sobj, var)
+    def _sites(sspec):
+        d = _norm_point_df(_pair_obj(paired, sspec["label"]), sspec["var"])
         if bnds is not None:
             w, e, s, n = bnds
             d = d[(d.longitude >= w) & (d.longitude <= e)
                   & (d.latitude >= s) & (d.latitude <= n)]
-        g = d.groupby(["longitude", "latitude"])[var].mean().reset_index()
-        mean = g[var].mean()
-        g["r"] = g[var] / mean if mean else g[var]
+        g = d.groupby(["longitude", "latitude"])[sspec["var"]].mean().reset_index()
+        mean = g[sspec["var"]].mean()
+        g["r"] = g[sspec["var"]] / mean if mean else g[sspec["var"]]
         return g
-    
-    import cartopy.crs as ccrs
-    import cartopy.feature as cfeature
-    fig, axes = plt.subplots(1, 2, figsize=(fig_dict or {}).get("figsize", (16, 6)),
-                             subplot_kw={"projection": ccrs.PlateCarree()})
-    for ax, (fvar, svar, ttl) in zip(axes, [
-            (ccfg["obs_var"], scfg["obs_var"], "observed"),
-            (ccfg["mod_var"], scfg["mod_var"], "model")]):
-        fld, sit = _field(fvar), _sites(svar)
+
+    n = len(panels)
+    fig, axes = plt.subplots(
+        1, n, figsize=(fig_dict or {}).get("figsize", (8 * n, 6)),
+        subplot_kw={"projection": ccrs.PlateCarree()})
+    axes = np.atleast_1d(axes)
+    pm = None
+    for ax, (ttl, sspec, cspec) in zip(axes, panels):
+        try:
+            cobj, fld = _field(cspec)
+            sit = _sites(sspec)
+        except KeyError as e:
+            print(f"obs2obs norm_spatial: {e}; blank panel {ttl}.", flush=True)
+            continue
         pm = ax.pcolormesh(cobj["longitude"], cobj["latitude"], fld,
                            vmin=0, vmax=2, cmap="RdBu_r", shading="auto",
                            transform=ccrs.PlateCarree())
@@ -717,7 +786,11 @@ def norm_spatial(grp, paired, tm, outname, text_dict=None, fig_dict=None):
         if bnds is not None:
             ax.set_extent(bnds, crs=ccrs.PlateCarree())
         ax.set_title(ttl, fontweight="bold", fontsize=tk["fontsize"])
-    cb = fig.colorbar(pm, ax=axes, orientation="horizontal", shrink=0.6,
+    if pm is None:
+        plt.close(fig)
+        print("obs2obs norm_spatial: nothing drawn.", flush=True)
+        return
+    cb = fig.colorbar(pm, ax=list(axes), orientation="horizontal", shrink=0.6,
                       pad=0.05, extend="both")
     cb.set_label("value / domain mean (column field, surface dots)",
                  fontweight="bold", fontsize=tk["fontsize"])
@@ -725,8 +798,108 @@ def norm_spatial(grp, paired, tm, outname, text_dict=None, fig_dict=None):
         fig.suptitle(grp["title"], fontweight="bold", fontsize=tk["fontsize"])
     _save(outname + ".png")
     plt.close(fig)
-    print(f"obs2obs: wrote {outname}.png (norm_spatial)", flush=True)
+    print(f"obs2obs: wrote {outname}.png (norm_spatial, {n} panels)", flush=True)
 
+def operator_effect(grp, paired, tm, outname, ylabel=None, title=None,
+                    text_dict=None, fig_dict=None, max_points=2_000_000):
+    """Averaging-kernel operator effect, stacked two-panel.
+
+    TOP: the SAME model column seen through each instrument's AK, grouped by
+    emissions run (box color = run, hatch = instrument). Because the model is
+    identical, any spread between the instrument boxes is the operator alone --
+    this is the AK-driven TEMPO-vs-TROPOMI gap made explicit.
+    BOTTOM: the observed column for each instrument (one box each), showing how
+    much the instruments themselves disagree, independent of the model.
+    Panels share the y-axis so operator spread and instrument disagreement are
+    directly comparable.
+
+    Config:
+      instruments: {tempo: {obs_var, mod_var}, tropomi: {obs_var, mod_var}}
+      runs: [{name, color, tempo: <pair label>, tropomi: <pair label>}, ...]
+    """
+    import matplotlib.patches as mpatches
+    instruments = grp["instruments"]
+    runs = grp["runs"]
+    bnds, clip = grp.get("bounds"), grp.get("clip")
+    inst_names = list(instruments)
+    HATCH = ["", "//", "..", "xx", "\\\\"]
+    hatch_of = {ins: HATCH[i % len(HATCH)] for i, ins in enumerate(inst_names)}
+    plot_cap = min(int(max_points), 200_000)
+
+    top, obs = [], {}          # top: (run_name, color, inst, values); obs: inst->vals
+    for run in runs:
+        for ins in inst_names:
+            lbl = run.get(ins)
+            if not lbl:
+                continue
+            spec = {"label": lbl, "obs_var": instruments[ins]["obs_var"],
+                    "mod_var": instruments[ins]["mod_var"],
+                    "bounds": bnds, "clip": clip}
+            try:
+                df = _series_points(spec, paired, tm, max_points=max_points)
+            except KeyError as e:
+                print(f"obs2obs operator_effect: {e}; skip.", flush=True)
+                continue
+            if df.empty:
+                continue
+            top.append((run.get("name", lbl), run.get("color", "gray"), ins,
+                        _subsample(df["mod"].to_numpy(float), plot_cap)))
+            if ins not in obs:
+                obs[ins] = _subsample(df["obs"].to_numpy(float), plot_cap)
+    if not top:
+        print("obs2obs operator_effect: no data.", flush=True)
+        return
+
+    tk = {"fontsize": 13, **(text_dict or {})}
+    fig, (axm, axo) = plt.subplots(
+        2, 1, sharey=True, figsize=(fig_dict or {}).get("figsize", (10, 9)),
+        gridspec_kw={"height_ratios": [3, 1]})
+
+    K = len(inst_names)
+    r_index = {run.get("name"): i for i, run in enumerate(runs)}
+    positions, boxvals, facecolors, hatches = [], [], [], []
+    for (rn, color, ins, vals) in top:
+        r = r_index.get(rn, 0)
+        positions.append(r * (K + 1) + inst_names.index(ins))
+        v = vals[np.isfinite(vals)]
+        boxvals.append(v if v.size else np.array([np.nan]))
+        facecolors.append(color)
+        hatches.append(hatch_of[ins])
+    bp = axm.boxplot(boxvals, positions=positions, widths=0.8,
+                     patch_artist=True, showfliers=False)
+    for patch, fc, ha in zip(bp["boxes"], facecolors, hatches):
+        patch.set_facecolor(fc); patch.set_alpha(0.55); patch.set_hatch(ha)
+    for med in bp["medians"]:
+        med.set_color("k")
+    axm.set_xticks([r * (K + 1) + (K - 1) / 2 for r in range(len(runs))])
+    axm.set_xticklabels([run.get("name", "") for run in runs])
+    axm.set_ylabel(ylabel or "model column", fontweight="bold",
+                   fontsize=tk["fontsize"])
+    axm.set_title(title or grp.get("title",
+                  "operator effect: model column by instrument AK"),
+                  fontweight="bold", fontsize=tk["fontsize"])
+    handles = [mpatches.Patch(facecolor="0.8", hatch=hatch_of[i], label=i)
+               for i in inst_names]
+    axm.legend(handles=handles, title="instrument AK",
+               fontsize=tk["fontsize"] * 0.8)
+
+    present = [i for i in inst_names if i in obs]
+    obp = axo.boxplot([obs[i][np.isfinite(obs[i])] for i in present],
+                      positions=list(range(len(present))), widths=0.6,
+                      patch_artist=True, showfliers=False)
+    for patch, i in zip(obp["boxes"], present):
+        patch.set_facecolor("0.7"); patch.set_hatch(hatch_of[i])
+    axo.set_xticks(range(len(present)))
+    axo.set_xticklabels(present)
+    axo.set_ylabel("obs column", fontweight="bold", fontsize=tk["fontsize"])
+    axo.set_title("observed column by instrument",
+                  fontweight="bold", fontsize=tk["fontsize"] * 0.9)
+
+    plt.tight_layout()
+    _save(outname + ".png")
+    plt.close(fig)
+    print(f"obs2obs: wrote {outname}.png (operator_effect, "
+          f"{len(top)} model boxes)", flush=True)
 
 # run
 
@@ -738,12 +911,50 @@ _PLOTTERS = {"multi_boxplot": multi_boxplot,
 # plot types that take the whole group because they need their own obs/model alignment
 _GROUP_PLOTTERS = {"taylor": taylor, "diurnal": diurnal,
                    "xplatform_scatter": xplatform_scatter,
-                   "norm_spatial": norm_spatial}
+                   "norm_spatial": norm_spatial,
+                   "operator_effect": operator_effect}
+ 
+def _with_group_defaults(spec, gbounds, gclip):
+    """Push group-level bounds/clip onto a series spec unless it sets its own.
+    Used for BOTH the per-series plotters and the group plotters (taylor,
+    diurnal) so a group's ``bounds:`` actually subsets those too."""
+    if gbounds is not None and "bounds" not in spec:
+        spec = {**spec, "bounds": gbounds}
+    if gclip is not None and "clip" not in spec:
+        spec = {**spec, "clip": gclip}
+    return spec
 
-# spatial overlay 
-# spatial bias 
-# 
-
+def _apply_common_mask(series, max_points=2_000_000):
+    """Co-mask the value-mode series so obs and every model compare on IDENTICAL
+    (time, cell) samples: a cell is kept only where EVERY gridded series is
+    finite (obs NaN -> model NaN and vice versa). Rewrites each series' flat/ts/
+    da from the intersected mask. Non-destructive -- operates on the extracted
+    arrays only, never the paired files 
+    
+    Series without a gridded time-varying da are left untouched.
+    """
+    idx_da = [(i, s["da"]) for i, s in enumerate(series)
+              if isinstance(s.get("da"), xr.DataArray) and "time" in s["da"].dims]
+    if len(idx_da) < 2:
+        return series
+    try:
+        aligned = xr.align(*[d for _, d in idx_da], join="inner")
+    except Exception as e:  # noqa: BLE001 -- coords must match to co-mask
+        print(f"obs2obs: common_mask align failed ({e!r}); left unmasked.",
+              flush=True)
+        return series
+    valid = aligned[0].notnull()
+    for a in aligned[1:]:
+        valid = valid & a.notnull()
+    for (i, _), a in zip(idx_da, aligned):
+        m = a.where(valid)
+        spatial = [d for d in m.dims if d != "time"]
+        vals = m.values.ravel()
+        series[i]["da"] = m
+        series[i]["flat"] = _subsample(vals[np.isfinite(vals)], max_points)
+        series[i]["ts"] = m.mean(dim=spatial, skipna=True).to_series()
+    return series
+    
 def labels_used(config, only=None):
     """Every pair label referenced by the obs2obs groups (optionally only the
     groups whose name contains ``only``). Use this to prune
@@ -758,8 +969,24 @@ def labels_used(config, only=None):
             if s.get("label"):
                 used.add(s["label"])
         for key in ("surface", "column"):        # xplatform/norm group configs
-            if isinstance(grp.get(key), dict) and grp[key].get("label"):
-                used.add(grp[key]["label"])
+            blk = grp.get(key)
+            if isinstance(blk, dict):
+                if blk.get("label"):
+                    used.add(blk["label"])
+                if isinstance(blk.get("obs"), dict) and blk["obs"].get("label"):
+                    used.add(blk["obs"]["label"])           # {obs, models} form
+                for m in blk.get("models", []):
+                    if isinstance(m, dict) and m.get("label"):
+                        used.add(m["label"])
+            elif isinstance(blk, list):          # list-of-series form
+                for s in blk:
+                    if isinstance(s, dict) and s.get("label"):
+                        used.add(s["label"])
+        for run in grp.get("runs", []):           # operator_effect config
+            if isinstance(run, dict):
+                for k, v in run.items():
+                    if k not in ("name", "color") and isinstance(v, str):
+                        used.add(v)
     return used
     
 def run(paired, config, default_outdir=".", only = None):
@@ -782,22 +1009,36 @@ def run(paired, config, default_outdir=".", only = None):
         types = grp.get("type", "multi_boxplot")
         types = [types] if isinstance(types, str) else list(types)
         _group_types = [t for t in types if t in _GROUP_PLOTTERS]
-        
+
+        # taylor/diurnal take a series list -> push group bounds/clip onto each
+        # (this is the domain fix: without it a group's bounds: was ignored).
+        gseries = [_with_group_defaults(s, gbounds, gclip)
+                   for s in grp.get("series", [])]
+
         for t in _group_types:
             out = os.path.join(outdir, f"obs2obs_{gname}.{t}")
             kw = dict(text_dict=grp.get("text_kwargs"),
                       fig_dict=grp.get("fig_kwargs"), max_points=max_points)
             try:
                 if t == "taylor":
-                    _GROUP_PLOTTERS[t](grp["series"], paired, tm, out,
-                                       title=grp.get("title", gname), **kw)
+                    _GROUP_PLOTTERS[t](gseries, paired, tm, out,
+                                       title=grp.get("title", gname),
+                                       ylabel=grp.get("ylabel"), **kw)
                 elif t == "diurnal":
-                    _GROUP_PLOTTERS[t](grp["series"], paired, tm, out,
+                    _GROUP_PLOTTERS[t](gseries, paired, tm, out,
                                        ylabel=grp.get("ylabel"),
                                        title=grp.get("title", gname),
                                        normalize=dp.get("normalize",
                                                          grp.get("normalize", False)),
+                                       range_shading=grp.get("range_shading", "IQR"),
+                                       time_offset=grp.get("time_offset", 0),
+                                       vmin=_fnum(grp.get("vmin")),
+                                       vmax=_fnum(grp.get("vmax")),
                                        **kw)
+                elif t == "operator_effect":
+                    _GROUP_PLOTTERS[t](grp, paired, tm, out,
+                                       ylabel=grp.get("ylabel"),
+                                       title=grp.get("title", gname), **kw)
                 else:                       # xplatform_scatter / norm_spatial
                     _kw = {k: v for k, v in kw.items() if k != "max_points"}
                     if t == "xplatform_scatter":
@@ -821,7 +1062,9 @@ def run(paired, config, default_outdir=".", only = None):
                 print(f"obs2obs: {gname}: {e}; skipping series.", flush=True)
         if not series:
             continue
-        types = grp.get("type", "multi_boxplot")
+        # co-mask obs + all models to identical samples (opt-in per group)
+        if dp.get("common_mask", grp.get("common_mask", False)):
+            series = _apply_common_mask(series, max_points=max_points)
         for t in types:
             fn = _PLOTTERS.get(t)
             if fn is None:
@@ -841,6 +1084,8 @@ def run(paired, config, default_outdir=".", only = None):
                     hline=_fnum(dp.get("hline", grp.get("hline"))))
             if t == "multi_timeseries":
                 kwargs["avg_window"] = grp.get("avg_window")
+                kwargs["vmin"] = _fnum(grp.get("vmin"))
+                kwargs["vmax"] = _fnum(grp.get("vmax"))
             if t == "diff_map":
                 kwargs.update(vdiff=_fnum(grp.get("vdiff")),
                               domain_name=grp.get("domain_name"))
@@ -854,4 +1099,3 @@ def run(paired, config, default_outdir=".", only = None):
         # free this group's extracted arrays before moving on
         del series
         gc.collect()
-
