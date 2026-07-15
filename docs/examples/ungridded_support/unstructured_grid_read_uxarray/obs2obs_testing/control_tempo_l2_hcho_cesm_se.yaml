@@ -91,18 +91,21 @@ obs2obs:
   time_match:
     window_local: [12.5, 14.5]
 
+# time match: if you give it a window local, allows to be clamped to tropomi
+# avg window takes a daily average 
+# time match: daily should be used where distribution of data might matter 
   groups:
-    # ---- TEMPO NO2 column, model-in-obs-space, by emissions run (obs-grid) ----
-    em_no2col_atl: &em_no2col
-      type: [multi_boxplot, multi_timeseries]
-      data_proc: {showfliers: false, common_mask: true}
-      ylabel: 'NO$_2$ trop. column (molec cm$^{-2}$)'
-      clip: [-2.0e+15, 3.0e+16]
-      #time_match: {window_local: [12.5, 14.5]}
+    # ============================================================= COLUMN, by run
+    # (boxplot + timeseries; each: obs + 4 model runs)  fg = obs-grid, ng = native
 
+    # ---- TEMPO NO2 ----
+    em_no2col_tempo_fg_atl: &em_no2col_tempo_fg
+      type: [multi_boxplot, multi_timeseries]
+      data_proc: {showfliers: false, common_mask: true, set_axis: false}
+      ylabel: 'TEMPO NO$_2$ trop. column (molec cm$^{-2}$)'
+      clip: [-2.0e+15, 3.0e+16]
       time_match: daily
       avg_window: '1D'
-      
       bounds: [-85.0, -83.7, 33.2, 34.4]
       series:
         - {label: nonbiog_tempo_no2_fg, var: vertical_column_troposphere, name: TEMPO obs, color: black}
@@ -110,15 +113,35 @@ obs2obs:
         - {label: biog_tempo_no2_fg,    var: NO2, name: biog,    color: seagreen}
         - {label: grapes_tempo_no2_fg,  var: NO2, name: grapes,  color: purple}
         - {label: mxcat_tempo_no2_fg,   var: NO2, name: mxcat,   color: orange}
-    em_no2col_seus:
-      <<: *em_no2col
+    em_no2col_tempo_fg_seus:
+      <<: *em_no2col_tempo_fg
       bounds: [-92.0, -75.0, 24.5, 37.0]
 
-    # ---- TROPOMI NO2 column, by emissions run ----
-    em_no2col_tropomi_atl: &em_no2col_trop
+    em_no2col_tempo_ng_atl: &em_no2col_tempo_ng
       type: [multi_boxplot, multi_timeseries]
+      data_proc: {showfliers: false, common_mask: true, set_axis: false}
+      ylabel: 'TEMPO NO$_2$ trop. column (native grid, molec cm$^{-2}$)'
+      clip: [-2.0e+15, 3.0e+16]
+      time_match: daily
+      avg_window: '1D'
+      bounds: [-85.0, -83.7, 33.2, 34.4]
+      series:
+        - {label: nonbiog_tempo_no2_ng, var: vertical_column_troposphere, name: TEMPO obs, color: black}
+        - {label: nonbiog_tempo_no2_ng, var: NO2, name: nonbiog, color: steelblue}
+        - {label: biog_tempo_no2_ng,    var: NO2, name: biog,    color: seagreen}
+        - {label: grapes_tempo_no2_ng,  var: NO2, name: grapes,  color: purple}
+        - {label: mxcat_tempo_no2_ng,   var: NO2, name: mxcat,   color: orange}
+    em_no2col_tempo_ng_seus:
+      <<: *em_no2col_tempo_ng
+      bounds: [-92.0, -75.0, 24.5, 37.0]
+
+    # ---- TROPOMI NO2 ----
+    em_no2col_tropomi_fg_atl: &em_no2col_tropomi_fg
+      type: [multi_boxplot, multi_timeseries]
+      data_proc: {showfliers: false, common_mask: true, set_axis: false}
       ylabel: 'TROPOMI NO$_2$ trop. column (molec cm$^{-2}$)'
       clip: [-2.0e+15, 3.0e+16]
+      time_match: daily
       avg_window: '1D'
       bounds: [-85.0, -83.7, 33.2, 34.4]
       series:
@@ -127,85 +150,69 @@ obs2obs:
         - {label: biog_tropomi_no2_fg,    var: NO2, name: biog,    color: seagreen}
         - {label: grapes_tropomi_no2_fg,  var: NO2, name: grapes,  color: purple}
         - {label: mxcat_tropomi_no2_fg,   var: NO2, name: mxcat,   color: orange}
-      data_proc:
-        set_axis: False
-    em_no2col_tropomi_seus:
-      <<: *em_no2col_trop
+    em_no2col_tropomi_fg_seus:
+      <<: *em_no2col_tropomi_fg
       bounds: [-92.0, -75.0, 24.5, 37.0]
 
-    # ---- surface<->column coupling (obs cloud + one model cloud per run) ----
-    coupling_no2_atl:
-      type: xplatform_scatter
-      bounds: [-85.0, -83.7, 33.2, 34.4]
-      xlabel: 'AirNow surface NO$_2$ (ppb)'
-      ylabel: 'TROPOMI NO$_2$ column (molec cm$^{-2}$)'
-      surface:
-        obs:    {label: nonbiog_airnow, var: NO2}
-        models:
-          - {name: nonbiog, color: steelblue, label: nonbiog_airnow, var: NO2_new}
-          - {name: biog,    color: seagreen,  label: biog_airnow,    var: NO2_new}
-          - {name: grapes,  color: purple,    label: grapes_airnow,  var: NO2_new}
-          - {name: mxcat,   color: orange,    label: mxcat_airnow,   var: NO2_new}
-      column:
-        obs:    {label: nonbiog_tropomi_no2_fg, var: nitrogendioxide_tropospheric_column}
-        models:
-          - {name: nonbiog, color: steelblue, label: nonbiog_tropomi_no2_fg, var: NO2}
-          - {name: biog,    color: seagreen,  label: biog_tropomi_no2_fg,    var: NO2}
-          - {name: grapes,  color: purple,    label: grapes_tropomi_no2_fg,  var: NO2}
-          - {name: mxcat,   color: orange,    label: mxcat_tropomi_no2_fg,   var: NO2}
-
-    # ---- averaging-kernel operator effect (stacked: model AK-spread / obs) ----
-    operator_no2_atl:
-      type: operator_effect
-      bounds: [-85.0, -83.7, 33.2, 34.4]
-      ylabel: 'NO$_2$ trop. column (molec cm$^{-2}$)'
-      instruments:
-        tempo:   {obs_var: vertical_column_troposphere,         mod_var: NO2}
-        tropomi: {obs_var: nitrogendioxide_tropospheric_column, mod_var: NO2}
-      runs:
-        - {name: nonbiog, color: steelblue, tempo: nonbiog_tempo_no2_fg, tropomi: nonbiog_tropomi_no2_fg}
-        - {name: biog,    color: seagreen,  tempo: biog_tempo_no2_fg,    tropomi: biog_tropomi_no2_fg}
-        - {name: grapes,  color: purple,    tempo: grapes_tempo_no2_fg,  tropomi: grapes_tropomi_no2_fg}
-        - {name: mxcat,   color: orange,    tempo: mxcat_tempo_no2_fg,   tropomi: mxcat_tropomi_no2_fg}
-
-    # ---- diurnal cycles (via make_diurnal_cycle: range_shading + time_offset) ----
-    diurnal_no2col_atl:
-      type: diurnal
-      time_match: none
-      normalize: true
-      range_shading: std
-      # time_offset: -4                # ATL = UTC-4
-      ylabel: 'NO$_2$ column (normalized to daily mean)'
+    em_no2col_tropomi_ng_atl: &em_no2col_tropomi_ng
+      type: [multi_boxplot, multi_timeseries]
+      data_proc: {showfliers: false, common_mask: true, set_axis: false}
+      ylabel: 'TROPOMI NO$_2$ trop. column (native grid, molec cm$^{-2}$)'
+      clip: [-2.0e+15, 3.0e+16]
+      time_match: daily
+      avg_window: '1D'
       bounds: [-85.0, -83.7, 33.2, 34.4]
       series:
-        - {label: nonbiog_tempo_no2_fg, var: vertical_column_troposphere, name: TEMPO obs, color: black}
-        - {label: nonbiog_tempo_no2_fg, var: NO2, name: nonbiog, color: steelblue}
-        - {label: biog_tempo_no2_fg,    var: NO2, name: biog,    color: seagreen}
-        - {label: grapes_tempo_no2_fg,  var: NO2, name: grapes,  color: purple}
-        - {label: mxcat_tempo_no2_fg,   var: NO2, name: mxcat,   color: orange}
-      data_proc:
-        set_axis: False
-        
-    diurnal_no2sfc_atl:
-      type: diurnal
-      time_match: none
-      normalize: true
-      range_shading: std
-      time_offset: -4
-      ylabel: 'surface NO$_2$ (normalized to daily mean)'
+        - {label: nonbiog_tropomi_no2_ng, var: nitrogendioxide_tropospheric_column, name: TROPOMI obs, color: black}
+        - {label: nonbiog_tropomi_no2_ng, var: NO2, name: nonbiog, color: steelblue}
+        - {label: biog_tropomi_no2_ng,    var: NO2, name: biog,    color: seagreen}
+        - {label: grapes_tropomi_no2_ng,  var: NO2, name: grapes,  color: purple}
+        - {label: mxcat_tropomi_no2_ng,   var: NO2, name: mxcat,   color: orange}
+    em_no2col_tropomi_ng_seus:
+      <<: *em_no2col_tropomi_ng
+      bounds: [-92.0, -75.0, 24.5, 37.0]
+
+    # ---- TEMPO HCHO (obs var = vertical_column, model = CH2O) ----
+    em_hchocol_tempo_fg_atl: &em_hchocol_tempo_fg
+      type: [multi_boxplot, multi_timeseries]
+      data_proc: {showfliers: false, common_mask: true, set_axis: false}
+      ylabel: 'TEMPO HCHO column (molec cm$^{-2}$)'
+      clip: [-2.0e+16, 5.0e+16]
+      time_match: daily
+      avg_window: '1D'
       bounds: [-85.0, -83.7, 33.2, 34.4]
       series:
-        - {label: nonbiog_airnow, var: NO2,     name: AirNow obs, color: black}
-        - {label: nonbiog_airnow, var: NO2_new, name: nonbiog, color: steelblue}
-        - {label: biog_airnow,    var: NO2_new, name: biog,    color: seagreen}
-        - {label: grapes_airnow,  var: NO2_new, name: grapes,  color: purple}
-        - {label: mxcat_airnow,   var: NO2_new, name: mxcat,   color: orange}
-      data_proc:
-        set_axis: False
-        
-    # ---- AirNow surface NO2, by emissions run ----
+        - {label: nonbiog_tempo_hcho_fg, var: vertical_column, name: TEMPO obs, color: black}
+        - {label: nonbiog_tempo_hcho_fg, var: CH2O, name: nonbiog, color: steelblue}
+        - {label: biog_tempo_hcho_fg,    var: CH2O, name: biog,    color: seagreen}
+        - {label: grapes_tempo_hcho_fg,  var: CH2O, name: grapes,  color: purple}
+        - {label: mxcat_tempo_hcho_fg,   var: CH2O, name: mxcat,   color: orange}
+    em_hchocol_tempo_fg_seus:
+      <<: *em_hchocol_tempo_fg
+      bounds: [-92.0, -75.0, 24.5, 37.0]
+
+    em_hchocol_tempo_ng_atl: &em_hchocol_tempo_ng
+      type: [multi_boxplot, multi_timeseries]
+      data_proc: {showfliers: false, common_mask: true, set_axis: false}
+      ylabel: 'TEMPO HCHO column (native grid, molec cm$^{-2}$)'
+      clip: [-2.0e+16, 5.0e+16]
+      time_match: daily
+      avg_window: '1D'
+      bounds: [-85.0, -83.7, 33.2, 34.4]
+      series:
+        - {label: nonbiog_tempo_hcho_ng, var: vertical_column, name: TEMPO obs, color: black}
+        - {label: nonbiog_tempo_hcho_ng, var: CH2O, name: nonbiog, color: steelblue}
+        - {label: biog_tempo_hcho_ng,    var: CH2O, name: biog,    color: seagreen}
+        - {label: grapes_tempo_hcho_ng,  var: CH2O, name: grapes,  color: purple}
+        - {label: mxcat_tempo_hcho_ng,   var: CH2O, name: mxcat,   color: orange}
+    em_hchocol_tempo_ng_seus:
+      <<: *em_hchocol_tempo_ng
+      bounds: [-92.0, -75.0, 24.5, 37.0]
+
+    # ============================================================= SURFACE, by run
     em_no2sfc_atl: &em_no2sfc
       type: [multi_boxplot, multi_timeseries]
+      data_proc: {set_axis: false, common_mask: true}
       ylabel: 'surface NO$_2$ (ppb)'
       time_match: daily
       avg_window: '1D'
@@ -216,15 +223,13 @@ obs2obs:
         - {label: biog_airnow,    var: NO2_new, name: biog,    color: seagreen}
         - {label: grapes_airnow,  var: NO2_new, name: grapes,  color: purple}
         - {label: mxcat_airnow,   var: NO2_new, name: mxcat,   color: orange}
-      data_proc:
-        set_axis: False
     em_no2sfc_seus:
       <<: *em_no2sfc
       bounds: [-92.0, -75.0, 24.5, 37.0]
 
-    # ---- AirNow + AQS surface O3, by emissions run (AQS is valid for O3) ----
     em_o3sfc_atl: &em_o3sfc
       type: [multi_boxplot, multi_timeseries]
+      data_proc: {set_axis: false, common_mask: true}
       ylabel: 'surface O$_3$ (ppb)'
       time_match: daily
       avg_window: '1D'
@@ -239,42 +244,148 @@ obs2obs:
       <<: *em_o3sfc
       bounds: [-92.0, -75.0, 24.5, 37.0]
 
-    # ---- TEMPO HCHO column, by emissions run (obs-grid) ----
-    em_hchocol_atl: &em_hchocol
-      type: [multi_boxplot, multi_timeseries]
-      ylabel: 'HCHO column (molec cm$^{-2}$)'
-      clip: [-2.0e+16, 5.0e+16]
-      time_match: {window_local: [12.5, 14.5]}
+    # ============================================================= DIURNAL
+    # TEMPO (multi-hour) + surface only. TROPOMI is a single ~13:30 overpass -> no diurnal.
+    diurnal_no2col_tempo_fg_atl:
+      type: diurnal
+      time_match: none
+      normalize: true
+      range_shading: std
+      ylabel: 'NO$_2$ column (normalized to daily mean)'
       bounds: [-85.0, -83.7, 33.2, 34.4]
+      data_proc: {set_axis: false}
+      series:
+        - {label: nonbiog_tempo_no2_fg, var: vertical_column_troposphere, name: TEMPO obs, color: black}
+        - {label: nonbiog_tempo_no2_fg, var: NO2, name: nonbiog, color: steelblue}
+        - {label: biog_tempo_no2_fg,    var: NO2, name: biog,    color: seagreen}
+        - {label: grapes_tempo_no2_fg,  var: NO2, name: grapes,  color: purple}
+        - {label: mxcat_tempo_no2_fg,   var: NO2, name: mxcat,   color: orange}
+
+    diurnal_no2col_tempo_ng_atl:
+      type: diurnal
+      time_match: none
+      normalize: true
+      range_shading: std
+      ylabel: 'NO$_2$ column (native grid, normalized)'
+      bounds: [-85.0, -83.7, 33.2, 34.4]
+      data_proc: {set_axis: false}
+      series:
+        - {label: nonbiog_tempo_no2_ng, var: vertical_column_troposphere, name: TEMPO obs, color: black}
+        - {label: nonbiog_tempo_no2_ng, var: NO2, name: nonbiog, color: steelblue}
+        - {label: biog_tempo_no2_ng,    var: NO2, name: biog,    color: seagreen}
+        - {label: grapes_tempo_no2_ng,  var: NO2, name: grapes,  color: purple}
+        - {label: mxcat_tempo_no2_ng,   var: NO2, name: mxcat,   color: orange}
+
+    diurnal_hchocol_tempo_fg_atl:
+      type: diurnal
+      time_match: none
+      normalize: true
+      range_shading: std
+      ylabel: 'HCHO column (normalized to daily mean)'
+      bounds: [-85.0, -83.7, 33.2, 34.4]
+      data_proc: {set_axis: false}
       series:
         - {label: nonbiog_tempo_hcho_fg, var: vertical_column, name: TEMPO obs, color: black}
         - {label: nonbiog_tempo_hcho_fg, var: CH2O, name: nonbiog, color: steelblue}
         - {label: biog_tempo_hcho_fg,    var: CH2O, name: biog,    color: seagreen}
         - {label: grapes_tempo_hcho_fg,  var: CH2O, name: grapes,  color: purple}
         - {label: mxcat_tempo_hcho_fg,   var: CH2O, name: mxcat,   color: orange}
-    em_hchocol_seus:
-      <<: *em_hchocol
-      bounds: [-92.0, -75.0, 24.5, 37.0]
 
-    # ---- Taylor: CAM-chem NO2 skill by platform ----
-    skill_no2_atl:
-      type: taylor
+    diurnal_hchocol_tempo_ng_atl:
+      type: diurnal
+      time_match: none
+      normalize: true
+      range_shading: std
+      ylabel: 'HCHO column (native grid, normalized)'
       bounds: [-85.0, -83.7, 33.2, 34.4]
-      title: 'CAM-chem NO2 skill by platform (ATL)'
+      data_proc: {set_axis: false}
       series:
-        - {label: grapes_airnow,        obs_var: NO2, mod_var: NO2_new, name: AirNow sfc, color: teal}
-        - {label: grapes_tempo_no2_fg,  obs_var: vertical_column_troposphere,         mod_var: NO2, name: TEMPO col,   color: black}
-        - {label: grapes_tropomi_no2_fg, obs_var: nitrogendioxide_tropospheric_column, mod_var: NO2, name: TROPOMI col, color: purple}
+        - {label: nonbiog_tempo_hcho_ng, var: vertical_column, name: TEMPO obs, color: black}
+        - {label: nonbiog_tempo_hcho_ng, var: CH2O, name: nonbiog, color: steelblue}
+        - {label: biog_tempo_hcho_ng,    var: CH2O, name: biog,    color: seagreen}
+        - {label: grapes_tempo_hcho_ng,  var: CH2O, name: grapes,  color: purple}
+        - {label: mxcat_tempo_hcho_ng,   var: CH2O, name: mxcat,   color: orange}
 
-    # # ---- normalized multiscale map: surface dots on the column field ----
-    # multiscale_no2_seus:
-    #   type: norm_spatial
-    #   bounds: [-92.0, -75.0, 24.5, 37.0]
-    #   title: 'NO2 relative to domain mean (column field + surface dots)'
-    #   surface: {label: grapes_airnow,       obs_var: NO2, mod_var: NO2_new}
-    #   column:  {label: grapes_tempo_no2_fg, obs_var: vertical_column_troposphere, mod_var: NO2}
+    diurnal_no2sfc_atl:
+      type: diurnal
+      time_match: none
+      normalize: true
+      range_shading: std
+      time_offset: -4
+      ylabel: 'surface NO$_2$ (normalized to daily mean)'
+      bounds: [-85.0, -83.7, 33.2, 34.4]
+      data_proc: {set_axis: false}
+      series:
+        - {label: nonbiog_airnow, var: NO2,     name: AirNow obs, color: black}
+        - {label: nonbiog_airnow, var: NO2_new, name: nonbiog, color: steelblue}
+        - {label: biog_airnow,    var: NO2_new, name: biog,    color: seagreen}
+        - {label: grapes_airnow,  var: NO2_new, name: grapes,  color: purple}
+        - {label: mxcat_airnow,   var: NO2_new, name: mxcat,   color: orange}
 
-    # ---- relative-bias multiscale: surface + both satellites on one % axis ----
+    # ============================================================= COUPLING (surface<->column)
+    coupling_no2_tempo_atl:
+      type: xplatform_scatter
+      bounds: [-85.0, -83.7, 33.2, 34.4]
+      xlabel: 'AirNow surface NO$_2$ (ppb)'
+      ylabel: 'TEMPO NO$_2$ column (molec cm$^{-2}$)'
+      surface:
+        obs: {label: nonbiog_airnow, var: NO2}
+        models:
+          - {name: nonbiog, color: steelblue, label: nonbiog_airnow, var: NO2_new}
+          - {name: biog,    color: seagreen,  label: biog_airnow,    var: NO2_new}
+          - {name: grapes,  color: purple,    label: grapes_airnow,  var: NO2_new}
+          - {name: mxcat,   color: orange,    label: mxcat_airnow,   var: NO2_new}
+      column:
+        obs: {label: nonbiog_tempo_no2_fg, var: vertical_column_troposphere}
+        models:
+          - {name: nonbiog, color: steelblue, label: nonbiog_tempo_no2_fg, var: NO2}
+          - {name: biog,    color: seagreen,  label: biog_tempo_no2_fg,    var: NO2}
+          - {name: grapes,  color: purple,    label: grapes_tempo_no2_fg,  var: NO2}
+          - {name: mxcat,   color: orange,    label: mxcat_tempo_no2_fg,   var: NO2}
+
+    coupling_no2_tropomi_atl:
+      type: xplatform_scatter
+      bounds: [-85.0, -83.7, 33.2, 34.4]
+      xlabel: 'AirNow surface NO$_2$ (ppb)'
+      ylabel: 'TROPOMI NO$_2$ column (molec cm$^{-2}$)'
+      surface:
+        obs: {label: nonbiog_airnow, var: NO2}
+        models:
+          - {name: nonbiog, color: steelblue, label: nonbiog_airnow, var: NO2_new}
+          - {name: biog,    color: seagreen,  label: biog_airnow,    var: NO2_new}
+          - {name: grapes,  color: purple,    label: grapes_airnow,  var: NO2_new}
+          - {name: mxcat,   color: orange,    label: mxcat_airnow,   var: NO2_new}
+      column:
+        obs: {label: nonbiog_tropomi_no2_fg, var: nitrogendioxide_tropospheric_column}
+        models:
+          - {name: nonbiog, color: steelblue, label: nonbiog_tropomi_no2_fg, var: NO2}
+          - {name: biog,    color: seagreen,  label: biog_tropomi_no2_fg,    var: NO2}
+          - {name: grapes,  color: purple,    label: grapes_tropomi_no2_fg,  var: NO2}
+          - {name: mxcat,   color: orange,    label: mxcat_tropomi_no2_fg,   var: NO2}
+
+    # ============================================================= OPERATOR / SKILL / BIAS
+    operator_no2_atl:
+      type: operator_effect
+      bounds: [-85.0, -83.7, 33.2, 34.4]
+      ylabel: 'NO$_2$ trop. column (molec cm$^{-2}$)'
+      instruments:
+        tempo:   {obs_var: vertical_column_troposphere,         mod_var: NO2}
+        tropomi: {obs_var: nitrogendioxide_tropospheric_column, mod_var: NO2}
+      runs:
+        - {name: nonbiog, color: steelblue, tempo: nonbiog_tempo_no2_fg, tropomi: nonbiog_tropomi_no2_fg}
+        - {name: biog,    color: seagreen,  tempo: biog_tempo_no2_fg,    tropomi: biog_tropomi_no2_fg}
+        - {name: grapes,  color: purple,    tempo: grapes_tempo_no2_fg,  tropomi: grapes_tropomi_no2_fg}
+        - {name: mxcat,   color: orange,    tempo: mxcat_tempo_no2_fg,   tropomi: mxcat_tropomi_no2_fg}
+
+    # skill_no2_atl:
+    #   type: taylor
+    #   bounds: [-85.0, -83.7, 33.2, 34.4]
+    #   title: 'CAM-chem NO2 skill by platform (ATL)'
+    #   series:
+    #     - {label: grapes_airnow,         obs_var: NO2, mod_var: NO2_new, name: AirNow sfc, color: teal}
+    #     - {label: grapes_tempo_no2_fg,   obs_var: vertical_column_troposphere,         mod_var: NO2, name: TEMPO col,   color: black}
+    #     - {label: grapes_tropomi_no2_fg, obs_var: nitrogendioxide_tropospheric_column, mod_var: NO2, name: TROPOMI col, color: purple}
+
     no2_bias_platform_atl:
       type: multi_boxplot
       ylabel: 'model - obs relative bias (%)'
@@ -286,16 +397,14 @@ obs2obs:
         - {label: grapes_airnow,         obs_var: NO2,                                 mod_var: NO2_new, mode: relative_bias, name: AirNow sfc NO2, color: teal}
         - {label: grapes_tempo_no2_fg,   obs_var: vertical_column_troposphere,         mod_var: NO2,     mode: relative_bias, name: TEMPO NO2 col,  color: black}
         - {label: grapes_tropomi_no2_fg, obs_var: nitrogendioxide_tropospheric_column, mod_var: NO2,     mode: relative_bias, name: TROPOMI NO2 col, color: grey}
-        
-    # ---- grid sensitivity: obs-grid (fg) vs native model grid (ng), NO2 column ----
-    # Same TEMPO pairing, two representations. Boxes are interleaved fg|ng per
-    # series so the grid effect reads left-to-right within each pair.
-    grid_no2col_atl: &grid_no2col
+
+    # ============================================================= GRID SENSITIVITY (fg vs ng)
+    grid_no2col_tempo_atl: &grid_no2col_tempo
       type: multi_boxplot
-      ylabel: 'NO$_2$ trop. column (molec cm$^{-2}$)'
+      ylabel: 'TEMPO NO$_2$ column (molec cm$^{-2}$)'
       clip: [-2.0e+15, 3.0e+16]
       time_match: {window_local: [12.5, 14.5]}
-      bounds: [-85.0, -83.7, 33.2, 34.4]          # ATL_metro
+      bounds: [-85.0, -83.7, 33.2, 34.4]
       data_proc: {showfliers: false}
       series:
         - {label: nonbiog_tempo_no2_fg, var: vertical_column_troposphere, name: 'TEMPO obs (fg)', color: black}
@@ -308,25 +417,20 @@ obs2obs:
         - {label: grapes_tempo_no2_ng,  var: NO2, name: 'grapes (ng)',  color: plum}
         - {label: mxcat_tempo_no2_fg,   var: NO2, name: 'mxcat (fg)',   color: orange}
         - {label: mxcat_tempo_no2_ng,   var: NO2, name: 'mxcat (ng)',   color: navajowhite}
-    grid_no2col_seus:
-      <<: *grid_no2col
-      bounds: [-92.0, -75.0, 24.5, 37.0]          # SE_US     
-        
-    # ---- grid sensitivity: obs-grid (fg) vs native model grid (ng), NO2 column ----
-    # Same tropomi pairing, two representations. Boxes are interleaved fg|ng per
-    # series so the grid effect reads left-to-right within each pair.
-    grid_no2col_atl_trop: &grid_no2col_trop
+    grid_no2col_tempo_seus:
+      <<: *grid_no2col_tempo
+      bounds: [-92.0, -75.0, 24.5, 37.0]
+
+    grid_no2col_tropomi_atl: &grid_no2col_tropomi
       type: multi_boxplot
-      ylabel: 'NO$_2$ trop. column (molec cm$^{-2}$)'
+      ylabel: 'TROPOMI NO$_2$ column (molec cm$^{-2}$)'
       clip: [-2.0e+15, 3.0e+16]
       time_match: {window_local: [12.5, 14.5]}
-      bounds: [-85.0, -83.7, 33.2, 34.4]          # ATL_metro
+      bounds: [-85.0, -83.7, 33.2, 34.4]
       data_proc: {showfliers: false}
       series:
-        - {label: nonbiog_tropomi_no2_fg, var: nitrogendioxide_tropospheric_column, name: TROPOMI obs, color: black}
-        - {label: nonbiog_tropomi_no2_ng, var: nitrogendioxide_tropospheric_column, name: TROPOMI obs, color: black}
-        - {label: nonbiog_tropomi_no2_fg, var: vertical_column_troposphere, name: 'TEMPO obs (fg)', color: black}
-        - {label: nonbiog_tropomi_no2_ng, var: vertical_column_troposphere, name: 'TEMPO obs (ng)', color: dimgray}
+        - {label: nonbiog_tropomi_no2_fg, var: nitrogendioxide_tropospheric_column, name: 'TROPOMI obs (fg)', color: black}
+        - {label: nonbiog_tropomi_no2_ng, var: nitrogendioxide_tropospheric_column, name: 'TROPOMI obs (ng)', color: dimgray}
         - {label: nonbiog_tropomi_no2_fg, var: NO2, name: 'nonbiog (fg)', color: steelblue}
         - {label: nonbiog_tropomi_no2_ng, var: NO2, name: 'nonbiog (ng)', color: lightsteelblue}
         - {label: biog_tropomi_no2_fg,    var: NO2, name: 'biog (fg)',    color: seagreen}
@@ -335,10 +439,7 @@ obs2obs:
         - {label: grapes_tropomi_no2_ng,  var: NO2, name: 'grapes (ng)',  color: plum}
         - {label: mxcat_tropomi_no2_fg,   var: NO2, name: 'mxcat (fg)',   color: orange}
         - {label: mxcat_tropomi_no2_ng,   var: NO2, name: 'mxcat (ng)',   color: navajowhite}
-
-    grid_no2col_seus_trop:
-      <<: *grid_no2col_trop
-      bounds: [-92.0, -75.0, 24.5, 37.0]          # SE_US  
-      
-
+    grid_no2col_tropomi_seus:
+      <<: *grid_no2col_tropomi
+      bounds: [-92.0, -75.0, 24.5, 37.0]
 

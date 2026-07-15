@@ -15,4 +15,20 @@ an.control_dict["analysis"]["read"]["paired"]["filenames"] = {
 print(f"obs2obs: opening {len(used)} of {len(fn)} labels", flush=True)
 
 an.read_analysis()                     # loads all labels in read.paired.filenames
+
+# per-label RAM footprint, so an OOM names the culprit instead of dying silent
+_tot = 0.0
+for _lab, _p in an.paired.items():
+    try:
+        _o = _p.obj
+        _gb = (_o.nbytes if hasattr(_o, "nbytes")
+               else _o.memory_usage(deep=True).sum()) / 1e9
+    except Exception:
+        _gb = float("nan")
+    _tot += 0.0 if _gb != _gb else _gb          # skip NaN
+    _sz = dict(_o.sizes) if hasattr(_o, "sizes") else _o.shape
+    print(f"obs2obs: loaded {_lab}: {_gb:.2f} GB  sizes={_sz}", flush=True)
+print(f"obs2obs: total loaded ~{_tot:.1f} GB across {len(an.paired)} labels",
+      flush=True)
+
 obs2obs_util.run(an.paired, cfg, default_outdir=an.output_dir, only=only)

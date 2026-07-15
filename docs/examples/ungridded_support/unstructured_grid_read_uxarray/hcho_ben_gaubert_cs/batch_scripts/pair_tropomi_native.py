@@ -23,7 +23,7 @@ Submit (mirrors submit_pair_tempo_native.sh -- set YMD from PBS_ARRAY_INDEX):
 """
 
 import os, glob, copy, time
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import yaml
 from melodies_monet import driver
@@ -129,11 +129,14 @@ def main():
 
     iso = datetime.strptime(ymd, "%Y%m%d").strftime("%Y-%m-%d")
     r = RUNS[run]
-    mfiles = sorted(glob.glob(f"{r['model_dir']}/{r['model_stem']}.{iso}-*.nc"))
-    if not mfiles:
+    if not glob.glob(f"{r['model_dir']}/{r['model_stem']}.{iso}-*.nc"):
         print(f"SKIP {run} {ymd}: no model files under {r['model_dir']}", flush=True)
         return
 
+    days = [(d0 + timedelta(days=k)).strftime("%Y-%m-%d") for k in (-1, 0, 1)]
+    mfiles = sorted(f for day in days
+                    for f in glob.glob(f"{r['model_dir']}/{r['model_stem']}.{day}-*.nc"))
+    
     outdir = f"{OUTROOT}/{run}_tropomi_native"
     yamldir = f"{outdir}/yaml"
     os.makedirs(yamldir, exist_ok=True)

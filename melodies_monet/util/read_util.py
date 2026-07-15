@@ -153,6 +153,12 @@ def read_analysis_ncf(filenames,xr_kws={}):
                     # fail on the differing per-file pixel counts, so concatenate
                     # the pixels instead
                     ds_out = xr.concat([ds_out, ds_append], dim='obs')
+                elif 'time' in ds_out.dims:
+                    # per-day files with distinct time values (satellite obsgrid,
+                    # model-space stacks): concatenate along time so memory doesnt oom
+                    ds_out = xr.concat([ds_out, ds_append], dim='time',
+                                       data_vars='minimal', coords='minimal',
+                                       compat='override')
                 else:
                     ds_out = xr.merge([ds_out,ds_append])
             

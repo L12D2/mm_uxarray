@@ -136,7 +136,8 @@ def _extract(spec, paired, time_match, max_points=2_000_000):
         if bounds is not None and "longitude" in obj.variables:
             w, e, s, n = bounds
             da = da.where((obj["longitude"] >= w) & (obj["longitude"] <= e)
-                          & (obj["latitude"] >= s) & (obj["latitude"] <= n))
+                          & (obj["latitude"] >= s) & (obj["latitude"] <= n),
+                          drop=True)
 
         if isinstance(time_match, dict) and "window_local" in time_match:
             h0, h1 = time_match["window_local"]
@@ -439,15 +440,36 @@ def _series_points(spec, paired, tm, max_points=2_000_000):
         # build via numpy ravel 
         o = obj[ov]
         m = obj[mv].broadcast_like(o) if obj[mv].dims != o.dims else obj[mv]
-        cols = {"obs": np.asarray(o.values).ravel(),
-                "mod": np.asarray(m.values).ravel()}
+        # cols = {"obs": np.asarray(o.values).ravel(),
+        #         "mod": np.asarray(m.values).ravel()}
+
+        # CROP to bounds in xarray FIRST (drop=True shrinks the array to the
+        # box). build columns by boolean mask 
+        bnds = spec.get("bounds")
+        inbox = None
+        if bnds is not None and ("longitude" in obj.coords
+                                 or "longitude" in obj.variables):
+            w, e, s, n = bnds
+            inbox = ((obj["longitude"] >= w) & (obj["longitude"] <= e)
+                     & (obj["latitude"] >= s) & (obj["latitude"] <= n))
+            o = o.where(inbox, drop=True)
+            m = m.where(inbox, drop=True)
+        ov_vals, mv_vals = np.asarray(o.values), np.asarray(m.values)
+        keep = np.isfinite(ov_vals) & np.isfinite(mv_vals)   # mask before cols
+        cols = {"obs": ov_vals[keep], "mod": mv_vals[keep]}
         
         for c in ("longitude", "latitude"):
             if c in obj.coords or c in obj.variables:
-                cols[c] = np.asarray(obj[c].broadcast_like(o).values).ravel()
+                # cols[c] = np.broadcast_to(
+                #     obj[c].broadcast_like(o).values, o.shape)[keep]
+                # crop the coord with the SAME inbox so it aligns with the
+                # cropped obj
+                cc = obj[c].where(inbox, drop=True) if inbox is not None else obj[c]
+                cols[c] = np.broadcast_to(cc.broadcast_like(o).values, o.shape)[keep]
+                
         if "time" in o.coords or "time" in obj.coords:
-            tt = obj["time"] if "time" in obj.coords else o["time"]
-            cols["time"] = np.asarray(tt.broadcast_like(o).values).ravel()
+            tt = o["time"] if "time" in o.coords else obj["time"]
+            cols["time"] = np.broadcast_to(tt.broadcast_like(o).values, o.shape)[keep]
         df = pd.DataFrame(cols)
     else:
         df = _as_dataframe(obj).rename(columns={ov: "obs", mv: "mod"})
@@ -526,7 +548,7 @@ def taylor(specs, paired, tm, outname, title=None, ylabel=None, text_dict=None,
 
 def diurnal(specs, paired, tm, outname, ylabel=None, title=None,
             normalize=False, range_shading="IQR", time_offset=0,
-            vmin=None, vmax=None, text_dict=None, fig_dict=None,
+            vmin=None, vmax=None, text_dict=None, fig_dict=None, set_axis = False,
             max_points=2_000_000):
     """Mean value vs local solar hour, obs and model, one line pair per
     series. ``normalize: true`` divides each curve by its own 24-h mean so
@@ -555,13 +577,20 @@ def diurnal(specs, paired, tm, outname, ylabel=None, title=None,
         xrplots.make_diurnal_cycle(
             da.to_dataset(name=var), var, ax=ax, time_offset=time_offset,
             range_shading=range_shading, label=e["name"],
-            plot_dict=({"color": e["color"]} if e["color"] else None),
+            plot_dict=({"color": e["color"]} if e["color"] else {}),
             ylabel=ylabel, vmin=vmin, vmax=vmax,
-            text_dict=text_dict, fig_dict=fig_dict, debug=False)
+            text_dict=(text_dict or {}), fig_dict=(fig_dict or {}), debug=False)
         drawn += 1
     if not drawn:
         plt.close(fig)
         return
+    # Axis control (MM set_axis). make_diurnal_cycle pins ylim per call to the
+    # sparse/noisy bands (e.g. the isolated 00Z hour), which stretches the axis.
+    if set_axis:                       # pinned limits (vmin/vmax)
+        ax.set_ylim(vmin, vmax)
+    else:                              # autoscale to the CENTER LINES only:
+        ax.relim()                     # relim ignores fill_between (Collections)
+        ax.autoscale(enable=True, axis="y")   # so noisy std bands spill off-axis
     if title:
         ax.set_title(title, fontweight="bold", fontsize=tk["fontsize"])
     plt.tight_layout()
@@ -937,6 +966,15 @@ def _apply_common_mask(series, max_points=2_000_000):
               if isinstance(s.get("da"), xr.DataArray) and "time" in s["da"].dims]
     if len(idx_da) < 2:
         return series
+    # a shared CELL mask only makes sense within one grid. If the series span
+    # different grids (surface vs satellite, TEMPO vs TROPOMI), an inner align
+    # intersects to nothing and would blank every series -> skip instead.
+    sizes0 = dict(idx_da[0][1].sizes)
+    if any(dict(d.sizes) != sizes0 for _, d in idx_da):
+        print("obs2obs: common_mask skipped -- series are on different grids "
+              "(surface/TEMPO/TROPOMI); co-masking applies within one grid only.",
+              flush=True)
+        return series
     try:
         aligned = xr.align(*[d for _, d in idx_da], join="inner")
     except Exception as e:  # noqa: BLE001 -- coords must match to co-mask
@@ -1034,6 +1072,8 @@ def run(paired, config, default_outdir=".", only = None):
                                        time_offset=grp.get("time_offset", 0),
                                        vmin=_fnum(grp.get("vmin")),
                                        vmax=_fnum(grp.get("vmax")),
+                                       set_axis=dp.get("set_axis",
+                                                       grp.get("set_axis", False)),
                                        **kw)
                 elif t == "operator_effect":
                     _GROUP_PLOTTERS[t](grp, paired, tm, out,

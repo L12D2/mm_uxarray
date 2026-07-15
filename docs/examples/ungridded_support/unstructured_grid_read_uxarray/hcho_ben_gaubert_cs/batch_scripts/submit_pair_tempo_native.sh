@@ -3,7 +3,7 @@
 #PBS -N pair_tempo_native
 #PBS -A P19010000
 #PBS -q casper
-#PBS -l select=1:ncpus=1:mem=100GB
+#PBS -l select=1:ncpus=1:mem=150GB
 #PBS -l walltime=12:00:00
 #PBS -J 1-30%6
 #PBS -j oe
