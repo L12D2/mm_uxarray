@@ -119,11 +119,23 @@ def main():
 
     # inject different nicknames so we can get around the p.model 
     _nick = (an.control_dict.get("analysis", {}) or {}).get("sim_nickname")
-    if _nick:
+    if _nick and len(an.models) == 1:
+        _k = next(iter(an.models))
+        an.models = {_nick: an.models[_k]}
+        an.models[_nick].label = _nick
+        _md = an.control_dict.get("model")
+        if isinstance(_md, dict) and len(_md) == 1:
+            an.control_dict["model"] = {_nick: next(iter(_md.values()))}
         for _p in an.paired.values():
             _p.model = _nick
         print(f"[plot] model label -> {_nick!r}", flush=True)
 
+    if not an.paired:
+        # Bail cleanly instead of an.plotting() indexing an empty pair list.
+        print("[plot] no paired data after grid/only filter; nothing to plot.",
+              flush=True)
+        return
+        
     if os.environ.get("PLOT_SWATH", "").strip():
         _plot_swath(an, t0)
         print(f"[plot] DONE (swath) in {time.time()-t0:.0f}s", flush=True)

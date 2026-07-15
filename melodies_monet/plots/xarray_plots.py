@@ -993,7 +993,13 @@ def make_spatial_bias_gridded(
         )
 
     if nlevels is None:
-        nlevels = 21
+        clevel = np.linspace(-vdiff, vdiff, 256)          # dense, for cbar ticks
+        cmap = plt.get_cmap("RdBu_r")                     # continuous
+        norm = mpl.colors.Normalize(vmin=-vdiff, vmax=vdiff)
+    else:
+        clevel = np.linspace(-vdiff, vdiff, nlevels)
+        cmap = mpl.cm.get_cmap("RdBu_r", nlevels - 1)
+        norm = mpl.colors.BoundaryNorm(clevel, ncolors=cmap.N, clip=False)
 
     clevel = np.linspace(-vdiff, vdiff, nlevels)
     cmap = mpl.cm.get_cmap("RdBu_r", nlevels - 1)

@@ -244,7 +244,7 @@ def render_native(master, run, inst, product, ncfg, spec, boxes):
                     "text_kwargs": {"fontsize": 16},
                     "data_proc": {"time_reduction": "mean", "daily_first": True,
                                   "common_mask": True, "min_obs": min_obs,
-                                  "set_axis": False, "rem_obs_nan": True},
+                                  "set_axis": True, "rem_obs_nan": True},
                     **common_grp,
                 }
     an["read"] = {"paired": {"method": "netcdf", "filenames": filenames}}

@@ -14,13 +14,21 @@ nicknames:
 # common domain across all model runs. Add additional domains under "add_domains"
 common:
   add_domains:
-    ATL_metro: {bounds: [-85.0, -83.7, 33.2, 34.4]}
-    MEX_metro: {bounds: [-99.6, -98.6, 18.9, 20.0]}
+    ATL_metro: {bounds: [-86.0, -82.0, 32.4, 34.4]}
+    # {bounds: [-85.0, -83.7, 33.2, 34.4]}
+    # [32.4,  -86.0,  35.4,  -82.0]
+    MEX_metro: {bounds: [-100.0, -98.2, 18.5, 20.4]}
     SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}
-    LA_metro:  {bounds: [-119.2, -117.3, 33.3, 34.7]}
-    DEN_metro: {bounds: [-105.8, -104.3, 39.2, 40.3]}
-    DFW_metro: {bounds: [-97.8, -96.3, 32.2, 33.4]}
-    CONUS:      # 'all' domain
+    LA_metro:  {bounds: [-119.6, -116.9, 33.0, 35.0]}
+    DEN_metro: {bounds: [-106.2, -103.9, 38.8, 40.7]}
+    DFW_metro: {bounds: [-98.2, -95.9, 31.8, 33.8]}
+    #CONUS:      # 'all' domain
+
+    # MEX_greater: {bounds: [-100.0, -98.2, 18.5, 20.4]}
+    # SE_US:       {bounds: [-92.0, -75.0, 24.5, 37.0]}
+    # LA_greater:  {bounds: [-119.6, -116.9, 33.0, 35.0]}
+    # DEN_greater: {bounds: [-106.2, -103.9, 38.8, 40.7]}
+    # DFW_greater: {bounds: [-98.2, -95.9, 31.8, 33.8]}
 
 # surface point obs (AirNow + AQS) vs CESM-SE. Renders control_{run}_sfc.yaml
 # from control_sfc_master.yaml. paired_dir + scrip_file reuse the base run;
@@ -33,19 +41,19 @@ sfc:
     nonbiog:
       prefix:   202406_sfc
       plot_dir: /glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/figs/nonbiog/sfc
-      model_files: /glade/campaign/acom/acom-da/conus_outputs/f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.ERA5_ref_dust_M1.1.002/H1/f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.ERA5_ref_dust_M1.1.002.cam.h1.2024-06*.nc
+      model_files: /glade/campaign/acom/acom-da/conus_outputs/f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.ERA5_ref_dust_M1.1.002/H1/f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.ERA5_ref_dust_M1.1.002.cam.h1.2024-06-05-03600.nc
     biog:
       prefix:   202406_bio
       plot_dir: /glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/figs/biog/sfc
-      model_files: /glade/campaign/acom/acom-da/conus_outputs/f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.biog_ERA5_ref_dust_M1.1.001/H1/f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.biog_ERA5_ref_dust_M1.1.001.cam.h1.2024-06*.nc
+      model_files: /glade/campaign/acom/acom-da/conus_outputs/f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.biog_ERA5_ref_dust_M1.1.001/H1/f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.biog_ERA5_ref_dust_M1.1.001.cam.h1.2024-06-05-03600.nc
     grapes:
       prefix:   202406_gr
       plot_dir: /glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/figs/grapes/sfc
-      model_files: /glade/campaign/acom/acom-da/conus_outputs/f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.nox_grapes.001/H1/f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.nox_grapes.001.cam.h1.2024-06*.nc
+      model_files: /glade/campaign/acom/acom-da/conus_outputs/f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.nox_grapes.001/H1/f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.nox_grapes.001.cam.h1.2024-06-05-03600.nc
     mxcat:
       prefix:   202406_mx
       plot_dir: /glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/figs/mxcat/sfc
-      model_files: /glade/campaign/acom/acom-weather/jjacdan/SCENICS.HAMAQ/f.e3beta01.FCts2nudged.MXCATL_ne30x16_cams_mosaic_v1.1_final.03/f.e3beta01.FCts2nudged.MXCATL_ne30x16_cams_mosaic_v1.1_final.03.cam.h3i.2024-06*.nc
+      model_files: /glade/campaign/acom/acom-weather/jjacdan/SCENICS.HAMAQ/f.e3beta01.FCts2nudged.MXCATL_ne30x16_cams_mosaic_v1.1_final.03/f.e3beta01.FCts2nudged.MXCATL_ne30x16_cams_mosaic_v1.1_final.03.cam.h3i.2024-06-05-03600.nc
 
 # native-resolution city products (conservative pairing, per-city obsgrid + swath).
 native:
