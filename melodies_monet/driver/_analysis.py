@@ -3297,9 +3297,12 @@ class analysis:
                             else:
                                 xlabel = ""
 
-                            if not cal_reg or region_list is not None:
+                            if (not cal_reg or region_list is not None
+                                    or (cal_reg and interval_var == "dayofweek")):
                             # For non-regulatory metrics, makes plot for both intervals and regions
                             # For regulatory metrics, makes plot only for regions
+
+                            # sub-daily hour of day bins may not make too much sense for multiboxplot 
                                 
                                 # First for p_index = 0 create the obs box plot data array.
                                 if p_index == 0:

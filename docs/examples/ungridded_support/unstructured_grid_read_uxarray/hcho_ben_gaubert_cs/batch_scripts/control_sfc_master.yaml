@@ -45,17 +45,21 @@ obs:
         unit_scale_method: '*'
         nan_value: -1.0
         ylabel_plot: 'Ozone (PPB)'
+        ylabel_reg_plot: 'MDA8 O3 (ppbv)'
         nlevels_plot: 256
         vmin_plot: 0
         vmax_plot: 90
+        regulatory: True
       PM2.5:
         unit_scale: 1
         unit_scale_method: '*'
         nan_value: -1.0
         ylabel_plot: 'PM2.5 (ug/m3)'
+        ylabel_reg_plot: 'PM2.5_24hr (ug/m3)'
         vmin_plot: 0
         vmax_plot: 60
         nlevels_plot: 256
+        regulatory: True
 
   airnow:
     use_airnow: True
@@ -75,17 +79,22 @@ obs:
         unit_scale_method: '*'
         nan_value: -1.0
         ylabel_plot: 'PM2.5 (ug/m3)'
+        ylabel_reg_plot: 'PM2.5_24hr (ug/m3)'
         vmin_plot: 0
         vmax_plot: 60
         nlevels_plot: 256
+        regulatory: True
       OZONE:
         unit_scale: 1
         unit_scale_method: '*'
         nan_value: -1.0
-        ylabel_plot: 'Ozone (PPB)'
+        # ylabel_plot: 'Ozone (PPB)'
         vmin_plot: 0
         vmax_plot: 90
         nlevels_plot: 256
+        regulatory: True
+        ylabel_plot: 'Ozone (PPB)'
+        ylabel_reg_plot: 'MDA8 O3 (ppbv)'
       TEMP:
         unit_scale: 273.15
         unit_scale_method: '+'
@@ -109,6 +118,107 @@ model:
     plot_kwargs: {color: 'purple', marker: '^', linestyle: 'dotted'}
 
 plots:
+
+  regulatory_dow_anw:
+    type: 'multi_boxplot'
+    fig_kwargs: {figsize: [8, 6]}
+    text_kwargs: {fontsize: 16}
+    domain_type:
+    domain_name:
+    domain_info:
+    data: ["airnow_cam-chem-se"]
+    interval_var: dayofweek
+    interval_list: [0, 5, 7]              # Mon=0..Sun=6 ; [0,5)=weekday, [5,7)=weekend
+    interval_labels: [weekday, weekend]
+    xlabel: 'Day type'
+    data_proc: {rem_obs_nan: True, set_axis: True}
+
+  regulatory_dow_aqs:
+    type: 'multi_boxplot'
+    fig_kwargs: {figsize: [8, 6]}
+    text_kwargs: {fontsize: 16}
+    domain_type:
+    domain_name:
+    domain_info:
+    data: ["aqs_cam-chem-se"]
+    interval_var: dayofweek 
+    interval_list: [0, 5, 7]
+    interval_labels: [weekday, weekend]
+    xlabel: 'Day type'
+    data_proc: {rem_obs_nan: True, set_axis: True}
+
+  regulatory_dow1x_anw:
+    type: 'multi_boxplot'
+    fig_kwargs: {figsize: [10, 6]}
+    text_kwargs: {fontsize: 16}
+    domain_type:
+    domain_name:
+    domain_info:
+    data: ["airnow_cam-chem-se"]
+    interval_var: dayofweek
+    interval_list: [0, 1, 2, 3, 4, 5, 6, 7]        # Mon=0..Sun=6 ; one bin per day
+    interval_labels: [Mon, Tue, Wed, Thu, Fri, Sat, Sun]
+    xlabel: 'Day of week'
+    data_proc: {rem_obs_nan: True, set_axis: True}
+
+  regulatory_dow1x_aqs:
+    type: 'multi_boxplot'
+    fig_kwargs: {figsize: [10, 6]}
+    text_kwargs: {fontsize: 16}
+    domain_type:
+    domain_name:
+    domain_info:
+    data: ["aqs_cam-chem-se"]
+    interval_var: dayofweek
+    interval_list: [0, 1, 2, 3, 4, 5, 6, 7]
+    interval_labels: [Mon, Tue, Wed, Thu, Fri, Sat, Sun]
+    xlabel: 'Day of week'
+    data_proc: {rem_obs_nan: True, set_axis: True}
+    
+  regulatory_spatial_bias_anw:
+    type: 'spatial_bias'
+    fig_kwargs: {figsize: [12, 6], states: True, counties: True}
+    default_plot_kwargs: {linewidth: 2.0, markersize: 10.}
+    text_kwargs: {fontsize: 18.}
+    domain_type:      # injected from common.add_domains
+    domain_name:
+    domain_info:
+    data: ["airnow_cam-chem-se"]
+    data_proc: {rem_obs_nan: True, set_axis: True}
+
+  regulatory_spatial_bias_ex_anw:
+    type: 'spatial_bias_exceedance'
+    fig_kwargs: {figsize: [12, 6], states: True, counties: True}
+    default_plot_kwargs: {linewidth: 2.0, markersize: 10.}
+    text_kwargs: {fontsize: 18.}
+    domain_type:      # injected from common.add_domains
+    domain_name:
+    domain_info:
+    data: ["airnow_cam-chem-se"]
+    data_proc: {rem_obs_nan: True, set_axis: True}
+    
+  regulatory_spatial_bias_aqs:
+    type: 'spatial_bias'
+    fig_kwargs: {figsize: [12, 6], states: True, counties: True}
+    default_plot_kwargs: {linewidth: 2.0, markersize: 10.}
+    text_kwargs: {fontsize: 18.}
+    domain_type:      # injected from common.add_domains
+    domain_name:
+    domain_info:
+    data: ["aqs_cam-chem-se"]
+    data_proc: {rem_obs_nan: True, set_axis: True}
+
+  regulatory_spatial_bias_ex_aqs:
+    type: 'spatial_bias_exceedance'
+    fig_kwargs: {figsize: [12, 6], states: True, counties: True}
+    default_plot_kwargs: {linewidth: 2.0, markersize: 10.}
+    text_kwargs: {fontsize: 18.}
+    domain_type:      # injected from common.add_domains
+    domain_name:
+    domain_info:
+    data: ["aqs_cam-chem-se"]
+    data_proc: {rem_obs_nan: True, set_axis: True}
+    
   plot_grp1_anw:
     type: 'timeseries'
     fig_kwargs: {figsize: [12, 6]}
@@ -179,7 +289,7 @@ plots:
     domain_name:
     domain_info:
     data: ["airnow_cam-chem-se"]
-    data_proc: {set_axis: False, rem_obs_nan: True}
+    data_proc: {set_axis: False, rem_obs_nan: True, ts_select_time: 'time_local'}
 
   plot_grp6_aqs:
     type: 'diurnal'
@@ -189,7 +299,7 @@ plots:
     domain_name:
     domain_info:
     data: ["aqs_cam-chem-se"]
-    data_proc: {set_axis: False, rem_obs_nan: True}
+    data_proc: {set_axis: False, rem_obs_nan: True, ts_select_time: 'time_local'}
 
   plot_grp7_anw:
     type: 'multi_boxplot'

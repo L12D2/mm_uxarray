@@ -1358,14 +1358,42 @@ def calculate_multi_boxplot(df, df_reg=None, region_name= None, interval_list=No
         else:
             comb_bx[label] = df[column] 
             region_bx['set_regions']=df[region_name[0]]
-            
+
+    elif interval_var == "dayofweek":
+        # Day-of-week (e.g. weekday vs weekend) grouping. dayofweek is well
+        # defined for BOTH daily regulatory metrics (MDA8 O3 / 24-hr PM2.5)
+
+        # interval_list=[0,5,7], interval_labels=[weekday, weekend].
+        src = df_reg if df_reg is not None else df
+        col = column + "_reg" if df_reg is not None else column
+        comb_bx[label] = src[col]
+        src["interval_labels"] = pd.cut(
+            src["time_local"].dt.dayofweek,
+            bins=interval_list,
+            labels=interval_labels,
+            include_lowest=True,
+            right=False,
+        )
+        region_bx["set_regions"] = src["interval_labels"]
+        
     elif interval_var is not None: 
         if df_reg is not None:
-            raise NotImplementedError('Interval multi-box plots not available yet for regulatory metrics') 
+            raise NotImplementedError(
+                "Interval multi-box plots (other than 'dayofweek') are not "
+                "available for regulatory metrics: regulatory values are daily "
+                "aggregates, so sub-daily intervals like hour-of-day are undefined."
+            ) 
         else:
-            comb_bx[label] = df[column] 
+            comb_bx[label] = df[column]
+            _ivals = df[interval_var]
+            # Binning a datetime column  with numeric edges
+            # use .dt.hour.
+            # "bins must be of datetime64 dtype".
+            if (pd.api.types.is_datetime64_any_dtype(_ivals)
+                    and all(isinstance(b, (int, float)) for b in interval_list)):
+                _ivals = _ivals.dt.hour
             df['interval_labels'] = pd.cut(
-                df[interval_var], 
+                _ivals, 
                 bins = interval_list,
                 labels=interval_labels,
                 include_lowest=True, 
@@ -2464,10 +2492,25 @@ def make_spatial_bias_exceedance(df, df_wind=None, column_o=None, label_o=None, 
             latmin,lonmin,latmax,lonmax,acro = get_epa_bounds(index=None,acronym=domain_name)
             plt.title('EPA Region ' + domain_name + ': ' + label_m + ' - ' + label_o,fontweight='bold',**text_kwargs)
         else:
-            latmin= math.floor(min(df.latitude))
-            lonmin= math.floor(min(df.longitude))
-            latmax= math.ceil(max(df.latitude))
-            lonmax= math.ceil(max(df.longitude))
+            # latmin= math.floor(min(df.latitude))
+            # lonmin= math.floor(min(df.longitude))
+            # latmax= math.ceil(max(df.latitude))
+            # lonmax= math.ceil(max(df.longitude))
+            
+            # domain selection masks out-of-box rows to NaN (rows are kept, not
+            # dropped), so use pandas .min()/.max() which skip NaN; builtin
+            # min()/max() would return NaN to math.floor(NaN) and crash
+            _lat = df.latitude.dropna()
+            _lon = df.longitude.dropna()
+            if _lat.empty or _lon.empty:
+                print("Warning: no valid lat/lon for " + str(domain_name)
+                      + "; skipping exceedance extent.")
+                latmin, lonmin, latmax, lonmax = 25.0, -130.0, 50.0, -60.0
+            else:
+                latmin= math.floor(_lat.min())
+                lonmin= math.floor(_lon.min())
+                latmax= math.ceil(_lat.max())
+                lonmax= math.ceil(_lon.max())
             plt.title(domain_name + ': ' + label_m + ' - ' + label_o,fontweight='bold',**text_kwargs)
 
         if 'extent' not in map_kwargs:

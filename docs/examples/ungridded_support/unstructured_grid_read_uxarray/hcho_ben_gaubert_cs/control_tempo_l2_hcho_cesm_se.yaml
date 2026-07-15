@@ -88,7 +88,7 @@ obs:
     
     regrid_target: [obs, model, series]   #[model, obs]   # default 'model'; 'obs' = lat/lon L3 grid
     obs_grid_res: 0.1
-    obs_grid_extent: [-130, -60, 20, 55] # [lonW, lonE, latS, latN]; default = model extent
+    obs_grid_extent: [-130, -60, 15, 55] # [lonW, lonE, latS, latN]; default = model extent
     obs_grid_units: deg            # 'deg' (default) | 'km' | 'm'
     
     obs_type: sat_swath_clm
@@ -116,7 +116,7 @@ obs:
 
     regrid_target: [obs, model, series]     # default 'model'; 'obs' = lat/lon L3 grid
     obs_grid_res: 0.1
-    obs_grid_extent: [-130, -60, 20, 55] # [lonW, lonE, latS, latN]; default = model extent
+    obs_grid_extent: [-130, -60, 15, 55] # [lonW, lonE, latS, latN]; default = model extent
     obs_grid_units: deg            # 'deg' (default) | 'km' | 'm'
     
     filename: /glade/campaign/acom/acom-da/sma/TEMPO_NO2_V03/TEMPO_NO2_L2_V03_202406*_S0*
@@ -139,7 +139,7 @@ obs:
 
     regrid_target: [obs, model, series]   # default 'model'; 'obs' = lat/lon L3 grid
     obs_grid_res: 0.1
-    #obs_grid_extent: [-130, -60, 20, 55] # [lonW, lonE, latS, latN]; default = model extent
+    obs_grid_extent: [-130, -60, 15, 55] # [lonW, lonE, latS, latN]; default = model extent
     obs_grid_units: deg            # 'deg' (default) | 'km' | 'm'
     
     filename: /glade/derecho/scratch/lcthompson/tropomi/no2_2024/S5P_OFFL_L2__NO2____202406*.nc
@@ -162,7 +162,7 @@ obs:
 
     regrid_target: [obs, model, series]   # default 'model'; 'obs' = lat/lon L3 grid
     obs_grid_res: 0.1
-    #obs_grid_extent: [-130, -60, 20, 55] # [lonW, lonE, latS, latN]; default = model extent
+    obs_grid_extent: [-130, -60, 15, 55] # [lonW, lonE, latS, latN]; default = model extent
     obs_grid_units: deg            # 'deg' (default) | 'km' | 'm'
     
     filename: /glade/derecho/scratch/lcthompson/tropomi/hcho_2024/S5P_OFFL_L2__HCHO___202406*.nc
@@ -193,7 +193,7 @@ obs:
 
     regrid_target: [obs, model, series]   # default 'model'; 'obs' = lat/lon L3 grid
     obs_grid_res: 0.1
-    #obs_grid_extent: [-130, -60, 20, 55] # [lonW, lonE, latS, latN]; default = model extent
+    obs_grid_extent: [-130, -60, 15, 55] # [lonW, lonE, latS, latN]; default = model extent
     obs_grid_units: deg            # 'deg' (default) | 'km' | 'm'
     
     filename: /glade/derecho/scratch/lcthompson/tropomi/co_2024/S5P_OFFL_L2__CO_____202406*.nc #/glade/derecho/scratch/lcthompson/tropomi/co_2024/S5P_OFFL_L2__CO___202406*.nc
