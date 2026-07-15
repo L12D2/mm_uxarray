@@ -1367,8 +1367,15 @@ def calculate_multi_boxplot(df, df_reg=None, region_name= None, interval_list=No
         src = df_reg if df_reg is not None else df
         col = column + "_reg" if df_reg is not None else column
         comb_bx[label] = src[col]
+
+        # need to generalize this time  
+        # surface pairdf has 'time_local'; satellite pairdf (to_dataframe) has
+        # 'time' (UTC) 
+        # day-of-week shouyld be the same for either since an
+        # afternoon overpass shouldnt crosses the local date boundary
+        _tcol = "time_local" if "time_local" in src.columns else "time"
         src["interval_labels"] = pd.cut(
-            src["time_local"].dt.dayofweek,
+            pd.to_datetime(src[_tcol]).dt.dayofweek,
             bins=interval_list,
             labels=interval_labels,
             include_lowest=True,
