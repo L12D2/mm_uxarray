@@ -117,6 +117,13 @@ def main():
     print(f"[plot] reading paired... ({time.time()-t0:.0f}s)", flush=True)
     an.read_analysis()
 
+    # inject different nicknames so we can get around the p.model 
+    _nick = (an.control_dict.get("analysis", {}) or {}).get("sim_nickname")
+    if _nick:
+        for _p in an.paired.values():
+            _p.model = _nick
+        print(f"[plot] model label -> {_nick!r}", flush=True)
+
     if os.environ.get("PLOT_SWATH", "").strip():
         _plot_swath(an, t0)
         print(f"[plot] DONE (swath) in {time.time()-t0:.0f}s", flush=True)

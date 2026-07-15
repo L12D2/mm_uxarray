@@ -76,6 +76,8 @@ def render(master, name, spec, common=None):
     an["output_dir"] = spec["plot_dir"]
     an["output_dir_save"] = spec["paired_dir"]
     an["output_dir_read"] = spec["paired_dir"]
+    if spec.get("nickname"):                      # display label for legends/titles
+        an["sim_nickname"] = spec["nickname"]
     if "montage" in an:
         an["montage"]["plot_dir"] = spec["plot_dir"]
         an["montage"]["outdir"] = spec["plot_dir"] + "/montages"
@@ -195,6 +197,8 @@ def render_native(master, run, inst, product, ncfg, spec, boxes):
     an["output_dir"] = plot_dir
     an["output_dir_save"] = paired_dir
     an["output_dir_read"] = paired_dir
+    if spec.get("nickname"):                      # display label for legends/titles
+        an["sim_nickname"] = spec["nickname"]
     if "montage" in an:
         an["montage"]["plot_dir"] = plot_dir
         an["montage"]["outdir"] = plot_dir + "/montages"
@@ -264,9 +268,13 @@ def main():
 
     # standard (master-driven) controls
     wanted = args or list(cfg["runs"])
-    
+
+    nicknames = cfg.get("nicknames", {})
+    def _nick(run):
+        return nicknames.get(run.split("_")[0])
     for name in wanted:
-        render(master, name, cfg["runs"][name], common=common)
+        render(master, name, {**cfg["runs"][name], "nickname": _nick(name)},
+               common=common)
 
     # surface controls
     sfc = cfg.get("sfc")
@@ -278,8 +286,9 @@ def main():
                 "plot_dir": sspec["plot_dir"],
                 "paired_dir": base["paired_dir"],
                 "paired_prefix": sspec["prefix"],
-                "model_files": sspec.get("model_files", base["model_files"]),
+                "model_files": base["model_files"],
                 "scrip_file": base["scrip_file"],
+                "nickname": _nick(run),
             }
             render(sfc_master, f"{run}_sfc", spec, common=common)
             
@@ -287,7 +296,7 @@ def main():
     ncfg = cfg.get("native")
     if ncfg and not args:
         for run in ncfg.get("cities", {}):
-            spec = cfg["runs"][run]
+            spec = {**cfg["runs"][run], "nickname": _nick(run)}
             for inst in ncfg["instruments"]:
                 for product in ncfg["products"]:
                     render_native(master, run, inst, product, ncfg, spec, boxes)
