@@ -127,7 +127,8 @@ def main():
     else:
         cities = CITIES
 
-    iso = datetime.strptime(ymd, "%Y%m%d").strftime("%Y-%m-%d")
+    d0 = datetime.strptime(ymd, "%Y%m%d")
+    iso = d0.strftime("%Y-%m-%d")
     r = RUNS[run]
     if not glob.glob(f"{r['model_dir']}/{r['model_stem']}.{iso}-*.nc"):
         print(f"SKIP {run} {ymd}: no model files under {r['model_dir']}", flush=True)

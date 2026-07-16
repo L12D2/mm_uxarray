@@ -11,26 +11,12 @@
 analysis:
   start_time: '2024-06-01'                 #UTC  
   end_time:   '2024-06-30 23:59:00'        #UTC
-  
-  # start_time: '2024-04-14'                 #UTC  
-  # end_time:   '2024-04-14 23:59:00'        #UTC
-  
-  # start_time: '2024-03-01'                 #UTC  
-  # end_time:   '2024-03-31 23:59:00'        #UTC
-
-  # start_time: '2024-06-01'                 #UTC  
-  # end_time:   '2024-06-01 23:59:00'        #UTC
-
-  # start_time: '2024-03-15'                 #UTC  
-  # end_time:   '2024-03-15 23:59:00'        #UTC
-  
+    
   output_dir: /glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/satellite_img
   output_dir_save: /glade/work/lcthompson/mm_output/nonbiog_refera5_dust
   output_dir_read: /glade/work/lcthompson/mm_output/nonbiog_refera5_dust 
   
   save:
-    # paired: {method: 'netcdf', prefix: 'test', data: all}
-    # paired: {method: 'netcdf', prefix: '20240331', data: all}
     paired: {method: 'netcdf', prefix: '202406', data: all}
   
   read:
@@ -94,10 +80,10 @@ obs:
     obs_type: sat_swath_clm
     sat_type: tempo_l2_hcho
     variables:
-      main_data_quality_flag:
-        main_data_quality_flag_max: 0
-        var_applied: ['vertical_column']
-      vertical_column:                 # HCHO total column (molecules/cm^2)
+      main_data_quality_flag: {}
+      solar_zenith_angle: {}
+      eff_cloud_fraction: {}
+      vertical_column:
         ylabel_plot: 'HCHO column (molec cm$^{-2}$)'
         vmin_plot: 0.3
         vmax_plot: 2.0e+16
@@ -108,6 +94,11 @@ obs:
       latitude_bounds: {}
       longitude_bounds: {}
       vertical_column_uncertainty: {}
+    data_proc:
+      filter_dict:
+        main_data_quality_flag: {oper: '<=', value: 0}
+        solar_zenith_angle:     {oper: '<=', value: 70}
+        eff_cloud_fraction:     {oper: '<=', value: 0.2}
       
   tempo_l2_no2:
     obs_type: sat_swath_clm
@@ -121,8 +112,9 @@ obs:
     
     filename: /glade/campaign/acom/acom-da/sma/TEMPO_NO2_V03/TEMPO_NO2_L2_V03_202406*_S0*
     variables:
-      main_data_quality_flag: {main_data_quality_flag_max: 0, var_applied: ['vertical_column_troposphere']}
-      vertical_column_troposphere: {ylabel_plot: 'NO$_2$ trop. column (molec cm$^{-2}$)', vmin_plot: 0, vmax_plot: 1.0e+16}
+      main_data_quality_flag: 0        
+      eff_cloud_fraction:     {}     
+      solar_zenith_angle:     {}       
       pressure: {}
       tropopause_pressure: {}
       scattering_weights: {}
@@ -130,18 +122,21 @@ obs:
       latitude_bounds: {}
       longitude_bounds: {}
       vertical_column_troposphere_uncertainty: {}
-      
+      vertical_column_troposphere: {ylabel_plot: 'NO$_2$ trop. column (molec cm$^{-2}$)', vmin_plot: 0, vmax_plot: 1.0e+16}
+    data_proc:
+      filter_dict:
+        main_data_quality_flag: {oper: '<=', value: 0}    # flag == 0
+        solar_zenith_angle:     {oper: '<=', value: 70}
+        eff_cloud_fraction:     {oper: '<=', value: 0.2}
   
   tropomi_l2_no2:
     obs_type: sat_swath_clm
     sat_type: tropomi_l2_no2
     regrid_method: radius_mean
-
-    regrid_target: [obs, model, series]   # default 'model'; 'obs' = lat/lon L3 grid
+    regrid_target: [obs, model, series]
     obs_grid_res: 0.1
-    obs_grid_extent: [-130, -60, 15, 55] # [lonW, lonE, latS, latN]; default = model extent
-    obs_grid_units: deg            # 'deg' (default) | 'km' | 'm'
-    
+    obs_grid_extent: [-130, -60, 15, 55]
+    obs_grid_units: deg
     filename: /glade/derecho/scratch/lcthompson/tropomi/no2_2024/S5P_OFFL_L2__NO2____202406*.nc
     variables:
       qa_value: {}
@@ -152,27 +147,23 @@ obs:
       tm5_tropopause_pressure: {}
       latitude_bounds: {}
       longitude_bounds: {}
-      qa_value: {}
       nitrogendioxide_tropospheric_column_precision: {}
+    data_proc:
+      filter_dict:
+        qa_value: {oper: '>=', value: 0.75}      # NO2 standard
 
   tropomi_l2_hcho:
     obs_type: sat_swath_clm
     sat_type: tropomi_l2_hcho
-    regrid_method: radius_mean # nearest_s2d #conservative
-
-    regrid_target: [obs, model, series]   # default 'model'; 'obs' = lat/lon L3 grid
+    regrid_method: radius_mean
+    regrid_target: [obs, model, series]
     obs_grid_res: 0.1
-    obs_grid_extent: [-130, -60, 15, 55] # [lonW, lonE, latS, latN]; default = model extent
-    obs_grid_units: deg            # 'deg' (default) | 'km' | 'm'
-    
+    obs_grid_extent: [-130, -60, 15, 55]
+    obs_grid_units: deg
     filename: /glade/derecho/scratch/lcthompson/tropomi/hcho_2024/S5P_OFFL_L2__HCHO___202406*.nc
-    # /glade/campaign/acom/acom-da/sma/TROPOMI-HCHO-DATA/2024/S5P_OFFL_L2__HCHO___202403*.nc
-    # filename: /glade/campaign/acom/acom-da/sma/TROPOMI-HCHO-DATA/2024/S5P_OFFL_L2__HCHO___202406*.nc
-    # filename: /glade/campaign/acom/acom-da/sma/TROPOMI-HCHO-DATA/2024/S5P_OFFL_L2__HCHO___202403*.nc
-    # filename: /glade/campaign/acom/acom-da/sma/TROPOMI-HCHO-DATA/2024/S5P_OFFL_L2__HCHO___20240315*.nc
     variables:
-      qa_value: {qa_min: 0.5}
-      formaldehyde_tropospheric_vertical_column: 
+      qa_value: {}
+      formaldehyde_tropospheric_vertical_column:
         ylabel_plot: 'HCHO column (molec cm$^{-2}$)'
         vmin_plot: 0.3
         vmax_plot: 2.0e+16
@@ -185,21 +176,22 @@ obs:
       latitude_bounds: {}
       longitude_bounds: {}
       formaldehyde_tropospheric_vertical_column_precision: {}
+    data_proc:
+      filter_dict:
+        qa_value: {oper: '>=', value: 0.5}       # HCHO standard
 
   tropomi_l2_co:
     obs_type: sat_swath_clm
     sat_type: tropomi_l2_co
-    regrid_method: radius_mean # nearest_s2d #conservative
-
-    regrid_target: [obs, model, series]   # default 'model'; 'obs' = lat/lon L3 grid
+    regrid_method: radius_mean
+    regrid_target: [obs, model, series]
     obs_grid_res: 0.1
-    obs_grid_extent: [-130, -60, 15, 55] # [lonW, lonE, latS, latN]; default = model extent
-    obs_grid_units: deg            # 'deg' (default) | 'km' | 'm'
-    
-    filename: /glade/derecho/scratch/lcthompson/tropomi/co_2024/S5P_OFFL_L2__CO_____202406*.nc #/glade/derecho/scratch/lcthompson/tropomi/co_2024/S5P_OFFL_L2__CO___202406*.nc
+    obs_grid_extent: [-130, -60, 15, 55]
+    obs_grid_units: deg
+    filename: /glade/derecho/scratch/lcthompson/tropomi/co_2024/S5P_OFFL_L2__CO_____202406*.nc
     variables:
-      qa_value: {qa_min: 0.5}
-      carbonmonoxide_total_column: 
+      qa_value: {}
+      carbonmonoxide_total_column:
         ylabel_plot: 'CO column (molec cm$^{-2}$)'
         vmin_plot: 0
         vmax_plot: 3.0e+18
@@ -210,12 +202,9 @@ obs:
       longitude_bounds: {}
       carbonmonoxide_total_column_precision: {}
       carbonmonoxide_total_column_corrected: {}
-
-      #  data: ['tempo_l2_hcho_cam-chem-se', 'tempo_l2_no2_cam-chem-se', 'tropomi_l2_no2_cam-chem-se', 'tropomi_l2_hcho_cam-chem-se', 'tropomi_l2_co_cam-chem-se']
-      # data: ["tempo_l2_hcho_cam-chem-se"]
-
-      # data: ["tempo_l2_hcho_cam-chem-se", 'tropomi_l2_hcho_cam-chem-se']
-      
+    data_proc:
+      filter_dict:
+        qa_value: {oper: '>=', value: 0.5}       # CO standard
 model:
   cam-chem-se:
     # files: /glade/campaign/acom/acom-da/conus_outputs/f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.ERA5_ref_dust_M1.1.002/H1/f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.ERA5_ref_dust_M1.1.002.cam.h1.2024-06*.nc
@@ -237,685 +226,685 @@ model:
       convert_to_ppb: True
     plot_kwargs: {color: 'purple', marker: '^', linestyle: 'dotted'}
 
-plots:
-  plot_grp1_hcho_tempo:
-    type: 'timeseries'
-    fig_kwargs: {figsize: [12, 6]}
-    default_plot_kwargs: {linewidth: 2.0, markersize: 10.}
-    text_kwargs: {fontsize: 18.}
-    # domain_type: ["all", "auto-region:box"]
-    # domain_name: ["CONUS", "SE_US"]
-    domain_type: ["auto-region:box"]
-    domain_name: ["SE_US"]
-    domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
-    data: ['tempo_l2_hcho_cam-chem-se']
-    data_proc:
-      rem_obs_nan: True 
-      ts_avg_window: 'h' 
-      set_axis: True 
+# plots:
+#   plot_grp1_hcho_tempo:
+#     type: 'timeseries'
+#     fig_kwargs: {figsize: [12, 6]}
+#     default_plot_kwargs: {linewidth: 2.0, markersize: 10.}
+#     text_kwargs: {fontsize: 18.}
+#     # domain_type: ["all", "auto-region:box"]
+#     # domain_name: ["CONUS", "SE_US"]
+#     domain_type: ["auto-region:box"]
+#     domain_name: ["SE_US"]
+#     domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
+#     data: ['tempo_l2_hcho_cam-chem-se']
+#     data_proc:
+#       rem_obs_nan: True 
+#       ts_avg_window: 'h' 
+#       set_axis: True 
 
-  plot_grp1_no2_tempo:
-    type: 'timeseries'
-    fig_kwargs: {figsize: [12, 6]}
-    default_plot_kwargs: {linewidth: 2.0, markersize: 10.}
-    text_kwargs: {fontsize: 18.}
-    domain_type: ["auto-region:box"]
-    domain_name: ["SE_US"]
-    domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
-    data: ['tempo_l2_no2_cam-chem-se']
-    data_proc:
-      rem_obs_nan: True 
-      ts_avg_window: 'h' 
-      set_axis: True 
+#   plot_grp1_no2_tempo:
+#     type: 'timeseries'
+#     fig_kwargs: {figsize: [12, 6]}
+#     default_plot_kwargs: {linewidth: 2.0, markersize: 10.}
+#     text_kwargs: {fontsize: 18.}
+#     domain_type: ["auto-region:box"]
+#     domain_name: ["SE_US"]
+#     domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
+#     data: ['tempo_l2_no2_cam-chem-se']
+#     data_proc:
+#       rem_obs_nan: True 
+#       ts_avg_window: 'h' 
+#       set_axis: True 
       
-  plot_grp1_no2_tropo:
-    type: 'timeseries'
-    fig_kwargs: {figsize: [12, 6]}
-    default_plot_kwargs: {linewidth: 2.0, markersize: 10.}
-    text_kwargs: {fontsize: 18.}
-    domain_type: ["auto-region:box"]
-    domain_name: ["SE_US"]
-    domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
-    data: ['tropomi_l2_no2_cam-chem-se']
-    data_proc:
-      rem_obs_nan: True 
-      ts_avg_window: 'h' 
-      set_axis: True 
+#   plot_grp1_no2_tropo:
+#     type: 'timeseries'
+#     fig_kwargs: {figsize: [12, 6]}
+#     default_plot_kwargs: {linewidth: 2.0, markersize: 10.}
+#     text_kwargs: {fontsize: 18.}
+#     domain_type: ["auto-region:box"]
+#     domain_name: ["SE_US"]
+#     domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
+#     data: ['tropomi_l2_no2_cam-chem-se']
+#     data_proc:
+#       rem_obs_nan: True 
+#       ts_avg_window: 'h' 
+#       set_axis: True 
 
-  plot_grp1_hcho_tropo:
-    type: 'timeseries'
-    fig_kwargs: {figsize: [12, 6]}
-    default_plot_kwargs: {linewidth: 2.0, markersize: 10.}
-    text_kwargs: {fontsize: 18.}
-    domain_type: ["auto-region:box"]
-    domain_name: ["SE_US"]
-    domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
-    data: ['tropomi_l2_hcho_cam-chem-se']
-    data_proc:
-      rem_obs_nan: True 
-      ts_avg_window: 'h' 
-      set_axis: True 
+#   plot_grp1_hcho_tropo:
+#     type: 'timeseries'
+#     fig_kwargs: {figsize: [12, 6]}
+#     default_plot_kwargs: {linewidth: 2.0, markersize: 10.}
+#     text_kwargs: {fontsize: 18.}
+#     domain_type: ["auto-region:box"]
+#     domain_name: ["SE_US"]
+#     domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
+#     data: ['tropomi_l2_hcho_cam-chem-se']
+#     data_proc:
+#       rem_obs_nan: True 
+#       ts_avg_window: 'h' 
+#       set_axis: True 
       
-  plot_grp1_co_tropo:
-    type: 'timeseries'
-    fig_kwargs: {figsize: [12, 6]}
-    default_plot_kwargs: {linewidth: 2.0, markersize: 10.}
-    text_kwargs: {fontsize: 18.}
-    domain_type: ["auto-region:box"]
-    domain_name: ["SE_US"]
-    domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
-    data: ['tropomi_l2_co_cam-chem-se']
-    data_proc:
-      rem_obs_nan: True 
-      ts_avg_window: 'h' 
-      set_axis: True 
+#   plot_grp1_co_tropo:
+#     type: 'timeseries'
+#     fig_kwargs: {figsize: [12, 6]}
+#     default_plot_kwargs: {linewidth: 2.0, markersize: 10.}
+#     text_kwargs: {fontsize: 18.}
+#     domain_type: ["auto-region:box"]
+#     domain_name: ["SE_US"]
+#     domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
+#     data: ['tropomi_l2_co_cam-chem-se']
+#     data_proc:
+#       rem_obs_nan: True 
+#       ts_avg_window: 'h' 
+#       set_axis: True 
 
-  plot_grp1_hcho_tempo_obs:
-    type: 'timeseries'
-    fig_kwargs: {figsize: [12, 6]}
-    default_plot_kwargs: {linewidth: 2.0, markersize: 10.}
-    text_kwargs: {fontsize: 18.}
-    domain_type: ["auto-region:box"]
-    domain_name: ["SE_US"]
-    domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
-    data: ['tempo_l2_hcho_cam-chem-se_obsgrid']
-    data_proc: {rem_obs_nan: True, ts_avg_window: 'h', set_axis: True}
+#   plot_grp1_hcho_tempo_obs:
+#     type: 'timeseries'
+#     fig_kwargs: {figsize: [12, 6]}
+#     default_plot_kwargs: {linewidth: 2.0, markersize: 10.}
+#     text_kwargs: {fontsize: 18.}
+#     domain_type: ["auto-region:box"]
+#     domain_name: ["SE_US"]
+#     domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
+#     data: ['tempo_l2_hcho_cam-chem-se_obsgrid']
+#     data_proc: {rem_obs_nan: True, ts_avg_window: 'h', set_axis: True}
 
-  plot_grp1_no2_tempo_obs:
-    type: 'timeseries'
-    fig_kwargs: {figsize: [12, 6]}
-    default_plot_kwargs: {linewidth: 2.0, markersize: 10.}
-    text_kwargs: {fontsize: 18.}
-    domain_type: ["auto-region:box"]
-    domain_name: ["SE_US"]
-    domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
-    data: ['tempo_l2_no2_cam-chem-se_obsgrid']
-    data_proc: {rem_obs_nan: True, ts_avg_window: 'h', set_axis: True}
+#   plot_grp1_no2_tempo_obs:
+#     type: 'timeseries'
+#     fig_kwargs: {figsize: [12, 6]}
+#     default_plot_kwargs: {linewidth: 2.0, markersize: 10.}
+#     text_kwargs: {fontsize: 18.}
+#     domain_type: ["auto-region:box"]
+#     domain_name: ["SE_US"]
+#     domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
+#     data: ['tempo_l2_no2_cam-chem-se_obsgrid']
+#     data_proc: {rem_obs_nan: True, ts_avg_window: 'h', set_axis: True}
 
-  plot_grp1_no2_tropo_obs:
-    type: 'timeseries'
-    fig_kwargs: {figsize: [12, 6]}
-    default_plot_kwargs: {linewidth: 2.0, markersize: 10.}
-    text_kwargs: {fontsize: 18.}
-    domain_type: ["auto-region:box"]
-    domain_name: ["SE_US"]
-    domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
-    data: ['tropomi_l2_no2_cam-chem-se_obsgrid']
-    data_proc: {rem_obs_nan: True, ts_avg_window: 'h', set_axis: True}
+#   plot_grp1_no2_tropo_obs:
+#     type: 'timeseries'
+#     fig_kwargs: {figsize: [12, 6]}
+#     default_plot_kwargs: {linewidth: 2.0, markersize: 10.}
+#     text_kwargs: {fontsize: 18.}
+#     domain_type: ["auto-region:box"]
+#     domain_name: ["SE_US"]
+#     domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
+#     data: ['tropomi_l2_no2_cam-chem-se_obsgrid']
+#     data_proc: {rem_obs_nan: True, ts_avg_window: 'h', set_axis: True}
 
-  plot_grp1_hcho_tropo_obs:
-    type: 'timeseries'
-    fig_kwargs: {figsize: [12, 6]}
-    default_plot_kwargs: {linewidth: 2.0, markersize: 10.}
-    text_kwargs: {fontsize: 18.}
-    domain_type: ["auto-region:box"]
-    domain_name: ["SE_US"]
-    domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
-    data: ['tropomi_l2_hcho_cam-chem-se_obsgrid']
-    data_proc: {rem_obs_nan: True, ts_avg_window: 'h', set_axis: True}
+#   plot_grp1_hcho_tropo_obs:
+#     type: 'timeseries'
+#     fig_kwargs: {figsize: [12, 6]}
+#     default_plot_kwargs: {linewidth: 2.0, markersize: 10.}
+#     text_kwargs: {fontsize: 18.}
+#     domain_type: ["auto-region:box"]
+#     domain_name: ["SE_US"]
+#     domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
+#     data: ['tropomi_l2_hcho_cam-chem-se_obsgrid']
+#     data_proc: {rem_obs_nan: True, ts_avg_window: 'h', set_axis: True}
 
-  plot_grp1_co_tropo_obs:
-    type: 'timeseries'
-    fig_kwargs: {figsize: [12, 6]}
-    default_plot_kwargs: {linewidth: 2.0, markersize: 10.}
-    text_kwargs: {fontsize: 18.}
-    domain_type: ["auto-region:box"]
-    domain_name: ["SE_US"]
-    domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
-    data: ['tropomi_l2_co_cam-chem-se_obsgrid']
-    data_proc: {rem_obs_nan: True, ts_avg_window: 'h', set_axis: True}
+#   plot_grp1_co_tropo_obs:
+#     type: 'timeseries'
+#     fig_kwargs: {figsize: [12, 6]}
+#     default_plot_kwargs: {linewidth: 2.0, markersize: 10.}
+#     text_kwargs: {fontsize: 18.}
+#     domain_type: ["auto-region:box"]
+#     domain_name: ["SE_US"]
+#     domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
+#     data: ['tropomi_l2_co_cam-chem-se_obsgrid']
+#     data_proc: {rem_obs_nan: True, ts_avg_window: 'h', set_axis: True}
 
-  plot_grp1b_hcho_tempo_series:
-    type: 'timeseries'
-    fig_kwargs: {figsize: [12, 6]}
-    default_plot_kwargs: {linewidth: 2.0, markersize: 10.}
-    text_kwargs: {fontsize: 18.}
-    domain_type: ["all"]
-    domain_name: ["CONUS"]
-    data: ['tempo_l2_hcho_cam-chem-se_series']
-    data_proc: {rem_obs_nan: True, ts_avg_window: 'h', set_axis: True}
+#   plot_grp1b_hcho_tempo_series:
+#     type: 'timeseries'
+#     fig_kwargs: {figsize: [12, 6]}
+#     default_plot_kwargs: {linewidth: 2.0, markersize: 10.}
+#     text_kwargs: {fontsize: 18.}
+#     domain_type: ["all"]
+#     domain_name: ["CONUS"]
+#     data: ['tempo_l2_hcho_cam-chem-se_series']
+#     data_proc: {rem_obs_nan: True, ts_avg_window: 'h', set_axis: True}
 
-  plot_grp1b_no2_tempo_series:
-    type: 'timeseries'
-    fig_kwargs: {figsize: [12, 6]}
-    default_plot_kwargs: {linewidth: 2.0, markersize: 10.}
-    text_kwargs: {fontsize: 18.}
-    domain_type: ["all"]
-    domain_name: ["CONUS"]
-    data: ['tempo_l2_no2_cam-chem-se_series']
-    data_proc: {rem_obs_nan: True, ts_avg_window: 'h', set_axis: True}
+#   plot_grp1b_no2_tempo_series:
+#     type: 'timeseries'
+#     fig_kwargs: {figsize: [12, 6]}
+#     default_plot_kwargs: {linewidth: 2.0, markersize: 10.}
+#     text_kwargs: {fontsize: 18.}
+#     domain_type: ["all"]
+#     domain_name: ["CONUS"]
+#     data: ['tempo_l2_no2_cam-chem-se_series']
+#     data_proc: {rem_obs_nan: True, ts_avg_window: 'h', set_axis: True}
 
-  plot_grp1b_no2_tropo_series:
-    type: 'timeseries'
-    fig_kwargs: {figsize: [12, 6]}
-    default_plot_kwargs: {linewidth: 2.0, markersize: 10.}
-    text_kwargs: {fontsize: 18.}
-    domain_type: ["all"]
-    domain_name: ["CONUS"]
-    data: ['tropomi_l2_no2_cam-chem-se_series']
-    data_proc: {rem_obs_nan: True, ts_avg_window: 'h', set_axis: True}
+#   plot_grp1b_no2_tropo_series:
+#     type: 'timeseries'
+#     fig_kwargs: {figsize: [12, 6]}
+#     default_plot_kwargs: {linewidth: 2.0, markersize: 10.}
+#     text_kwargs: {fontsize: 18.}
+#     domain_type: ["all"]
+#     domain_name: ["CONUS"]
+#     data: ['tropomi_l2_no2_cam-chem-se_series']
+#     data_proc: {rem_obs_nan: True, ts_avg_window: 'h', set_axis: True}
 
-  plot_grp1b_hcho_tropo_series:
-    type: 'timeseries'
-    fig_kwargs: {figsize: [12, 6]}
-    default_plot_kwargs: {linewidth: 2.0, markersize: 10.}
-    text_kwargs: {fontsize: 18.}
-    domain_type: ["all"]
-    domain_name: ["CONUS"]
-    data: ['tropomi_l2_hcho_cam-chem-se_series']
-    data_proc: {rem_obs_nan: True, ts_avg_window: 'h', set_axis: True}
+#   plot_grp1b_hcho_tropo_series:
+#     type: 'timeseries'
+#     fig_kwargs: {figsize: [12, 6]}
+#     default_plot_kwargs: {linewidth: 2.0, markersize: 10.}
+#     text_kwargs: {fontsize: 18.}
+#     domain_type: ["all"]
+#     domain_name: ["CONUS"]
+#     data: ['tropomi_l2_hcho_cam-chem-se_series']
+#     data_proc: {rem_obs_nan: True, ts_avg_window: 'h', set_axis: True}
 
-  plot_grp1b_co_tropo_series:
-    type: 'timeseries'
-    fig_kwargs: {figsize: [12, 6]}
-    default_plot_kwargs: {linewidth: 2.0, markersize: 10.}
-    text_kwargs: {fontsize: 18.}
-    domain_type: ["all"]
-    domain_name: ["CONUS"]
-    data: ['tropomi_l2_co_cam-chem-se_series']
-    data_proc: {rem_obs_nan: True, ts_avg_window: 'h', set_axis: True}
+#   plot_grp1b_co_tropo_series:
+#     type: 'timeseries'
+#     fig_kwargs: {figsize: [12, 6]}
+#     default_plot_kwargs: {linewidth: 2.0, markersize: 10.}
+#     text_kwargs: {fontsize: 18.}
+#     domain_type: ["all"]
+#     domain_name: ["CONUS"]
+#     data: ['tropomi_l2_co_cam-chem-se_series']
+#     data_proc: {rem_obs_nan: True, ts_avg_window: 'h', set_axis: True}
     
-  plot_grp2_hcho:
-    type: 'gridded_spatial_bias'
-    fig_kwargs: {states: true, counties: false}
-    text_kwargs: {fontsize: 16}
+#   plot_grp2_hcho:
+#     type: 'gridded_spatial_bias'
+#     fig_kwargs: {states: true, counties: false}
+#     text_kwargs: {fontsize: 16}
     
-    domain_type: ["all",   "all",  "auto-region:box"]
-    domain_name: ["GLOBAL","CONUS","SE_US"]
-    domain_info:
-      SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}
+#     domain_type: ["all",   "all",  "auto-region:box"]
+#     domain_name: ["GLOBAL","CONUS","SE_US"]
+#     domain_info:
+#       SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}
     
-    data: ['tempo_l2_hcho_cam-chem-se','tropomi_l2_hcho_cam-chem-se']
-    data_proc: 
-      set_axis: true
-      #vdiff: 1.0e+16 
+#     data: ['tempo_l2_hcho_cam-chem-se','tropomi_l2_hcho_cam-chem-se']
+#     data_proc: 
+#       set_axis: true
+#       #vdiff: 1.0e+16 
 
-  plot_grp2_no2:
-    type: 'gridded_spatial_bias'
-    fig_kwargs: {states: true, counties: false}
-    text_kwargs: {fontsize: 16}
+#   plot_grp2_no2:
+#     type: 'gridded_spatial_bias'
+#     fig_kwargs: {states: true, counties: false}
+#     text_kwargs: {fontsize: 16}
     
-    domain_type: ["all",   "all",  "auto-region:box"]
-    domain_name: ["GLOBAL","CONUS","SE_US"]
-    domain_info:
-      SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}
+#     domain_type: ["all",   "all",  "auto-region:box"]
+#     domain_name: ["GLOBAL","CONUS","SE_US"]
+#     domain_info:
+#       SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}
     
-    data: ['tempo_l2_no2_cam-chem-se', 'tropomi_l2_no2_cam-chem-se']
-    data_proc: 
-      set_axis: true
-      #vdiff: 5.0e+15
+#     data: ['tempo_l2_no2_cam-chem-se', 'tropomi_l2_no2_cam-chem-se']
+#     data_proc: 
+#       set_axis: true
+#       #vdiff: 5.0e+15
 
-  plot_grp2_co:
-    type: 'gridded_spatial_bias'
-    fig_kwargs: {states: true, counties: false}
-    text_kwargs: {fontsize: 16}
+#   plot_grp2_co:
+#     type: 'gridded_spatial_bias'
+#     fig_kwargs: {states: true, counties: false}
+#     text_kwargs: {fontsize: 16}
     
-    domain_type: ["all",   "all",  "auto-region:box"]
-    domain_name: ["GLOBAL","CONUS","SE_US"]
-    domain_info:
-      SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}
+#     domain_type: ["all",   "all",  "auto-region:box"]
+#     domain_name: ["GLOBAL","CONUS","SE_US"]
+#     domain_info:
+#       SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}
     
-    data: ['tropomi_l2_co_cam-chem-se']
-    data_proc: 
-      set_axis: true
-      #vdiff: 1.0e+18
+#     data: ['tropomi_l2_co_cam-chem-se']
+#     data_proc: 
+#       set_axis: true
+#       #vdiff: 1.0e+18
 
-  plot_grp2_hcho_obs:
-    type: 'gridded_spatial_bias'
-    fig_kwargs: {states: true, counties: false}
-    text_kwargs: {fontsize: 16}
-    domain_type: ["all",   "all",  "auto-region:box"]
-    domain_name: ["GLOBAL","CONUS","SE_US"]
-    domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
-    data: ['tempo_l2_hcho_cam-chem-se_obsgrid', 'tropomi_l2_hcho_cam-chem-se_obsgrid']
-    data_proc: {set_axis: true}
+#   plot_grp2_hcho_obs:
+#     type: 'gridded_spatial_bias'
+#     fig_kwargs: {states: true, counties: false}
+#     text_kwargs: {fontsize: 16}
+#     domain_type: ["all",   "all",  "auto-region:box"]
+#     domain_name: ["GLOBAL","CONUS","SE_US"]
+#     domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
+#     data: ['tempo_l2_hcho_cam-chem-se_obsgrid', 'tropomi_l2_hcho_cam-chem-se_obsgrid']
+#     data_proc: {set_axis: true}
 
-  plot_grp2_no2_obs:
-    type: 'gridded_spatial_bias'
-    fig_kwargs: {states: true, counties: false}
-    text_kwargs: {fontsize: 16}
-    domain_type: ["all",   "all",  "auto-region:box"]
-    domain_name: ["GLOBAL","CONUS","SE_US"]
-    domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
-    data: ['tempo_l2_no2_cam-chem-se_obsgrid', 'tropomi_l2_no2_cam-chem-se_obsgrid']
-    data_proc: {set_axis: true}
+#   plot_grp2_no2_obs:
+#     type: 'gridded_spatial_bias'
+#     fig_kwargs: {states: true, counties: false}
+#     text_kwargs: {fontsize: 16}
+#     domain_type: ["all",   "all",  "auto-region:box"]
+#     domain_name: ["GLOBAL","CONUS","SE_US"]
+#     domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
+#     data: ['tempo_l2_no2_cam-chem-se_obsgrid', 'tropomi_l2_no2_cam-chem-se_obsgrid']
+#     data_proc: {set_axis: true}
 
-  plot_grp2_co_obs:
-    type: 'gridded_spatial_bias'
-    fig_kwargs: {states: true, counties: false}
-    text_kwargs: {fontsize: 16}
-    domain_type: ["all",   "all",  "auto-region:box"]
-    domain_name: ["GLOBAL","CONUS","SE_US"]
-    domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
-    data: ['tropomi_l2_co_cam-chem-se_obsgrid']
-    data_proc: {set_axis: true}
+#   plot_grp2_co_obs:
+#     type: 'gridded_spatial_bias'
+#     fig_kwargs: {states: true, counties: false}
+#     text_kwargs: {fontsize: 16}
+#     domain_type: ["all",   "all",  "auto-region:box"]
+#     domain_name: ["GLOBAL","CONUS","SE_US"]
+#     domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
+#     data: ['tropomi_l2_co_cam-chem-se_obsgrid']
+#     data_proc: {set_axis: true}
     
-  # plot_grp3:
-  #   type: 'spatial_dist'
-  #   fig_kwargs: {states: true, counties: false}
-  #   text_kwargs: {fontsize: 16}
+#   # plot_grp3:
+#   #   type: 'spatial_dist'
+#   #   fig_kwargs: {states: true, counties: false}
+#   #   text_kwargs: {fontsize: 16}
     
-  #   domain_type: ["auto-region:box"]
-  #   domain_name: ["SE_US"]
-  #   domain_info:
-  #     SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}
+#   #   domain_type: ["auto-region:box"]
+#   #   domain_name: ["SE_US"]
+#   #   domain_info:
+#   #     SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}
 
-  #   data: ['tempo_l2_hcho_cam-chem-se', 'tempo_l2_no2_cam-chem-se', 'tropomi_l2_no2_cam-chem-se', 'tropomi_l2_hcho_cam-chem-se', 'tropomi_l2_co_cam-chem-se']
-  #   data_proc:
-  #     set_axis: True
+#   #   data: ['tempo_l2_hcho_cam-chem-se', 'tempo_l2_no2_cam-chem-se', 'tropomi_l2_no2_cam-chem-se', 'tropomi_l2_hcho_cam-chem-se', 'tropomi_l2_co_cam-chem-se']
+#   #   data_proc:
+#   #     set_axis: True
 
-  # plot_grp3_obs:
-  #   type: 'spatial_dist'
-  #   fig_kwargs: {states: true, counties: false}
-  #   text_kwargs: {fontsize: 16}
-  #   domain_type: ["auto-region:box"]
-  #   domain_name: ["SE_US"]
-  #   domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
-  #   data: ['tempo_l2_hcho_cam-chem-se_obsgrid', 'tempo_l2_no2_cam-chem-se_obsgrid',
-  #          'tropomi_l2_no2_cam-chem-se_obsgrid', 'tropomi_l2_hcho_cam-chem-se_obsgrid',
-  #          'tropomi_l2_co_cam-chem-se_obsgrid']
-  #   data_proc: {set_axis: True}
+#   # plot_grp3_obs:
+#   #   type: 'spatial_dist'
+#   #   fig_kwargs: {states: true, counties: false}
+#   #   text_kwargs: {fontsize: 16}
+#   #   domain_type: ["auto-region:box"]
+#   #   domain_name: ["SE_US"]
+#   #   domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
+#   #   data: ['tempo_l2_hcho_cam-chem-se_obsgrid', 'tempo_l2_no2_cam-chem-se_obsgrid',
+#   #          'tropomi_l2_no2_cam-chem-se_obsgrid', 'tropomi_l2_hcho_cam-chem-se_obsgrid',
+#   #          'tropomi_l2_co_cam-chem-se_obsgrid']
+#   #   data_proc: {set_axis: True}
     
-  plot_grp4_hcho_tempo:
-    type: "boxplot"
-    fig_kwargs: {figsize: [8, 6]}
-    text_kwargs: {fontsize: 20.}
-    domain_type: ["auto-region:box"]
-    domain_name: ["SE_US"]
-    domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
-    data: ['tempo_l2_hcho_cam-chem-se']
-    data_proc: {rem_obs_nan: True, set_axis: True }
+#   plot_grp4_hcho_tempo:
+#     type: "boxplot"
+#     fig_kwargs: {figsize: [8, 6]}
+#     text_kwargs: {fontsize: 20.}
+#     domain_type: ["auto-region:box"]
+#     domain_name: ["SE_US"]
+#     domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
+#     data: ['tempo_l2_hcho_cam-chem-se']
+#     data_proc: {rem_obs_nan: True, set_axis: True }
 
-  plot_grp4_hcho_tropo:
-    type: "boxplot"
-    fig_kwargs: {figsize: [8, 6]}
-    text_kwargs: {fontsize: 20.}
-    domain_type: ["auto-region:box"]
-    domain_name: ["SE_US"]
-    domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
-    data: ['tropomi_l2_hcho_cam-chem-se']
-    data_proc: {rem_obs_nan: True, set_axis: True }
+#   plot_grp4_hcho_tropo:
+#     type: "boxplot"
+#     fig_kwargs: {figsize: [8, 6]}
+#     text_kwargs: {fontsize: 20.}
+#     domain_type: ["auto-region:box"]
+#     domain_name: ["SE_US"]
+#     domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
+#     data: ['tropomi_l2_hcho_cam-chem-se']
+#     data_proc: {rem_obs_nan: True, set_axis: True }
     
-  plot_grp4_no2_tempo:
-    type: "boxplot"
-    fig_kwargs: {figsize: [8, 6]}
-    text_kwargs: {fontsize: 20.}
-    domain_type: ["auto-region:box"]
-    domain_name: ["SE_US"]
-    domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
-    data: ['tempo_l2_no2_cam-chem-se']
-    data_proc: {rem_obs_nan: True, set_axis: True }
+#   plot_grp4_no2_tempo:
+#     type: "boxplot"
+#     fig_kwargs: {figsize: [8, 6]}
+#     text_kwargs: {fontsize: 20.}
+#     domain_type: ["auto-region:box"]
+#     domain_name: ["SE_US"]
+#     domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
+#     data: ['tempo_l2_no2_cam-chem-se']
+#     data_proc: {rem_obs_nan: True, set_axis: True }
 
-  plot_grp4_no2_tropo:
-    type: "boxplot"
-    fig_kwargs: {figsize: [8, 6]}
-    text_kwargs: {fontsize: 20.}
-    domain_type: ["auto-region:box"]
-    domain_name: ["SE_US"]
-    domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
-    data: ['tropomi_l2_no2_cam-chem-se']
-    data_proc: {rem_obs_nan: True, set_axis: True }
+#   plot_grp4_no2_tropo:
+#     type: "boxplot"
+#     fig_kwargs: {figsize: [8, 6]}
+#     text_kwargs: {fontsize: 20.}
+#     domain_type: ["auto-region:box"]
+#     domain_name: ["SE_US"]
+#     domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
+#     data: ['tropomi_l2_no2_cam-chem-se']
+#     data_proc: {rem_obs_nan: True, set_axis: True }
     
-  plot_grp4_co:
-    type: "boxplot"
-    fig_kwargs: {figsize: [8, 6]}
-    text_kwargs: {fontsize: 20.}
-    domain_type: ["auto-region:box"]
-    domain_name: ["SE_US"]
-    domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
-    data: ['tropomi_l2_co_cam-chem-se']
-    data_proc: {rem_obs_nan: True, set_axis: True }
+#   plot_grp4_co:
+#     type: "boxplot"
+#     fig_kwargs: {figsize: [8, 6]}
+#     text_kwargs: {fontsize: 20.}
+#     domain_type: ["auto-region:box"]
+#     domain_name: ["SE_US"]
+#     domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
+#     data: ['tropomi_l2_co_cam-chem-se']
+#     data_proc: {rem_obs_nan: True, set_axis: True }
 
-  plot_grp4_hcho_tempo_obs:
-    type: "boxplot"
-    fig_kwargs: {figsize: [8, 6]}
-    text_kwargs: {fontsize: 20.}
-    domain_type: ["auto-region:box"]
-    domain_name: ["SE_US"]
-    domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
-    data: ['tempo_l2_hcho_cam-chem-se_obsgrid']
-    data_proc: {rem_obs_nan: True, set_axis: True}
+#   plot_grp4_hcho_tempo_obs:
+#     type: "boxplot"
+#     fig_kwargs: {figsize: [8, 6]}
+#     text_kwargs: {fontsize: 20.}
+#     domain_type: ["auto-region:box"]
+#     domain_name: ["SE_US"]
+#     domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
+#     data: ['tempo_l2_hcho_cam-chem-se_obsgrid']
+#     data_proc: {rem_obs_nan: True, set_axis: True}
 
-  plot_grp4_hcho_tropo_obs:
-    type: "boxplot"
-    fig_kwargs: {figsize: [8, 6]}
-    text_kwargs: {fontsize: 20.}
-    domain_type: ["auto-region:box"]
-    domain_name: ["SE_US"]
-    domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
-    data: ['tropomi_l2_hcho_cam-chem-se_obsgrid']
-    data_proc: {rem_obs_nan: True, set_axis: True}
+#   plot_grp4_hcho_tropo_obs:
+#     type: "boxplot"
+#     fig_kwargs: {figsize: [8, 6]}
+#     text_kwargs: {fontsize: 20.}
+#     domain_type: ["auto-region:box"]
+#     domain_name: ["SE_US"]
+#     domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
+#     data: ['tropomi_l2_hcho_cam-chem-se_obsgrid']
+#     data_proc: {rem_obs_nan: True, set_axis: True}
 
-  plot_grp4_no2_tempo_obs:
-    type: "boxplot"
-    fig_kwargs: {figsize: [8, 6]}
-    text_kwargs: {fontsize: 20.}
-    domain_type: ["auto-region:box"]
-    domain_name: ["SE_US"]
-    domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
-    data: ['tempo_l2_no2_cam-chem-se_obsgrid']
-    data_proc: {rem_obs_nan: True, set_axis: True}
+#   plot_grp4_no2_tempo_obs:
+#     type: "boxplot"
+#     fig_kwargs: {figsize: [8, 6]}
+#     text_kwargs: {fontsize: 20.}
+#     domain_type: ["auto-region:box"]
+#     domain_name: ["SE_US"]
+#     domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
+#     data: ['tempo_l2_no2_cam-chem-se_obsgrid']
+#     data_proc: {rem_obs_nan: True, set_axis: True}
 
-  plot_grp4_no2_tropo_obs:
-    type: "boxplot"
-    fig_kwargs: {figsize: [8, 6]}
-    text_kwargs: {fontsize: 20.}
-    domain_type: ["auto-region:box"]
-    domain_name: ["SE_US"]
-    domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
-    data: ['tropomi_l2_no2_cam-chem-se_obsgrid']
-    data_proc: {rem_obs_nan: True, set_axis: True}
+#   plot_grp4_no2_tropo_obs:
+#     type: "boxplot"
+#     fig_kwargs: {figsize: [8, 6]}
+#     text_kwargs: {fontsize: 20.}
+#     domain_type: ["auto-region:box"]
+#     domain_name: ["SE_US"]
+#     domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
+#     data: ['tropomi_l2_no2_cam-chem-se_obsgrid']
+#     data_proc: {rem_obs_nan: True, set_axis: True}
 
-  plot_grp4_co_obs:
-    type: "boxplot"
-    fig_kwargs: {figsize: [8, 6]}
-    text_kwargs: {fontsize: 20.}
-    domain_type: ["auto-region:box"]
-    domain_name: ["SE_US"]
-    domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
-    data: ['tropomi_l2_co_cam-chem-se_obsgrid']
-    data_proc: {rem_obs_nan: True, set_axis: True}
+#   plot_grp4_co_obs:
+#     type: "boxplot"
+#     fig_kwargs: {figsize: [8, 6]}
+#     text_kwargs: {fontsize: 20.}
+#     domain_type: ["auto-region:box"]
+#     domain_name: ["SE_US"]
+#     domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
+#     data: ['tropomi_l2_co_cam-chem-se_obsgrid']
+#     data_proc: {rem_obs_nan: True, set_axis: True}
     
-  plot_grp5:
-    type: 'spatial_overlay'
-    fig_kwargs: {states: true, counties: false, figsize: [12, 8]}
-    text_kwargs: {fontsize: 16}
-    domain_type: ["all",   "all",  "auto-region:box"]
-    domain_name: ["GLOBAL","CONUS","SE_US"]    
-    domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
-    data: ['tempo_l2_hcho_cam-chem-se', 'tempo_l2_no2_cam-chem-se', 'tropomi_l2_no2_cam-chem-se', 
-           'tropomi_l2_hcho_cam-chem-se', 'tropomi_l2_co_cam-chem-se']
-    data_proc:
-      time_reduction: mean     # or median (robust to retrieval outliers)
-      daily_first: True        # average granules within each day first, then across days
-      common_mask: True        # reduce only over times where BOTH obs & model are valid
-      min_obs: 5               # mask cells with < 5 valid granule samples in the window
-      set_axis: True
-      rem_obs_nan: True
-    fig_kwargs:
-      figsize: [18, 5]
-      cbar_orientation: horizontal   
-      cbar_kwargs: {shrink: 0.6}
+#   plot_grp5:
+#     type: 'spatial_overlay'
+#     fig_kwargs: {states: true, counties: false, figsize: [12, 8]}
+#     text_kwargs: {fontsize: 16}
+#     domain_type: ["all",   "all",  "auto-region:box"]
+#     domain_name: ["GLOBAL","CONUS","SE_US"]    
+#     domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
+#     data: ['tempo_l2_hcho_cam-chem-se', 'tempo_l2_no2_cam-chem-se', 'tropomi_l2_no2_cam-chem-se', 
+#            'tropomi_l2_hcho_cam-chem-se', 'tropomi_l2_co_cam-chem-se']
+#     data_proc:
+#       time_reduction: mean     # or median (robust to retrieval outliers)
+#       daily_first: True        # average granules within each day first, then across days
+#       common_mask: True        # reduce only over times where BOTH obs & model are valid
+#       min_obs: 5               # mask cells with < 5 valid granule samples in the window
+#       set_axis: True
+#       rem_obs_nan: True
+#     fig_kwargs:
+#       figsize: [18, 5]
+#       cbar_orientation: horizontal   
+#       cbar_kwargs: {shrink: 0.6}
 
-  grp5_tropomi_no2_obs:
-    type: 'spatial_overlay'
-    text_kwargs: {fontsize: 16}
-    domain_type: ["all", "auto-region:box"]
-    domain_name: ["GLOBAL", "SE_US"]        # GLOBAL -> fit-to-data (see last turn)
-    domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
-    data: ['tropomi_l2_no2_cam-chem-se_obsgrid']
-    data_proc:
-      time_reduction: mean     # or median (robust to retrieval outliers)
-      daily_first: True        # average granules within each day first, then across days
-      common_mask: True        # reduce only over times where BOTH obs & model are valid
-      min_obs: 5               # mask cells with < 5 valid granule samples in the window
-      set_axis: True
-      rem_obs_nan: True
-    fig_kwargs:
-      figsize: [18, 5]
-      cbar_orientation: horizontal   
-      cbar_kwargs: {shrink: 0.6}
-      states: True
-      counties: False
+#   grp5_tropomi_no2_obs:
+#     type: 'spatial_overlay'
+#     text_kwargs: {fontsize: 16}
+#     domain_type: ["all", "auto-region:box"]
+#     domain_name: ["GLOBAL", "SE_US"]        # GLOBAL -> fit-to-data (see last turn)
+#     domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
+#     data: ['tropomi_l2_no2_cam-chem-se_obsgrid']
+#     data_proc:
+#       time_reduction: mean     # or median (robust to retrieval outliers)
+#       daily_first: True        # average granules within each day first, then across days
+#       common_mask: True        # reduce only over times where BOTH obs & model are valid
+#       min_obs: 5               # mask cells with < 5 valid granule samples in the window
+#       set_axis: True
+#       rem_obs_nan: True
+#     fig_kwargs:
+#       figsize: [18, 5]
+#       cbar_orientation: horizontal   
+#       cbar_kwargs: {shrink: 0.6}
+#       states: True
+#       counties: False
       
       
-  grp5_tropomi_hcho_obs:
-    type: 'spatial_overlay'
-    text_kwargs: {fontsize: 16}
-    domain_type: ["all", "auto-region:box"]
-    domain_name: ["GLOBAL", "SE_US"]
-    domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
-    data: ['tropomi_l2_hcho_cam-chem-se_obsgrid']
-    data_proc:
-      time_reduction: mean     # or median (robust to retrieval outliers)
-      daily_first: True        # average granules within each day first, then across days
-      common_mask: True        # reduce only over times where BOTH obs & model are valid
-      min_obs: 5               # mask cells with < 5 valid granule samples in the window
-      set_axis: True
-      rem_obs_nan: True
-    fig_kwargs:
-      figsize: [18, 5]
-      cbar_orientation: horizontal   
-      cbar_kwargs: {shrink: 0.6}
-      states: True
-      counties: False
+#   grp5_tropomi_hcho_obs:
+#     type: 'spatial_overlay'
+#     text_kwargs: {fontsize: 16}
+#     domain_type: ["all", "auto-region:box"]
+#     domain_name: ["GLOBAL", "SE_US"]
+#     domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
+#     data: ['tropomi_l2_hcho_cam-chem-se_obsgrid']
+#     data_proc:
+#       time_reduction: mean     # or median (robust to retrieval outliers)
+#       daily_first: True        # average granules within each day first, then across days
+#       common_mask: True        # reduce only over times where BOTH obs & model are valid
+#       min_obs: 5               # mask cells with < 5 valid granule samples in the window
+#       set_axis: True
+#       rem_obs_nan: True
+#     fig_kwargs:
+#       figsize: [18, 5]
+#       cbar_orientation: horizontal   
+#       cbar_kwargs: {shrink: 0.6}
+#       states: True
+#       counties: False
       
-  grp5_tropomi_co_obs:
-    type: 'spatial_overlay'
-    text_kwargs: {fontsize: 16}
-    domain_type: ["all", "auto-region:box"]
-    domain_name: ["GLOBAL", "SE_US"]
-    domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
-    data: ['tropomi_l2_co_cam-chem-se_obsgrid']
-    data_proc:
-      time_reduction: mean     # or median (robust to retrieval outliers)
-      daily_first: True        # average granules within each day first, then across days
-      common_mask: True        # reduce only over times where BOTH obs & model are valid
-      min_obs: 5               # mask cells with < 5 valid granule samples in the window
-      set_axis: True
-      rem_obs_nan: True
-    fig_kwargs:
-      figsize: [18, 5]
-      cbar_orientation: horizontal   
-      cbar_kwargs: {shrink: 0.6}
-      states: True
-      counties: False
+#   grp5_tropomi_co_obs:
+#     type: 'spatial_overlay'
+#     text_kwargs: {fontsize: 16}
+#     domain_type: ["all", "auto-region:box"]
+#     domain_name: ["GLOBAL", "SE_US"]
+#     domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
+#     data: ['tropomi_l2_co_cam-chem-se_obsgrid']
+#     data_proc:
+#       time_reduction: mean     # or median (robust to retrieval outliers)
+#       daily_first: True        # average granules within each day first, then across days
+#       common_mask: True        # reduce only over times where BOTH obs & model are valid
+#       min_obs: 5               # mask cells with < 5 valid granule samples in the window
+#       set_axis: True
+#       rem_obs_nan: True
+#     fig_kwargs:
+#       figsize: [18, 5]
+#       cbar_orientation: horizontal   
+#       cbar_kwargs: {shrink: 0.6}
+#       states: True
+#       counties: False
 
-  grp5_tempo_hcho_obs:
-    type: 'spatial_overlay'
-    text_kwargs: {fontsize: 16}
-    domain_type: ["all", "auto-region:box"]
-    domain_name: ["CONUS", "SE_US"]         # TEMPO obsgrid is CONUS-cropped, not global
-    domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
-    data: ['tempo_l2_hcho_cam-chem-se_obsgrid']
-    data_proc:
-      time_reduction: mean     # or median (robust to retrieval outliers)
-      daily_first: True        # average granules within each day first, then across days
-      common_mask: True        # reduce only over times where BOTH obs & model are valid
-      min_obs: 5               # mask cells with < 5 valid granule samples in the window
-      set_axis: True
-      rem_obs_nan: True
-    fig_kwargs:
-      figsize: [18, 5]
-      cbar_orientation: horizontal   
-      cbar_kwargs: {shrink: 0.6}
-      states: True
-      counties: False
+#   grp5_tempo_hcho_obs:
+#     type: 'spatial_overlay'
+#     text_kwargs: {fontsize: 16}
+#     domain_type: ["all", "auto-region:box"]
+#     domain_name: ["CONUS", "SE_US"]         # TEMPO obsgrid is CONUS-cropped, not global
+#     domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
+#     data: ['tempo_l2_hcho_cam-chem-se_obsgrid']
+#     data_proc:
+#       time_reduction: mean     # or median (robust to retrieval outliers)
+#       daily_first: True        # average granules within each day first, then across days
+#       common_mask: True        # reduce only over times where BOTH obs & model are valid
+#       min_obs: 5               # mask cells with < 5 valid granule samples in the window
+#       set_axis: True
+#       rem_obs_nan: True
+#     fig_kwargs:
+#       figsize: [18, 5]
+#       cbar_orientation: horizontal   
+#       cbar_kwargs: {shrink: 0.6}
+#       states: True
+#       counties: False
       
-  grp5_tempo_no2_obs:
-    type: 'spatial_overlay'
-    text_kwargs: {fontsize: 16}
-    domain_type: ["all", "auto-region:box"]
-    domain_name: ["CONUS", "SE_US"]
-    domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
-    data: ['tempo_l2_no2_cam-chem-se_obsgrid']
-    data_proc:
-      time_reduction: mean     # or median (robust to retrieval outliers)
-      daily_first: True        # average granules within each day first, then across days
-      common_mask: True        # reduce only over times where BOTH obs & model are valid
-      min_obs: 5               # mask cells with < 5 valid granule samples in the window
-      set_axis: True
-      rem_obs_nan: True
-    fig_kwargs:
-      figsize: [18, 5]
-      cbar_orientation: horizontal   
-      cbar_kwargs: {shrink: 0.6}
-      states: True
-      counties: False
+#   grp5_tempo_no2_obs:
+#     type: 'spatial_overlay'
+#     text_kwargs: {fontsize: 16}
+#     domain_type: ["all", "auto-region:box"]
+#     domain_name: ["CONUS", "SE_US"]
+#     domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
+#     data: ['tempo_l2_no2_cam-chem-se_obsgrid']
+#     data_proc:
+#       time_reduction: mean     # or median (robust to retrieval outliers)
+#       daily_first: True        # average granules within each day first, then across days
+#       common_mask: True        # reduce only over times where BOTH obs & model are valid
+#       min_obs: 5               # mask cells with < 5 valid granule samples in the window
+#       set_axis: True
+#       rem_obs_nan: True
+#     fig_kwargs:
+#       figsize: [18, 5]
+#       cbar_orientation: horizontal   
+#       cbar_kwargs: {shrink: 0.6}
+#       states: True
+#       counties: False
 
-  plot_grp6_diurnal_tempo_no2:
-    type: 'diurnal'
-    fig_kwargs: {figsize: [10, 6]}
-    text_kwargs: {fontsize: 16}
-    domain_type: ["all", "auto-region:box"]
-    domain_name: ["CONUS", "SE_US"]
-    domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
-    data: ['tempo_l2_no2_cam-chem-se']
-    data_proc:
-      rem_obs_nan: True
-      set_axis: False            # True -> uses vmin_plot/vmax_plot from the obs variable block
-    settings:                    # passed straight through to make_diurnal_cycle
-      time_offset: -6            # shift UTC -> approx central-CONUS local time
-      range_shading: 'IQR'       # 'no' | 'total' | 'std' | 'IQR' | 'pct:98'
+#   plot_grp6_diurnal_tempo_no2:
+#     type: 'diurnal'
+#     fig_kwargs: {figsize: [10, 6]}
+#     text_kwargs: {fontsize: 16}
+#     domain_type: ["all", "auto-region:box"]
+#     domain_name: ["CONUS", "SE_US"]
+#     domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
+#     data: ['tempo_l2_no2_cam-chem-se']
+#     data_proc:
+#       rem_obs_nan: True
+#       set_axis: False            # True -> uses vmin_plot/vmax_plot from the obs variable block
+#     settings:                    # passed straight through to make_diurnal_cycle
+#       time_offset: -6            # shift UTC -> approx central-CONUS local time
+#       range_shading: 'IQR'       # 'no' | 'total' | 'std' | 'IQR' | 'pct:98'
 
-  plot_grp6_diurnal_tempo_hcho:
-    type: 'diurnal'
-    fig_kwargs: {figsize: [10, 6]}
-    text_kwargs: {fontsize: 16}
-    domain_type: ["all", "auto-region:box"]
-    domain_name: ["CONUS", "SE_US"]
-    domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
-    data: ['tempo_l2_hcho_cam-chem-se']
-    data_proc:
-      rem_obs_nan: True
-      set_axis: False
-    settings:
-      time_offset: -6
-      range_shading: 'IQR'
+#   plot_grp6_diurnal_tempo_hcho:
+#     type: 'diurnal'
+#     fig_kwargs: {figsize: [10, 6]}
+#     text_kwargs: {fontsize: 16}
+#     domain_type: ["all", "auto-region:box"]
+#     domain_name: ["CONUS", "SE_US"]
+#     domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
+#     data: ['tempo_l2_hcho_cam-chem-se']
+#     data_proc:
+#       rem_obs_nan: True
+#       set_axis: False
+#     settings:
+#       time_offset: -6
+#       range_shading: 'IQR'
 
-  # fail case
-  plot_grp6_diurnal_tropomi_no2:
-    type: 'diurnal'
-    fig_kwargs: {figsize: [10, 6]}
-    text_kwargs: {fontsize: 16}
-    domain_type: ["auto-region:box"]
-    domain_name: ["SE_US"]
-    domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
-    data: ['tropomi_l2_no2_cam-chem-se']
-    data_proc:
-      rem_obs_nan: True
-      set_axis: False
-    settings:
-      time_offset: -6
-      range_shading: 'no'        # shading is meaningless with 1-2 hour bins
+#   # fail case
+#   plot_grp6_diurnal_tropomi_no2:
+#     type: 'diurnal'
+#     fig_kwargs: {figsize: [10, 6]}
+#     text_kwargs: {fontsize: 16}
+#     domain_type: ["auto-region:box"]
+#     domain_name: ["SE_US"]
+#     domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
+#     data: ['tropomi_l2_no2_cam-chem-se']
+#     data_proc:
+#       rem_obs_nan: True
+#       set_axis: False
+#     settings:
+#       time_offset: -6
+#       range_shading: 'no'        # shading is meaningless with 1-2 hour bins
       
-  grp7_tempo_no2_morning:
-    type: 'spatial_overlay'
-    text_kwargs: {fontsize: 16}
-    domain_type: ["all", "auto-region:box"]
-    domain_name: ["CONUS", "SE_US"]
-    domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
-    data: ['tempo_l2_no2_cam-chem-se']
-    data_proc:
-      hour_range: [6, 9]       # morning commute
-      hour_basis: solar
-      daily_first: True
-      common_mask: True
-      min_obs: 3               # ~1-3 scans/day land in a 3h window
-      rem_obs_nan: True
-      set_axis: True           # fixed scale -> morning/evening directly comparable
-    fig_kwargs:
-      figsize: [18, 5]
-      cbar_orientation: horizontal
-      cbar_kwargs: {shrink: 0.6}
-      states: True
-      counties: False
+#   grp7_tempo_no2_morning:
+#     type: 'spatial_overlay'
+#     text_kwargs: {fontsize: 16}
+#     domain_type: ["all", "auto-region:box"]
+#     domain_name: ["CONUS", "SE_US"]
+#     domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
+#     data: ['tempo_l2_no2_cam-chem-se']
+#     data_proc:
+#       hour_range: [6, 9]       # morning commute
+#       hour_basis: solar
+#       daily_first: True
+#       common_mask: True
+#       min_obs: 3               # ~1-3 scans/day land in a 3h window
+#       rem_obs_nan: True
+#       set_axis: True           # fixed scale -> morning/evening directly comparable
+#     fig_kwargs:
+#       figsize: [18, 5]
+#       cbar_orientation: horizontal
+#       cbar_kwargs: {shrink: 0.6}
+#       states: True
+#       counties: False
 
-  grp7_tempo_no2_evening:
-    type: 'spatial_overlay'
-    text_kwargs: {fontsize: 16}
-    domain_type: ["all", "auto-region:box"]
-    domain_name: ["CONUS", "SE_US"]
-    domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
-    data: ['tempo_l2_no2_cam-chem-se']
-    data_proc:
-      hour_range: [16, 19]     # evening commute
-      hour_basis: solar
-      daily_first: True
-      common_mask: True
-      min_obs: 3
-      rem_obs_nan: True
-      set_axis: True
-    fig_kwargs:
-      figsize: [18, 5]
-      cbar_orientation: horizontal
-      cbar_kwargs: {shrink: 0.6}
-      states: True
-      counties: False
+#   grp7_tempo_no2_evening:
+#     type: 'spatial_overlay'
+#     text_kwargs: {fontsize: 16}
+#     domain_type: ["all", "auto-region:box"]
+#     domain_name: ["CONUS", "SE_US"]
+#     domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
+#     data: ['tempo_l2_no2_cam-chem-se']
+#     data_proc:
+#       hour_range: [16, 19]     # evening commute
+#       hour_basis: solar
+#       daily_first: True
+#       common_mask: True
+#       min_obs: 3
+#       rem_obs_nan: True
+#       set_axis: True
+#     fig_kwargs:
+#       figsize: [18, 5]
+#       cbar_orientation: horizontal
+#       cbar_kwargs: {shrink: 0.6}
+#       states: True
+#       counties: False
 
-  grp7_tempo_hcho_morning:
-    type: 'spatial_overlay'
-    text_kwargs: {fontsize: 16}
-    domain_type: ["all", "auto-region:box"]
-    domain_name: ["CONUS", "SE_US"]
-    domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
-    data: ['tempo_l2_hcho_cam-chem-se']
-    data_proc:
-      hour_range: [6, 9]
-      hour_basis: solar
-      daily_first: True
-      common_mask: True
-      min_obs: 3
-      rem_obs_nan: True
-      set_axis: True
-    fig_kwargs:
-      figsize: [18, 5]
-      cbar_orientation: horizontal
-      cbar_kwargs: {shrink: 0.6}
-      states: True
-      counties: False
+#   grp7_tempo_hcho_morning:
+#     type: 'spatial_overlay'
+#     text_kwargs: {fontsize: 16}
+#     domain_type: ["all", "auto-region:box"]
+#     domain_name: ["CONUS", "SE_US"]
+#     domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
+#     data: ['tempo_l2_hcho_cam-chem-se']
+#     data_proc:
+#       hour_range: [6, 9]
+#       hour_basis: solar
+#       daily_first: True
+#       common_mask: True
+#       min_obs: 3
+#       rem_obs_nan: True
+#       set_axis: True
+#     fig_kwargs:
+#       figsize: [18, 5]
+#       cbar_orientation: horizontal
+#       cbar_kwargs: {shrink: 0.6}
+#       states: True
+#       counties: False
 
-  grp7_tempo_hcho_evening:
-    type: 'spatial_overlay'
-    text_kwargs: {fontsize: 16}
-    domain_type: ["all", "auto-region:box"]
-    domain_name: ["CONUS", "SE_US"]
-    domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
-    data: ['tempo_l2_hcho_cam-chem-se']
-    data_proc:
-      hour_range: [16, 19]
-      hour_basis: solar
-      daily_first: True
-      common_mask: True
-      min_obs: 3
-      rem_obs_nan: True
-      set_axis: True
-    fig_kwargs:
-      figsize: [18, 5]
-      cbar_orientation: horizontal
-      cbar_kwargs: {shrink: 0.6}
-      states: True
-      counties: False
+#   grp7_tempo_hcho_evening:
+#     type: 'spatial_overlay'
+#     text_kwargs: {fontsize: 16}
+#     domain_type: ["all", "auto-region:box"]
+#     domain_name: ["CONUS", "SE_US"]
+#     domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
+#     data: ['tempo_l2_hcho_cam-chem-se']
+#     data_proc:
+#       hour_range: [16, 19]
+#       hour_basis: solar
+#       daily_first: True
+#       common_mask: True
+#       min_obs: 3
+#       rem_obs_nan: True
+#       set_axis: True
+#     fig_kwargs:
+#       figsize: [18, 5]
+#       cbar_orientation: horizontal
+#       cbar_kwargs: {shrink: 0.6}
+#       states: True
+#       counties: False
 
-# for GRID in model; do
-#   for ONLY in grp5; do
-#     export PLOT_GRID=$GRID PLOT_ONLY=$ONLY
-#     qsub -N p_model_grp5 -o p_model_grp5.log -l select=1:ncpus=1:mem=70GB -V submit_plot_sat.sh
-#   done
-# done
+# # for GRID in model; do
+# #   for ONLY in grp5; do
+# #     export PLOT_GRID=$GRID PLOT_ONLY=$ONLY
+# #     qsub -N p_model_grp5 -o p_model_grp5.log -l select=1:ncpus=1:mem=70GB -V submit_plot_sat.sh
+# #   done
+# # done
 
-  # plot_grp5_obs:
-  #   type: 'spatial_overlay'
-  #   fig_kwargs: {states: true, counties: false, figsize: [12, 8]}
-  #   text_kwargs: {fontsize: 16}
-  #   domain_type: ["all",   "all",  "auto-region:box"]
-  #   domain_name: ["GLOBAL","CONUS","SE_US"]
-  #   domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
-  #   data: ['tempo_l2_hcho_cam-chem-se_obsgrid', 'tempo_l2_no2_cam-chem-se_obsgrid',
-  #          'tropomi_l2_no2_cam-chem-se_obsgrid', 'tropomi_l2_hcho_cam-chem-se_obsgrid',
-  #          'tropomi_l2_co_cam-chem-se_obsgrid']
-  #   data_proc: {set_axis: True, rem_obs_nan: True}
+#   # plot_grp5_obs:
+#   #   type: 'spatial_overlay'
+#   #   fig_kwargs: {states: true, counties: false, figsize: [12, 8]}
+#   #   text_kwargs: {fontsize: 16}
+#   #   domain_type: ["all",   "all",  "auto-region:box"]
+#   #   domain_name: ["GLOBAL","CONUS","SE_US"]
+#   #   domain_info: {SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}}
+#   #   data: ['tempo_l2_hcho_cam-chem-se_obsgrid', 'tempo_l2_no2_cam-chem-se_obsgrid',
+#   #          'tropomi_l2_no2_cam-chem-se_obsgrid', 'tropomi_l2_hcho_cam-chem-se_obsgrid',
+#   #          'tropomi_l2_co_cam-chem-se_obsgrid']
+#   #   data_proc: {set_axis: True, rem_obs_nan: True}
     
-stats:
-  stat_list: ["MB", "MdnB", "R2", "RMSE"]
-  round_output: 2
-  output_table: False
+# stats:
+#   stat_list: ["MB", "MdnB", "R2", "RMSE"]
+#   round_output: 2
+#   output_table: False
   
-  domain_type: ["auto-region:box"]
-  domain_name: ["SE_US"]
-  domain_info:
-    SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}
+#   domain_type: ["auto-region:box"]
+#   domain_name: ["SE_US"]
+#   domain_info:
+#     SE_US: {bounds: [-92.0, -75.0, 24.5, 37.0]}
       
-  data: ['tempo_l2_hcho_cam-chem-se', 'tempo_l2_no2_cam-chem-se', 'tropomi_l2_no2_cam-chem-se', 
-  'tropomi_l2_hcho_cam-chem-se', 'tropomi_l2_co_cam-chem-se',
+#   data: ['tempo_l2_hcho_cam-chem-se', 'tempo_l2_no2_cam-chem-se', 'tropomi_l2_no2_cam-chem-se', 
+#   'tropomi_l2_hcho_cam-chem-se', 'tropomi_l2_co_cam-chem-se',
   
-  'tempo_l2_hcho_cam-chem-se_obsgrid', 'tempo_l2_no2_cam-chem-se_obsgrid',
-           'tropomi_l2_no2_cam-chem-se_obsgrid', 'tropomi_l2_hcho_cam-chem-se_obsgrid',
-           'tropomi_l2_co_cam-chem-se_obsgrid',
+#   'tempo_l2_hcho_cam-chem-se_obsgrid', 'tempo_l2_no2_cam-chem-se_obsgrid',
+#            'tropomi_l2_no2_cam-chem-se_obsgrid', 'tropomi_l2_hcho_cam-chem-se_obsgrid',
+#            'tropomi_l2_co_cam-chem-se_obsgrid',
            
-           'tempo_l2_hcho_cam-chem-se_series',
-           'tempo_l2_no2_cam-chem-se_series',
-           'tropomi_l2_no2_cam-chem-se_series',
-           'tropomi_l2_hcho_cam-chem-se_series',
-           'tropomi_l2_co_cam-chem-se_series'
-]
+#            'tempo_l2_hcho_cam-chem-se_series',
+#            'tempo_l2_no2_cam-chem-se_series',
+#            'tropomi_l2_no2_cam-chem-se_series',
+#            'tropomi_l2_hcho_cam-chem-se_series',
+#            'tropomi_l2_co_cam-chem-se_series'
+# ]

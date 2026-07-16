@@ -1043,7 +1043,7 @@ def make_spatial_bias_gridded(df, column_o=None, label_o=None, column_m=None,
 def calculate_multi_boxplot(df, df_reg=None, region_name=None,
                             interval_list=None, interval_var=None,
                             interval_labels=None, column=None, label=None,
-                            plot_dict=None, comb_bx=None, label_bx=None):
+                            plot_dict=None, comb_bx=None, label_bx=None, hour_range=None, hour_basis="solar"):
     """Accumulate per-interval box statistics for one obs or model column.
 
     Satellite (xarray) counterpart of surfplots.calculate_multi_boxplot,
@@ -1094,6 +1094,16 @@ def calculate_multi_boxplot(df, df_reg=None, region_name=None,
                  else [f"{edges[i]:g}-{edges[i+1]:g}" for i in range(nbin)])
 
     da = df[column]
+
+    # Optional hour-of-day window: clamp to a fixed overpass (e.g. TEMPO's
+    # hourly data to the ~13:30 LST TROPOMI overpass)  
+    # Masks the values to NaN outside the window; the finite-filter in the binning loop
+    # then drops them. Time coord is preserved, so dayofweek/hour bins still work.
+    if hour_range is not None:
+        _keep, _win = _hour_window_mask(da["time"], df["longitude"], hour_range, hour_basis)
+        da = da.where(_keep)
+        print(f"calculate_multi_boxplot: clamped '{label}' to hour window {_win}.")
+        
     iv = str(interval_var).lower()
     if iv in ("local_hour", "solar_hour"):
         hh = da["time"].dt.hour + da["time"].dt.minute / 60.0
@@ -1105,6 +1115,11 @@ def calculate_multi_boxplot(df, df_reg=None, region_name=None,
         unit = " UTC"
     elif interval_var in df:
         bv = df[interval_var]
+        unit = ""
+    elif iv in ("dayofweek", "weekday"):
+        # Mon=0 .. Sun=6; one dim ('time'), broadcasts over the spatial dim in
+        # da.where(mask). Well-defined for satellite (weekend NO2 effect).
+        bv = da["time"].dt.dayofweek
         unit = ""
     else:
         raise KeyError(

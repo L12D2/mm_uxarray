@@ -105,6 +105,10 @@ def main():
     # vary regrid target 
     _rt = os.environ.get("REGRID_TARGET", "").strip()
     rt_val = ([s.strip() for s in _rt.split(",")] if "," in _rt else _rt) if _rt else None
+
+    # vary regrid method (e.g. REGRID_METHOD=conservative to test the conservative
+    # regridder over the full CONUS grid without editing the control)
+    _rm = os.environ.get("REGRID_METHOD", "").strip()
     
     mapping = cd["model"]["cam-chem-se"].get("mapping", {})
     present = []
@@ -117,6 +121,8 @@ def main():
             cd["obs"][obs_name]["filename"] = pat
             if rt_val is not None:
                 cd["obs"][obs_name]["regrid_target"] = rt_val
+            if _rm:
+                cd["obs"][obs_name]["regrid_method"] = _rm
                             
             present.append(obs_name)
         else:

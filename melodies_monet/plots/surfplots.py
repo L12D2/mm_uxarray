@@ -1288,7 +1288,7 @@ def calculate_boxplot(df, df_reg=None, column=None, label=None, plot_dict=None, 
 
     return comb_bx, label_bx
 
-def calculate_multi_boxplot(df, df_reg=None, region_name= None, interval_list=None, interval_var=None, interval_labels=None, column=None, label=None, plot_dict=None, comb_bx = None, label_bx = None): 
+def calculate_multi_boxplot(df, df_reg=None, region_name= None, interval_list=None, interval_var=None, interval_labels=None, column=None, label=None, plot_dict=None, comb_bx = None, label_bx = None, hour_range=None, hour_basis="solar"): 
     """Combines data into acceptable format for box-plot
     
     Parameters
@@ -1344,7 +1344,13 @@ def calculate_multi_boxplot(df, df_reg=None, region_name= None, interval_list=No
     #For all, a column to the dataframe and append the label info to the list.
     plot_kwargs['column'] = column
     plot_kwargs['label'] = label
-    
+
+    if hour_range is not None:
+        # hour_range is a satellite-path feature for now.
+        # this feature is mostly for the satellite so someone can compare tempo and tropomi observations to one another 
+        print("calculate_multi_boxplot (surface): hour_range is only applied on "
+              "the satellite path; ignoring it for this ground-obs plot.")
+        
     if region_name is not None and interval_var is not None:
         print("Warning! Region name and interval name were both provided. Defaulted to region_name. Plotting proceeded.")
         

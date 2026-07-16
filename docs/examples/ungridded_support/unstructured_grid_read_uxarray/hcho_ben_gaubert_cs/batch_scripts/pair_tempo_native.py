@@ -3,6 +3,7 @@ import os, glob, copy, time
 from datetime import datetime, timedelta
 import yaml
 from melodies_monet import driver
+from mm_paths import paired_dir, gridtype_of, apply_filters, filter_tag, _envflag
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 BASE = os.path.join(HERE, "control_tempo_native.yaml")
@@ -68,6 +69,8 @@ def main():
     target = os.environ.get("REGRID_TARGET", "obs").strip().lower()
     if target not in ("obs", "model", "swath"):
         raise SystemExit(f"REGRID_TARGET={target!r} must be 'obs', 'model', or 'swath'")
+    # QA-screen sensitivity toggle (CLOUD_FILTER / SZA_FILTER env); base flag always on
+    ftag = filter_tag(_envflag("CLOUD_FILTER"), _envflag("SZA_FILTER"))
 
     city_env = os.environ.get("CITY", "").strip().lower()
     if city_env:
@@ -128,6 +131,7 @@ def main():
                 # native pixel vector small). 'model' ignores both.
                     cd["obs"][name]["obs_grid_res"] = res
                     cd["obs"][name]["obs_grid_extent"] = box
+                apply_filters(cd["obs"][name], name)
                 present.append(name)
             else:
                 cd["obs"].pop(name, None)
@@ -150,15 +154,15 @@ def main():
     if target == "model":
         # full-domain mesh product; city extent/res do not apply
         cd = _base_cd()
-        cd["analysis"]["save"]["paired"]["prefix"] = f"model_{methodtag}_{ymd}"
+        cd["analysis"]["save"]["paired"]["prefix"] = f"model_{methodtag}_{ftag}_{ymd}"
         if _setup_obs(cd):
-            _run(cd, f"{yamldir}/control_model_{methodtag}_{ymd}.yaml", "model-space")
+            _run(cd, f"{yamldir}/control_model_{methodtag}_{ftag}_{ymd}.yaml", "model-space")
     else:
         for city, box in cities.items():
             cd = _base_cd()
-            cd["analysis"]["save"]["paired"]["prefix"] = f"{city}_{restag}_{methodtag}_{ymd}"
+            cd["analysis"]["save"]["paired"]["prefix"] = f"{city}_{restag}_{methodtag}_{ftag}_{ymd}"
             if _setup_obs(cd, box):
-                _run(cd, f"{yamldir}/control_{city}_{restag}_{methodtag}_{ymd}.yaml",
+                _run(cd, f"{yamldir}/control_{city}_{restag}_{methodtag}_{ftag}_{ymd}.yaml",
                      f"{city}@{res}deg")
 
     print(f"==== DONE {run} {iso} in {time.time()-t0:.0f}s ====", flush=True)

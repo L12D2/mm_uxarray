@@ -38,3 +38,20 @@ python pair_daily_sat.py
 #        -v OBS_GROUP=$P \
 #        submit_pair_month.sh 
 # done
+
+
+# for RUN in nonbiog biog grapes mxcat; do
+#   for P in tropomi_l2_no2 tropomi_l2_hcho tropomi_l2_co; do
+#     qsub -N ptm_${RUN}_${P} -o ptm_${RUN}_${P}.log \
+#          -v RUN=$RUN,OBS_GROUP=$P \
+#          submit_pair_month.sh
+#   done
+# done
+
+# for RUN in nonbiog biog grapes mxcat; do
+#   for P in tempo_l2_no2 tempo_l2_hcho; do
+#     qsub -N ptm_${RUN}_${P} -o ptm_${RUN}_${P}.log \
+#          -v RUN=$RUN,OBS_GROUP=$P \
+#          submit_pair_month.sh
+#   done
+# done

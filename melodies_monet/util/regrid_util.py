@@ -65,6 +65,36 @@ _XREGRID_METHODS = ("conservative", "conservative_normed", "bilinear", "patch")
 # One-shot notice flag for the xregrid weight-row-sum workaround.
 _COVERAGE_NOTICE_SHOWN = False
 
+# Optional Dask-parallel xregrid weight generation (env-gated, default OFF so
+# existing runs are unchanged).
+_XREGRID_PARALLEL = os.environ.get("MM_XREGRID_PARALLEL", "").strip().lower() in (
+    "1", "on", "true", "yes")
+_XREGRID_CLIENT = None
+
+def _ensure_xregrid_client():
+    """Lazily create (once per process) a right-sized dask.distributed client for
+    xregrid's parallel weight generation. No-op / None if parallel is off or dask
+    is unavailable (xregrid then just runs serial)."""
+    global _XREGRID_CLIENT
+    if not _XREGRID_PARALLEL or _XREGRID_CLIENT is not None:
+        return _XREGRID_CLIENT
+    try:
+        import dask.distributed as dd
+    except ImportError:
+        print("regrid: MM_XREGRID_PARALLEL set but dask.distributed is missing; "
+              "running serial.", flush=True)
+        return None
+    try:
+        _XREGRID_CLIENT = dd.get_client()                 # reuse existing client
+    except ValueError:
+        n = int(os.environ.get("MM_XREGRID_WORKERS",
+                os.environ.get("PBS_NCPUS", os.environ.get("NCPUS", "4"))))
+        cluster = dd.LocalCluster(n_workers=n, threads_per_worker=1, processes=True)
+        _XREGRID_CLIENT = dd.Client(cluster)
+        print(f"regrid: dask LocalCluster with {n} workers for xregrid parallel "
+              "weight generation.", flush=True)
+    return _XREGRID_CLIENT
+
 def _release_esmf(rg):
     """Best-effort release of ESMF-side memory held by an xregrid Regridder.
 
@@ -391,7 +421,9 @@ def _regrid_xregrid(src, target, method, src_grid=None, target_grid=None):
             )
             
         try:
-            rg = Regridder(src_uxds, tgt_uxds, method=method)
+            _ensure_xregrid_client()
+            rg = Regridder(src_uxds, tgt_uxds, method=method,
+                           parallel=_XREGRID_PARALLEL)
             out = rg(src_uxds)
             
         # free memory
@@ -427,7 +459,9 @@ def _regrid_xregrid(src, target, method, src_grid=None, target_grid=None):
             ("n_face",), np.ones(int(src_uxds.sizes["n_face"]), dtype="float64")
         )
     try:
-        rg = Regridder(src_uxds, target_ds, method=method, periodic=True)
+        _ensure_xregrid_client()
+        rg = Regridder(src_uxds, target_ds, method=method, periodic=True,
+                       parallel=_XREGRID_PARALLEL)
         out = rg(src_uxds).compute()
         _release_esmf(rg)
     finally:

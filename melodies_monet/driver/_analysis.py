@@ -3297,6 +3297,13 @@ class analysis:
                             else:
                                 xlabel = ""
 
+                            # optional hour-of-day window (satellite): clamp to a
+                            # fixed overpass, e.g. TEMPO and ~13:30 TROPOMI overpass
+                            # via data_proc: {hour_range: [13, 14], hour_basis: solar}.
+                            _dp_mb = grp_dict.get("data_proc", {}) or {}
+                            _hour_range = _dp_mb.get("hour_range")
+                            _hour_basis = _dp_mb.get("hour_basis", "solar")
+                            
                             if (not cal_reg or region_list is not None
                                     or (cal_reg and interval_var == "dayofweek")):
                             # For non-regulatory metrics, makes plot for both intervals and regions
@@ -3316,6 +3323,8 @@ class analysis:
                                         column=obsvar,
                                         label=p.obs,
                                         plot_dict=obs_dict,
+                                        hour_range=_hour_range,
+                                        hour_basis=_hour_basis,
                                     )
     
                                 # Then add the models to this dataarray.
@@ -3331,6 +3340,8 @@ class analysis:
                                     plot_dict=plot_dict,
                                     comb_bx=comb_bx,
                                     label_bx=label_bx,
+                                    hour_range=_hour_range,
+                                    hour_basis=_hour_basis,
                                 )
     
                                 # For the last p_index make the plot.

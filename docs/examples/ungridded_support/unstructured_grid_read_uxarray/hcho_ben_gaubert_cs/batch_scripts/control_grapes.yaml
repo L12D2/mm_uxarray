@@ -3,7 +3,7 @@
 analysis:
   start_time: '2024-06-01'
   end_time: '2024-06-30 23:59:00'
-  output_dir: /glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/satellite_grapes
+  output_dir: /glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/figs/grapes/sat
   output_dir_save: /glade/work/lcthompson/mm_output/grapes
   output_dir_read: /glade/work/lcthompson/mm_output/grapes
   save:
@@ -47,12 +47,13 @@ analysis:
         - /glade/work/lcthompson/mm_output/grapes/202406*_tropomi_l2_co_cam-chem-se_series.nc4
   debug: false
   montage:
-    plot_dir: /glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/satellite_grapes
-    outdir: /glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/satellite_grapes/montages
+    plot_dir: /glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/figs/grapes/sat
+    outdir: /glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/figs/grapes/sat/montages
     group_by: type
     search: '*.png'
     cols: 6
     thumb_width: 420
+  sim_nickname: MUSICAv0-CONUS (GRA2PESv2)
 obs:
   tempo_l2_hcho:
     obs_type: sat_swath_clm
@@ -218,6 +219,146 @@ model:
       marker: ^
       linestyle: dotted
 plots:
+  grp8_multibox_dow_tempo_no2:
+    type: multi_boxplot
+    fig_kwargs:
+      figsize:
+      - 10
+      - 6
+    text_kwargs:
+      fontsize: 16
+    domain_type:
+    - auto-region:box
+    - auto-region:box
+    - auto-region:box
+    - auto-region:box
+    - auto-region:box
+    - auto-region:box
+    domain_name:
+    - ATL_metro
+    - MEX_metro
+    - SE_US
+    - LA_metro
+    - DEN_metro
+    - DFW_metro
+    domain_info:
+      ATL_metro: &id001
+        bounds:
+        - -85.85
+        - -82.85
+        - 32.3
+        - 35.3
+      MEX_metro: &id002
+        bounds:
+        - -100.6
+        - -97.6
+        - 17.95
+        - 20.95
+      SE_US: &id003
+        bounds:
+        - -92.0
+        - -75.0
+        - 24.5
+        - 37.0
+      LA_metro: &id004
+        bounds:
+        - -119.75
+        - -116.75
+        - 32.5
+        - 35.5
+      DEN_metro: &id005
+        bounds:
+        - -106.55
+        - -103.55
+        - 38.25
+        - 41.25
+      DFW_metro: &id006
+        bounds:
+        - -98.55
+        - -95.55
+        - 31.3
+        - 34.3
+    data:
+    - tempo_l2_no2_cam-chem-se
+    interval_var: dayofweek
+    interval_list:
+    - 0
+    - 1
+    - 2
+    - 3
+    - 4
+    - 5
+    - 6
+    - 7
+    interval_labels:
+    - Mon
+    - Tue
+    - Wed
+    - Thu
+    - Fri
+    - Sat
+    - Sun
+    xlabel: Day of week
+    data_proc:
+      rem_obs_nan: true
+      set_axis: false
+      hour_range:
+      - 13
+      - 14
+      hour_basis: solar
+  grp8_multibox_dow_tropomi_no2:
+    type: multi_boxplot
+    fig_kwargs:
+      figsize:
+      - 10
+      - 6
+    text_kwargs:
+      fontsize: 16
+    domain_type:
+    - auto-region:box
+    - auto-region:box
+    - auto-region:box
+    - auto-region:box
+    - auto-region:box
+    - auto-region:box
+    domain_name:
+    - ATL_metro
+    - MEX_metro
+    - SE_US
+    - LA_metro
+    - DEN_metro
+    - DFW_metro
+    domain_info:
+      ATL_metro: *id001
+      MEX_metro: *id002
+      SE_US: *id003
+      LA_metro: *id004
+      DEN_metro: *id005
+      DFW_metro: *id006
+    data:
+    - tropomi_l2_no2_cam-chem-se
+    interval_var: dayofweek
+    interval_list:
+    - 0
+    - 1
+    - 2
+    - 3
+    - 4
+    - 5
+    - 6
+    - 7
+    interval_labels:
+    - Mon
+    - Tue
+    - Wed
+    - Thu
+    - Fri
+    - Sat
+    - Sun
+    xlabel: Day of week
+    data_proc:
+      rem_obs_nan: true
+      set_axis: false
   plot_grp1_hcho_tempo:
     type: timeseries
     fig_kwargs:
@@ -236,7 +377,6 @@ plots:
     - auto-region:box
     - auto-region:box
     - auto-region:box
-    - all
     domain_name:
     - ATL_metro
     - MEX_metro
@@ -244,44 +384,13 @@ plots:
     - LA_metro
     - DEN_metro
     - DFW_metro
-    - CONUS
     domain_info:
-      ATL_metro: &id001
-        bounds:
-        - -85.0
-        - -83.7
-        - 33.2
-        - 34.4
-      MEX_metro: &id002
-        bounds:
-        - -99.6
-        - -98.6
-        - 18.9
-        - 20.0
-      SE_US: &id003
-        bounds:
-        - -92.0
-        - -75.0
-        - 24.5
-        - 37.0
-      LA_metro: &id004
-        bounds:
-        - -119.2
-        - -117.3
-        - 33.3
-        - 34.7
-      DEN_metro: &id005
-        bounds:
-        - -105.8
-        - -104.3
-        - 39.2
-        - 40.3
-      DFW_metro: &id006
-        bounds:
-        - -97.8
-        - -96.3
-        - 32.2
-        - 33.4
+      ATL_metro: *id001
+      MEX_metro: *id002
+      SE_US: *id003
+      LA_metro: *id004
+      DEN_metro: *id005
+      DFW_metro: *id006
     data:
     - tempo_l2_hcho_cam-chem-se
     data_proc:
@@ -306,7 +415,6 @@ plots:
     - auto-region:box
     - auto-region:box
     - auto-region:box
-    - all
     domain_name:
     - ATL_metro
     - MEX_metro
@@ -314,7 +422,6 @@ plots:
     - LA_metro
     - DEN_metro
     - DFW_metro
-    - CONUS
     domain_info:
       ATL_metro: *id001
       MEX_metro: *id002
@@ -346,7 +453,6 @@ plots:
     - auto-region:box
     - auto-region:box
     - auto-region:box
-    - all
     domain_name:
     - ATL_metro
     - MEX_metro
@@ -354,7 +460,6 @@ plots:
     - LA_metro
     - DEN_metro
     - DFW_metro
-    - CONUS
     domain_info:
       ATL_metro: *id001
       MEX_metro: *id002
@@ -386,7 +491,6 @@ plots:
     - auto-region:box
     - auto-region:box
     - auto-region:box
-    - all
     domain_name:
     - ATL_metro
     - MEX_metro
@@ -394,7 +498,6 @@ plots:
     - LA_metro
     - DEN_metro
     - DFW_metro
-    - CONUS
     domain_info:
       ATL_metro: *id001
       MEX_metro: *id002
@@ -426,7 +529,6 @@ plots:
     - auto-region:box
     - auto-region:box
     - auto-region:box
-    - all
     domain_name:
     - ATL_metro
     - MEX_metro
@@ -434,7 +536,6 @@ plots:
     - LA_metro
     - DEN_metro
     - DFW_metro
-    - CONUS
     domain_info:
       ATL_metro: *id001
       MEX_metro: *id002
@@ -466,7 +567,6 @@ plots:
     - auto-region:box
     - auto-region:box
     - auto-region:box
-    - all
     domain_name:
     - ATL_metro
     - MEX_metro
@@ -474,7 +574,6 @@ plots:
     - LA_metro
     - DEN_metro
     - DFW_metro
-    - CONUS
     domain_info:
       ATL_metro: *id001
       MEX_metro: *id002
@@ -506,7 +605,6 @@ plots:
     - auto-region:box
     - auto-region:box
     - auto-region:box
-    - all
     domain_name:
     - ATL_metro
     - MEX_metro
@@ -514,7 +612,6 @@ plots:
     - LA_metro
     - DEN_metro
     - DFW_metro
-    - CONUS
     domain_info:
       ATL_metro: *id001
       MEX_metro: *id002
@@ -546,7 +643,6 @@ plots:
     - auto-region:box
     - auto-region:box
     - auto-region:box
-    - all
     domain_name:
     - ATL_metro
     - MEX_metro
@@ -554,7 +650,6 @@ plots:
     - LA_metro
     - DEN_metro
     - DFW_metro
-    - CONUS
     domain_info:
       ATL_metro: *id001
       MEX_metro: *id002
@@ -586,7 +681,6 @@ plots:
     - auto-region:box
     - auto-region:box
     - auto-region:box
-    - all
     domain_name:
     - ATL_metro
     - MEX_metro
@@ -594,7 +688,6 @@ plots:
     - LA_metro
     - DEN_metro
     - DFW_metro
-    - CONUS
     domain_info:
       ATL_metro: *id001
       MEX_metro: *id002
@@ -626,7 +719,6 @@ plots:
     - auto-region:box
     - auto-region:box
     - auto-region:box
-    - all
     domain_name:
     - ATL_metro
     - MEX_metro
@@ -634,7 +726,6 @@ plots:
     - LA_metro
     - DEN_metro
     - DFW_metro
-    - CONUS
     domain_info:
       ATL_metro: *id001
       MEX_metro: *id002
@@ -768,7 +859,6 @@ plots:
     - auto-region:box
     - auto-region:box
     - auto-region:box
-    - all
     domain_name:
     - ATL_metro
     - MEX_metro
@@ -776,7 +866,6 @@ plots:
     - LA_metro
     - DEN_metro
     - DFW_metro
-    - CONUS
     domain_info:
       ATL_metro: *id001
       MEX_metro: *id002
@@ -804,7 +893,6 @@ plots:
     - auto-region:box
     - auto-region:box
     - auto-region:box
-    - all
     domain_name:
     - ATL_metro
     - MEX_metro
@@ -812,7 +900,6 @@ plots:
     - LA_metro
     - DEN_metro
     - DFW_metro
-    - CONUS
     domain_info:
       ATL_metro: *id001
       MEX_metro: *id002
@@ -840,7 +927,6 @@ plots:
     - auto-region:box
     - auto-region:box
     - auto-region:box
-    - all
     domain_name:
     - ATL_metro
     - MEX_metro
@@ -848,7 +934,6 @@ plots:
     - LA_metro
     - DEN_metro
     - DFW_metro
-    - CONUS
     domain_info:
       ATL_metro: *id001
       MEX_metro: *id002
@@ -876,7 +961,6 @@ plots:
     - auto-region:box
     - auto-region:box
     - auto-region:box
-    - all
     domain_name:
     - ATL_metro
     - MEX_metro
@@ -884,7 +968,6 @@ plots:
     - LA_metro
     - DEN_metro
     - DFW_metro
-    - CONUS
     domain_info:
       ATL_metro: *id001
       MEX_metro: *id002
@@ -912,7 +995,6 @@ plots:
     - auto-region:box
     - auto-region:box
     - auto-region:box
-    - all
     domain_name:
     - ATL_metro
     - MEX_metro
@@ -920,7 +1002,6 @@ plots:
     - LA_metro
     - DEN_metro
     - DFW_metro
-    - CONUS
     domain_info:
       ATL_metro: *id001
       MEX_metro: *id002
@@ -948,7 +1029,6 @@ plots:
     - auto-region:box
     - auto-region:box
     - auto-region:box
-    - all
     domain_name:
     - ATL_metro
     - MEX_metro
@@ -956,7 +1036,6 @@ plots:
     - LA_metro
     - DEN_metro
     - DFW_metro
-    - CONUS
     domain_info:
       ATL_metro: *id001
       MEX_metro: *id002
@@ -984,7 +1063,6 @@ plots:
     - auto-region:box
     - auto-region:box
     - auto-region:box
-    - all
     domain_name:
     - ATL_metro
     - MEX_metro
@@ -992,7 +1070,6 @@ plots:
     - LA_metro
     - DEN_metro
     - DFW_metro
-    - CONUS
     domain_info:
       ATL_metro: *id001
       MEX_metro: *id002
@@ -1020,7 +1097,6 @@ plots:
     - auto-region:box
     - auto-region:box
     - auto-region:box
-    - all
     domain_name:
     - ATL_metro
     - MEX_metro
@@ -1028,7 +1104,6 @@ plots:
     - LA_metro
     - DEN_metro
     - DFW_metro
-    - CONUS
     domain_info:
       ATL_metro: *id001
       MEX_metro: *id002
@@ -1056,7 +1131,6 @@ plots:
     - auto-region:box
     - auto-region:box
     - auto-region:box
-    - all
     domain_name:
     - ATL_metro
     - MEX_metro
@@ -1064,7 +1138,6 @@ plots:
     - LA_metro
     - DEN_metro
     - DFW_metro
-    - CONUS
     domain_info:
       ATL_metro: *id001
       MEX_metro: *id002
@@ -1092,7 +1165,6 @@ plots:
     - auto-region:box
     - auto-region:box
     - auto-region:box
-    - all
     domain_name:
     - ATL_metro
     - MEX_metro
@@ -1100,7 +1172,6 @@ plots:
     - LA_metro
     - DEN_metro
     - DFW_metro
-    - CONUS
     domain_info:
       ATL_metro: *id001
       MEX_metro: *id002
@@ -1124,7 +1195,6 @@ plots:
     - auto-region:box
     - auto-region:box
     - auto-region:box
-    - all
     domain_name:
     - ATL_metro
     - MEX_metro
@@ -1132,7 +1202,6 @@ plots:
     - LA_metro
     - DEN_metro
     - DFW_metro
-    - CONUS
     domain_info:
       ATL_metro: *id001
       MEX_metro: *id002
@@ -1173,7 +1242,6 @@ plots:
     - auto-region:box
     - auto-region:box
     - auto-region:box
-    - all
     domain_name:
     - ATL_metro
     - MEX_metro
@@ -1181,7 +1249,6 @@ plots:
     - LA_metro
     - DEN_metro
     - DFW_metro
-    - CONUS
     domain_info:
       ATL_metro: *id001
       MEX_metro: *id002
@@ -1218,7 +1285,6 @@ plots:
     - auto-region:box
     - auto-region:box
     - auto-region:box
-    - all
     domain_name:
     - ATL_metro
     - MEX_metro
@@ -1226,7 +1292,6 @@ plots:
     - LA_metro
     - DEN_metro
     - DFW_metro
-    - CONUS
     domain_info:
       ATL_metro: *id001
       MEX_metro: *id002
@@ -1263,7 +1328,6 @@ plots:
     - auto-region:box
     - auto-region:box
     - auto-region:box
-    - all
     domain_name:
     - ATL_metro
     - MEX_metro
@@ -1271,7 +1335,6 @@ plots:
     - LA_metro
     - DEN_metro
     - DFW_metro
-    - CONUS
     domain_info:
       ATL_metro: *id001
       MEX_metro: *id002
@@ -1308,7 +1371,6 @@ plots:
     - auto-region:box
     - auto-region:box
     - auto-region:box
-    - all
     domain_name:
     - ATL_metro
     - MEX_metro
@@ -1316,7 +1378,6 @@ plots:
     - LA_metro
     - DEN_metro
     - DFW_metro
-    - CONUS
     domain_info:
       ATL_metro: *id001
       MEX_metro: *id002
@@ -1353,7 +1414,6 @@ plots:
     - auto-region:box
     - auto-region:box
     - auto-region:box
-    - all
     domain_name:
     - ATL_metro
     - MEX_metro
@@ -1361,7 +1421,6 @@ plots:
     - LA_metro
     - DEN_metro
     - DFW_metro
-    - CONUS
     domain_info:
       ATL_metro: *id001
       MEX_metro: *id002
@@ -1402,7 +1461,6 @@ plots:
     - auto-region:box
     - auto-region:box
     - auto-region:box
-    - all
     domain_name:
     - ATL_metro
     - MEX_metro
@@ -1410,7 +1468,6 @@ plots:
     - LA_metro
     - DEN_metro
     - DFW_metro
-    - CONUS
     domain_info:
       ATL_metro: *id001
       MEX_metro: *id002
@@ -1440,7 +1497,6 @@ plots:
     - auto-region:box
     - auto-region:box
     - auto-region:box
-    - all
     domain_name:
     - ATL_metro
     - MEX_metro
@@ -1448,7 +1504,6 @@ plots:
     - LA_metro
     - DEN_metro
     - DFW_metro
-    - CONUS
     domain_info:
       ATL_metro: *id001
       MEX_metro: *id002
@@ -1478,7 +1533,6 @@ plots:
     - auto-region:box
     - auto-region:box
     - auto-region:box
-    - all
     domain_name:
     - ATL_metro
     - MEX_metro
@@ -1486,7 +1540,6 @@ plots:
     - LA_metro
     - DEN_metro
     - DFW_metro
-    - CONUS
     domain_info:
       ATL_metro: *id001
       MEX_metro: *id002
@@ -1512,7 +1565,6 @@ plots:
     - auto-region:box
     - auto-region:box
     - auto-region:box
-    - all
     domain_name:
     - ATL_metro
     - MEX_metro
@@ -1520,7 +1572,6 @@ plots:
     - LA_metro
     - DEN_metro
     - DFW_metro
-    - CONUS
     domain_info:
       ATL_metro: *id001
       MEX_metro: *id002
@@ -1559,7 +1610,6 @@ plots:
     - auto-region:box
     - auto-region:box
     - auto-region:box
-    - all
     domain_name:
     - ATL_metro
     - MEX_metro
@@ -1567,7 +1617,6 @@ plots:
     - LA_metro
     - DEN_metro
     - DFW_metro
-    - CONUS
     domain_info:
       ATL_metro: *id001
       MEX_metro: *id002
@@ -1597,7 +1646,6 @@ plots:
     - auto-region:box
     - auto-region:box
     - auto-region:box
-    - all
     domain_name:
     - ATL_metro
     - MEX_metro
@@ -1605,7 +1653,6 @@ plots:
     - LA_metro
     - DEN_metro
     - DFW_metro
-    - CONUS
     domain_info:
       ATL_metro: *id001
       MEX_metro: *id002
@@ -1635,7 +1682,6 @@ plots:
     - auto-region:box
     - auto-region:box
     - auto-region:box
-    - all
     domain_name:
     - ATL_metro
     - MEX_metro
@@ -1643,7 +1689,6 @@ plots:
     - LA_metro
     - DEN_metro
     - DFW_metro
-    - CONUS
     domain_info:
       ATL_metro: *id001
       MEX_metro: *id002
@@ -1665,7 +1710,6 @@ plots:
     - auto-region:box
     - auto-region:box
     - auto-region:box
-    - all
     domain_name:
     - ATL_metro
     - MEX_metro
@@ -1673,7 +1717,6 @@ plots:
     - LA_metro
     - DEN_metro
     - DFW_metro
-    - CONUS
     domain_info:
       ATL_metro: *id001
       MEX_metro: *id002
@@ -1704,7 +1747,6 @@ plots:
     - auto-region:box
     - auto-region:box
     - auto-region:box
-    - all
     domain_name:
     - ATL_metro
     - MEX_metro
@@ -1712,7 +1754,6 @@ plots:
     - LA_metro
     - DEN_metro
     - DFW_metro
-    - CONUS
     domain_info:
       ATL_metro: *id001
       MEX_metro: *id002
@@ -1748,7 +1789,6 @@ plots:
     - auto-region:box
     - auto-region:box
     - auto-region:box
-    - all
     domain_name:
     - ATL_metro
     - MEX_metro
@@ -1756,7 +1796,6 @@ plots:
     - LA_metro
     - DEN_metro
     - DFW_metro
-    - CONUS
     domain_info:
       ATL_metro: *id001
       MEX_metro: *id002
@@ -1795,7 +1834,6 @@ plots:
     - auto-region:box
     - auto-region:box
     - auto-region:box
-    - all
     domain_name:
     - ATL_metro
     - MEX_metro
@@ -1803,7 +1841,6 @@ plots:
     - LA_metro
     - DEN_metro
     - DFW_metro
-    - CONUS
     domain_info:
       ATL_metro: *id001
       MEX_metro: *id002
@@ -1844,7 +1881,6 @@ plots:
     - auto-region:box
     - auto-region:box
     - auto-region:box
-    - all
     domain_name:
     - ATL_metro
     - MEX_metro
@@ -1852,7 +1888,6 @@ plots:
     - LA_metro
     - DEN_metro
     - DFW_metro
-    - CONUS
     domain_info:
       ATL_metro: *id001
       MEX_metro: *id002
@@ -1891,7 +1926,6 @@ plots:
     - auto-region:box
     - auto-region:box
     - auto-region:box
-    - all
     domain_name:
     - ATL_metro
     - MEX_metro
@@ -1899,7 +1933,6 @@ plots:
     - LA_metro
     - DEN_metro
     - DFW_metro
-    - CONUS
     domain_info:
       ATL_metro: *id001
       MEX_metro: *id002
@@ -1940,7 +1973,6 @@ stats:
   - auto-region:box
   - auto-region:box
   - auto-region:box
-  - all
   domain_name:
   - ATL_metro
   - MEX_metro
@@ -1948,7 +1980,6 @@ stats:
   - LA_metro
   - DEN_metro
   - DFW_metro
-  - CONUS
   domain_info:
     ATL_metro: *id001
     MEX_metro: *id002

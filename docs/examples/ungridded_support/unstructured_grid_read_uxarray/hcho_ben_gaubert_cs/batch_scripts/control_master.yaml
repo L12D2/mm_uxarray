@@ -178,6 +178,35 @@ model:
     plot_kwargs: {color: 'purple', marker: '^', linestyle: 'dotted'}
 
 plots:
+
+  grp8_multibox_dow_tempo_no2:
+    type: 'multi_boxplot'
+    fig_kwargs: {figsize: [10, 6]}
+    text_kwargs: {fontsize: 16}
+    domain_type:
+    domain_name:
+    domain_info:
+    data: ['tempo_l2_no2_cam-chem-se']
+    interval_var: dayofweek
+    interval_list: [0, 1, 2, 3, 4, 5, 6, 7]
+    interval_labels: [Mon, Tue, Wed, Thu, Fri, Sat, Sun]
+    xlabel: 'Day of week'
+    data_proc: {rem_obs_nan: True, set_axis: False, hour_range: [13, 14], hour_basis: solar}
+
+  grp8_multibox_dow_tropomi_no2:
+    type: 'multi_boxplot'
+    fig_kwargs: {figsize: [10, 6]}
+    text_kwargs: {fontsize: 16}
+    domain_type:
+    domain_name:
+    domain_info:
+    data: ['tropomi_l2_no2_cam-chem-se']
+    interval_var: dayofweek
+    interval_list: [0, 1, 2, 3, 4, 5, 6, 7]
+    interval_labels: [Mon, Tue, Wed, Thu, Fri, Sat, Sun]
+    xlabel: 'Day of week'
+    data_proc: {rem_obs_nan: True, set_axis: False}
+    
   # time series 
   plot_grp1_hcho_tempo:
     type: 'timeseries'
