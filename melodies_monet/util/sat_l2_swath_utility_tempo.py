@@ -732,6 +732,7 @@ def regrid_and_apply_weights(
     species=["NO2"],
     tempo_sp="NO2",
     crop_extent=None,
+    save_vars = None,
 ):
     """Does the complete process of regridding
     and applying scattering weights.
@@ -781,6 +782,10 @@ def regrid_and_apply_weights(
             if v == sat_species_name:
                 continue
             if v.startswith(sat_species_name) and v.endswith(("_uncertainty", "_precision")):
+                names.append(v)
+        # extra obs vars flagged save:True in the control (closure over save_vars)
+        for v in (save_vars or []):
+            if v in src.variables and v not in names:
                 names.append(v)
         return src[names]
         
@@ -1265,6 +1270,17 @@ def back_to_modgrid_multiscan(
             obs_grid_extent=obs_grid_extent,
         )
 
+        # Collect one dataset per scan (each carries a unique single-element
+        # 'time'), then concat ONCE along time at the end.
+        per_scan = {t: [] for t in grid_targets}
+
+        def _collect(keys):
+            scan_dict = back_to_modgrid(paireddict, modobj, keys, **_kw)
+            for t in grid_targets:
+                per_scan[t].append(scan_dict[t])
+            del scan_dict
+            gc.collect()
+
         scan_num = paireddict[ordered_keys[0]].attrs["scan_num"]
         keys_in_scan = [ordered_keys[0]]
         if len(ordered_keys) > 1:
@@ -1272,14 +1288,25 @@ def back_to_modgrid_multiscan(
                 if paireddict[k].attrs["scan_num"] == scan_num:
                     keys_in_scan.append(k)
                 else:
-                    scan_dict = back_to_modgrid(paireddict, modobj, keys_in_scan, **_kw)
-                    for t in grid_targets:
-                        out_by[t] = xr.merge([out_by[t], scan_dict[t]])
+                    _collect(keys_in_scan)
                     scan_num = paireddict[k].attrs["scan_num"]
                     keys_in_scan = [k]
-        scan_dict = back_to_modgrid(paireddict, modobj, keys_in_scan, add_time=True, **_kw)
+        _collect(keys_in_scan)
         for t in grid_targets:
-            out_by[t] = xr.merge([out_by[t], scan_dict[t]])
+            if len(per_scan[t]) == 1:
+                out_by[t] = per_scan[t][0]
+            else:
+                # scans have distinct times -> merge across scans == time-concat.
+                # minimal/override keeps static vars (latitude(n_face), ...) from
+                # being broadcast along time or equality-compared per scan.
+                out_by[t] = xr.concat(
+                    per_scan[t], dim="time",
+                    data_vars="minimal", coords="minimal",
+                    compat="override", join="outer",
+                ).sortby("time")
+            per_scan[t] = None
+        del per_scan
+        gc.collect()
 
     if "swath" in targets:
         out_by["swath"] = _swath_pixels_from_paireddict(paireddict)

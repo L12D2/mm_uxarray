@@ -72,7 +72,7 @@ obs:
     # filename: /glade/campaign/acom/acom-da/sma/TEMPO_HCHO_V03/TEMPO_HCHO_L2_V03_202403*_S*
     # filename: /glade/campaign/acom/acom-da/sma/TEMPO_HCHO_V03/TEMPO_HCHO_L2_V03_20240315*_S*
     
-    regrid_target: [obs, model, series]   #[model, obs]   # default 'model'; 'obs' = lat/lon L3 grid
+    regrid_target: [obs, model]   #[model, obs]   # default 'model'; 'obs' = lat/lon L3 grid
     obs_grid_res: 0.1
     obs_grid_extent: [-130, -60, 15, 55] # [lonW, lonE, latS, latN]; default = model extent
     obs_grid_units: deg            # 'deg' (default) | 'km' | 'm'
@@ -82,6 +82,7 @@ obs:
     variables:
       main_data_quality_flag: {}
       solar_zenith_angle: {}
+      # inside the {} to save it out do {save: True}
       eff_cloud_fraction: {}
       vertical_column:
         ylabel_plot: 'HCHO column (molec cm$^{-2}$)'
@@ -105,14 +106,14 @@ obs:
     sat_type: tempo_l2_no2
     regrid_method: radius_mean
 
-    regrid_target: [obs, model, series]     # default 'model'; 'obs' = lat/lon L3 grid
+    regrid_target: [obs, model]     # default 'model'; 'obs' = lat/lon L3 grid
     obs_grid_res: 0.1
     obs_grid_extent: [-130, -60, 15, 55] # [lonW, lonE, latS, latN]; default = model extent
     obs_grid_units: deg            # 'deg' (default) | 'km' | 'm'
     
     filename: /glade/campaign/acom/acom-da/sma/TEMPO_NO2_V03/TEMPO_NO2_L2_V03_202406*_S0*
     variables:
-      main_data_quality_flag: 0        
+      main_data_quality_flag: {}       
       eff_cloud_fraction:     {}     
       solar_zenith_angle:     {}       
       pressure: {}
@@ -133,7 +134,7 @@ obs:
     obs_type: sat_swath_clm
     sat_type: tropomi_l2_no2
     regrid_method: radius_mean
-    regrid_target: [obs, model, series]
+    regrid_target: [obs, model]
     obs_grid_res: 0.1
     obs_grid_extent: [-130, -60, 15, 55]
     obs_grid_units: deg
@@ -156,7 +157,7 @@ obs:
     obs_type: sat_swath_clm
     sat_type: tropomi_l2_hcho
     regrid_method: radius_mean
-    regrid_target: [obs, model, series]
+    regrid_target: [obs, model]
     obs_grid_res: 0.1
     obs_grid_extent: [-130, -60, 15, 55]
     obs_grid_units: deg
@@ -184,7 +185,7 @@ obs:
     obs_type: sat_swath_clm
     sat_type: tropomi_l2_co
     regrid_method: radius_mean
-    regrid_target: [obs, model, series]
+    regrid_target: [obs, model]
     obs_grid_res: 0.1
     obs_grid_extent: [-130, -60, 15, 55]
     obs_grid_units: deg

@@ -286,10 +286,12 @@ class analysis:
         _grid_keys = ("obs_grid_res", "obs_grid_units", "obs_grid_extent")
 
         if "obs" not in targets:
-            if any(k in cfg for k in _grid_keys):
+            if any(k in cfg for k in ("obs_grid_res", "obs_grid_units")):
                 print(
-                    "Warning: obs_grid_* keys are ignored because regrid_target does "
-                    "not include 'obs' (they only apply to the lat/lon 'obs' target).",
+                    "Warning: obs_grid_res/obs_grid_units only apply to the lat/lon "
+                    "'obs' target and are ignored for this regrid_target. NOTE: "
+                    "obs_grid_extent is NOT ignored -- it is used as the granule "
+                    "crop_extent for every target.",
                     flush=True,
                 )
 
@@ -1552,12 +1554,19 @@ class analysis:
                         
                         _targets, _res, _units, _extent = self._sat_regrid_targets(obs)
 
+                        # obs vars flagged `save: True` in the control can be carried
+                        # into the paired output (beyond the column + uncertainty)
+                        _ovars = (self.control_dict.get("obs", {}).get(obs.label, {})
+                                  or {}).get("variables", {}) or {}
+                        _save = [v for v, c in _ovars.items()
+                                 if isinstance(c, dict) and c.get("save")]
+                        
                         print(f"TEMPO pairing [{obs.label}]: targets={_targets} "
-                              f"crop_extent={_extent}", flush=True)
+                              f"crop_extent={_extent} save_vars={_save}", flush=True)
                         
                         paired_data_atswath = sutil.regrid_and_apply_weights(
                             obs.obj, mod_obj_for_sat, species=mod_sp, method=regrid_method,
-                            tempo_sp=sat_sp, crop_extent=_extent,)
+                            tempo_sp=sat_sp, crop_extent=_extent, save_vars=_save,)
                         
                         paired_dict = sutil.back_to_modgrid_multiscan(
                             paired_data_atswath, model_obj, method=regrid_method,

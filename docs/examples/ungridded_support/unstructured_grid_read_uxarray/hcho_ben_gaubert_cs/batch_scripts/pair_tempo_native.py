@@ -1,3 +1,17 @@
+"""CONUS-scale TEMPO pairing, one day per PBS array element (env YMD).
+
+Env (all optional except RUN, YMD):
+    RUN=nonbiog|biog|grapes|mxcat       (required)
+    YMD=20240608                        (required; set from PBS_ARRAY_INDEX)
+    REGRID_TARGET=model|obs|swath       (default model; obs = CONUS lat/lon grid)
+    REGRID_METHOD=conservative|radius_mean|...   (default conservative)
+    OBS_GRID_RES=0.03                   (obs target only; deg)
+    CLOUD_FILTER=on  SZA_FILTER=on      (QA screen toggles; base flag always on)
+    HOURS='1[5-7]'                      (smoke test: only {ymd}T15*..T17* granules)
+
+Everything is CONUS-wide: granules are cropped to CONUS_EXTENT for every
+target. City-level zooms were removed -- zoom at PLOT time instead.
+"""
 
 import os, glob, copy, time
 from datetime import datetime, timedelta
@@ -7,7 +21,6 @@ from mm_paths import paired_dir, gridtype_of, apply_filters, filter_tag, _envfla
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 BASE = os.path.join(HERE, "control_tempo_native.yaml")
-OUTROOT = "/glade/work/lcthompson/mm_output"
 
 _NE0 = "/glade/campaign/acom/MUSICA/grids/ne0CONUSne30x8/ne0CONUS_ne30x8_np4_SCRIP.nc"
 
@@ -35,15 +48,19 @@ RUNS = {
         scrip="/glade/work/jjacdan/ne0np4.MXC.ATL.ne30x16/grids/MXC.ATL_ne30x16_np4_SCRIP.nc"),
 }
 
-# [lonW, lonE, latS, latN]
+# City boxes: retained ONLY because pair_tropomi_native imports CITIES; the
+# city pairing path was removed from this script (CONUS-scale only).
 CITIES = {
     "atl":  [-85.0, -83.7, 33.2, 34.4],
     "mex":  [-99.6, -98.6, 18.9, 20.0],
-    #"seus": [-92.0, -75.0, 24.5, 37.0],   
     "la":   [-119.2, -117.3, 33.3, 34.7],
     "den":  [-105.8, -104.3, 39.2, 40.3],
     "dfw":  [-97.8, -96.3, 32.2, 33.4],
 }
+
+# CONUS-wide crop [lonW, lonE, latS, latN] (latS=15 keeps Mexico City / TEMPO's
+# southern FOR edge)
+CONUS_EXTENT = [-130.0, -60.0, 15.0, 55.0]
 
 OBS_SOURCES = {
     "tempo_l2_hcho": {"dir": "/glade/campaign/acom/acom-da/sma/TEMPO_HCHO_V03",
@@ -66,40 +83,46 @@ def main():
     restag = ("%g" % res).replace(".", "p")
     method = os.environ.get("REGRID_METHOD", "conservative").strip()
     methodtag = METHOD_TAG.get(method, method[:5])
-    target = os.environ.get("REGRID_TARGET", "obs").strip().lower()
+    target = os.environ.get("REGRID_TARGET", "model").strip().lower()
     if target not in ("obs", "model", "swath"):
         raise SystemExit(f"REGRID_TARGET={target!r} must be 'obs', 'model', or 'swath'")
     # QA-screen sensitivity toggle (CLOUD_FILTER / SZA_FILTER env); base flag always on
     ftag = filter_tag(_envflag("CLOUD_FILTER"), _envflag("SZA_FILTER"))
 
-    city_env = os.environ.get("CITY", "").strip().lower()
-    if city_env:
-        if city_env not in CITIES:
-            raise SystemExit(f"CITY={city_env!r} not in {list(CITIES)}")
-        cities = {city_env: CITIES[city_env]}
-    else:
-        cities = CITIES
+    # Running
+    # one product per job halves the per-day granule accumulation 
+    _want = os.environ.get("TEMPO_PRODUCTS", "hcho,no2")
+    keep = {f"tempo_l2_{s.strip()}" for s in _want.split(",")
+            if s.strip() in ("hcho", "no2")}
+    if not keep:
+        raise SystemExit(f"TEMPO_PRODUCTS={_want!r} resolved to nothing")
 
     d0 = datetime.strptime(ymd, "%Y%m%d")
     iso = d0.strftime("%Y-%m-%d")
     r = RUNS[run]
-    # mfiles = sorted(glob.glob(f"{r['model_dir']}/{r['model_stem']}.{iso}-*.nc"))
-    # if not mfiles:
     if not glob.glob(f"{r['model_dir']}/{r['model_stem']}.{iso}-*.nc"):
         print(f"SKIP {run} {ymd}: no model files under {r['model_dir']}", flush=True)
         return
 
+    # neighbor days so 00 UTC is covered (CAM h1 end-of-interval stamping)
     days = [(d0 + timedelta(days=k)).strftime("%Y-%m-%d") for k in (-1, 0, 1)]
     mfiles = sorted(f for day in days
                     for f in glob.glob(f"{r['model_dir']}/{r['model_stem']}.{day}-*.nc"))
 
-    outdir = f"{OUTROOT}/{run}_tempo_native"
+    # mm_output_v2/<run-slug>/tempo/<gridtype>  (model | swath | grid_0p03 ...)
+    gridtype = gridtype_of(target, restag)
+    outdir = paired_dir(run, "tempo", gridtype)
     yamldir = f"{outdir}/yaml"
     os.makedirs(yamldir, exist_ok=True)
 
-    # obs granule patterns for this day, resolved once
-    obs_pat = {name: f"{src['dir']}/{src['glob'].format(ymd=ymd)}"
-               for name, src in OBS_SOURCES.items()}
+    # obs granule patterns for this day. 
+    _hh = os.environ.get("HOURS", "").strip()
+    obs_pat = {name: f"{src['dir']}/{src['glob'].format(ymd=ymd)}".replace(
+                   f"{ymd}T", f"{ymd}T{_hh}") if _hh
+               else f"{src['dir']}/{src['glob'].format(ymd=ymd)}"
+               for name, src in OBS_SOURCES.items() if name in keep}
+    if _hh:
+        print(f"HOURS={_hh!r}: granule glob narrowed to {ymd}T{_hh}*", flush=True)
     have = {name: bool(glob.glob(pat)) for name, pat in obs_pat.items()}
     if not any(have.values()):
         print(f"SKIP {run} {ymd}: no TEMPO granules", flush=True)
@@ -107,63 +130,50 @@ def main():
 
     t0 = time.time()
 
-    def _base_cd():
-        cd = copy.deepcopy(yaml.safe_load(open(BASE)))
-        cd["analysis"]["start_time"] = iso
-        cd["analysis"]["end_time"] = f"{iso} 23:59:00"
-        for k in ("output_dir", "output_dir_save", "output_dir_read"):
-            cd["analysis"][k] = outdir
-        cd["model"]["cam-chem-se"]["files"] = mfiles
-        cd["model"]["cam-chem-se"]["scrip_file"] = r["scrip"]
-        return cd
+    cd = copy.deepcopy(yaml.safe_load(open(BASE)))
+    cd["analysis"]["start_time"] = iso
+    cd["analysis"]["end_time"] = f"{iso} 23:59:00"
+    for k in ("output_dir", "output_dir_save", "output_dir_read"):
+        cd["analysis"][k] = outdir
+    cd["model"]["cam-chem-se"]["files"] = mfiles
+    cd["model"]["cam-chem-se"]["scrip_file"] = r["scrip"]
 
-    def _setup_obs(cd, box=None):
-        mapping = cd["model"]["cam-chem-se"].get("mapping", {})
-        present = []
-        for name in list(OBS_SOURCES):
-            if have.get(name):
-                cd["obs"][name]["filename"] = obs_pat[name]
-                cd["obs"][name]["regrid_target"] = [target]
-                cd["obs"][name]["regrid_method"] = method
-                if target in ("obs", "swath"):                    # mesh target ignores these
-                # 'obs' needs res+extent to build the lat/lon grid; 'swath' needs
-                # only the extent so the granule is CROPPED to the city (keeping the
-                # native pixel vector small). 'model' ignores both.
-                    cd["obs"][name]["obs_grid_res"] = res
-                    cd["obs"][name]["obs_grid_extent"] = box
-                apply_filters(cd["obs"][name], name)
-                present.append(name)
-            else:
-                cd["obs"].pop(name, None)
-                mapping.pop(name, None)
-        return present
+    mapping = cd["model"]["cam-chem-se"].get("mapping", {})
+    present = []
+    for name in list(OBS_SOURCES):
+        if have.get(name):
+            cd["obs"][name]["filename"] = obs_pat[name]
+            cd["obs"][name]["regrid_target"] = [target]
+            cd["obs"][name]["regrid_method"] = method
+            # ALWAYS set the extent: it is the granule crop for every target.
+            cd["obs"][name]["obs_grid_extent"] = CONUS_EXTENT
+            if target == "obs":            # res only builds the lat/lon grid
+                cd["obs"][name]["obs_grid_res"] = res
+            apply_filters(cd["obs"][name], name)   # QA screen per CLOUD/SZA env
+            present.append(name)
+        else:
+            cd["obs"].pop(name, None)
+            mapping.pop(name, None)
+    if not present:
+        print(f"SKIP {run} {ymd}: no obs products with data", flush=True)
+        return
 
-    def _run(cd, tmp, tag):
-        yaml.safe_dump(cd, open(tmp, "w"), sort_keys=False)
-        print(f"==== {run} {iso} {tag} [{method}->{target}] ====", flush=True)
-        an = driver.analysis()
-        an.control = tmp
-        an.read_control()
-        an.open_models()
-        an.open_obs()
-        an.pair_data()
-        an.save_analysis()
-        for label, p in an.paired.items():
-            print(f"  {tag}: {label}: {dict(p.obj.sizes)}", flush=True)
+    _grid_bit = f"conus_{restag}_" if target == "obs" else f"{target}_"
+    prefix = f"{_grid_bit}{methodtag}_{ftag}_{ymd}"
+    cd["analysis"]["save"]["paired"]["prefix"] = prefix
 
-    if target == "model":
-        # full-domain mesh product; city extent/res do not apply
-        cd = _base_cd()
-        cd["analysis"]["save"]["paired"]["prefix"] = f"model_{methodtag}_{ftag}_{ymd}"
-        if _setup_obs(cd):
-            _run(cd, f"{yamldir}/control_model_{methodtag}_{ftag}_{ymd}.yaml", "model-space")
-    else:
-        for city, box in cities.items():
-            cd = _base_cd()
-            cd["analysis"]["save"]["paired"]["prefix"] = f"{city}_{restag}_{methodtag}_{ftag}_{ymd}"
-            if _setup_obs(cd, box):
-                _run(cd, f"{yamldir}/control_{city}_{restag}_{methodtag}_{ftag}_{ymd}.yaml",
-                     f"{city}@{res}deg")
+    tmp = f"{yamldir}/control_{prefix}.yaml"
+    yaml.safe_dump(cd, open(tmp, "w"), sort_keys=False)
+    print(f"==== {run} {iso} CONUS [{method}->{target}] {ftag} ====", flush=True)
+    an = driver.analysis()
+    an.control = tmp
+    an.read_control()
+    an.open_models()
+    an.open_obs()
+    an.pair_data()
+    an.save_analysis()
+    for label, p in an.paired.items():
+        print(f"  {label}: {dict(p.obj.sizes)}", flush=True)
 
     print(f"==== DONE {run} {iso} in {time.time()-t0:.0f}s ====", flush=True)
 

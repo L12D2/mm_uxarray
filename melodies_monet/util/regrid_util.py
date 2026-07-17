@@ -71,12 +71,38 @@ _XREGRID_PARALLEL = os.environ.get("MM_XREGRID_PARALLEL", "").strip().lower() in
     "1", "on", "true", "yes")
 _XREGRID_CLIENT = None
 
+def _patch_ux_isel_slices():
+    """Teach UxDataset.isel to accept slice indexers (idempotent).
+
+    xregrid's parallel weight generation chunks the source grid with
+    ``ds.isel(n_face=slice(a, b))``; uxarray's Grid.isel only takes explicit
+    index arrays (``_slice_face_indices`` does ``np.asarray(indices, int)`` ->
+    "TypeError: int() argument ... not 'slice'"). Expand any slice indexer to
+    ``np.arange`` before delegating to the original isel.
+    """
+    if getattr(ux.UxDataset.isel, "_mm_slice_ok", False):
+        return
+    _orig_isel = ux.UxDataset.isel
+
+    def _isel_slices_ok(self, indexers=None, **kwargs):
+        merged = dict(indexers or {}); merged.update(kwargs)
+        for dim, idx in list(merged.items()):
+            if isinstance(idx, slice) and dim in self.sizes:
+                merged[dim] = np.arange(*idx.indices(self.sizes[dim]))
+        return _orig_isel(self, **merged)
+
+    _isel_slices_ok._mm_slice_ok = True
+    ux.UxDataset.isel = _isel_slices_ok
+    
 def _ensure_xregrid_client():
     """Lazily create (once per process) a right-sized dask.distributed client for
     xregrid's parallel weight generation. No-op / None if parallel is off or dask
     is unavailable (xregrid then just runs serial)."""
     global _XREGRID_CLIENT
-    if not _XREGRID_PARALLEL or _XREGRID_CLIENT is not None:
+    if not _XREGRID_PARALLEL:
+        return None
+    _patch_ux_isel_slices()          # main process (xregrid chunks source here)
+    if _XREGRID_CLIENT is not None:
         return _XREGRID_CLIENT
     try:
         import dask.distributed as dd
@@ -93,6 +119,11 @@ def _ensure_xregrid_client():
         _XREGRID_CLIENT = dd.Client(cluster)
         print(f"regrid: dask LocalCluster with {n} workers for xregrid parallel "
               "weight generation.", flush=True)
+    try:
+        # workers may also isel shipped UxDatasets -- patch them too
+        _XREGRID_CLIENT.run(_patch_ux_isel_slices)
+    except Exception:
+        pass
     return _XREGRID_CLIENT
 
 def _release_esmf(rg):
