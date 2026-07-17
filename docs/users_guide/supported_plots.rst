@@ -68,6 +68,11 @@ Surface Evaluation
 
    **Multi-BOX-plot** - Like BOX-plot, but bin data into intervals based on a provided variable like observed temperature.
 
+.. figure:: /_static/figures/regulatory_dow1x_aqs.multi_boxplot.PM2.5_reg.2024-06-01_00.2024-06-30_23.auto-region:box.DFW_metro.png 
+   :scale: 35 %
+
+   **Multi-BOX-plot** - Like BOX-plot, but bin data into intervals based on the day of week (e.g. Sunday - Saturday).
+
 .. figure:: /_static/figures/plot_grp6.scorecard.OZONE.2019-09-05_06.2019-09-06_06.all.CONUS.png
 
    **Scorecard** - Compares two model outputs, evaluated against observations.

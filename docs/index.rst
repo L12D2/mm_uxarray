@@ -99,12 +99,14 @@ Table of Contents
    :maxdepth: 4
    :caption: Examples
 
+   examples/1x_track_cesm_se
    examples/intro_examples
    examples/tutorial-data
    examples/airnow_wrfchem
    examples/airnow_wrfchem_reg
    examples/camchem
    examples/airnow_camchem_se
+   examples/airnow_mpas
    examples/airnow_ufschem
    examples/ish_ufschem
    examples/ish_lite_ufschem
@@ -116,6 +118,7 @@ Table of Contents
    examples/UWyoming_UFS-CHEM_Pairing
    examples/UWyoming_UFS-CHEM_pairing_loop_read
    examples/ufs-aqm-gml-ozonesonde
+   
 
 .. toctree::
    :maxdepth: 4
@@ -124,6 +127,7 @@ Table of Contents
    applications/publications
    applications/forecasts
    applications/other_tools
+   applications/gallery
 
 .. toctree::
    :maxdepth: 4

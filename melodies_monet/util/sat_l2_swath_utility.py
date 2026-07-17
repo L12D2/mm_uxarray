@@ -880,7 +880,7 @@ def _model_at_time(modobj, gtime):
 def regrid_and_apply_weights_tropomi(obsobj, modobj, species=["NO2"],
                                      method="conservative", qa_min=0.75,
                                      regrid_target="model", obs_grid_res=0.1, obs_grid_units="deg", obs_grid_extent=None, 
-                                     save_vars=save_vars):
+                                     save_vars=None):
     
     """Pair an unstructured model with TROPOMI L2 NO2 (AK applied).
 
@@ -1002,7 +1002,7 @@ def apply_weights_mod2tropomi_co(obsobj, modobj_on_tropomi_layers, species="CO")
 def regrid_and_apply_weights_tropomi_co(obsobj, modobj, species=["CO"],
                                         method="conservative", qa_min=0.5,
                                         regrid_target="model", obs_grid_res=0.1, obs_grid_units="deg", obs_grid_extent=None, 
-                                        save_vars=save_vars):
+                                        save_vars=None):
     """Pair an unstructured model with TROPOMI L2 CO (column AK applied).
 
     Thin wrapper over _pair_tropomi('co', ...). Prefers the destriped
@@ -1031,7 +1031,7 @@ _TROPOMI_PRODUCTS = {
                species="CO", qa_min=0.5, prefer_corrected=True),
 }
 
-def _tropomi_swath_pixels(swath, sp, obs_var, gtime, save_vars=save_vars):
+def _tropomi_swath_pixels(swath, sp, obs_var, gtime, save_vars=None):
     """Flatten one paired TROPOMI granule to a native-pixel vector.
 
     The 'swath' target keeps every footprint (no gridding): a 1-D ``obs``
