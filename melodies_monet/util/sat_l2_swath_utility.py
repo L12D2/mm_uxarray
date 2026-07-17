@@ -879,7 +879,8 @@ def _model_at_time(modobj, gtime):
 
 def regrid_and_apply_weights_tropomi(obsobj, modobj, species=["NO2"],
                                      method="conservative", qa_min=0.75,
-                                     regrid_target="model", obs_grid_res=0.1, obs_grid_units="deg", obs_grid_extent=None):
+                                     regrid_target="model", obs_grid_res=0.1, obs_grid_units="deg", obs_grid_extent=None, 
+                                     save_vars=save_vars):
     
     """Pair an unstructured model with TROPOMI L2 NO2 (AK applied).
 
@@ -911,7 +912,7 @@ def regrid_and_apply_weights_tropomi(obsobj, modobj, species=["NO2"],
                          qa_min=qa_min, regrid_target=regrid_target,
                          obs_grid_res=obs_grid_res,
                          obs_grid_units=obs_grid_units,
-                         obs_grid_extent=obs_grid_extent)
+                         obs_grid_extent=obs_grid_extent, save_vars=save_vars)
     
 # tropomi HCHO 
 # single tropo AMF and total columng averaging kernel 
@@ -951,7 +952,7 @@ def apply_weights_mod2tropomi_hcho(obsobj, modobj_on_tropomi_layers, species="CH
 def regrid_and_apply_weights_tropomi_hcho(obsobj, modobj, species=["CH2O"],
                                           method="conservative", qa_min=0.5,
                                           regrid_target="model", obs_grid_res=0.1, obs_grid_units="deg", 
-                                          obs_grid_extent=None):
+                                          obs_grid_extent=None, save_vars = None):
     """
     Pair an unstructured model with TROPOMI L2 HCHO (AK applied).
 
@@ -966,7 +967,7 @@ def regrid_and_apply_weights_tropomi_hcho(obsobj, modobj, species=["CH2O"],
                          qa_min=qa_min, regrid_target=regrid_target,
                          obs_grid_res=obs_grid_res,
                          obs_grid_units=obs_grid_units,
-                         obs_grid_extent=obs_grid_extent)
+                         obs_grid_extent=obs_grid_extent, save_vars=save_vars)
 
 # co 
 _TROPOMI_CO_VAR = "carbonmonoxide_total_column"
@@ -1000,7 +1001,8 @@ def apply_weights_mod2tropomi_co(obsobj, modobj_on_tropomi_layers, species="CO")
 
 def regrid_and_apply_weights_tropomi_co(obsobj, modobj, species=["CO"],
                                         method="conservative", qa_min=0.5,
-                                        regrid_target="model", obs_grid_res=0.1, obs_grid_units="deg", obs_grid_extent=None):
+                                        regrid_target="model", obs_grid_res=0.1, obs_grid_units="deg", obs_grid_extent=None, 
+                                        save_vars=save_vars):
     """Pair an unstructured model with TROPOMI L2 CO (column AK applied).
 
     Thin wrapper over _pair_tropomi('co', ...). Prefers the destriped
@@ -1010,7 +1012,7 @@ def regrid_and_apply_weights_tropomi_co(obsobj, modobj, species=["CO"],
                          qa_min=qa_min, regrid_target=regrid_target,
                          obs_grid_res=obs_grid_res,
                          obs_grid_units=obs_grid_units,
-                         obs_grid_extent=obs_grid_extent)
+                         obs_grid_extent=obs_grid_extent, save_vars=save_vars)
 
 
 
@@ -1029,7 +1031,7 @@ _TROPOMI_PRODUCTS = {
                species="CO", qa_min=0.5, prefer_corrected=True),
 }
 
-def _tropomi_swath_pixels(swath, sp, obs_var, gtime):
+def _tropomi_swath_pixels(swath, sp, obs_var, gtime, save_vars=save_vars):
     """Flatten one paired TROPOMI granule to a native-pixel vector.
 
     The 'swath' target keeps every footprint (no gridding): a 1-D ``obs``
@@ -1038,7 +1040,13 @@ def _tropomi_swath_pixels(swath, sp, obs_var, gtime):
     All-NaN pixels dropped.
     """
     sdims = tuple(swath[obs_var].dims)                       # (y, x)
-    keep_vars = [sp, obs_var] + (["_obs_err"] if "_obs_err" in swath.variables else [])
+
+    # can save out QA values 
+    _extra = [v for v in (save_vars or []) if v in swath.variables]
+    keep_vars = ([sp, obs_var]
+                 + (["_obs_err"] if "_obs_err" in swath.variables else [])
+                 + _extra)
+    
     flat = swath[keep_vars].stack(obs=sdims).reset_index("obs", drop=True)
     lon = np.asarray(
         swath["longitude"].stack(obs=sdims).reset_index("obs", drop=True).values)
@@ -1070,7 +1078,7 @@ def _tropomi_swath_pixels(swath, sp, obs_var, gtime):
 
 def _pair_tropomi(product, obsobj, modobj, species=None, method="conservative",
                   qa_min=None, regrid_target="model", obs_grid_res=0.1,
-                  obs_grid_units="deg", obs_grid_extent=None):
+                  obs_grid_units="deg", obs_grid_extent=None, save_vars = None):
     
     """Shared TROPOMI pairing loop; the per-product science comes from
     _TROPOMI_PRODUCTS[product].
@@ -1088,6 +1096,7 @@ def _pair_tropomi(product, obsobj, modobj, species=None, method="conservative",
     sp = (species or [cfg["species"]])[0]
     if qa_min is None:
         qa_min = cfg["qa_min"]
+    save_vars = list(save_vars or [])
 
     grid_file = (modobj.attrs.get("mio_scrip_file")
                  or modobj.attrs.get("mio_mesh_file"))
@@ -1112,6 +1121,10 @@ def _pair_tropomi(product, obsobj, modobj, species=None, method="conservative",
                   "control YAML.", flush=True)
 
     out_by = {t: [] for t in targets}
+
+    # warn about heavy 3d vars saving out 
+    _warned_3d = False
+    
     for o in granules:
         if "time" in o.dims:
             o = o.squeeze("time", drop=False)
@@ -1153,6 +1166,11 @@ def _pair_tropomi(product, obsobj, modobj, species=None, method="conservative",
         )
         swath[obs_var].attrs["source_variable"] = src
 
+        _save_present = [v for v in save_vars
+                         if v in o.variables and v not in swath.variables]
+        for v in _save_present:
+            swath[v] = o[v]
+            
         # per-pixel retrieval error for inverse-variance weighting in 'series'
         _attach_obs_err(swath, o, obs_var)
         
@@ -1160,11 +1178,24 @@ def _pair_tropomi(product, obsobj, modobj, species=None, method="conservative",
             if t == "swath":
                 # native pixel vector (no gridding); time is a per-pixel coord,
                 # so it concatenates along 'obs', not 'time'.
-                out_by[t].append(_tropomi_swath_pixels(swath, sp, obs_var, gtime))
+                out_by[t].append(_tropomi_swath_pixels(swath, sp, obs_var, gtime,
+                                                        save_vars=_save_present))
                 continue
                 
-            on = _swath_to_target(swath, modobj, method, [sp, obs_var],
+            # For gridded targets only carry 2-D per-pixel save vars (AMF, sza,
+            # cloud, qa). keep the full
+            # AK on the 'swath' product instead.
+            _grid_save = [v for v in _save_present if swath[v].ndim <= 2]
+            if not _warned_3d and len(_grid_save) < len(_save_present):
+                _dropped = [v for v in _save_present if swath[v].ndim > 2]
+                print(f"TROPOMI {product}: not regridding layer-resolved save "
+                      f"var(s) {_dropped} to '{t}' (preserved on 'swath' only).",
+                      flush=True)
+                _warned_3d = True
+                
+            on = _swath_to_target(swath, modobj, method, [sp, obs_var] + _grid_save,
                                   t, obs_grid_res, extent, units=obs_grid_units)
+            
             if gtime is not None:
                 tval = gtime if np.ndim(gtime) == 0 else np.asarray(gtime).ravel()[0]
                 on = on.expand_dims(time=[np.datetime64(tval)])

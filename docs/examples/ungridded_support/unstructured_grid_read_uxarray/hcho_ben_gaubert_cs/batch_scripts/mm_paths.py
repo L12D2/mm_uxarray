@@ -76,6 +76,24 @@ def paired_dir(run, instrument, gridtype, make=True):
 def _envflag(name):
     return os.environ.get(name, "").strip().lower() in ("1", "on", "true", "yes")
 
+_TROPOMI_CLOUD_VAR = {
+    "tropomi_l2_no2":  "cloud_fraction_crb",
+    "tropomi_l2_hcho": "cloud_fraction_crb",
+    "tropomi_l2_co":   None,
+}
+
+_SAVE_DIAG = {
+    "tempo":   ["solar_zenith_angle", "eff_cloud_fraction", "main_data_quality_flag"],
+    "tropomi": ["solar_zenith_angle", "qa_value"],
+}
+
+_AMF_VAR = {
+    "tempo_l2_no2":    ["amf_troposphere", "amf_total"],
+    "tempo_l2_hcho":   ["amf"],
+    "tropomi_l2_no2":  ["air_mass_factor_troposphere", "air_mass_factor_total"],
+    "tropomi_l2_hcho": ["formaldehyde_tropospheric_air_mass_factor"],
+    "tropomi_l2_co":   [],
+}
 
 def filter_spec(product, cloud_on, sza_on):
     """(filter_dict, screen_vars) for a product given cloud/SZA toggles.
@@ -90,8 +108,10 @@ def filter_spec(product, cloud_on, sza_on):
         fd["main_data_quality_flag"] = {"oper": "<=", "value": 0}
         svars.add("main_data_quality_flag")
         if cloud_on:
-            fd["eff_cloud_fraction"] = {"oper": "<=", "value": 0.2}
-            svars.add("eff_cloud_fraction")
+            cvar = _TROPOMI_CLOUD_VAR.get(product)
+            if cvar:
+                fd[cvar] = {"oper": "<=", "value": 0.2}
+                svars.add(cvar)
         if sza_on:
             fd["solar_zenith_angle"] = {"oper": "<=", "value": 70}
             svars.add("solar_zenith_angle")
@@ -120,9 +140,51 @@ def apply_filters(obs_block, product):
     env flags; returns the filename tag. Ensures screen vars are read and sets
     data_proc.filter_dict (overriding whatever the base control had)."""
     cloud_on, sza_on = _envflag("CLOUD_FILTER"), _envflag("SZA_FILTER")
-    fd, svars = filter_spec(product, cloud_on, sza_on)
+    if _envflag("NO_QA"):
+        fd, svars = {}, set()
+    else:
+        fd, svars = filter_spec(product, cloud_on, sza_on)
     v = obs_block.setdefault("variables", {})
     for sv in svars:
         v.setdefault(sv, {})
     obs_block.setdefault("data_proc", {})["filter_dict"] = fd
     return filter_tag(cloud_on, sza_on)
+
+def save_spec(product):
+    """Obs vars to mark ``save: True`` for a product: the union of the SAVE_DIAG
+    per-instrument diagnostic set (sza/cloud/qa, when SAVE_DIAG=on) and any
+    explicit SAVE_VARS (comma list). SAVE_VARS is ADDITIVE, so you can layer
+    e.g. AMF/AK on top of the diagnostics. Empty when neither is set.
+
+    Note on cost: AMF vars are 2-D per-pixel (cheap, any target); the averaging
+    kernel is 3-D layer-resolved """
+    vs = []
+    if _envflag("SAVE_DIAG"):
+        inst = instrument_of(product)
+        vs = list(_SAVE_DIAG.get(inst, []))
+        if inst == "tropomi":
+            cvar = _TROPOMI_CLOUD_VAR.get(product)
+            if cvar and cvar not in vs:
+                vs.append(cvar)
+    for v in (s.strip() for s in os.environ.get("SAVE_VARS", "").split(",")):
+        if v and v not in vs:
+            vs.append(v)
+    return vs
+
+
+def apply_save(obs_block, product):
+    """Mark diagnostic obs vars ``save: True`` (and ensure they're read) so the
+    pairing carries them into the paired output. Returns True if any were set."""
+    vs = save_spec(product)
+    v = obs_block.setdefault("variables", {})
+    for sv in vs:
+        cur = v.get(sv)
+        v[sv] = {**cur, "save": True} if isinstance(cur, dict) else {"save": True}
+    return bool(vs)
+
+
+def save_suffix():
+    """Filename-tag suffix ('sv') distinguishing save-diagnostics products from
+    plain filtered ones"""
+    return "sv" if save_spec("tempo_l2_no2") or save_spec("tropomi_l2_no2") else ""
+    

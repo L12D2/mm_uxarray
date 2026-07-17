@@ -17,7 +17,8 @@ import os, glob, copy, time
 from datetime import datetime, timedelta
 import yaml
 from melodies_monet import driver
-from mm_paths import paired_dir, gridtype_of, apply_filters, filter_tag, _envflag
+from mm_paths import (paired_dir, gridtype_of, apply_filters, apply_save,
+                      filter_tag, save_suffix, _envflag)
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 BASE = os.path.join(HERE, "control_tempo_native.yaml")
@@ -87,7 +88,7 @@ def main():
     if target not in ("obs", "model", "swath"):
         raise SystemExit(f"REGRID_TARGET={target!r} must be 'obs', 'model', or 'swath'")
     # QA-screen sensitivity toggle (CLOUD_FILTER / SZA_FILTER env); base flag always on
-    ftag = filter_tag(_envflag("CLOUD_FILTER"), _envflag("SZA_FILTER"))
+    ftag = filter_tag(_envflag("CLOUD_FILTER"), _envflag("SZA_FILTER")) + save_suffix()
 
     # Running
     # one product per job halves the per-day granule accumulation 
@@ -150,6 +151,7 @@ def main():
             if target == "obs":            # res only builds the lat/lon grid
                 cd["obs"][name]["obs_grid_res"] = res
             apply_filters(cd["obs"][name], name)   # QA screen per CLOUD/SZA env
+            apply_save(cd["obs"][name], name)
             present.append(name)
         else:
             cd["obs"].pop(name, None)

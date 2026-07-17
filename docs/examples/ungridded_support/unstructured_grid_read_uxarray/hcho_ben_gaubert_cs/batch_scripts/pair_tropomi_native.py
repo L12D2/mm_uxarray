@@ -30,7 +30,8 @@ from melodies_monet import driver
 
 # reuse the model definitions, CONUS extent, and method tags from the TEMPO driver
 from pair_tempo_native import BASE, CONUS_EXTENT, METHOD_TAG, RUNS
-from mm_paths import paired_dir, gridtype_of, apply_filters, filter_tag, _envflag
+from mm_paths import (paired_dir, gridtype_of, apply_filters, apply_save,
+                      filter_tag, save_suffix, _envflag)
 
 # TROPOMI L2 granule sources (one file per overpass; the S5P filename carries the
 # start datetime YYYYMMDDTHHMMSS, so a per-day glob is "..._{ymd}T*"). Note the
@@ -113,7 +114,7 @@ def main():
     target = os.environ.get("REGRID_TARGET", "model").strip().lower()
     if target not in ("obs", "model", "swath"):
         raise SystemExit(f"REGRID_TARGET={target!r} must be 'obs', 'model', or 'swath'")
-    ftag = filter_tag(_envflag("CLOUD_FILTER"), _envflag("SZA_FILTER"))
+    ftag = filter_tag(_envflag("CLOUD_FILTER"), _envflag("SZA_FILTER")) + save_suffix()
 
     want = os.environ.get("TROPOMI_PRODUCTS", "no2,hcho,co")
     products = [_SHORT[s.strip()] for s in want.split(",") if s.strip() in _SHORT]
@@ -179,6 +180,7 @@ def main():
         if target == "obs":                # res only builds the lat/lon grid
             blk["obs_grid_res"] = res
         apply_filters(blk, name)           # QA screen per CLOUD/SZA env
+        apply_save(blk, name) 
         cd["obs"][name] = blk
         mapping[name] = MAPPING[name]
         present.append(name)

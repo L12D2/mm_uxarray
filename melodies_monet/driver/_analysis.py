@@ -1418,7 +1418,12 @@ class analysis:
                         label = "{}_{}".format(p.obs, p.model)
 
                         self.paired[label] = p
-                    
+
+                    # obs vars flagged save: True in the control are carried into
+                    # the paired output for ANY sat product (TEMPO or TROPOMI)
+                    _save = [v for v, c in (obs.variable_dict or {}).items()
+                             if isinstance(c, dict) and c.get("save")]
+
                     # uses the generic tropomi reader
                     if obs.sat_type == "tropomi_l2_no2" and obs.sat_method != "replace_apriori":
                         # Conservative / unstructured TROPOMI NO2 path (default):
@@ -1448,7 +1453,7 @@ class analysis:
                         paired_dict = troputil.regrid_and_apply_weights_tropomi(
                             obs.obj, mod_obj_for_sat, species=mod_sp, method=regrid_method,
                             qa_min=_qa_min, regrid_target=_targets, obs_grid_res=_res, 
-                            obs_grid_units=_units, obs_grid_extent=_extent,
+                            obs_grid_units=_units, obs_grid_extent=_extent, save_vars=_save,
                         )
                         self._store_sat_pairs(
                             paired_dict, obs, mod, keys, obs_vars, "TROPOMI NO2")
@@ -1478,7 +1483,7 @@ class analysis:
                         paired_dict = troputil.regrid_and_apply_weights_tropomi_hcho(
                             obs.obj, mod_obj_for_sat, species=mod_sp, method=regrid_method,
                             qa_min=_qa_min, regrid_target=_targets, obs_grid_res=_res, 
-                            obs_grid_units=_units, obs_grid_extent=_extent,
+                            obs_grid_units=_units, obs_grid_extent=_extent, save_vars=_save,
                         )
                         self._store_sat_pairs(
                             paired_dict, obs, mod, keys, obs_vars, "TROPOMI HCHO")                        
@@ -1511,7 +1516,7 @@ class analysis:
                             obs.obj, mod_obj_for_sat, species=mod_sp,
                             method=regrid_method, qa_min=_qa_min,
                             regrid_target=_targets, obs_grid_res=_res, 
-                            obs_grid_units=_units, obs_grid_extent=_extent,
+                            obs_grid_units=_units, obs_grid_extent=_extent, save_vars=_save,
                         )
                         
                         self._store_sat_pairs(

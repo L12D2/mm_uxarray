@@ -1038,6 +1038,19 @@ def back_to_modgrid(
             granules.append(paireddict[k].attrs["granule_number"])
             ref_times.append(paireddict[k].attrs["reference_time_string"][:-1])
 
+    # Layer-resolved (3-D) obs vars carried by save_vars (e.g. TEMPO scattering
+    # weights / averaging kernels) are NOT regridded to gridded target. They are also expensive to carry. 
+    # The swaths can keep them 
+    _over2d = [v for v in concatenated.data_vars
+               if concatenated[v].ndim > 2 and "bounds" not in v]
+    if _over2d:
+        print(f"TEMPO: not regridding layer-resolved var(s) {_over2d} to "
+              f"{regrid_target} (preserved on 'swath' only).", flush=True)
+        concatenated = concatenated.drop_vars(_over2d, errors="ignore")
+        paireddict = {k: v.drop_vars([d for d in _over2d if d in v.data_vars],
+                                     errors="ignore")
+                      for k, v in paireddict.items()}
+        
     end_time = np.array(
         paireddict[ordered_keys[-1]].attrs["final_time_string"], dtype="datetime64[ns]"
     )
