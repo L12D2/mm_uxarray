@@ -22,7 +22,7 @@ common:
     LA_metro:  {bounds: [-119.75, -116.75, 32.5, 35.5]}
     DEN_metro: {bounds: [-106.55, -103.55, 38.25, 41.25]}
     DFW_metro: {bounds: [-98.55, -95.55, 31.3, 34.3]}
-    #CONUS:      # 'all' domain
+    CONUS:      # 'all' domain
 
     # MEX_greater: {bounds: [-100.0, -98.2, 18.5, 20.4]}
     # SE_US:       {bounds: [-92.0, -75.0, 24.5, 37.0]}
@@ -106,8 +106,8 @@ runs:
 ##### conservative regridded 
   nonbiog_cons:
     plot_dir:      /glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/figs/nonbiog/sat_con
-    paired_dir:    /glade/work/lcthompson/mm_output/nonbiog_tempo_native
-    paired_prefix: model_cons
+    paired_dir:    /glade/work/lcthompson/mm_output_v2/musicav0_conus_nonbiog/tempo/model
+    paired_prefix: model_cons_cld1sza1
     instrument:    tempo
     targets:       [model]
     model_files:   /glade/campaign/acom/acom-da/conus_outputs/f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.ERA5_ref_dust_M1.1.002/H1/f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.ERA5_ref_dust_M1.1.002.cam.h1.2024-06-05-03600.nc
@@ -115,8 +115,8 @@ runs:
 
   biog_cons:
     plot_dir:      /glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/figs/biog/sat_cons
-    paired_dir:    /glade/work/lcthompson/mm_output/biog_tempo_native
-    paired_prefix: model_cons
+    paired_dir:    /glade/work/lcthompson/mm_output_v2/musicav0_conus_ref/tempo/model
+    paired_prefix: model_cons_cld1sza1
     instrument:    tempo
     targets:       [model]
     model_files:   /glade/campaign/acom/acom-da/conus_outputs/f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.biog_ERA5_ref_dust_M1.1.001/H1/f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.biog_ERA5_ref_dust_M1.1.001.cam.h1.2024-06-01-03600.nc
@@ -124,8 +124,8 @@ runs:
 
   grapes_cons:
     plot_dir:      /glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/figs/grapes/sat_cons
-    paired_dir:    /glade/work/lcthompson/mm_output/grapes_tempo_native
-    paired_prefix: model_cons
+    paired_dir:    /glade/work/lcthompson/mm_output_v2/musicav0_conus_gra2pesv2/tempo/model
+    paired_prefix: model_cons_cld1sza1
     instrument:    tempo
     targets:       [model]
     model_files:   /glade/campaign/acom/acom-da/conus_outputs/f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.nox_grapes.001/H1/f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.nox_grapes.001.cam.h1.2024-06-01-03600.nc
@@ -133,8 +133,8 @@ runs:
 
   mxcat_cons:
     plot_dir:      /glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/figs/mxcat/sat_cons
-    paired_dir:    /glade/work/lcthompson/mm_output/mxcat_tempo_native
-    paired_prefix: model_cons
+    paired_dir:    /glade/work/lcthompson/mm_output_v2/musicav0_hamaq_ref/tempo/model
+    paired_prefix: model_cons_cld1sza1
     instrument:    tempo
     targets:       [model]
     model_files:   /glade/campaign/acom/acom-weather/jjacdan/SCENICS.HAMAQ/f.e3beta01.FCts2nudged.MXCATL_ne30x16_cams_mosaic_v1.1_final.03/f.e3beta01.FCts2nudged.MXCATL_ne30x16_cams_mosaic_v1.1_final.03.cam.h3i.2024-06-01-03600.nc
@@ -143,8 +143,8 @@ runs:
 ##### TROPOMI conservative regridded (model-space; reads {run}_tropomi_native/model_cons*)
   nonbiog_tropomi_cons:
     plot_dir:      /glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/figs/nonbiog/sat_tropomi_cons
-    paired_dir:    /glade/work/lcthompson/mm_output/nonbiog_tropomi_native
-    paired_prefix: model_cons
+    paired_dir:    /glade/work/lcthompson/mm_output_v2/musicav0_conus_nonbiog/tropomi/model
+    paired_prefix: model_cons_cld1sza1
     instrument:    tropomi
     targets:       [model]
     model_files:   /glade/campaign/acom/acom-da/conus_outputs/f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.ERA5_ref_dust_M1.1.002/H1/f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.ERA5_ref_dust_M1.1.002.cam.h1.2024-06-05-03600.nc
@@ -153,8 +153,8 @@ runs:
   biog_tropomi_cons:
     plot_dir:      /glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/figs/biog/sat_tropomi_cons
 
-    paired_dir:    /glade/work/lcthompson/mm_output/biog_tropomi_native
-    paired_prefix: model_cons
+    paired_dir:    /glade/work/lcthompson/mm_output_v2/musicav0_conus_ref/tropomi/model
+    paired_prefix: model_cons_cld1sza1
     instrument:    tropomi
     targets:       [model]
     model_files:   /glade/campaign/acom/acom-da/conus_outputs/f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.biog_ERA5_ref_dust_M1.1.001/H1/f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.biog_ERA5_ref_dust_M1.1.001.cam.h1.2024-06-01-03600.nc
@@ -162,8 +162,8 @@ runs:
 
   grapes_tropomi_cons:
     plot_dir:      /glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/figs/grapes/sat_tropomi_cons
-    paired_dir:    /glade/work/lcthompson/mm_output/grapes_tropomi_native
-    paired_prefix: model_cons
+    paired_dir:    /glade/work/lcthompson/mm_output_v2/musicav0_conus_gra2pesv2/tropomi/model
+    paired_prefix: model_cons_cld1sza1
     instrument:    tropomi
     targets:       [model]
     model_files:   /glade/campaign/acom/acom-da/conus_outputs/f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.nox_grapes.001/H1/f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.nox_grapes.001.cam.h1.2024-06-01-03600.nc
@@ -171,8 +171,8 @@ runs:
 
   mxcat_tropomi_cons:
     plot_dir:      /glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/hcho_ben_gaubert_cs/figs/mxcat/sat_tropomi_cons
-    paired_dir:    /glade/work/lcthompson/mm_output/mxcat_tropomi_native
-    paired_prefix: model_cons
+    paired_dir:    /glade/work/lcthompson/mm_output_v2/musicav0_hamaq_ref/tropomi/model
+    paired_prefix: model_cons_cld1sza1
     instrument:    tropomi
     targets:       [model]
     model_files:   /glade/campaign/acom/acom-weather/jjacdan/SCENICS.HAMAQ/f.e3beta01.FCts2nudged.MXCATL_ne30x16_cams_mosaic_v1.1_final.03/f.e3beta01.FCts2nudged.MXCATL_ne30x16_cams_mosaic_v1.1_final.03.cam.h3i.2024-06-01-03600.nc
