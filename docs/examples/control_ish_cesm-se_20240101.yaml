@@ -8,13 +8,10 @@
 # Universal comparison variables
 analysis:
   start_time: '2024-01-01'          #UTC
-  end_time: '2024-01-03'          #UTC
-  output_dir: 
-    /glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/readthedocs/output/ish_cesmse
-  output_dir_save: 
-    /glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/readthedocs/output/ish_cesmse
-  output_dir_read: 
-    /glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/readthedocs/output/ish_cesmse
+  end_time: '2024-01-02'          #UTC
+  output_dir: ./output/ish_cesmse
+  output_dir_save: ./output/ish_cesmse
+  output_dir_read: ./output/ish_cesmse
 
   save:
     paired:
@@ -26,14 +23,14 @@ analysis:
       method: 'netcdf'
       filenames: {ish_cesm_se: ['ish_cesm_se']}
   download_maps: false #If off-line or on machine with download restrictions like hera set to False.
-  debug: false
+  debug: True
 #-------------------------------------------------------------------
 # Model definitions
 model:
   cam-chem-se:
-    files:
-      - /glade/campaign/acom/acom-da/conus_outputs/f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.ERA5_ref_dust_M1.1.002/H1/f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.ERA5_ref_dust_M1.1.002.cam.h1.2024-01-01-03600.nc
-      - /glade/campaign/acom/acom-da/conus_outputs/f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.ERA5_ref_dust_M1.1.002/H1/f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.ERA5_ref_dust_M1.1.002.cam.h1.2024-01-02-03600.nc
+    files: /glade/derecho/scratch/lcthompson/thinned_examples/Sample_CESM-SE_CONUS_ish_2024-01-01_03.nc
+      # - /glade/campaign/acom/acom-da/conus_outputs/f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.ERA5_ref_dust_M1.1.002/H1/f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.ERA5_ref_dust_M1.1.002.cam.h1.2024-01-01-03600.nc
+      # - /glade/campaign/acom/acom-da/conus_outputs/f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.ERA5_ref_dust_M1.1.002/H1/f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.ERA5_ref_dust_M1.1.002.cam.h1.2024-01-02-03600.nc
       # - /glade/campaign/acom/acom-da/conus_outputs/f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.ERA5_ref_dust_M1.1.002/H1/f.e22.FCnudged.ne0CONUSne30x8_ne0CONUSne30x8_mt12.ERA5_ref_dust_M1.1.002.cam.h1.2024-01-03-03600.nc
       
     mod_type: 'cesm_se'
@@ -59,18 +56,10 @@ model:
       rose_plot:
         model_wdir: "winddir"
         model_wspd: "windspeed"
-      dewpoint:
-        pres_calc: "PS"
-        specific_hum: "Q"
-      rel_hum: 
-        pres_calc: "PS"
-        specific_hum: "Q"
-        temp_calc: "T"
         
     mapping: #model species name : obs species name
       ish:
         T: 't'
-        dewpoint: 'dpt'
         windspeed: 'ws'
         winddir: 'wdir'
         
@@ -84,7 +73,7 @@ model:
 # Observation definitions
 obs:
   ish: # obs label
-    filename: ./output/ish_cesmse/ISH_20240101_20240102.nc
+    filename: '/glade/u/home/lcthompson/mm/MELODIES-MONET/docs/examples/ungridded_support/unstructured_grid_read_uxarray/readthedocs/output/ish_cesmse/ISH_20240101_20240102.nc'
 
     obs_type: pt_sfc
     variables: # optional
@@ -182,30 +171,16 @@ plots:
     domain_name: ['CONUS'] #List of domain names. If domain_type = all domain_name is used in plot title.
     data: ['ish_cam-chem-se'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
     data_proc:
-      rem_obs_nan: true # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
-      set_axis: true #If select True, add vdiff_plot for each variable in obs.
-  
-  plot_grp3:
-    type: 'spatial_overlay' # plot type
-    fig_kwargs: #For all spatial plots, specify map_kwargs here too.
-      states: true
-      figsize: [10, 5] # figure size 
-    text_kwargs: #Opt
-      fontsize: 16.
-    domain_type: ['all'] #List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.) 
-    domain_name: ['CONUS'] #List of domain names. If domain_type = all domain_name is used in plot title.
-    data: ['ish_cam-chem-se'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
-    data_proc:
-      rem_obs_nan: true # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
-      set_axis: true #If select True, add vmin_plot and vmax_plot for each variable in obs.
       wind_barb: True
       wind_barb_step: 10
       wind_barb_kwargs:
-        length: 2
-        linewidth: 0.5
+        length: 5
+        linewidth: 1
         color: "black"
+      rem_obs_nan: true # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
+      set_axis: false #If select True, add vdiff_plot for each variable in obs.
         
-  plot_grp4:
+  plot_grp3:
     type: 'boxplot' # plot type
     fig_kwargs: #Opt to define figure options
       figsize: [8, 6] # figure size 
@@ -218,7 +193,7 @@ plots:
       rem_obs_nan: true # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
       set_axis: false #If select True, add vmin_plot and vmax_plot for each variable in obs.
         
-  plot_grp5:
+  plot_grp4:
     type: "rose_plot"
     text_kwargs:
       fontsize: 16.
@@ -231,7 +206,7 @@ plots:
       set_axis: True
       wr_calm_limit: 0.5
   
-  plot_grp6:
+  plot_grp5:
     type: "diurnal"
     fig_kwargs:
       figsize: [12, 6] 
@@ -247,7 +222,21 @@ plots:
       rem_obs_nan: True
       ts_select_time: "time_local" 
       ts_avg_window: "h"
-      set_axis: True  
+      set_axis: false  
+
+  plot_grp6:
+    type: 'spatial_overlay' # plot type
+    fig_kwargs: #For all spatial plots, specify map_kwargs here too.
+      states: true
+      figsize: [10, 5] # figure size 
+    text_kwargs: #Opt
+      fontsize: 16.
+    domain_type: ['all'] #List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.) 
+    domain_name: ['CONUS'] #List of domain names. If domain_type = all domain_name is used in plot title.
+    data: ['ish_cam-chem-se'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
+    data_proc:
+      rem_obs_nan: true # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
+      set_axis: false #If select True, add vmin_plot and vmax_plot for each variable in obs.
 
 # #-----------------------------------------------------------------------------
 stats:

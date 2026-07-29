@@ -37,12 +37,8 @@ analysis:
 # Model definitions
 model:
   mpas:
-    files:
-
-      - /glade/campaign/acom/acom-weather/wenfut/MPAS_ASIAAQ/model_output_wrong_landIC/ASIA-AQ-MPAS_2024_x20.835586.grid_asiaaq_g17_mg17_58L/atm/hist/ASIA-AQ-MPAS_2024_x20.835586.grid_asiaaq_g17_mg17_58L.cam.h2i.2024-01-01-10800.nc
-      - /glade/campaign/acom/acom-weather/wenfut/MPAS_ASIAAQ/model_output_wrong_landIC/ASIA-AQ-MPAS_2024_x20.835586.grid_asiaaq_g17_mg17_58L/atm/hist/ASIA-AQ-MPAS_2024_x20.835586.grid_asiaaq_g17_mg17_58L.cam.h2i.2024-01-01-21600.nc
-      - /glade/campaign/acom/acom-weather/wenfut/MPAS_ASIAAQ/model_output_wrong_landIC/ASIA-AQ-MPAS_2024_x20.835586.grid_asiaaq_g17_mg17_58L/atm/hist/ASIA-AQ-MPAS_2024_x20.835586.grid_asiaaq_g17_mg17_58L.cam.h2i.2024-01-01-32400.nc
-
+    files: /glade/derecho/scratch/lcthompson/thinned_examples/Sample_MPAS_ASIAAQ_airnow_2024-01-01.nc
+    
     # mpas and cesm-se both go through the same unstructured reader!
     mod_type: 'mpas'
     
@@ -51,7 +47,6 @@ model:
     # reader as generic as possible
     scrip_file: "/glade/work/wenfut/MPAS_tools/NCL_codes2/x20.835586.real.asiaaq.init_58L.nc"
     
-    #"/glade/work/wenfut/MPAS_tools/NCL_codes2/x20.835586.real.asiaaq.init_58L.nc"
     radius_of_influence: 27794 #meters
     extra_calc: # Add more complex calculations and their associated variables here.
 
@@ -184,7 +179,7 @@ plots:
     interval_list: [0, 5, 7]
     interval_labels: [weekday, weekend]
     xlabel: 'Day type'
-    data_proc: {rem_obs_nan: True, set_axis: True}
+    data_proc: {rem_obs_nan: True, set_axis: False}
 
   plot_grp4:
     type: 'multi_boxplot'
@@ -197,21 +192,72 @@ plots:
     interval_list: [0, 1, 2, 3, 4, 5, 6, 7]        # Mon=0..Sun=6 ; one bin per day
     interval_labels: [Mon, Tue, Wed, Thu, Fri, Sat, Sun]
     xlabel: 'Day of week'
-    data_proc: {rem_obs_nan: True, set_axis: True}
+    data_proc: {rem_obs_nan: True, set_axis: False}
     
   plot_grp5:
-    type: "rose_plot"
-    text_kwargs:
-      fontsize: 16.
-    domain_type: ['all'] #List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region etc.) 
-    domain_name: ['CONUS'] #List of domain names. If domain_type = all domain_name is used in plot title.
+    type: "timeseries" # plot type
+    fig_kwargs: # optional; to define figure options
+      figsize: [12, 6] # figure size (width, height) in inches
+    default_plot_kwargs:
+      # ^ optional; Define defaults for all plots.
+      #   Important: Model kwargs overwrite these.
+      linewidth: 2.0
+      markersize: 10.
+    text_kwargs: # optional
+      fontsize: 24.
+    domain_type: ['all','epa_region'] #List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.) 
+    domain_name: ['CONUS','R1'] #List of domain names. If domain_type = all domain_name is used in plot title.
+    # ^ List of domain names. If domain_type = all,
+    #   the domain name is used in the plot title.
+
+      #   #### View unique state and country values 
+  #   # an.paired['ish_ufschem_v1']
+  #   # df = an.paired['ish_ufschem_v1'].obj.to_dataframe()
+  #   # df.columns
+  #   # df["country"].unique()
+  #   # df["state"].unique()
     data: ['airnow_mpas']
-    color_map: "inferno"  
     data_proc:
       rem_obs_nan: True
-      set_axis: True
-      wr_calm_limit: 0.5
-      
+      # ^ True: Remove all points where model or obs variable is NaN.
+      #   False: Remove only points where model variable is NaN.
+      ts_select_time: "time_local"  # `ts_` indicates this is time series plot-specific
+      # ^ Time used for avg and plotting
+      #   Options: 'time' for UTC or 'time_local'
+      ts_avg_window: "h"
+      # ^ Options: None for no averaging, pandas resample rule (e.g., 'h', 'D')
+      set_axis: False
+  
+  plot_grp6:
+    type: 'taylor' # plot type
+    fig_kwargs: #Opt to define figure options
+      figsize: [8,8] # figure size if multiple plots
+    default_plot_kwargs: # Opt to define defaults for all plots. Model kwargs overwrite these.
+      linewidth: 2.0
+      markersize: 10.
+    text_kwargs: #Opt
+      fontsize: 16.
+    domain_type: ['all','epa_region'] #List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.) 
+    domain_name: ['CONUS','R1'] #List of domain names. If domain_type = all domain_name is used in plot title.
+    data: ['airnow_mpas'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
+    data_proc:
+      rem_obs_nan: True # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
+      set_axis: False #If select True, add ty_scale for each variable in obs.
+  
+  plot_grp7:
+    type: 'spatial_bias' # plot type
+    fig_kwargs: #For all spatial plots, specify map_kwargs here too.
+      states: True
+      figsize: [10, 5] # figure size 
+    text_kwargs: #Opt
+      fontsize: 16.
+    domain_type: ['all','epa_region'] #List of domain types: 'all' or any domain in obs file. (e.g., airnow: epa_region, state_name, siteid, etc.) 
+    domain_name: ['CONUS','R1'] #List of domain names. If domain_type = all domain_name is used in plot title.
+    data: ['airnow_mpas'] # make this a list of pairs in obs_model where the obs is the obs label and model is the model_label
+    data_proc:
+      rem_obs_nan: True # True: Remove all points where model or obs variable is NaN. False: Remove only points where model variable is NaN.
+      set_axis: False #If select True, add vdiff_plot for each variable in obs.
+        
 # #-----------------------------------------------------------------------------
 stats:
   #Stats require positive numbers, so if you want to calculate temperature use Kelvin!

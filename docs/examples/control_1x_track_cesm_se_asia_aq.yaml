@@ -50,7 +50,7 @@ analysis:
 model:
   cam-chem-se-era5:
     files:
-      - /glade/derecho/scratch/jzhan166/f.e30beta01.FCnudged.GEMS01ne30x8.XNOx_PHL_anthro.02/run/f.e30beta01.FCnudged.GEMS01ne30x8.XNOx_PHL_anthro.02.cam.aircraft_asiaaqdc8_1s_1pt.2024-02-13-06525.nc
+      - /glade/derecho/scratch/lcthompson/thinned_examples/Sample_CESM-SE_track_asiaaq_dc8_2024-02-13.nc
       
     mod_type: 'cesm_se'
     
