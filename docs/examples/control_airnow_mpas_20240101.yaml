@@ -37,7 +37,7 @@ analysis:
 # Model definitions
 model:
   mpas:
-    files: /glade/derecho/scratch/lcthompson/thinned_examples/Sample_MPAS_ASIAAQ_airnow_2024-01-01.nc
+    files: /glade/work/lcthompson/mm_tutorial_data/Sample_MPAS_ASIAAQ_airnow_2024-01-01.nc
     
     # mpas and cesm-se both go through the same unstructured reader!
     mod_type: 'mpas'

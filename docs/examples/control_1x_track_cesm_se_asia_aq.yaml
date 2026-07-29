@@ -50,7 +50,7 @@ analysis:
 model:
   cam-chem-se-era5:
     files:
-      - /glade/derecho/scratch/lcthompson/thinned_examples/Sample_CESM-SE_track_asiaaq_dc8_2024-02-13.nc
+      - /glade/work/lcthompson/mm_tutorial_data/Sample_CESM-SE_track_asiaaq_dc8_2024-02-13.nc
       
     mod_type: 'cesm_se'
     
