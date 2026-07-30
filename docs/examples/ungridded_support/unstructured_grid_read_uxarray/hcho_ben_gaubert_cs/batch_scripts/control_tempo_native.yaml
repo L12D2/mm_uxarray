@@ -1,0 +1,67 @@
+# pair on the native obs grid of tempo 
+analysis:
+  start_time: '2024-06-01'                 # UTC (overwritten per day by the script)
+  end_time:   '2024-06-30 23:59:00'        # UTC
+  output_dir:      PLACEHOLDER
+  output_dir_save: PLACEHOLDER
+  output_dir_read: PLACEHOLDER
+  save:
+    paired: {method: 'netcdf', prefix: 'PLACEHOLDER', data: all}
+  debug: false
+
+obs:
+  tempo_l2_hcho:
+    obs_type: sat_swath_clm
+    sat_type: tempo_l2_hcho
+    regrid_method: radius_mean
+    filename: PLACEHOLDER                    # set per day by the script
+    regrid_target: [obs]                     # fine lat/lon L3 only
+    obs_grid_res: 0.03                       # ~native TEMPO; script may override via OBS_GRID_RES
+    obs_grid_extent: [-85.0, -83.7, 33.2, 34.4]   # placeholder; script sets per CITY
+    obs_grid_units: deg
+    variables:
+      main_data_quality_flag: {main_data_quality_flag_max: 0, var_applied: ['vertical_column']}
+      vertical_column:
+        ylabel_plot: 'HCHO column (molec cm$^{-2}$)'
+        vmin_plot: 0.3
+        vmax_plot: 2.0e+16
+        nlevels_plot: 21
+      pressure: {}
+      scattering_weights: {}
+      amf: {}
+      latitude_bounds: {}
+      longitude_bounds: {}
+      vertical_column_uncertainty: {}
+
+  tempo_l2_no2:
+    obs_type: sat_swath_clm
+    sat_type: tempo_l2_no2
+    regrid_method: radius_mean
+    filename: PLACEHOLDER
+    regrid_target: [obs]
+    obs_grid_res: 0.03
+    obs_grid_extent: [-85.0, -83.7, 33.2, 34.4]
+    obs_grid_units: deg
+    variables:
+      main_data_quality_flag: {main_data_quality_flag_max: 0, var_applied: ['vertical_column_troposphere']}
+      vertical_column_troposphere: {ylabel_plot: 'NO$_2$ trop. column (molec cm$^{-2}$)', vmin_plot: 0, vmax_plot: 1.0e+16}
+      pressure: {}
+      tropopause_pressure: {}
+      scattering_weights: {}
+      amf_troposphere: {}
+      latitude_bounds: {}
+      longitude_bounds: {}
+      vertical_column_troposphere_uncertainty: {}
+
+model:
+  cam-chem-se:
+    files: PLACEHOLDER                       # month of H1 hourly files, set per RUN/day
+    scrip_file: PLACEHOLDER                  # set per RUN
+    mod_type: 'cesm_se'
+    mapping:
+      tempo_l2_hcho: {CH2O: "vertical_column"}
+      tempo_l2_no2:  {NO2:  "vertical_column_troposphere"}
+    projection: ~
+    mod_kwargs:
+      convert_to_ppb: True
+    plot_kwargs: {color: 'purple', marker: '^', linestyle: 'dotted'}
